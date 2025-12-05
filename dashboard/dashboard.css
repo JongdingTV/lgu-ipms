@@ -21,7 +21,7 @@ body.sidebar-hidden {
 
 /* NAVIGATION SIDEBAR */
 .nav {
-    width: 260px;
+    width: 230px;
     height: 100vh;
     padding: 32px 20px;
     display: flex;
@@ -96,7 +96,7 @@ body.sidebar-hidden {
     opacity: 0.8;
     transition: all 0.3s ease;
     border-radius: 8px;
-    font-size: 0.95em;
+    font-size: 0.80em;
     font-weight: 500;
 }
 
