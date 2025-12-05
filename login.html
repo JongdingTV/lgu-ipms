@@ -8,14 +8,14 @@
 <style>
 
 body {
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
 
     /* NEW — background image + blur */
     background: url("cityhall.jpeg") center/cover no-repeat fixed;
     position: relative;
-    overflow: hidden;
+    padding-top: 80px;
 }
 
 /* NEW — Blur overlay */
@@ -33,15 +33,34 @@ body::before {
 }
 
 /* Make content appear ABOVE blur */
-.nav, .wrapper {
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 100;
+}
+
+.wrapper, .footer {
     position: relative;
     z-index: 1;
 }
 
-/* Make content appear ABOVE blur */
-.footer, .wrapper {
-    position: relative;
-    z-index: 1;
+.footer {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+}
+
+.footer {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
 }
 </style>
 </head>
@@ -63,25 +82,27 @@ body::before {
         <h2 class="title">LGU Login</h2>
         <p class="subtitle">Secure access to community maintenance services.</p>
 
-        <form>
-            
+        <form id="loginForm">
+
             <div class="input-box">
                 <label>Email Address</label>
-                <input type="email" placeholder="name@lgu.gov.ph">
+                <input type="email" id="loginEmail" placeholder="name@lgu.gov.ph" required>
                 <span class="icon">📧</span>
             </div>
 
             <div class="input-box">
                 <label>Password</label>
-                <input type="password" placeholder="••••••••">
+                <input type="password" id="loginPassword" placeholder="••••••••" required>
                 <span class="icon">🔒</span>
             </div>
 
-            <button class="btn-primary">Sign In</button>
+            <button class="btn-primary" type="submit">Sign In</button>
 
             <p class="small-text">Don’t have an account?
                 <a href="create.html" class="link">Create one</a>
             </p>
+
+            <div id="loginMessage" style="margin-top:12px;color:#b00;display:none;"></div>
 
         </form>
     </div>
@@ -100,6 +121,27 @@ body::before {
     </div>
 
 </footer>
+
+<script>
+// simple login using localStorage users
+document.getElementById('loginForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    const password = document.getElementById('loginPassword').value;
+    const msg = document.getElementById('loginMessage');
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
+    if(!user){
+        msg.style.display = 'block';
+        msg.textContent = 'Invalid email or password.';
+        return;
+    }
+    // store current user session (simple)
+    localStorage.setItem('currentUser', JSON.stringify({ email: user.email, name: user.firstName + ' ' + user.lastName }));
+    // redirect to dashboard
+    window.location.href = 'dashboard/dashboard.html';
+});
+</script>
 
 </body>
 </html>

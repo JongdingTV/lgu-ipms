@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LGU | Create Account</title>
+<link rel="stylesheet" href="style - Copy.css">
+<style>
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+
+    /* background image + blur */
+    background: url("cityhall.jpeg") center/cover no-repeat fixed;
+    position: relative;
+}
+
+/* Blur overlay */
+body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(6px);
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 0;
+}
+
+/* Ensure content is above the blur */
+.nav { position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 100; }
+.wrapper, .footer { position: relative; z-index: 1; }
+
+/* Allow wrapper to grow and provide spacing for fixed header/footer so page can scroll */
+.wrapper {
+    height: auto !important;
+    min-height: calc(100vh - 140px);
+    padding-top: 90px;
+    padding-bottom: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* use default .card sizing from shared stylesheet so it matches login */
+
+.wrapper .card form input, .wrapper .card form select { width: 100%; padding: 10px; margin:6px 0 12px 0; }
+.btn-primary { padding: 12px 16px; display: inline-block; }
+.small-text { margin-top: 10px; }
+
+/* Two-column form grid for registration */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 20px;
+    align-items: start;
+}
+.form-grid .input-box { margin-bottom: 8px; }
+@media (max-width: 700px) {
+    .form-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<header class="nav">
+    <div class="nav-logo">🏛️ Local Government Unit Portal</div>
+    <div class="nav-links">
+        <a href="dashboard/dashboard.html">Home</a>
+    </div>
+</header>
+
+<div class="wrapper">
+    <div class="card">
+        <img src="logocityhall.png" class="icon-top">
+        <h2 class="title">Create Account</h2>
+        <p class="subtitle">Register to access the LGU Portal</p>
+
+        <form id="registerForm">
+            <div class="form-grid">
+                <div class="input-box">
+                    <label>First Name</label>
+                    <input type="text" id="firstName" required>
+                </div>
+
+                <div class="input-box">
+                    <label>Last Name</label>
+                    <input type="text" id="lastName" required>
+                </div>
+
+                <div class="input-box" style="grid-column: 1 / -1;">
+                    <label>Address</label>
+                    <input type="text" id="address" required>
+                </div>
+
+                <div class="input-box">
+                    <label>Age</label>
+                    <input type="number" id="age" min="0" required>
+                </div>
+
+                <div class="input-box">
+                    <label>Contact Number</label>
+                    <input type="text" id="contact" required>
+                </div>
+
+                <div class="input-box">
+                    <label>Email Address</label>
+                    <input type="email" id="email" required>
+                </div>
+
+                <div class="input-box">
+                    <label>Password</label>
+                    <input type="password" id="password" required>
+                </div>
+
+                <div class="input-box">
+                    <label>Confirm Password</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
+            </div>
+
+            <div style="margin-top:12px;">
+                <button class="btn-primary" type="submit">Register</button>
+            </div>
+        </form>
+
+        <div id="regMessage" style="margin-top:12px;color:#0b5;display:none;"></div>
+        <p class="small-text">Already have an account? <a href="login.html">Sign in</a></p>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">About</a>
+        <a href="#">Help</a>
+    </div>
+    <div class="footer-logo">© 2025 LGU Citizen Portal · All Rights Reserved</div>
+</footer>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const address = document.getElementById('address').value.trim();
+    const age = Number(document.getElementById('age').value);
+    const contact = document.getElementById('contact').value.trim();
+    const email = document.getElementById('email').value.trim().toLowerCase();
+    const password = document.getElementById('password').value;
+    const confirm = document.getElementById('confirmPassword').value;
+
+    const msgEl = document.getElementById('regMessage');
+
+    if(password !== confirm){
+        msgEl.style.color = '#b00';
+        msgEl.textContent = 'Passwords do not match.';
+        msgEl.style.display = 'block';
+        return;
+    }
+
+    // load users
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    if(users.find(u=>u.email === email)){
+        msgEl.style.color = '#b00';
+        msgEl.textContent = 'An account with this email already exists.';
+        msgEl.style.display = 'block';
+        return;
+    }
+
+    const user = { firstName, lastName, address, age, contact, email, password, createdAt: new Date().toISOString() };
+    users.push(user);
+    localStorage.setItem('users', JSON.stringify(users));
+
+    msgEl.style.color = '#0b5';
+    msgEl.innerHTML = 'Registration successful. You will be redirected to the login page in <span id="count">15</span> seconds. <a href="login.html">Go now</a>';
+    msgEl.style.display = 'block';
+
+    // countdown and redirect after 15 seconds
+    let seconds = 15;
+    const countEl = document.getElementById('count');
+    const interval = setInterval(()=>{
+        seconds -= 1;
+        if(countEl) countEl.textContent = seconds;
+        if(seconds <= 0){
+            clearInterval(interval);
+            window.location.href = 'login.html';
+        }
+    }, 1000);
+});
+</script>
+</body>
+</html>

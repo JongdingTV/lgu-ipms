@@ -9,9 +9,11 @@
 
 body {
     background: linear-gradient(145deg, #6e84b7, #40598f);
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
+    /* reserve space at top for fixed header so content isn't covered */
+    padding-top: 80px;
 }
 
 /* NAVIGATION */
@@ -62,11 +64,11 @@ body {
 /* CENTER WRAPPER */
 .wrapper {
     width: 100%;
-    height: calc(100vh - 80px); /* subtract header height */
+    min-height: calc(100vh - 80px); /* ensure wrapper grows with content */
     display: flex;
     justify-content: center;
-    align-items: center;  /* THIS centers it vertically */
-    padding-bottom: 0;    /* remove extra spacing */
+    align-items: center;  /* centers content vertically when possible */
+    padding-bottom: 0;
 }
 
 /* CARD */
@@ -183,10 +185,9 @@ body {
     border-top: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow: 0 -4px 25px rgba(0,0,0,0.25);
 
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    z-index: 100;
+    /* not fixed: allow footer to appear after content and at bottom when content is short */
+    position: relative;
+    margin-top: auto;
 
     animation: fadeUp 0.4s ease-out; /* smooth reveal */
 }
