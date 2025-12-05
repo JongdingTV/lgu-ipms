@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Project Registration - LGU IPMS</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <header class="nav" id="navbar">
+        <div class="nav-logo">
+            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <span class="logo-text">IPMS</span>
+        </div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard Overview</a>
+            <a href="project_registration.html" class="active">Project Registration</a>
+            <a href="progress_monitoring.html">Progress Monitoring</a>
+            <a href="budget_resources.html">Budget & Resources</a>
+            <a href="tasks_milestones.html">Task & Milestone</a>
+            <a href="contractors.html">Contractors</a>
+        </div>
+        <div class="nav-user">
+            <span class="nav-username">Welcome, User</span>
+            <a href="../login.html" class="nav-logout">Logout</a>
+        </div>
+        <div class="lgu-arrow-back">
+            <a href="#" id="toggleSidebar">
+                <img src="lgu-arrow-back.png" alt="Toggle sidebar">
+            </a>
+        </div>
+    </header>
+
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow">
+            <img src="lgu-arrow-right.png" alt="Show sidebar">
+        </a>
+    </div>
+
+    <section class="main-content">
+        <div class="dash-header">
+            <h1>Project Registration</h1>
+            <p>Create new infrastructure projects</p>
+        </div>
+
+        <div class="recent-projects">
+            <h3>New Project Form</h3>
+            <form id="projectForm">
+                <label>Project Name</label>
+                <input type="text" id="projName" required>
+                <label>Location</label>
+                <input type="text" id="projLocation" required>
+                <label>Budget</label>
+                <input type="number" id="projBudget" required>
+                <label>Estimated Duration (months)</label>
+                <input type="number" id="projDuration" required>
+                <button type="submit">Create Project</button>
+            </form>
+            <div id="formMessage" style="margin-top:12px;color:#0b5;display:none;"></div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
+    </footer>
+
+    <script src="dashboard.js"></script>
+    <script>
+        // simple client-only demo: store projects in localStorage
+        const form = document.getElementById('projectForm');
+        const msg = document.getElementById('formMessage');
+        form.addEventListener('submit', function(e){
+            e.preventDefault();
+            const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+            const p = {
+                name: document.getElementById('projName').value,
+                location: document.getElementById('projLocation').value,
+                budget: Number(document.getElementById('projBudget').value),
+                duration: Number(document.getElementById('projDuration').value),
+                createdAt: new Date().toISOString()
+            };
+            projects.push(p);
+            localStorage.setItem('projects', JSON.stringify(projects));
+            msg.textContent = 'Project created successfully.';
+            msg.style.display = 'block';
+            form.reset();
+        });
+    </script>
+</body>
+</html>

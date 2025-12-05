@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Task & Milestone - LGU IPMS</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <header class="nav" id="navbar">
+        <div class="nav-logo">
+            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <span class="logo-text">IPMS</span>
+        </div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard Overview</a>
+            <a href="project_registration.html">Project Registration</a>
+            <a href="progress_monitoring.html">Progress Monitoring</a>
+            <a href="budget_resources.html">Budget & Resources</a>
+            <a href="tasks_milestones.html" class="active">Task & Milestone</a>
+            <a href="contractors.html">Contractors</a>
+        </div>
+        <div class="nav-user">
+            <span class="nav-username">Welcome, User</span>
+            <a href="../login.html" class="nav-logout">Logout</a>
+        </div>
+        <div class="lgu-arrow-back">
+            <a href="#" id="toggleSidebar">
+                <img src="lgu-arrow-back.png" alt="Toggle sidebar">
+            </a>
+        </div>
+    </header>
+
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow">
+            <img src="lgu-arrow-right.png" alt="Show sidebar">
+        </a>
+    </div>
+
+    <section class="main-content">
+        <div class="dash-header">
+            <h1>Task & Milestone</h1>
+            <p>Assign tasks and track milestones</p>
+        </div>
+
+        <div class="recent-projects">
+            <h3>Tasks</h3>
+            <div id="tasksList">No tasks yet.</div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
+    </footer>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

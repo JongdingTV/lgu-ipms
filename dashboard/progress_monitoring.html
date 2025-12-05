@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Progress Monitoring - LGU IPMS</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <header class="nav" id="navbar">
+        <div class="nav-logo">
+            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <span class="logo-text">IPMS</span>
+        </div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard Overview</a>
+            <a href="project_registration.html">Project Registration</a>
+            <a href="progress_monitoring.html" class="active">Progress Monitoring</a>
+            <a href="budget_resources.html">Budget & Resources</a>
+            <a href="tasks_milestones.html">Task & Milestone</a>
+            <a href="contractors.html">Contractors</a>
+        </div>
+        <div class="nav-user">
+            <span class="nav-username">Welcome, User</span>
+            <a href="../login.html" class="nav-logout">Logout</a>
+        </div>
+        <div class="lgu-arrow-back">
+            <a href="#" id="toggleSidebar">
+                <img src="lgu-arrow-back.png" alt="Toggle sidebar">
+            </a>
+        </div>
+    </header>
+
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow">
+            <img src="lgu-arrow-right.png" alt="Show sidebar">
+        </a>
+    </div>
+
+    <section class="main-content">
+        <div class="dash-header">
+            <h1>Progress Monitoring</h1>
+            <p>View and update project progress</p>
+        </div>
+
+        <div class="recent-projects">
+            <h3>Tracked Projects</h3>
+            <div id="projectsList">Loading projects...</div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
+    </footer>
+
+    <script src="dashboard.js"></script>
+    <script>
+        function renderProjects(){
+            const list = document.getElementById('projectsList');
+            const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+            if(projects.length===0){ list.innerHTML = '<p>No projects found.</p>'; return; }
+            const html = projects.map((p, idx)=>{
+                return `<div style="padding:10px;border-bottom:1px solid #eee;">
+                    <strong>${p.name}</strong> — ${p.location}<br>
+                    Budget: ₱${p.budget} — Duration: ${p.duration} months
+                    <div style="margin-top:8px;"><label>Progress %</label>
+                    <input type="range" min="0" max="100" value="0" data-idx="${idx}" class="progRange"></div>
+                </div>`;
+            }).join('');
+            list.innerHTML = html;
+            document.querySelectorAll('.progRange').forEach(r=>{
+                r.addEventListener('input', function(){
+                    const idx = this.getAttribute('data-idx');
+                    const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+                    projects[idx].progress = Number(this.value);
+                    localStorage.setItem('projects', JSON.stringify(projects));
+                });
+            });
+        }
+        renderProjects();
+    </script>
+</body>
+</html>

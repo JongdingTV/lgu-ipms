@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Budget & Resources - LGU IPMS</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <header class="nav" id="navbar">
+        <div class="nav-logo">
+            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <span class="logo-text">IPMS</span>
+        </div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard Overview</a>
+            <a href="project_registration.html">Project Registration</a>
+            <a href="progress_monitoring.html">Progress Monitoring</a>
+            <a href="budget_resources.html" class="active">Budget & Resources</a>
+            <a href="tasks_milestones.html">Task & Milestone</a>
+            <a href="contractors.html">Contractors</a>
+        </div>
+        <div class="nav-user">
+            <span class="nav-username">Welcome, User</span>
+            <a href="../login.html" class="nav-logout">Logout</a>
+        </div>
+        <div class="lgu-arrow-back">
+            <a href="#" id="toggleSidebar">
+                <img src="lgu-arrow-back.png" alt="Toggle sidebar">
+            </a>
+        </div>
+    </header>
+
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow">
+            <img src="lgu-arrow-right.png" alt="Show sidebar">
+        </a>
+    </div>
+
+    <section class="main-content">
+        <div class="dash-header">
+            <h1>Budget & Resources</h1>
+            <p>Overview of budgets and allocations</p>
+        </div>
+
+        <div class="recent-projects">
+            <h3>Budgets</h3>
+            <div id="budgetList">Loading budgets...</div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
+    </footer>
+
+    <script src="dashboard.js"></script>
+    <script>
+        // basic demo showing total budgets per stored projects
+        const budgets = () => {
+            const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+            const el = document.getElementById('budgetList');
+            if(projects.length===0){ el.innerHTML = '<p>No budgets available.</p>'; return; }
+            const total = projects.reduce((s,p)=>s+(p.budget||0),0);
+            el.innerHTML = `<p>Total allocated across projects: ₱${total}</p>`;
+        }
+        budgets();
+    </script>
+</body>
+</html>
