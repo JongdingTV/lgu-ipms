@@ -1,0 +1,188 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LGU Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <header class="nav" id="navbar">
+        <div class="nav-logo">
+            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <span class="logo-text">IPMS</span>
+        </div>
+        <div class="nav-links">
+            <a href="" class="active">Dashboard Overview</a>
+            <a href="">Project Registration</a>
+            <a href="">Progress Monitoring</a>
+            <a href="">Budget & Resources</a>
+            <a href="">Task & Milestone</a>
+            <a href="">Contractors</a>
+        </div>
+        <div class="nav-user">
+            <span class="nav-username">Welcome, User</span>
+            <a href="../login.html" class="nav-logout">Logout</a>
+        </div>
+        <div class="lgu-arrow-back">
+            <a href="#" id="toggleSidebar">
+                <img src="lgu-arrow-back.png" alt="Toggle sidebar">
+            </a>
+        </div>
+    </header>
+
+    <!-- Toggle button to show sidebar -->
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow">
+            <img src="lgu-arrow-right.png" alt="Show sidebar">
+        </a>
+    </div>
+
+    <section class="main-content">
+        <div class="dash-header">
+            <h1>Dashboard Overview</h1>
+            <p>Infrastructure Project Management System</p>
+        </div>
+
+        <!-- Key Metrics Section -->
+        <div class="metrics-container">
+            <div class="metric-card">
+                <img src="chart.png" alt="Total Projects" class="metric-icon">
+                <div class="metric-content">
+                    <h3>Total Projects</h3>
+                    <p class="metric-value">24</p>
+                    <span class="metric-status">Active & Completed</span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <img src="clock.png" alt="In Progress" class="metric-icon">
+                <div class="metric-content">
+                    <h3>In Progress</h3>
+                    <p class="metric-value">8</p>
+                    <span class="metric-status">Currently executing</span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <img src="check.png" alt="Completed" class="metric-icon">
+                <div class="metric-content">
+                    <h3>Completed</h3>
+                    <p class="metric-value">14</p>
+                    <span class="metric-status">On schedule</span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <img src="budget.png" alt="Total Budget" class="metric-icon">
+                <div class="metric-content">
+                    <h3>Total Budget</h3>
+                    <p class="metric-value">₱500M</p>
+                    <span class="metric-status">Allocated funds</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-container">
+            <div class="chart-box">
+                <h3>Project Status Distribution</h3>
+                <div class="chart-placeholder">
+                    <div class="status-legend">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #10b981;"></span>
+                            <span>Completed: 58%</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #f59e0b;"></span>
+                            <span>In Progress: 33%</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #ef4444;"></span>
+                            <span>Delayed: 9%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-box">
+                <h3>Budget Utilization</h3>
+                <div class="chart-placeholder">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 72%;">72% Used</div>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.9em; color: #666;">₱360M of ₱500M allocated</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Projects Section -->
+        <div class="recent-projects">
+            <h3>Recent Projects</h3>
+            <table class="projects-table">
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Budget</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Road Rehabilitation</td>
+                        <td>Barangay A</td>
+                        <td><span class="status-badge in-progress">In Progress</span></td>
+                        <td>
+                            <div class="progress-small">
+                                <div class="progress-fill-small" style="width: 65%;"></div>
+                            </div>
+                        </td>
+                        <td>₱25M</td>
+                    </tr>
+                    <tr>
+                        <td>Water Supply System</td>
+                        <td>Barangay B</td>
+                        <td><span class="status-badge in-progress">In Progress</span></td>
+                        <td>
+                            <div class="progress-small">
+                                <div class="progress-fill-small" style="width: 45%;"></div>
+                            </div>
+                        </td>
+                        <td>₱35M</td>
+                    </tr>
+                    <tr>
+                        <td>School Building</td>
+                        <td>Barangay C</td>
+                        <td><span class="status-badge completed">Completed</span></td>
+                        <td>
+                            <div class="progress-small">
+                                <div class="progress-fill-small" style="width: 100%;"></div>
+                            </div>
+                        </td>
+                        <td>₱15M</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+            <div class="stat-item">
+                <h4>Average Project Duration</h4>
+                <p>6.5 months</p>
+            </div>
+            <div class="stat-item">
+                <h4>On-Time Delivery Rate</h4>
+                <p>78%</p>
+            </div>
+            <div class="stat-item">
+                <h4>Budget Variance</h4>
+                <p>+2.3%</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
+    </footer>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
