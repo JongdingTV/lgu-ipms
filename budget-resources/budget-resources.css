@@ -1,0 +1,243 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+body {
+    background-color: #f8f9fa;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin-left: 260px;
+    transition: margin-left 0.3s ease;
+}
+
+body.sidebar-hidden {
+    margin-left: 0;
+}
+
+/* NAVIGATION SIDEBAR */
+.nav {
+    width: 230px;
+    height: 100vh;
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+}
+
+.nav.hidden {
+    transform: translateX(-100%);
+}
+
+.nav-logo {
+    text-decoration: none;
+    cursor: pointer;
+    color: #ffffff;
+    opacity: 1;
+    transition: all 0.3s ease;
+    margin-bottom: 40px;
+    font-size: 1.4em;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* new logo image styling */
+.logo-img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    padding: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.logo-text {
+    color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.nav-links a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    text-decoration: none;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.8);
+    opacity: 0.8;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    font-size: 0.80em;
+    font-weight: 500;
+}
+
+.nav-links a:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    opacity: 1;
+    padding-left: 20px;
+}
+
+.nav-links a.active {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    opacity: 1;
+    font-weight: 600;
+    border-left: 4px solid #ffffff;
+    padding-left: 12px;
+}
+
+.nav-user {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.nav-username {
+    display: block;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.nav-logout {
+    display: block;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.85em;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.nav-logout:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.lgu-arrow-back {
+    margin-top: 20px;
+    cursor: pointer;
+}
+
+.lgu-arrow-back a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.lgu-arrow-back a:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.lgu-arrow-back img {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+}
+
+/* TOGGLE BUTTON - Shows when sidebar is hidden */
+.toggle-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 99;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.toggle-btn.show {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.toggle-btn a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.toggle-btn a:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.toggle-btn img {
+    width: 22px;
+    height: 22px;
+    filter: brightness(0) invert(1);
+}
+
+.footer {
+    margin-top: auto;
+    padding: 20px;
+    text-align: center;
+    font-size: 0.85em;
+    color: #999;
+}
+
+.main-content {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.dash-header {
+    margin-bottom: 30px;
+}
+
+.dash-header h1 {
+    font-size: 2em;
+    color: #1e3a8a;
+    margin-bottom: 5px;
+}
+
+.dash-header p {
+    color: #666;
+    font-size: 0.95em;
+}
