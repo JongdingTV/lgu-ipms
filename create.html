@@ -110,6 +110,38 @@ body::before {
     color: #0a7e3d;
     margin-right: 6px;
 }
+.invalid {
+    border: 2px solid #d93025 !important;
+    box-shadow: 0 0 0 3px rgba(217,48,37,0.06);
+    transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.error-tip {
+    font-size:12px; color:#b00; margin-top:6px;
+}
+/* password strength bar */
+.pwd-bar {
+    width: 100%;
+    height: 10px;
+    background: #eee;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top:8px;
+}
+.pwd-fill {
+    width: 0%;
+    height: 100%;
+    transition: width 380ms cubic-bezier(.2,.8,.2,1), background 300ms ease;
+    background: linear-gradient(90deg,#ff4d4f,#ffb86b);
+}
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+.shake {
+    animation: shake 420ms ease;
+}
 .btn-primary { padding: 14px 20px; display: inline-block; width: 100%; font-size: 16px; }
 .small-text { margin-top: 16px; font-size: 14px; }
 
@@ -253,7 +285,8 @@ body::before {
                     <label for="password">Password *</label>
                     <input id="password" name="password" type="password" required aria-required="true" aria-describedby="pwdHelp pwdStrength" placeholder="Create a strong password" />
                     <div id="pwdHelp" style="font-size:12px;color:#666;margin-top:8px;">Requirements: 8–12 characters, uppercase, lowercase, number, special character</div>
-                    <meter id="pwdStrength" min="0" max="4" low="2" high="3" optimum="4" value="0" style="width:100%;margin-top:8px;"></meter>
+                    <meter id="pwdStrength" min="0" max="4" low="2" high="3" optimum="4" value="0" style="width:100%;margin-top:8px; display:none;"></meter>
+                    <div class="pwd-bar" aria-hidden="true"><div class="pwd-fill" id="pwdFill"></div></div>
                 </div>
 
                 <div class="input-box" style="grid-column: 1 / -1;">
@@ -289,12 +322,12 @@ body::before {
     <div class="footer-logo">© 2025 LGU Citizen Portal · All Rights Reserved</div>
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+
 <script>
 // Password Policy Validator
 function validatePassword(p){
     const errors = [];
-    if(p.length < 8 || p.length > 12) errors.push('Password must be 8–12 characters.');
+    if(p.length < 8) errors.push('Password must be at least 8 characters.');
     if(!/[a-z]/.test(p)) errors.push('Include a lowercase letter.');
     if(!/[A-Z]/.test(p)) errors.push('Include an uppercase letter.');
     if(!/[0-9]/.test(p)) errors.push('Include a number.');
@@ -302,10 +335,24 @@ function validatePassword(p){
     return { ok: errors.length===0, errors };
 }
 
-// Live Password Strength Meter
+// Live Password Strength Meter + animated bar
 const pwdInput = document.getElementById('password');
 const meter = document.getElementById('pwdStrength');
-if(pwdInput && meter){
+const pwdFill = document.getElementById('pwdFill');
+
+function setPwdFill(score){
+    const pct = Math.round((score / 4) * 100);
+    if(pwdFill){
+        pwdFill.style.width = pct + '%';
+        // color logic
+        if(score <= 1) pwdFill.style.background = 'linear-gradient(90deg,#ff4d4f,#ff7a59)';
+        else if(score === 2) pwdFill.style.background = 'linear-gradient(90deg,#ffb86b,#ffd54a)';
+        else if(score === 3) pwdFill.style.background = 'linear-gradient(90deg,#cddc39,#8bc34a)';
+        else pwdFill.style.background = 'linear-gradient(90deg,#7be495,#4caf50)';
+    }
+}
+
+if(pwdInput){
     pwdInput.addEventListener('input', function(){
         const val = pwdInput.value || '';
         let score = 0;
@@ -313,8 +360,24 @@ if(pwdInput && meter){
         if(/[A-Z]/.test(val)) score++;
         if(/[0-9]/.test(val)) score++;
         if(/[^A-Za-z0-9]/.test(val)) score++;
-        meter.value = score;
+        if(meter) meter.value = score;
+        setPwdFill(score);
     });
+}
+
+// Helper functions to mark invalid/valid fields and scroll into view
+function markInvalid(el){
+    if(!el) return;
+    try{ el.classList.add('invalid'); }catch(e){}
+    try{ el.focus({preventScroll:true}); }catch(e){}
+    try{ el.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){}
+}
+function markValid(el){ if(!el) return; try{ el.classList.remove('invalid'); }catch(e){} }
+
+// Clear invalid marker when user types in email (improves UX)
+const emailInputField = document.getElementById('email');
+if(emailInputField){
+    emailInputField.addEventListener('input', () => { markValid(emailInputField); const m = document.getElementById('regMessage'); if(m) m.style.display = 'none'; });
 }
 
 // File Upload Handling with Drag & Drop
@@ -368,17 +431,21 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     const middleName = (document.getElementById('middleName').value || '').trim() || null;
     const lastName = (document.getElementById('lastName').value || '').trim();
     const suffix = document.getElementById('suffix').value || null;
-    const email = (document.getElementById('email').value || '').trim().toLowerCase();
+    let email = (document.getElementById('email').value || '').trim().toLowerCase();
+    // remove common invisible characters that can break validation
+    email = email.replace(/[\u200B-\u200D\uFEFF]/g, '');
     const mobile = (document.getElementById('mobile').value || '').trim();
-    const birthdate = document.getElementById('birthdate').value || null;
     const gender = document.getElementById('gender').value || null;
     const civilStatus = document.getElementById('civilStatus').value || null;
     const address = (document.getElementById('address').value || '').trim();
     const idType = document.getElementById('idType').value || null;
     const idNumber = (document.getElementById('idNumber').value || '').trim() || null;
     const idUploadFile = document.getElementById('idUpload').files[0] || null;
-    const password = document.getElementById('password').value || '';
-    const confirmPwd = document.getElementById('confirmPassword').value || '';
+    // sanitize password inputs: remove invisible/zero-width characters that can break validation
+    const rawPassword = document.getElementById('password').value || '';
+    const rawConfirm = document.getElementById('confirmPassword').value || '';
+    const password = (rawPassword).replace(/[\u200B-\u200D\uFEFF]/g, '');
+    const confirmPwd = (rawConfirm).replace(/[\u200B-\u200D\uFEFF]/g, '');
     const privacyAgree = document.getElementById('privacyAgree').checked;
 
     const msgEl = document.getElementById('regMessage');
@@ -388,35 +455,57 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     if(idUploadFile && idUploadFile.size > 5 * 1024 * 1024){
         msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
         msgEl.innerHTML = '<strong>⚠️ Error:</strong> ID file must be less than 5MB.';
-        msgEl.style.display = 'block'; return;
+        msgEl.style.display = 'block';
+        markInvalid(uploadLabel || document.getElementById('idUpload'));
+        return;
     }
 
     // File type validation
     if(idUploadFile && !['image/jpeg', 'image/png'].includes(idUploadFile.type)){
         msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
         msgEl.innerHTML = '<strong>⚠️ Error:</strong> ID file must be JPG or PNG format.';
-        msgEl.style.display = 'block'; return;
+        msgEl.style.display = 'block';
+        // mark upload area invalid
+        markInvalid(uploadLabel || document.getElementById('idUpload'));
+        return;
     }
 
     // FRONT-END VALIDATION (UX layer)
-    if(!firstName || !lastName || !email || !mobile || !password || !confirmPwd){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00'; 
-        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Please fill all required fields marked with *.'; 
-        msgEl.style.display = 'block'; return;
+    // Check required fields and mark the first invalid one
+    const requiredChecks = [
+        { el: document.getElementById('firstName'), ok: !!firstName, name: 'First name' },
+        { el: document.getElementById('lastName'), ok: !!lastName, name: 'Last name' },
+        { el: document.getElementById('email'), ok: !!email, name: 'Email' },
+        { el: document.getElementById('mobile'), ok: !!mobile, name: 'Mobile' },
+        { el: document.getElementById('password'), ok: !!password, name: 'Password' },
+        { el: document.getElementById('confirmPassword'), ok: !!confirmPwd, name: 'Confirm password' }
+    ];
+    const firstMissing = requiredChecks.find(c => !c.ok);
+    if(firstMissing){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = `<strong>⚠️ Error:</strong> ${firstMissing.name} is required.`;
+        msgEl.style.display = 'block';
+        markInvalid(firstMissing.el);
+        return;
     }
 
     if(!privacyAgree){
         msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
         msgEl.innerHTML = '<strong>⚠️ Error:</strong> You must agree to the Privacy Notice.';
-        msgEl.style.display = 'block'; return;
+        msgEl.style.display = 'block';
+        markInvalid(document.getElementById('privacyAgree'));
+        return;
     }
 
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if(!emailRegex.test(email)){
+        console.debug('Invalid email input:', JSON.stringify(email));
         msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
         msgEl.innerHTML = '<strong>⚠️ Error:</strong> Enter a valid email address.';
-        msgEl.style.display = 'block'; return;
+        msgEl.style.display = 'block';
+        markInvalid(document.getElementById('email'));
+        return;
     }
 
     // Mobile format validation
@@ -431,7 +520,11 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     if(password !== confirmPwd){
         msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
         msgEl.innerHTML = '<strong>⚠️ Error:</strong> Passwords do not match.';
-        msgEl.style.display = 'block'; return;
+        msgEl.style.display = 'block';
+        markInvalid(document.getElementById('password'));
+        markInvalid(document.getElementById('confirmPassword'));
+        const bar = document.querySelector('.pwd-bar'); if(bar){ bar.classList.add('shake'); setTimeout(()=>bar.classList.remove('shake'),420); }
+        return;
     }
 
     // Password policy enforcement
@@ -439,20 +532,27 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     if(!passCheck.ok){
         msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
         msgEl.innerHTML = '<strong>⚠️ Password Issues:</strong><br>' + passCheck.errors.join('<br>');
-        msgEl.style.display = 'block'; return;
+        msgEl.style.display = 'block';
+        markInvalid(document.getElementById('password'));
+        const bar2 = document.querySelector('.pwd-bar'); if(bar2){ bar2.classList.add('shake'); setTimeout(()=>bar2.classList.remove('shake'),420); }
+        return;
     }
 
     // CHECK FOR DUPLICATES (Back-end must re-check before DB insert)
     const users = JSON.parse(localStorage.getItem('users') || '[]');
-    if(users.find(u => u.email === email)){
+    if(users.find(u => (u.email || '').toLowerCase() === email)){
         msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
         msgEl.innerHTML = '<strong>⚠️ Error:</strong> An account with this email already exists.';
-        msgEl.style.display = 'block'; return;
+        msgEl.style.display = 'block';
+        markInvalid(document.getElementById('email'));
+        return;
     }
     if(users.find(u => u.mobile === mobile)){
         msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
         msgEl.innerHTML = '<strong>⚠️ Error:</strong> Mobile number already registered.';
-        msgEl.style.display = 'block'; return;
+        msgEl.style.display = 'block';
+        markInvalid(document.getElementById('mobile'));
+        return;
     }
 
     // CONVERT FILE TO BASE64 (for localStorage - suitable for small files)
@@ -465,12 +565,13 @@ document.getElementById('registerForm').addEventListener('submit', async functio
         });
     }
 
-    // HASH PASSWORD (BCryptJS - database-ready payload)
+    // STORE PASSWORD (development/demo flow)
     try{
-        const saltRounds = 10;
-        const passwordHash = bcrypt.hashSync(password, saltRounds);
-
-        // DATABASE-READY USER OBJECT
+        // NOTE: For production, perform server-side hashing and secure storage.
+        // Clear any previous invalid markers
+        ['firstName','lastName','email','mobile','password','confirmPassword'].forEach(id=>{
+            const el = document.getElementById(id) || document.querySelector('.file-upload-label'); if(el) el.classList.remove('invalid');
+        });
         const user = {
             id: Date.now(), // placeholder ID (server generates real one)
             firstName,
@@ -486,7 +587,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
             idType,
             idNumber,
             idUpload: idUploadBase64, // Base64 encoded image for localStorage
-            passwordHash,
+            password, // plain password to match current login flow
             approved: false, // LGU admin approval workflow
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
