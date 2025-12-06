@@ -1,15 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-/* Sidebar / layout: keep sidebar fixed, prevent page scroll from sidebar, main-content scrolls */
-:root { --sidebar-width: 230px; }
-
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden; /* prevent page-level scrollbars */
-}
-
 * {
     margin: 0;
     padding: 0;
@@ -31,18 +21,20 @@ body.sidebar-hidden {
 
 /* NAVIGATION SIDEBAR */
 .nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: var(--sidebar-width);
-    height: 100vh;      /* full viewport height */
+    width: 230px;
+    height: 100vh;
+    padding: 32px 20px;
     display: flex;
     flex-direction: column;
-    overflow: visible;  /* don't allow sidebar to create a scrollbar */
-    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    align-items: stretch;
+
     background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
     box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
 
+    position: fixed;
+    top: 0;
+    left: 0;
     z-index: 100;
     overflow-y: auto;
     transition: transform 0.3s ease;
@@ -236,8 +228,6 @@ body.sidebar-hidden {
 }
 
 .footer {
-    position: relative;
-    z-index: 1;
     margin-top: auto;
     padding: 20px;
     text-align: center;
@@ -246,17 +236,9 @@ body.sidebar-hidden {
 }
 
 .main-content {
-  margin-left: var(--sidebar-width);
-  height: 100vh;
-  box-sizing: border-box;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 24px;
-}
-
-/* When sidebar is hidden (toggled), free main content to full width */
-body.sidebar-hidden .main-content {
-  margin-left: 0;
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
 }
 
 .dash-header {
@@ -464,8 +446,4 @@ body.sidebar-hidden .main-content {
         font-size: 0.9rem;
         min-width: 90px;
     }
-    :root { --sidebar-width: 64px; }
-    .nav { width: var(--sidebar-width); }
-    .nav .nav-links a { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .logo-text { display: none; }
 }

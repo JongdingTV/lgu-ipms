@@ -292,13 +292,8 @@ body.sidebar-hidden {
 .action-btn { padding:6px 8px; border-radius:8px; border:none; cursor:pointer; font-weight:700; background:#eef2ff; color:#1e3a8a; }
 .action-btn.delete { background:#fee2e2; color:#991b1b; }
 
-/* same sidebar/layout rules for task-milestone page */
-:root { --sidebar-width: 230px; }
-
-html, body { height:100%; margin:0; padding:0; overflow:hidden; }
-.nav { position:fixed; top:0; left:0; width:var(--sidebar-width); height:100vh; display:flex; flex-direction:column; overflow:visible; }
-.nav .nav-links { display:flex; flex-direction:column; flex-wrap:wrap; gap:6px; max-height:calc(100vh - 160px); overflow:auto; }
-.nav .nav-links::-webkit-scrollbar { width:6px; } .nav .nav-links::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius:6px; }
-.main-content { margin-left:var(--sidebar-width); height:100vh; overflow:auto; padding:24px; -webkit-overflow-scrolling:touch; }
-body.sidebar-hidden .main-content { margin-left:0; }
-@media (max-width:900px) { :root{--sidebar-width:64px;} .nav{width:var(--sidebar-width);} .logo-text{display:none;} }
+@media (max-width:900px) {
+    .inline-form { flex-direction:column; align-items:stretch; }
+    .controls-bar { flex-direction:column; align-items:stretch; }
+    .summary { gap:8px; }
+}

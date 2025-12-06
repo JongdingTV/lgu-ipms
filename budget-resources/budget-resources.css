@@ -346,16 +346,13 @@ body.sidebar-hidden {
 }
 .export-btn:active { transform:translateY(1px); }
 
-/* same sidebar/layout rules for budget-resources page */
-:root { --sidebar-width: 230px; }
-
-html, body { height:100%; margin:0; padding:0; overflow:hidden; }
-.nav { position:fixed; top:0; left:0; width:var(--sidebar-width); height:100vh; display:flex; flex-direction:column; overflow:visible; }
-.nav .nav-links { display:flex; flex-direction:column; flex-wrap:wrap; gap:6px; max-height:calc(100vh - 160px); overflow:auto; }
-.nav .nav-links::-webkit-scrollbar { width:6px; } .nav .nav-links::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius:6px; }
-.main-content { margin-left:var(--sidebar-width); height:100vh; overflow:auto; padding:24px; -webkit-overflow-scrolling:touch; }
-body.sidebar-hidden .main-content { margin-left:0; }
-@media (max-width:900px) { :root{--sidebar-width:64px;} .nav{width:var(--sidebar-width);} .logo-text{display:none;} }
+/* responsive */
+@media (max-width: 820px) {
+    .inline-form { flex-direction:column; align-items:stretch; }
+    .summary { gap:8px; }
+    .controls-bar { flex-direction:column; align-items:stretch; }
+    .controls-bar .left { width:100%; }
+}
 
 /* small accessibility/focus states */
 :focus { outline:3px solid rgba(37,99,235,0.12); outline-offset:2px; }
