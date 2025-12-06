@@ -241,3 +241,217 @@ body.sidebar-hidden {
     color: #666;
     font-size: 0.95em;
 }
+
+/* ---- New design additions for Project Registration form ---- */
+
+/* color variables */
+:root{
+    --primary-1: #1e3a8a;
+    --primary-2: #2563eb;
+    --muted: #6b7280;
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --accent: #0b5;
+    --danger: #ef4444;
+    --glass: rgba(255,255,255,0.06);
+    --radius: 10px;
+    --shadow: 0 6px 18px rgba(16,24,40,0.08);
+}
+
+/* layout tweaks */
+.main-content {
+    padding: 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* container card for the form */
+.recent-projects {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,250,252,0.98));
+    border-radius: 12px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(16,24,40,0.04);
+}
+
+/* form header */
+.recent-projects h3 {
+    margin-bottom: 14px;
+    color: var(--primary-1);
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+/* responsive two-column layout for fieldsets on wider screens */
+form#projectForm {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+}
+
+/* group fieldsets into visual cards */
+form#projectForm fieldset {
+    border: 1px solid rgba(16,24,40,0.06);
+    padding: 16px;
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(250,250,252,0.99));
+    box-shadow: 0 4px 10px rgba(13,20,40,0.03);
+}
+
+/* legend style */
+form#projectForm legend {
+    font-weight: 600;
+    color: var(--primary-1);
+    padding: 0 8px;
+}
+
+/* label and inputs common styles */
+form#projectForm label {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    margin-top: 10px;
+}
+
+form#projectForm input[type="text"],
+form#projectForm input[type="tel"],
+form#projectForm input[type="date"],
+form#projectForm input[type="number"],
+form#projectForm select,
+form#projectForm textarea,
+form#projectForm input[type="file"] {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(16,24,40,0.08);
+    background: #fff;
+    font-size: 0.95rem;
+    color: #111827;
+    outline: none;
+    transition: box-shadow .15s ease, border-color .15s ease, transform .06s ease;
+    box-shadow: none;
+}
+
+form#projectForm textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+form#projectForm input:focus,
+form#projectForm textarea:focus,
+form#projectForm select:focus {
+    border-color: var(--primary-2);
+    box-shadow: 0 6px 18px rgba(37,99,235,0.08);
+    transform: translateY(-1px);
+}
+
+/* checkbox inline label */
+form#projectForm fieldset label input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+/* buttons */
+form#projectForm .btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-start;
+    margin-top: 10px;
+}
+
+button[type="submit"],
+button#resetBtn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: transform .08s ease, box-shadow .12s ease;
+}
+
+button[type="submit"] {
+    background: linear-gradient(90deg,var(--primary-1),var(--primary-2));
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(37,99,235,0.12);
+}
+
+button[type="submit"]:hover { transform: translateY(-2px); }
+
+button#resetBtn {
+    background: #fff;
+    color: var(--primary-1);
+    border: 1px solid rgba(16,24,40,0.08);
+}
+
+button#resetBtn:hover { box-shadow: 0 8px 18px rgba(16,24,40,0.04); transform: translateY(-1px); }
+
+/* small helper text */
+#formMessage {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+/* saved projects list styling */
+#savedProjects > div {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 6px 14px rgba(12,18,34,0.04);
+    border: 1px solid rgba(16,24,40,0.04);
+}
+
+#savedProjects strong {
+    color: var(--primary-1);
+}
+
+/* make file input area clearer */
+input[type="file"] {
+    padding: 8px 10px;
+}
+
+/* compact the nav spacing for smaller viewports */
+@media (min-width: 900px) {
+    /* layout: two-column form with wider first column */
+    form#projectForm {
+        grid-template-columns: 1fr 1fr;
+    }
+    /* make certain fieldsets span full width */
+    form#projectForm fieldset:nth-child(1),
+    form#projectForm fieldset:nth-child(4),
+    form#projectForm fieldset:nth-child(7) {
+        grid-column: 1 / -1;
+    }
+}
+
+/* single-column on small screens */
+@media (max-width: 899px) {
+    body { margin-left: 0; }
+    .nav { transform: translateX(-100%); }
+    .toggle-btn { opacity: 1; pointer-events: all; }
+    .main-content { padding: 18px; }
+}
+
+/* small visual tweaks */
+.dash-header h1 { letter-spacing: 0.2px; }
+.recent-projects h3 { display:flex; align-items:center; gap:8px; }
+
+/* validation visual */
+input:invalid {
+    border-color: var(--danger);
+    box-shadow: 0 6px 18px rgba(239,68,68,0.06);
+}
+
+/* subtle hover for fieldsets */
+form#projectForm fieldset:hover {
+    transform: translateY(-2px);
+    transition: transform .12s ease;
+}
+
+/* accessibility: larger focus outline for keyboard users */
+:focus {
+    outline: 3px solid rgba(37,99,235,0.12);
+    outline-offset: 2px;
+}

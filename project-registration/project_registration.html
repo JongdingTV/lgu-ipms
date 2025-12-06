@@ -45,18 +45,215 @@
 
         <div class="recent-projects">
             <h3>New Project Form</h3>
-            <form id="projectForm">
-                <label>Project Name</label>
-                <input type="text" id="projName" required>
-                <label>Location</label>
-                <input type="text" id="projLocation" required>
-                <label>Budget</label>
-                <input type="number" id="projBudget" required>
-                <label>Estimated Duration (months)</label>
-                <input type="number" id="projDuration" required>
-                <button type="submit">Create Project</button>
+
+            <form id="projectForm" enctype="multipart/form-data">
+                <!-- Basic project details -->
+                <fieldset>
+                    <legend>Basic Project Details</legend>
+                    <label for="projCode">Project Code / Reference ID</label>
+                    <input type="text" id="projCode" required>
+
+                    <label for="projName">Project Name</label>
+                    <input type="text" id="projName" required>
+
+                    <label for="projType">Project Type</label>
+                    <select id="projType" required>
+                        <option value="">-- Select --</option>
+                        <option>New</option>
+                        <option>Rehabilitation</option>
+                        <option>Expansion</option>
+                        <option>Maintenance</option>
+                    </select>
+
+                    <label for="projSector">Sector</label>
+                    <select id="projSector" required>
+                        <option value="">-- Select --</option>
+                        <option>Road</option>
+                        <option>Drainage</option>
+                        <option>Building</option>
+                        <option>Water</option>
+                        <option>Sanitation</option>
+                        <option>Other</option>
+                    </select>
+
+                    <label for="projDescription">Project Description / Objective</label>
+                    <textarea id="projDescription" rows="3"></textarea>
+
+                    <label for="projPriority">Priority Level</label>
+                    <select id="projPriority">
+                        <option>High</option>
+                        <option>Medium</option>
+                        <option>Low</option>
+                    </select>
+                </fieldset>
+
+                <!-- Location & geography -->
+                <fieldset>
+                    <legend>Location & Geography</legend>
+                    <label for="province">Province / City / Municipality</label>
+                    <input type="text" id="province" required>
+
+                    <label for="barangay">Barangay(s)</label>
+                    <input type="text" id="barangay">
+
+                    <label for="projLocation">Exact Site / Address</label>
+                    <input type="text" id="projLocation" required>
+
+                    <label for="gps">GPS Coordinates (lat,long)</label>
+                    <input type="text" id="gps" placeholder="e.g. 14.5995,120.9842">
+
+                    <label for="lotNo">Lot / Parcel No. / Ownership</label>
+                    <input type="text" id="lotNo">
+                </fieldset>
+
+                <!-- Schedule & timeline -->
+                <fieldset>
+                    <legend>Schedule & Timeline</legend>
+                    <label for="startDate">Estimated Start Date</label>
+                    <input type="date" id="startDate">
+
+                    <label for="endDate">Estimated End Date</label>
+                    <input type="date" id="endDate">
+
+                    <label for="projDuration">Estimated Duration (months)</label>
+                    <input type="number" id="projDuration" min="0" required>
+
+                    <label for="milestones">Key Milestones (comma separated)</label>
+                    <input type="text" id="milestones" placeholder="Design complete, Procurement, Mobilization, Completion">
+                </fieldset>
+
+                <!-- Budget & funding -->
+                <fieldset>
+                    <legend>Budget & Funding</legend>
+                    <label for="projBudget">Total Estimated Cost</label>
+                    <input type="number" id="projBudget" min="0" step="0.01" required>
+
+                    <label for="fundSources">Funding Source(s)</label>
+                    <input type="text" id="fundSources" placeholder="LGU general fund, IRA, national agency, donor">
+
+                    <label for="budgetBreakdown">Budget Breakdown (summary)</label>
+                    <textarea id="budgetBreakdown" rows="2" placeholder="Materials, Labor, Equipment, Contingencies"></textarea>
+                </fieldset>
+
+                <!-- Technical & scope -->
+                <fieldset>
+                    <legend>Technical & Scope</legend>
+                    <label for="scopeOfWork">Scope of Work / Deliverables</label>
+                    <textarea id="scopeOfWork" rows="3"></textarea>
+
+                    <label for="designStatus">Basic Design Status</label>
+                    <select id="designStatus">
+                        <option>Concept</option>
+                        <option>Preliminary</option>
+                        <option>Detailed</option>
+                    </select>
+
+                    <label for="boqSummary">BOQ Summary / Major Quantities</label>
+                    <textarea id="boqSummary" rows="2"></textarea>
+                </fieldset>
+
+                <!-- Procurement & implementation -->
+                <fieldset>
+                    <legend>Procurement & Implementation</legend>
+                    <label for="procMethod">Procurement Method</label>
+                    <select id="procMethod">
+                        <option>Public Bidding</option>
+                        <option>Small Value Procurement</option>
+                        <option>Negotiated</option>
+                        <option>Direct Contracting</option>
+                    </select>
+
+                    <label for="implementingOffice">Implementing Office / Department</label>
+                    <input type="text" id="implementingOffice">
+
+                    <label for="projManager">Project Manager / Engineer In-Charge</label>
+                    <input type="text" id="projManager" placeholder="Name">
+
+                    <label for="projManagerContact">Project Manager Contact</label>
+                    <input type="tel" id="projManagerContact" placeholder="phone / email">
+
+                    <label for="contractor">Implementing Contractor (if any)</label>
+                    <input type="text" id="contractor">
+
+                    <label for="contractType">Contract Type</label>
+                    <select id="contractType">
+                        <option>Unit Price</option>
+                        <option>Lump Sum</option>
+                        <option>Time & Materials</option>
+                    </select>
+                </fieldset>
+
+                <!-- Permits & compliance -->
+                <fieldset>
+                    <legend>Permits, Clearances & Compliance</legend>
+                    <label><input type="checkbox" id="hasECC"> Environmental Clearance (ECC) obtained</label>
+
+                    <label for="permits">Other Permits / Clearances</label>
+                    <input type="text" id="permits" placeholder="Building permit, Barangay clearance etc.">
+
+                    <label for="rowStatus">Right-of-way / Land Acquisition Status</label>
+                    <input type="text" id="rowStatus">
+                </fieldset>
+
+                <!-- Monitoring & admin -->
+                <fieldset>
+                    <legend>Monitoring & Administrative</legend>
+                    <label for="performanceIndicators">Performance Indicators (summary)</label>
+                    <input type="text" id="performanceIndicators" placeholder="%complete, quality metrics">
+
+                    <label for="reportingFrequency">Reporting Frequency</label>
+                    <select id="reportingFrequency">
+                        <option>Weekly</option>
+                        <option>Bi-weekly</option>
+                        <option>Monthly</option>
+                    </select>
+
+                    <label for="registeredBy">Registered By</label>
+                    <input type="text" id="registeredBy">
+
+                    <label for="regDate">Date of Registration</label>
+                    <input type="date" id="regDate">
+                </fieldset>
+
+                <!-- Attachments -->
+                <fieldset>
+                    <legend>Attachments & Supporting Documents</legend>
+                    <label for="sitePhotos">Site Photos</label>
+                    <input type="file" id="sitePhotos" multiple accept="image/*">
+
+                    <label for="plans">Plans / Drawings / BOQ (pdf)</label>
+                    <input type="file" id="plans" multiple accept=".pdf">
+
+                    <label for="otherDocs">Other Documents</label>
+                    <input type="file" id="otherDocs" multiple>
+                </fieldset>
+
+                <!-- Administrative status -->
+                <fieldset>
+                    <legend>Administrative</legend>
+                    <label for="status">Approval Status</label>
+                    <select id="status">
+                        <option>Draft</option>
+                        <option>For Approval</option>
+                        <option>Approved</option>
+                        <option>On-hold</option>
+                        <option>Cancelled</option>
+                    </select>
+
+                    <label for="notes">Notes / Comments</label>
+                    <textarea id="notes" rows="2"></textarea>
+                </fieldset>
+
+                <div style="margin-top:12px;">
+                    <button type="submit">Create Project</button>
+                    <button type="button" id="resetBtn">Reset</button>
+                </div>
             </form>
+
             <div id="formMessage" style="margin-top:12px;color:#0b5;display:none;"></div>
+
+            <!-- quick list of saved projects -->
+            <div id="savedProjects" style="margin-top:18px;"></div>
         </div>
     </section>
 
@@ -65,25 +262,114 @@
     </footer>
 
     <script src="project-reg.js"></script>
+
     <script>
         // simple client-only demo: store projects in localStorage
         const form = document.getElementById('projectForm');
         const msg = document.getElementById('formMessage');
+        const savedDiv = document.getElementById('savedProjects');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function fileListNames(input) {
+            if (!input || !input.files) return [];
+            return Array.from(input.files).map(f => f.name);
+        }
+
+        function loadSavedProjects() {
+            const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+            if (!projects.length) {
+                savedDiv.innerHTML = '<em>No projects yet.</em>';
+                return;
+            }
+            const html = projects.map((p, i) => {
+                return `<div style="border:1px solid #ddd;padding:8px;margin-bottom:8px;">
+                    <strong>${p.code || ''} - ${p.name}</strong><br>
+                    Location: ${p.location || ''} | Budget: ${p.budget || ''} | Status: ${p.status || 'N/A'}<br>
+                    Registered: ${p.createdAt || ''} | Registered By: ${p.registeredBy || ''}
+                </div>`;
+            }).join('');
+            savedDiv.innerHTML = html;
+        }
+
         form.addEventListener('submit', function(e){
             e.preventDefault();
             const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+
             const p = {
+                code: document.getElementById('projCode').value,
                 name: document.getElementById('projName').value,
+                type: document.getElementById('projType').value,
+                sector: document.getElementById('projSector').value,
+                description: document.getElementById('projDescription').value,
+                priority: document.getElementById('projPriority').value,
+
+                province: document.getElementById('province').value,
+                barangay: document.getElementById('barangay').value,
                 location: document.getElementById('projLocation').value,
+                gps: document.getElementById('gps').value,
+                lotNo: document.getElementById('lotNo').value,
+
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                durationMonths: Number(document.getElementById('projDuration').value),
+                milestones: document.getElementById('milestones').value.split(',').map(s => s.trim()).filter(Boolean),
+
                 budget: Number(document.getElementById('projBudget').value),
-                duration: Number(document.getElementById('projDuration').value),
+                fundSources: document.getElementById('fundSources').value,
+                budgetBreakdown: document.getElementById('budgetBreakdown').value,
+
+                scopeOfWork: document.getElementById('scopeOfWork').value,
+                designStatus: document.getElementById('designStatus').value,
+                boqSummary: document.getElementById('boqSummary').value,
+
+                procMethod: document.getElementById('procMethod').value,
+                implementingOffice: document.getElementById('implementingOffice').value,
+                projectManager: document.getElementById('projManager').value,
+                projectManagerContact: document.getElementById('projManagerContact').value,
+                contractor: document.getElementById('contractor').value,
+                contractType: document.getElementById('contractType').value,
+
+                hasECC: document.getElementById('hasECC').checked,
+                permits: document.getElementById('permits').value,
+                rowStatus: document.getElementById('rowStatus').value,
+
+                performanceIndicators: document.getElementById('performanceIndicators').value,
+                reportingFrequency: document.getElementById('reportingFrequency').value,
+                registeredBy: document.getElementById('registeredBy').value,
+                regDate: document.getElementById('regDate').value,
+
+                attachments: {
+                    sitePhotos: fileListNames(document.getElementById('sitePhotos')),
+                    plans: fileListNames(document.getElementById('plans')),
+                    otherDocs: fileListNames(document.getElementById('otherDocs'))
+                },
+
+                status: document.getElementById('status').value,
+                notes: document.getElementById('notes').value,
+
                 createdAt: new Date().toISOString()
             };
+
             projects.push(p);
             localStorage.setItem('projects', JSON.stringify(projects));
             msg.textContent = 'Project created successfully.';
             msg.style.display = 'block';
             form.reset();
+            loadSavedProjects();
+            // auto-fill registration date with today after reset
+            document.getElementById('regDate').valueAsDate = new Date();
+        });
+
+        resetBtn.addEventListener('click', function(){
+            form.reset();
+            msg.style.display = 'none';
+        });
+
+        // initialize
+        document.addEventListener('DOMContentLoaded', function(){
+            loadSavedProjects();
+            // set default registration date to today
+            document.getElementById('regDate').valueAsDate = new Date();
         });
     </script>
 </body>
