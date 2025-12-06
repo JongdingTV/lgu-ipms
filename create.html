@@ -39,27 +39,92 @@ body::before {
     min-height: calc(100vh - 140px);
     padding-top: 90px;
     padding-bottom: 80px;
+    padding-left: 20px;
+    padding-right: 20px;
     display: flex;
     justify-content: center;
     align-items: flex-start;
 }
 
-/* use default .card sizing from shared stylesheet so it matches login */
+/* Make card wider for registration form */
+.wrapper .card {
+    width: 600px;
+    max-width: 95%;
+    padding: 40px;
+}
 
-.wrapper .card form input, .wrapper .card form select { width: 100%; padding: 10px; margin:6px 0 12px 0; }
-.btn-primary { padding: 12px 16px; display: inline-block; }
-.small-text { margin-top: 10px; }
+.wrapper .card form input, .wrapper .card form select { width: 100%; padding: 12px; margin:8px 0 14px 0; font-size: 14px; }
+.wrapper .card form label { font-size: 14px; font-weight: 500; }
+
+/* Enhanced file upload styling */
+.file-upload-wrapper {
+    position: relative;
+    width: 100%;
+    margin: 8px 0 14px 0;
+}
+.file-upload-input {
+    display: none;
+}
+.file-upload-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 20px;
+    border: 2px dashed #2864ef;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(40, 100, 239, 0.05) 0%, rgba(40, 100, 239, 0.02) 100%);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    color: #2864ef;
+}
+.file-upload-label:hover {
+    border-color: #1e4fbf;
+    background: linear-gradient(135deg, rgba(40, 100, 239, 0.1) 0%, rgba(40, 100, 239, 0.05) 100%);
+}
+.file-upload-label.active {
+    border-color: #0a7e3d;
+    background: linear-gradient(135deg, rgba(10, 126, 61, 0.1) 0%, rgba(10, 126, 61, 0.05) 100%);
+    color: #0a7e3d;
+}
+.file-upload-label svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 2;
+}
+.file-name-display {
+    font-size: 12px;
+    color: #666;
+    margin-top: 8px;
+    padding: 8px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    display: none;
+}
+.file-name-display.show {
+    display: block;
+}
+.file-name-display .check-icon {
+    color: #0a7e3d;
+    margin-right: 6px;
+}
+.btn-primary { padding: 14px 20px; display: inline-block; width: 100%; font-size: 16px; }
+.small-text { margin-top: 16px; font-size: 14px; }
 
 /* Two-column form grid for registration */
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px 20px;
+    gap: 20px 24px;
     align-items: start;
 }
-.form-grid .input-box { margin-bottom: 8px; }
+.form-grid .input-box { margin-bottom: 12px; }
+.form-grid .input-box label { margin-bottom: 8px; display: block; }
 @media (max-width: 700px) {
-    .form-grid { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; gap: 16px; }
+    .wrapper .card { padding: 30px; width: 100%; }
 }
 </style>
 </head>
@@ -77,56 +142,141 @@ body::before {
         <h2 class="title">Create Account</h2>
         <p class="subtitle">Register to access the LGU Portal</p>
 
-        <form id="registerForm">
+        <form id="registerForm" novalidate>
             <div class="form-grid">
                 <div class="input-box">
-                    <label>First Name</label>
-                    <input type="text" id="firstName" required>
+                    <label for="firstName">First Name *</label>
+                    <input id="firstName" name="firstName" type="text" required aria-required="true" placeholder="First name" />
                 </div>
 
                 <div class="input-box">
-                    <label>Last Name</label>
-                    <input type="text" id="lastName" required>
+                    <label for="middleName">Middle Name</label>
+                    <input id="middleName" name="middleName" type="text" placeholder="Middle name" />
+                </div>
+
+                <div class="input-box">
+                    <label for="lastName">Last Name *</label>
+                    <input id="lastName" name="lastName" type="text" required aria-required="true" placeholder="Last name" />
+                </div>
+
+                <div class="input-box">
+                    <label for="suffix">Suffix <small style="font-weight:normal;">(optional)</small></label>
+                    <select id="suffix" name="suffix" aria-label="Name suffix">
+                        <option value="">None</option>
+                        <option value="jr">Jr.</option>
+                        <option value="sr">Sr.</option>
+                        <option value="ii">II</option>
+                        <option value="iii">III</option>
+                        <option value="iv">IV</option>
+                    </select>
                 </div>
 
                 <div class="input-box" style="grid-column: 1 / -1;">
-                    <label>Address</label>
-                    <input type="text" id="address" required>
+                    <label for="email">Email Address *</label>
+                    <input id="email" name="email" type="email" required aria-required="true" placeholder="you@example.com" />
                 </div>
 
                 <div class="input-box">
-                    <label>Age</label>
-                    <input type="number" id="age" min="0" required>
+                    <label for="mobile">Mobile Number *</label>
+                    <input id="mobile" name="mobile" type="tel" inputmode="tel" pattern="\+?[0-9\s-]{7,15}" required aria-required="true" placeholder="+63 9XX XXX XXXX" />
                 </div>
 
                 <div class="input-box">
-                    <label>Contact Number</label>
-                    <input type="text" id="contact" required>
+                    <label for="birthdate">Birthdate</label>
+                    <input id="birthdate" name="birthdate" type="date" />
                 </div>
 
                 <div class="input-box">
-                    <label>Email Address</label>
-                    <input type="email" id="email" required>
+                    <label for="gender">Gender</label>
+                    <select id="gender" name="gender" aria-label="Gender">
+                        <option value="">Select</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                        <option value="prefer_not">Prefer not to say</option>
+                    </select>
                 </div>
 
                 <div class="input-box">
-                    <label>Password</label>
-                    <input type="password" id="password" required>
+                    <label for="civilStatus">Civil Status</label>
+                    <select id="civilStatus" name="civilStatus">
+                        <option value="">Select</option>
+                        <option value="single">Single</option>
+                        <option value="married">Married</option>
+                        <option value="widowed">Widowed</option>
+                        <option value="separated">Separated</option>
+                    </select>
+                </div>
+
+                <div class="input-box" style="grid-column: 1 / -1;">
+                    <label for="address">Address / Barangay</label>
+                    <input id="address" name="address" type="text" placeholder="Street, Barangay, City" />
                 </div>
 
                 <div class="input-box">
-                    <label>Confirm Password</label>
-                    <input type="password" id="confirmPassword" required>
+                    <label for="idType">ID Type <small style="font-weight:normal;">(optional)</small></label>
+                    <select id="idType" name="idType" aria-label="ID Type">
+                        <option value="">Select ID Type</option>
+                        <option value="nbi">NBI Clearance</option>
+                        <option value="passport">Passport</option>
+                        <option value="drivinglicense">Driver's License</option>
+                        <option value="sss">SSS</option>
+                        <option value="tin">TIN</option>
+                        <option value="barangayid">Barangay ID</option>
+                        <option value="seniorid">Senior Citizen ID</option>
+                        <option value="pwdid">PWD ID</option>
+                    </select>
+                </div>
+
+                <div class="input-box">
+                    <label for="idNumber">ID Number <small style="font-weight:normal;">(optional)</small></label>
+                    <input id="idNumber" name="idNumber" type="text" placeholder="e.g., 12345678" />
+                </div>
+
+                <div class="input-box" style="grid-column: 1 / -1;">
+                    <label style="display: block; margin-bottom: 8px;">Upload ID Copy <small style="font-weight:normal;">(optional, JPG/PNG, max 5MB)</small></label>
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="idUpload" name="idUpload" class="file-upload-input" accept=".jpg,.jpeg,.png" />
+                        <label for="idUpload" class="file-upload-label">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span id="uploadText">Click to upload or drag & drop</span>
+                        </label>
+                        <div class="file-name-display" id="fileDisplay">
+                            <span class="check-icon">✓</span><span id="fileName"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-box" style="grid-column: 1 / -1;">
+                    <label for="password">Password *</label>
+                    <input id="password" name="password" type="password" required aria-required="true" aria-describedby="pwdHelp pwdStrength" placeholder="Create a strong password" />
+                    <div id="pwdHelp" style="font-size:12px;color:#666;margin-top:8px;">Requirements: 8–12 characters, uppercase, lowercase, number, special character</div>
+                    <meter id="pwdStrength" min="0" max="4" low="2" high="3" optimum="4" value="0" style="width:100%;margin-top:8px;"></meter>
+                </div>
+
+                <div class="input-box" style="grid-column: 1 / -1;">
+                    <label for="confirmPassword">Confirm Password *</label>
+                    <input id="confirmPassword" name="confirmPassword" type="password" required aria-required="true" placeholder="Re-enter your password" />
+                </div>
+
+                <div style="grid-column: 1 / -1; margin-top: 20px; text-align: center;">
+                    <label style="font-size:13px; display: block;">
+                        <input id="privacyAgree" type="checkbox" required aria-required="true" style="margin-right:6px;" />
+                        <span>I agree to the <a href="#" style="color:#2864ef;">Privacy Notice</a> and data usage policy</span>
+                    </label>
+                    <div style="font-size:12px; color:#666; margin-top:4px;">(Data Privacy Act of 2012)</div>
                 </div>
             </div>
 
-            <div style="margin-top:12px;">
-                <button class="btn-primary" type="submit">Register</button>
+            <div style="margin-top:20px;">
+                <button class="btn-primary" type="submit">Create Account</button>
             </div>
         </form>
 
-        <div id="regMessage" style="margin-top:12px;color:#0b5;display:none;"></div>
-        <p class="small-text">Already have an account? <a href="login.html">Sign in</a></p>
+        <div id="regMessage" role="status" aria-live="polite" style="margin-top:16px;padding:12px;border-radius:8px;display:none;"></div>
+        <p class="small-text">Already have an account? <a href="login.html">Sign in here</a></p>
     </div>
 </div>
 
@@ -139,55 +289,246 @@ body::before {
     <div class="footer-logo">© 2025 LGU Citizen Portal · All Rights Reserved</div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
 <script>
-document.getElementById('registerForm').addEventListener('submit', function(e){
+// Password Policy Validator
+function validatePassword(p){
+    const errors = [];
+    if(p.length < 8 || p.length > 12) errors.push('Password must be 8–12 characters.');
+    if(!/[a-z]/.test(p)) errors.push('Include a lowercase letter.');
+    if(!/[A-Z]/.test(p)) errors.push('Include an uppercase letter.');
+    if(!/[0-9]/.test(p)) errors.push('Include a number.');
+    if(!/[!@#\$%\^&\*\(\)_\+\-=\[\]\{\};:\"\\|,.<>\/?]/.test(p)) errors.push('Include a special character.');
+    return { ok: errors.length===0, errors };
+}
+
+// Live Password Strength Meter
+const pwdInput = document.getElementById('password');
+const meter = document.getElementById('pwdStrength');
+if(pwdInput && meter){
+    pwdInput.addEventListener('input', function(){
+        const val = pwdInput.value || '';
+        let score = 0;
+        if(val.length >= 8) score++;
+        if(/[A-Z]/.test(val)) score++;
+        if(/[0-9]/.test(val)) score++;
+        if(/[^A-Za-z0-9]/.test(val)) score++;
+        meter.value = score;
+    });
+}
+
+// File Upload Handling with Drag & Drop
+const idUploadInput = document.getElementById('idUpload');
+const uploadLabel = document.querySelector('.file-upload-label');
+const fileDisplay = document.getElementById('fileDisplay');
+const fileName = document.getElementById('fileName');
+const uploadText = document.getElementById('uploadText');
+
+if(idUploadInput && uploadLabel){
+    // Click to upload
+    idUploadInput.addEventListener('change', handleFileSelect);
+    
+    // Drag & drop events
+    uploadLabel.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadLabel.classList.add('active');
+    });
+    
+    uploadLabel.addEventListener('dragleave', () => {
+        uploadLabel.classList.remove('active');
+    });
+    
+    uploadLabel.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadLabel.classList.remove('active');
+        const files = e.dataTransfer.files;
+        if(files.length > 0) idUploadInput.files = files;
+        handleFileSelect();
+    });
+}
+
+function handleFileSelect(){
+    const file = idUploadInput.files[0];
+    if(file){
+        fileName.textContent = file.name;
+        fileDisplay.classList.add('show');
+        uploadLabel.classList.add('active');
+        uploadText.textContent = '✓ File selected';
+    } else {
+        fileDisplay.classList.remove('show');
+        uploadLabel.classList.remove('active');
+        uploadText.textContent = 'Click to upload or drag & drop';
+    }
+}
+
+document.getElementById('registerForm').addEventListener('submit', async function(e){
     e.preventDefault();
-    const firstName = document.getElementById('firstName').value.trim();
-    const lastName = document.getElementById('lastName').value.trim();
-    const address = document.getElementById('address').value.trim();
-    const age = Number(document.getElementById('age').value);
-    const contact = document.getElementById('contact').value.trim();
-    const email = document.getElementById('email').value.trim().toLowerCase();
-    const password = document.getElementById('password').value;
-    const confirm = document.getElementById('confirmPassword').value;
+
+    const firstName = (document.getElementById('firstName').value || '').trim();
+    const middleName = (document.getElementById('middleName').value || '').trim() || null;
+    const lastName = (document.getElementById('lastName').value || '').trim();
+    const suffix = document.getElementById('suffix').value || null;
+    const email = (document.getElementById('email').value || '').trim().toLowerCase();
+    const mobile = (document.getElementById('mobile').value || '').trim();
+    const birthdate = document.getElementById('birthdate').value || null;
+    const gender = document.getElementById('gender').value || null;
+    const civilStatus = document.getElementById('civilStatus').value || null;
+    const address = (document.getElementById('address').value || '').trim();
+    const idType = document.getElementById('idType').value || null;
+    const idNumber = (document.getElementById('idNumber').value || '').trim() || null;
+    const idUploadFile = document.getElementById('idUpload').files[0] || null;
+    const password = document.getElementById('password').value || '';
+    const confirmPwd = document.getElementById('confirmPassword').value || '';
+    const privacyAgree = document.getElementById('privacyAgree').checked;
 
     const msgEl = document.getElementById('regMessage');
+    msgEl.style.display = 'none';
 
-    if(password !== confirm){
-        msgEl.style.color = '#b00';
-        msgEl.textContent = 'Passwords do not match.';
-        msgEl.style.display = 'block';
-        return;
+    // File size validation (max 5MB)
+    if(idUploadFile && idUploadFile.size > 5 * 1024 * 1024){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️ Error:</strong> ID file must be less than 5MB.';
+        msgEl.style.display = 'block'; return;
     }
 
-    // load users
+    // File type validation
+    if(idUploadFile && !['image/jpeg', 'image/png'].includes(idUploadFile.type)){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️ Error:</strong> ID file must be JPG or PNG format.';
+        msgEl.style.display = 'block'; return;
+    }
+
+    // FRONT-END VALIDATION (UX layer)
+    if(!firstName || !lastName || !email || !mobile || !password || !confirmPwd){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00'; 
+        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Please fill all required fields marked with *.'; 
+        msgEl.style.display = 'block'; return;
+    }
+
+    if(!privacyAgree){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️ Error:</strong> You must agree to the Privacy Notice.';
+        msgEl.style.display = 'block'; return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRegex.test(email)){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Enter a valid email address.';
+        msgEl.style.display = 'block'; return;
+    }
+
+    // Mobile format validation
+    const mobileRegex = /^\+?[0-9\s-]{7,15}$/;
+    if(!mobileRegex.test(mobile)){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Enter a valid mobile number.';
+        msgEl.style.display = 'block'; return;
+    }
+
+    // Password match check
+    if(password !== confirmPwd){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Passwords do not match.';
+        msgEl.style.display = 'block'; return;
+    }
+
+    // Password policy enforcement
+    const passCheck = validatePassword(password);
+    if(!passCheck.ok){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️ Password Issues:</strong><br>' + passCheck.errors.join('<br>');
+        msgEl.style.display = 'block'; return;
+    }
+
+    // CHECK FOR DUPLICATES (Back-end must re-check before DB insert)
     const users = JSON.parse(localStorage.getItem('users') || '[]');
-    if(users.find(u=>u.email === email)){
-        msgEl.style.color = '#b00';
-        msgEl.textContent = 'An account with this email already exists.';
-        msgEl.style.display = 'block';
-        return;
+    if(users.find(u => u.email === email)){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️ Error:</strong> An account with this email already exists.';
+        msgEl.style.display = 'block'; return;
+    }
+    if(users.find(u => u.mobile === mobile)){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Mobile number already registered.';
+        msgEl.style.display = 'block'; return;
     }
 
-    const user = { firstName, lastName, address, age, contact, email, password, createdAt: new Date().toISOString() };
-    users.push(user);
-    localStorage.setItem('users', JSON.stringify(users));
+    // CONVERT FILE TO BASE64 (for localStorage - suitable for small files)
+    let idUploadBase64 = null;
+    if(idUploadFile){
+        idUploadBase64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(idUploadFile);
+        });
+    }
 
-    msgEl.style.color = '#0b5';
-    msgEl.innerHTML = 'Registration successful. You will be redirected to the login page in <span id="count">15</span> seconds. <a href="login.html">Go now</a>';
-    msgEl.style.display = 'block';
+    // HASH PASSWORD (BCryptJS - database-ready payload)
+    try{
+        const saltRounds = 10;
+        const passwordHash = bcrypt.hashSync(password, saltRounds);
 
-    // countdown and redirect after 15 seconds
-    let seconds = 15;
-    const countEl = document.getElementById('count');
-    const interval = setInterval(()=>{
-        seconds -= 1;
-        if(countEl) countEl.textContent = seconds;
-        if(seconds <= 0){
-            clearInterval(interval);
-            window.location.href = 'login.html';
-        }
-    }, 1000);
+        // DATABASE-READY USER OBJECT
+        const user = {
+            id: Date.now(), // placeholder ID (server generates real one)
+            firstName,
+            middleName,
+            lastName,
+            suffix,
+            email,
+            mobile,
+            birthdate,
+            gender,
+            civilStatus,
+            address,
+            idType,
+            idNumber,
+            idUpload: idUploadBase64, // Base64 encoded image for localStorage
+            passwordHash,
+            approved: false, // LGU admin approval workflow
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        users.push(user);
+        localStorage.setItem('users', JSON.stringify(users));
+
+        // AUDIT LOG (for compliance & accountability)
+        const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+        logs.push({
+            action: 'user_registration',
+            email,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent || 'Unknown',
+            idProvided: !!idUploadFile
+        });
+        localStorage.setItem('auditLogs', JSON.stringify(logs));
+
+        // SUCCESS MESSAGE
+        msgEl.style.backgroundColor = '#efe'; msgEl.style.color = '#050';
+        msgEl.innerHTML = '✅ <strong>Registration successful!</strong><br>You will be redirected to login in <span id="count">15</span> seconds. <a href="login.html" style="color:#2864ef;">Go now</a>';
+        msgEl.style.display = 'block';
+
+        // REDIRECT COUNTDOWN
+        let seconds = 15;
+        const countEl = document.getElementById('count');
+        const interval = setInterval(() => {
+            seconds -= 1;
+            if(countEl) countEl.textContent = seconds;
+            if(seconds <= 0){
+                clearInterval(interval);
+                window.location.href = 'login.html';
+            }
+        }, 1000);
+
+    }catch(err){
+        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Unexpected error during registration. Please try again.';
+        msgEl.style.display = 'block';
+        console.error('Registration error:', err);
+    }
 });
 </script>
 </body>
