@@ -1,10 +1,10 @@
 <!doctype html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Budget & Resources - LGU IPMS</title>
-    <link rel="stylesheet" href="budget-resources.css">
+    <link rel="stylesheet" href="budget-resources.css" />
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -25,11 +25,7 @@
             <span class="nav-username">Welcome, User</span>
             <a href="../login.html" class="nav-logout">Logout</a>
         </div>
-        <div class="lgu-arrow-back">
-            <a href="#" id="toggleSidebar">
-                <img src="../dashboard/lgu-arrow-back.png" alt="Toggle sidebar">
-            </a>
-        </div>
+        <div class="lgu-arrow-back"></div>
     </header>
 
     <div class="toggle-btn" id="showSidebarBtn">
@@ -41,12 +37,88 @@
     <section class="main-content">
         <div class="dash-header">
             <h1>Budget & Resources</h1>
-            <p>Overview of budgets and allocations</p>
+            <p>Allocate funds per milestone • Track expenses vs allocated budget • Budget consumption graph</p>
         </div>
 
         <div class="recent-projects">
-            <h3>Budgets</h3>
-            <div id="budgetList">Loading budgets...</div>
+            <div class="controls-bar">
+                <div class="left">
+                    <label for="globalBudget"><strong>Project Total Budget (₱)</strong></label>
+                    <input id="globalBudget" type="number" min="0" step="0.01" placeholder="Enter total project budget">
+                </div>
+                <div class="right">
+                    <button id="btnImport" class="export-btn" type="button">Import from Project</button>
+                    <button id="btnExportBudget" class="export-btn" type="button">Export CSV</button>
+                </div>
+            </div>
+
+            <div class="summary" aria-hidden>
+                <div class="stat">
+                    <div id="summaryAllocated">₱0</div>
+                    <small>Allocated</small>
+                </div>
+                <div class="stat">
+                    <div id="summarySpent">₱0</div>
+                    <small>Spent</small>
+                </div>
+                <div class="stat">
+                    <div id="summaryRemaining">₱0</div>
+                    <small>Remaining</small>
+                </div>
+                <div class="stat">
+                    <div id="summaryConsumption">0%</div>
+                    <small>Consumption</small>
+                </div>
+            </div>
+
+            <h3>Allocate Funds per Milestone</h3>
+            <form id="milestoneForm" class="inline-form">
+                <input id="milestoneName" type="text" placeholder="Milestone name (e.g., Excavation)" required>
+                <input id="milestoneAlloc" type="number" min="0" step="0.01" placeholder="Allocation ₱" required>
+                <button type="submit" id="addMilestone">Add Milestone</button>
+            </form>
+
+            <div class="projects-list">
+                <div class="table-wrap">
+                    <table id="milestonesTable" class="table">
+                        <thead>
+                            <tr>
+                                <th>Milestone</th>
+                                <th>Allocated (₱)</th>
+                                <th>Spent (₱)</th>
+                                <th>Remaining (₱)</th>
+                                <th>% Consumed</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <h3>Track Expenses</h3>
+            <form id="expenseForm" class="inline-form">
+                <select id="expenseMilestone" required>
+                    <option value="">Select milestone</option>
+                </select>
+                <input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount ₱" required>
+                <input id="expenseDesc" type="text" placeholder="Description (optional)">
+                <button type="submit" id="addExpense">Add Expense</button>
+            </form>
+
+            <div class="table-wrap" style="margin-top:10px;">
+                <table id="expensesTable" class="table">
+                    <thead>
+                        <tr><th>Date</th><th>Milestone</th><th>Description</th><th>Amount (₱)</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <h3>Budget Consumption Graph</h3>
+            <div class="chart-row">
+                <canvas id="consumptionChart" width="800" height="280" aria-label="Budget consumption chart"></canvas>
+            </div>
         </div>
     </section>
 
@@ -55,16 +127,5 @@
     </footer>
 
     <script src="budget-resources.js"></script>
-    <script>
-        // basic demo showing total budgets per stored projects
-        const budgets = () => {
-            const projects = JSON.parse(localStorage.getItem('projects')||'[]');
-            const el = document.getElementById('budgetList');
-            if(projects.length===0){ el.innerHTML = '<p>No budgets available.</p>'; return; }
-            const total = projects.reduce((s,p)=>s+(p.budget||0),0);
-            el.innerHTML = `<p>Total allocated across projects: ₱${total}</p>`;
-        }
-        budgets();
-    </script>
 </body>
 </html>
