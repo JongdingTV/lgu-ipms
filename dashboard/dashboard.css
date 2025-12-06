@@ -82,6 +82,7 @@ body.sidebar-hidden {
     height: 20px;
     object-fit: contain;
 }
+
 .nav-links {
     display: flex;
     flex-direction: column;
@@ -118,6 +119,21 @@ body.sidebar-hidden {
     font-weight: 600;
     border-left: 4px solid #ffffff;
     padding-left: 12px;
+}
+
+/* ensure dashboard icon shows and links align */
+.nav-links a { display: flex; align-items: center; gap: 8px; }
+.nav-links a .nav-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+/* slightly smaller icon on narrow viewports */
+@media (max-width: 900px) {
+    .nav-links a .nav-icon { width: 16px; height: 16px; }
 }
 
 .nav-user {
