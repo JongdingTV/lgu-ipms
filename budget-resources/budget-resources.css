@@ -106,21 +106,6 @@ body.sidebar-hidden {
     font-weight: 500;
 }
 
-/* dashboard icon on the left of Dashboard Overview link */
-.nav-links a { display: flex; align-items: center; gap: 8px; }
-.nav-links a[href$="dashboard.html"]::before {
-    content: "";
-    width: 18px;
-    height: 18px;
-    display: inline-block;
-    flex: 0 0 18px;
-    margin-right: 6px;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'><path d='M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z'/></svg>");
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
 .nav-links a:hover {
     background: rgba(255, 255, 255, 0.15);
     color: #ffffff;
