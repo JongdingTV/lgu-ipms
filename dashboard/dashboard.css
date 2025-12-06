@@ -19,6 +19,24 @@ body.sidebar-hidden {
     margin-left: 0;
 }
 
+/* same sidebar/layout rules for dashboard page */
+:root { --sidebar-width: 230px; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.nav {
+  position: fixed; top:0; left:0; width:var(--sidebar-width); height:100vh; display:flex; flex-direction:column; overflow:visible;
+}
+.nav .nav-links { display:flex; flex-direction:column; flex-wrap:wrap; gap:6px; max-height:calc(100vh - 160px); overflow:auto; }
+.nav .nav-links::-webkit-scrollbar { width:6px; } .nav .nav-links::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius:6px; }
+.main-content { margin-left: var(--sidebar-width); height:100vh; overflow:auto; -webkit-overflow-scrolling: touch; padding:24px; }
+body.sidebar-hidden .main-content { margin-left: 0; }
+@media (max-width:900px) { :root{--sidebar-width:64px;} .nav{width:var(--sidebar-width);} .logo-text{display:none;} }
+
 /* NAVIGATION SIDEBAR */
 .nav {
     width: 230px;

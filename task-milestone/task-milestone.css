@@ -255,3 +255,50 @@ body.sidebar-hidden {
     color: #666;
     font-size: 0.95em;
 }
+
+/* Module specific styles: task / milestone UI */
+.recent-projects { padding: 20px; border-radius: 12px; background: linear-gradient(180deg,#fff,#fbfcff); box-shadow:0 8px 30px rgba(12,18,34,0.04); }
+
+.controls-bar { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; }
+.controls-bar .left { flex:1; }
+.controls-bar input[type="search"] { width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(16,24,40,0.06); background:#fff; }
+.controls-bar .right { display:flex; gap:8px; align-items:center; }
+
+.inline-form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+.inline-form select, .inline-form input[type="text"], .inline-form input[type="date"] { padding:10px 12px; border-radius:8px; border:1px solid rgba(16,24,40,0.06); background:#fff; min-width:140px; }
+.inline-form button { padding:10px 14px; border-radius:10px; border:none; background:linear-gradient(90deg,#1e3a8a,#2563eb); color:#fff; font-weight:700; cursor:pointer; }
+
+.summary { display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+.summary .stat { background:#fff; padding:10px 14px; border-radius:10px; border:1px solid rgba(16,24,40,0.04); box-shadow:0 6px 18px rgba(12,18,34,0.03); min-width:120px; text-align:center; font-weight:700; color:#0f172a; }
+.summary .stat small { display:block; font-weight:500; color:#6b7280; font-size:.82rem; margin-top:6px; }
+
+.table-wrap { overflow:auto; margin-top:8px; }
+.table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 6px 16px rgba(12,18,34,0.03); }
+.table thead th { text-align:left; padding:10px 12px; background:rgba(16,24,40,0.03); font-weight:700; position:sticky; top:0; }
+.table tbody td { padding:10px 12px; border-top:1px solid rgba(16,24,40,0.04); color:#374151; vertical-align:middle; }
+
+.badge { display:inline-block; padding:6px 8px; border-radius:8px; font-weight:700; font-size:.85rem; }
+.status-Not\ Started { background:#f3f4f6; color:#111827; }
+.status-In\ Progress { background:#ecfdf5; color:#065f46; }
+.status-Blocked { background:#fff7ed; color:#92400e; }
+.status-Completed { background:#eef2ff; color:#1e3a8a; text-decoration:line-through; }
+
+.priority-High { color:#b91c1c; font-weight:800; }
+.priority-Low { color:#6b7280; }
+.priority-Normal { color:#0f172a; }
+
+.overdue { background: linear-gradient(90deg,#fee2e2,#fff); border-left: 4px solid #991b1b; }
+
+.action-btn { padding:6px 8px; border-radius:8px; border:none; cursor:pointer; font-weight:700; background:#eef2ff; color:#1e3a8a; }
+.action-btn.delete { background:#fee2e2; color:#991b1b; }
+
+/* same sidebar/layout rules for task-milestone page */
+:root { --sidebar-width: 230px; }
+
+html, body { height:100%; margin:0; padding:0; overflow:hidden; }
+.nav { position:fixed; top:0; left:0; width:var(--sidebar-width); height:100vh; display:flex; flex-direction:column; overflow:visible; }
+.nav .nav-links { display:flex; flex-direction:column; flex-wrap:wrap; gap:6px; max-height:calc(100vh - 160px); overflow:auto; }
+.nav .nav-links::-webkit-scrollbar { width:6px; } .nav .nav-links::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius:6px; }
+.main-content { margin-left:var(--sidebar-width); height:100vh; overflow:auto; padding:24px; -webkit-overflow-scrolling:touch; }
+body.sidebar-hidden .main-content { margin-left:0; }
+@media (max-width:900px) { :root{--sidebar-width:64px;} .nav{width:var(--sidebar-width);} .logo-text{display:none;} }
