@@ -52,8 +52,8 @@ body.sidebar-hidden {
 /* ensure dashboard icon shows and links align */
 .nav-links a { display: flex; align-items: center; gap: 8px; }
 .nav-links a .nav-icon {
-    width: 18px;
-    height: 18px;
+    width: 30px;
+    height: 30px;
     object-fit: contain;
     display: inline-block;
     margin-right: 6px;
