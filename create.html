@@ -8,8 +8,12 @@
 <style>
 body {
     min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    padding-top: 60px;
+    padding-bottom: 60px;
 
     /* background image + blur */
     background: url("cityhall.jpeg") center/cover no-repeat fixed;
@@ -30,70 +34,321 @@ body::before {
 }
 
 /* Ensure content is above the blur */
-.nav { position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 100; }
-.wrapper, .footer { position: relative; z-index: 1; }
+.nav { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    width: 100%; 
+    z-index: 100;
+    height: 60px;
+    padding: 12px 60px;
+}
 
-/* Allow wrapper to grow and provide spacing for fixed header/footer so page can scroll */
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1;
+    height: 60px;
+    padding: 12px 45px;
+}
+
+.wrapper { 
+    position: relative; 
+    z-index: 1; 
+}
+
+/* Fixed wrapper - no scroll */
 .wrapper {
-    height: auto !important;
-    min-height: calc(100vh - 140px);
-    padding-top: 90px;
-    padding-bottom: 80px;
-    padding-left: 20px;
-    padding-right: 20px;
+    flex: 1;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
+    padding: 30px 20px;
+    overflow: visible;
 }
 
-/* Make card wider for registration form */
+/* Make card fixed size */
 .wrapper .card {
-    width: 600px;
+    width: 620px;
     max-width: 95%;
-    padding: 40px;
+    height: 570px;
+    padding: 24px 36px 24px 36px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
-.wrapper .card form input, .wrapper .card form select { width: 100%; padding: 12px; margin:8px 0 14px 0; font-size: 14px; }
-.wrapper .card form label { font-size: 14px; font-weight: 500; }
+/* Card header (logo, title, subtitle) */
+.card-header {
+    flex-shrink: 0;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.card-header .icon-top {
+    width: 42px;
+    margin-bottom: 4px;
+}
+
+.card-header .title {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.card-header .subtitle {
+    font-size: 12px;
+    margin-bottom: 0;
+}
+
+/* Progress indicator */
+.progress-container {
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.progress-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.progress-step-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(40, 100, 239, 0.2);
+    border: 2px solid rgba(40, 100, 239, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 5px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #666;
+    transition: all 0.3s ease;
+}
+
+.progress-step.active .progress-step-circle {
+    background: linear-gradient(135deg, #6384d2, #285ccd);
+    border-color: #285ccd;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(40, 100, 239, 0.3);
+}
+
+.progress-step.completed .progress-step-circle {
+    background: #0a7e3d;
+    border-color: #0a7e3d;
+    color: #fff;
+}
+
+.progress-step-label {
+    font-size: 10px;
+    color: #666;
+    font-weight: 500;
+}
+
+.progress-step.active .progress-step-label {
+    color: #2864ef;
+    font-weight: 600;
+}
+
+.progress-step.completed .progress-step-label {
+    color: #0a7e3d;
+}
+
+/* Progress bar */
+.progress-bar-container {
+    width: 100%;
+    height: 4px;
+    background: rgba(40, 100, 239, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6384d2, #285ccd);
+    transition: width 0.4s ease;
+    border-radius: 2px;
+}
+
+/* Form content area - scrollable if needed */
+.form-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-bottom: 12px;
+    padding-right: 8px;
+    min-height: 260px;
+    max-height: 260px;
+}
+
+/* Custom scrollbar */
+.form-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.form-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+}
+
+.form-content::-webkit-scrollbar-thumb {
+    background: rgba(40, 100, 239, 0.3);
+    border-radius: 3px;
+}
+
+.form-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(40, 100, 239, 0.5);
+}
+
+/* Step container */
+.form-step {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.form-step.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Form navigation buttons */
+.form-navigation {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    color: #333;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #6384d2, #285ccd);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0;
+    width: auto;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #4d76d6, #1651d0);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(43, 91, 222, 0.45);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Form inputs styling */
+.wrapper .card form input, 
+.wrapper .card form select { 
+    width: 100%; 
+    padding: 9px; 
+    margin: 4px 0 10px 0; 
+    font-size: 13px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.wrapper .card form label { 
+    font-size: 13px; 
+    font-weight: 500;
+    display: block;
+    margin-bottom: 3px;
+}
 
 /* Enhanced file upload styling */
 .file-upload-wrapper {
     position: relative;
     width: 100%;
-    margin: 8px 0 14px 0;
+    margin: 4px 0 10px 0;
 }
+
 .file-upload-input {
     display: none;
 }
+
 .file-upload-label {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
-    padding: 20px;
+    padding: 16px;
     border: 2px dashed #2864ef;
-    border-radius: 8px;
+    border-radius: 6px;
     background: linear-gradient(135deg, rgba(40, 100, 239, 0.05) 0%, rgba(40, 100, 239, 0.02) 100%);
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 500;
+    font-size: 13px;
     color: #2864ef;
 }
+
 .file-upload-label:hover {
     border-color: #1e4fbf;
     background: linear-gradient(135deg, rgba(40, 100, 239, 0.1) 0%, rgba(40, 100, 239, 0.05) 100%);
 }
+
 .file-upload-label.active {
     border-color: #0a7e3d;
     background: linear-gradient(135deg, rgba(10, 126, 61, 0.1) 0%, rgba(10, 126, 61, 0.05) 100%);
     color: #0a7e3d;
 }
+
 .file-upload-label svg {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     stroke-width: 2;
 }
+
 .file-name-display {
     font-size: 12px;
     color: #666;
@@ -103,60 +358,152 @@ body::before {
     border-radius: 4px;
     display: none;
 }
+
 .file-name-display.show {
     display: block;
 }
+
 .file-name-display .check-icon {
     color: #0a7e3d;
     margin-right: 6px;
 }
+
 .invalid {
     border: 2px solid #d93025 !important;
     box-shadow: 0 0 0 3px rgba(217,48,37,0.06);
     transition: box-shadow 0.18s ease, border-color 0.18s ease;
 }
+
 .error-tip {
-    font-size:12px; color:#b00; margin-top:6px;
+    font-size: 12px; 
+    color: #b00; 
+    margin-top: 6px;
 }
+
 /* password strength bar */
 .pwd-bar {
     width: 100%;
-    height: 10px;
+    height: 8px;
     background: #eee;
-    border-radius: 8px;
+    border-radius: 6px;
     overflow: hidden;
-    margin-top:8px;
+    margin-top: 6px;
 }
+
 .pwd-fill {
     width: 0%;
     height: 100%;
     transition: width 380ms cubic-bezier(.2,.8,.2,1), background 300ms ease;
     background: linear-gradient(90deg,#ff4d4f,#ffb86b);
 }
+
 @keyframes shake {
     10%, 90% { transform: translate3d(-1px, 0, 0); }
     20%, 80% { transform: translate3d(2px, 0, 0); }
     30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
     40%, 60% { transform: translate3d(4px, 0, 0); }
 }
+
 .shake {
     animation: shake 420ms ease;
 }
-.btn-primary { padding: 14px 20px; display: inline-block; width: 100%; font-size: 16px; }
-.small-text { margin-top: 16px; font-size: 14px; }
 
-/* Two-column form grid for registration */
+.small-text { 
+    margin-top: 12px; 
+    font-size: 12px;
+    text-align: center;
+    flex-shrink: 0;
+    padding-bottom: 4px;
+}
+
+/* Two-column form grid for some steps */
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px 24px;
+    gap: 10px 14px;
     align-items: start;
 }
-.form-grid .input-box { margin-bottom: 12px; }
-.form-grid .input-box label { margin-bottom: 8px; display: block; }
+
+.form-grid .input-box { 
+    margin-bottom: 0;
+}
+
+.input-box {
+    margin-bottom: 10px;
+}
+
+.input-box.full-width {
+    grid-column: 1 / -1;
+}
+
 @media (max-width: 700px) {
-    .form-grid { grid-template-columns: 1fr; gap: 16px; }
-    .wrapper .card { padding: 30px; width: 100%; }
+    body {
+        padding-top: 55px;
+        padding-bottom: 55px;
+    }
+    
+    .nav {
+        height: 55px;
+        padding: 10px 20px;
+    }
+    
+    .footer {
+        height: 55px;
+        padding: 10px 20px;
+    }
+    
+    .form-grid { 
+        grid-template-columns: 1fr; 
+        gap: 12px; 
+    }
+    
+    .wrapper {
+        padding: 15px 10px;
+    }
+    
+    .wrapper .card { 
+        padding: 18px 18px 20px 18px;
+        width: 100%;
+        height: 520px;
+    }
+    
+    .form-content {
+        min-height: 240px;
+        max-height: 240px;
+    }
+    
+    .progress-step-label {
+        font-size: 9px;
+    }
+    
+    .progress-step-circle {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+    
+    .card-header .icon-top {
+        width: 40px;
+        margin-bottom: 6px;
+    }
+    
+    .card-header .title {
+        font-size: 20px;
+    }
+}
+
+/* Step titles */
+.step-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 4px;
+}
+
+.step-subtitle {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 12px;
 }
 </style>
 </head>
@@ -170,145 +517,214 @@ body::before {
 
 <div class="wrapper">
     <div class="card">
-        <img src="logocityhall.png" class="icon-top">
-        <h2 class="title">Create Account</h2>
-        <p class="subtitle">Register to access the LGU Portal</p>
+        <div class="card-header">
+            <img src="logocityhall.png" class="icon-top">
+            <h2 class="title">Create Account</h2>
+            <p class="subtitle">Register to access the LGU Portal</p>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-container">
+            <div class="progress-steps">
+                <div class="progress-step active" data-step="1">
+                    <div class="progress-step-circle">1</div>
+                    <div class="progress-step-label">Basic Info</div>
+                </div>
+                <div class="progress-step" data-step="2">
+                    <div class="progress-step-circle">2</div>
+                    <div class="progress-step-label">Contact</div>
+                </div>
+                <div class="progress-step" data-step="3">
+                    <div class="progress-step-circle">3</div>
+                    <div class="progress-step-label">Personal</div>
+                </div>
+                <div class="progress-step" data-step="4">
+                    <div class="progress-step-circle">4</div>
+                    <div class="progress-step-label">ID</div>
+                </div>
+                <div class="progress-step" data-step="5">
+                    <div class="progress-step-circle">5</div>
+                    <div class="progress-step-label">Security</div>
+                </div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBar" style="width: 20%"></div>
+            </div>
+        </div>
 
         <form id="registerForm" novalidate>
-            <div class="form-grid">
-                <div class="input-box">
-                    <label for="firstName">First Name *</label>
-                    <input id="firstName" name="firstName" type="text" required aria-required="true" placeholder="First name" />
-                </div>
+            <div class="form-content">
+                <!-- Step 1: Basic Information -->
+                <div class="form-step active" data-step="1">
+                    <h3 class="step-title">Basic Information</h3>
+                    <p class="step-subtitle">Let's start with your name</p>
+                    
+                    <div class="form-grid">
+                        <div class="input-box">
+                            <label for="firstName">First Name *</label>
+                            <input id="firstName" name="firstName" type="text" required aria-required="true" placeholder="First name" />
+                        </div>
 
-                <div class="input-box">
-                    <label for="middleName">Middle Name</label>
-                    <input id="middleName" name="middleName" type="text" placeholder="Middle name" />
-                </div>
+                        <div class="input-box">
+                            <label for="middleName">Middle Name</label>
+                            <input id="middleName" name="middleName" type="text" placeholder="Middle name" />
+                        </div>
 
-                <div class="input-box">
-                    <label for="lastName">Last Name *</label>
-                    <input id="lastName" name="lastName" type="text" required aria-required="true" placeholder="Last name" />
-                </div>
+                        <div class="input-box">
+                            <label for="lastName">Last Name *</label>
+                            <input id="lastName" name="lastName" type="text" required aria-required="true" placeholder="Last name" />
+                        </div>
 
-                <div class="input-box">
-                    <label for="suffix">Suffix <small style="font-weight:normal;">(optional)</small></label>
-                    <select id="suffix" name="suffix" aria-label="Name suffix">
-                        <option value="">None</option>
-                        <option value="jr">Jr.</option>
-                        <option value="sr">Sr.</option>
-                        <option value="ii">II</option>
-                        <option value="iii">III</option>
-                        <option value="iv">IV</option>
-                    </select>
-                </div>
-
-                <div class="input-box" style="grid-column: 1 / -1;">
-                    <label for="email">Email Address *</label>
-                    <input id="email" name="email" type="email" required aria-required="true" placeholder="you@example.com" />
-                </div>
-
-                <div class="input-box">
-                    <label for="mobile">Mobile Number *</label>
-                    <input id="mobile" name="mobile" type="tel" inputmode="tel" pattern="\+?[0-9\s-]{7,15}" required aria-required="true" placeholder="+63 9XX XXX XXXX" />
-                </div>
-
-                <div class="input-box">
-                    <label for="birthdate">Birthdate</label>
-                    <input id="birthdate" name="birthdate" type="date" />
-                </div>
-
-                <div class="input-box">
-                    <label for="gender">Gender</label>
-                    <select id="gender" name="gender" aria-label="Gender">
-                        <option value="">Select</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                        <option value="prefer_not">Prefer not to say</option>
-                    </select>
-                </div>
-
-                <div class="input-box">
-                    <label for="civilStatus">Civil Status</label>
-                    <select id="civilStatus" name="civilStatus">
-                        <option value="">Select</option>
-                        <option value="single">Single</option>
-                        <option value="married">Married</option>
-                        <option value="widowed">Widowed</option>
-                        <option value="separated">Separated</option>
-                    </select>
-                </div>
-
-                <div class="input-box" style="grid-column: 1 / -1;">
-                    <label for="address">Address / Barangay</label>
-                    <input id="address" name="address" type="text" placeholder="Street, Barangay, City" />
-                </div>
-
-                <div class="input-box">
-                    <label for="idType">ID Type <small style="font-weight:normal;">(optional)</small></label>
-                    <select id="idType" name="idType" aria-label="ID Type">
-                        <option value="">Select ID Type</option>
-                        <option value="nbi">NBI Clearance</option>
-                        <option value="passport">Passport</option>
-                        <option value="drivinglicense">Driver's License</option>
-                        <option value="sss">SSS</option>
-                        <option value="tin">TIN</option>
-                        <option value="barangayid">Barangay ID</option>
-                        <option value="seniorid">Senior Citizen ID</option>
-                        <option value="pwdid">PWD ID</option>
-                    </select>
-                </div>
-
-                <div class="input-box">
-                    <label for="idNumber">ID Number <small style="font-weight:normal;">(optional)</small></label>
-                    <input id="idNumber" name="idNumber" type="text" placeholder="e.g., 12345678" />
-                </div>
-
-                <div class="input-box" style="grid-column: 1 / -1;">
-                    <label style="display: block; margin-bottom: 8px;">Upload ID Copy <small style="font-weight:normal;">(optional, JPG/PNG, max 5MB)</small></label>
-                    <div class="file-upload-wrapper">
-                        <input type="file" id="idUpload" name="idUpload" class="file-upload-input" accept=".jpg,.jpeg,.png" />
-                        <label for="idUpload" class="file-upload-label">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                            <span id="uploadText">Click to upload or drag & drop</span>
-                        </label>
-                        <div class="file-name-display" id="fileDisplay">
-                            <span class="check-icon">✓</span><span id="fileName"></span>
+                        <div class="input-box">
+                            <label for="suffix">Suffix <small style="font-weight:normal;">(optional)</small></label>
+                            <select id="suffix" name="suffix" aria-label="Name suffix">
+                                <option value="">None</option>
+                                <option value="jr">Jr.</option>
+                                <option value="sr">Sr.</option>
+                                <option value="ii">II</option>
+                                <option value="iii">III</option>
+                                <option value="iv">IV</option>
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                <div class="input-box" style="grid-column: 1 / -1;">
-                    <label for="password">Password *</label>
-                    <input id="password" name="password" type="password" required aria-required="true" aria-describedby="pwdHelp pwdStrength" placeholder="Create a strong password" />
-                    <div id="pwdHelp" style="font-size:12px;color:#666;margin-top:8px;">Requirements: 8–12 characters, uppercase, lowercase, number, special character</div>
-                    <meter id="pwdStrength" min="0" max="4" low="2" high="3" optimum="4" value="0" style="width:100%;margin-top:8px; display:none;"></meter>
-                    <div class="pwd-bar" aria-hidden="true"><div class="pwd-fill" id="pwdFill"></div></div>
+                <!-- Step 2: Contact Information -->
+                <div class="form-step" data-step="2">
+                    <h3 class="step-title">Contact Information</h3>
+                    <p class="step-subtitle">How can we reach you?</p>
+                    
+                    <div class="input-box">
+                        <label for="email">Email Address *</label>
+                        <input id="email" name="email" type="email" required aria-required="true" placeholder="you@example.com" />
+                    </div>
+
+                    <div class="input-box">
+                        <label for="mobile">Mobile Number *</label>
+                        <input id="mobile" name="mobile" type="tel" inputmode="tel" pattern="\+?[0-9\s-]{7,15}" required aria-required="true" placeholder="+63 9XX XXX XXXX" />
+                    </div>
                 </div>
 
-                <div class="input-box" style="grid-column: 1 / -1;">
-                    <label for="confirmPassword">Confirm Password *</label>
-                    <input id="confirmPassword" name="confirmPassword" type="password" required aria-required="true" placeholder="Re-enter your password" />
+                <!-- Step 3: Personal Details -->
+                <div class="form-step" data-step="3">
+                    <h3 class="step-title">Personal Details</h3>
+                    <p class="step-subtitle">Tell us more about yourself</p>
+                    
+                    <div class="form-grid">
+                        <div class="input-box">
+                            <label for="birthdate">Birthdate</label>
+                            <input id="birthdate" name="birthdate" type="date" />
+                        </div>
+
+                        <div class="input-box">
+                            <label for="gender">Gender</label>
+                            <select id="gender" name="gender" aria-label="Gender">
+                                <option value="">Select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                                <option value="prefer_not">Prefer not to say</option>
+                            </select>
+                        </div>
+
+                        <div class="input-box full-width">
+                            <label for="civilStatus">Civil Status</label>
+                            <select id="civilStatus" name="civilStatus">
+                                <option value="">Select</option>
+                                <option value="single">Single</option>
+                                <option value="married">Married</option>
+                                <option value="widowed">Widowed</option>
+                                <option value="separated">Separated</option>
+                            </select>
+                        </div>
+
+                        <div class="input-box full-width">
+                            <label for="address">Address / Barangay</label>
+                            <input id="address" name="address" type="text" placeholder="Street, Barangay, City" />
+                        </div>
+                    </div>
                 </div>
 
-                <div style="grid-column: 1 / -1; margin-top: 20px; text-align: center;">
-                    <label style="font-size:13px; display: block;">
-                        <input id="privacyAgree" type="checkbox" required aria-required="true" style="margin-right:6px;" />
-                        <span>I agree to the <a href="#" style="color:#2864ef;">Privacy Notice</a> and data usage policy</span>
-                    </label>
-                    <div style="font-size:12px; color:#666; margin-top:4px;">(Data Privacy Act of 2012)</div>
+                <!-- Step 4: Identification -->
+                <div class="form-step" data-step="4">
+                    <h3 class="step-title">Identification</h3>
+                    <p class="step-subtitle">Verify your identity (optional)</p>
+                    
+                    <div class="form-grid">
+                        <div class="input-box">
+                            <label for="idType">ID Type <small style="font-weight:normal;">(optional)</small></label>
+                            <select id="idType" name="idType" aria-label="ID Type">
+                                <option value="">Select ID Type</option>
+                                <option value="nbi">NBI Clearance</option>
+                                <option value="passport">Passport</option>
+                                <option value="drivinglicense">Driver's License</option>
+                                <option value="sss">SSS</option>
+                                <option value="tin">TIN</option>
+                                <option value="barangayid">Barangay ID</option>
+                                <option value="seniorid">Senior Citizen ID</option>
+                                <option value="pwdid">PWD ID</option>
+                            </select>
+                        </div>
+
+                        <div class="input-box">
+                            <label for="idNumber">ID Number <small style="font-weight:normal;">(optional)</small></label>
+                            <input id="idNumber" name="idNumber" type="text" placeholder="e.g., 12345678" />
+                        </div>
+
+                        <div class="input-box full-width">
+                            <label style="display: block; margin-bottom: 8px;">Upload ID Copy <small style="font-weight:normal;">(optional, JPG/PNG, max 5MB)</small></label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" id="idUpload" name="idUpload" class="file-upload-input" accept=".jpg,.jpeg,.png" />
+                                <label for="idUpload" class="file-upload-label">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    <span id="uploadText">Click to upload or drag & drop</span>
+                                </label>
+                                <div class="file-name-display" id="fileDisplay">
+                                    <span class="check-icon">✓</span><span id="fileName"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Account Security -->
+                <div class="form-step" data-step="5">
+                    <h3 class="step-title">Account Security</h3>
+                    <p class="step-subtitle">Create a strong password</p>
+                    
+                    <div class="input-box">
+                        <label for="password">Password *</label>
+                        <input id="password" name="password" type="password" required aria-required="true" aria-describedby="pwdHelp pwdStrength" placeholder="Create a strong password" />
+                        <div id="pwdHelp" style="font-size:12px;color:#666;margin-top:8px;">Requirements: 8–12 characters, uppercase, lowercase, number, special character</div>
+                        <meter id="pwdStrength" min="0" max="4" low="2" high="3" optimum="4" value="0" style="width:100%;margin-top:8px; display:none;"></meter>
+                        <div class="pwd-bar" aria-hidden="true"><div class="pwd-fill" id="pwdFill"></div></div>
+                    </div>
+
+                    <div class="input-box">
+                        <label for="confirmPassword">Confirm Password *</label>
+                        <input id="confirmPassword" name="confirmPassword" type="password" required aria-required="true" placeholder="Re-enter your password" />
+                    </div>
+
+                    <div style="margin-top: 20px; text-align: center;">
+                        <label style="font-size:13px; display: block;">
+                            <input id="privacyAgree" type="checkbox" required aria-required="true" style="margin-right:6px;" />
+                            <span>I agree to the <a href="#" style="color:#2864ef;">Privacy Notice</a> and data usage policy</span>
+                        </label>
+                        <div style="font-size:12px; color:#666; margin-top:4px;">(Data Privacy Act of 2012)</div>
+                    </div>
                 </div>
             </div>
 
-            <div style="margin-top:20px;">
-                <button class="btn-primary" type="submit">Create Account</button>
+            <!-- Navigation Buttons -->
+            <div class="form-navigation">
+                <button type="button" class="btn-secondary" id="prevBtn" disabled>Previous</button>
+                <div id="regMessage" role="status" aria-live="polite" style="flex: 1; padding: 0 12px; font-size: 13px; display: none;"></div>
+                <button type="button" class="btn-primary" id="nextBtn">Next</button>
             </div>
         </form>
 
-        <div id="regMessage" role="status" aria-live="polite" style="margin-top:16px;padding:12px;border-radius:8px;display:none;"></div>
         <p class="small-text">Already have an account? <a href="login.html">Sign in here</a></p>
     </div>
 </div>
@@ -322,8 +738,11 @@ body::before {
     <div class="footer-logo">© 2025 LGU Citizen Portal · All Rights Reserved</div>
 </footer>
 
-
 <script>
+// Multi-step form state
+let currentStep = 1;
+const totalSteps = 5;
+
 // Password Policy Validator
 function validatePassword(p){
     const errors = [];
@@ -344,7 +763,6 @@ function setPwdFill(score){
     const pct = Math.round((score / 4) * 100);
     if(pwdFill){
         pwdFill.style.width = pct + '%';
-        // color logic
         if(score <= 1) pwdFill.style.background = 'linear-gradient(90deg,#ff4d4f,#ff7a59)';
         else if(score === 2) pwdFill.style.background = 'linear-gradient(90deg,#ffb86b,#ffd54a)';
         else if(score === 3) pwdFill.style.background = 'linear-gradient(90deg,#cddc39,#8bc34a)';
@@ -365,22 +783,30 @@ if(pwdInput){
     });
 }
 
-// Helper functions to mark invalid/valid fields and scroll into view
+// Helper functions
 function markInvalid(el){
     if(!el) return;
     try{ el.classList.add('invalid'); }catch(e){}
     try{ el.focus({preventScroll:true}); }catch(e){}
     try{ el.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){}
 }
-function markValid(el){ if(!el) return; try{ el.classList.remove('invalid'); }catch(e){} }
 
-// Clear invalid marker when user types in email (improves UX)
-const emailInputField = document.getElementById('email');
-if(emailInputField){
-    emailInputField.addEventListener('input', () => { markValid(emailInputField); const m = document.getElementById('regMessage'); if(m) m.style.display = 'none'; });
+function markValid(el){ 
+    if(!el) return; 
+    try{ el.classList.remove('invalid'); }catch(e){} 
 }
 
-// File Upload Handling with Drag & Drop
+// Clear invalid marker when user types
+const emailInputField = document.getElementById('email');
+if(emailInputField){
+    emailInputField.addEventListener('input', () => { 
+        markValid(emailInputField); 
+        const m = document.getElementById('regMessage'); 
+        if(m) m.style.display = 'none'; 
+    });
+}
+
+// File Upload Handling
 const idUploadInput = document.getElementById('idUpload');
 const uploadLabel = document.querySelector('.file-upload-label');
 const fileDisplay = document.getElementById('fileDisplay');
@@ -388,10 +814,8 @@ const fileName = document.getElementById('fileName');
 const uploadText = document.getElementById('uploadText');
 
 if(idUploadInput && uploadLabel){
-    // Click to upload
     idUploadInput.addEventListener('change', handleFileSelect);
     
-    // Drag & drop events
     uploadLabel.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadLabel.classList.add('active');
@@ -424,138 +848,295 @@ function handleFileSelect(){
     }
 }
 
-document.getElementById('registerForm').addEventListener('submit', async function(e){
-    e.preventDefault();
+// Step Navigation
+function updateProgress() {
+    const progressBar = document.getElementById('progressBar');
+    const progressSteps = document.querySelectorAll('.progress-step');
+    const percentage = (currentStep / totalSteps) * 100;
+    
+    progressBar.style.width = percentage + '%';
+    
+    progressSteps.forEach((step, index) => {
+        const stepNum = index + 1;
+        if(stepNum < currentStep) {
+            step.classList.add('completed');
+            step.classList.remove('active');
+        } else if(stepNum === currentStep) {
+            step.classList.add('active');
+            step.classList.remove('completed');
+        } else {
+            step.classList.remove('active', 'completed');
+        }
+    });
+}
 
+function showStep(step) {
+    const formSteps = document.querySelectorAll('.form-step');
+    formSteps.forEach((formStep, index) => {
+        if(index + 1 === step) {
+            formStep.classList.add('active');
+        } else {
+            formStep.classList.remove('active');
+        }
+    });
+    
+    // Update buttons
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    prevBtn.disabled = step === 1;
+    
+    if(step === totalSteps) {
+        nextBtn.textContent = 'Create Account';
+        nextBtn.type = 'submit';
+    } else {
+        nextBtn.textContent = 'Next';
+        nextBtn.type = 'button';
+    }
+    
+    updateProgress();
+}
+
+// Validate current step
+function validateStep(step) {
+    const msgEl = document.getElementById('regMessage');
+    msgEl.style.display = 'none';
+    
+    if(step === 1) {
+        // Basic Information
+        const firstName = (document.getElementById('firstName').value || '').trim();
+        const lastName = (document.getElementById('lastName').value || '').trim();
+        
+        if(!firstName) {
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> First name is required.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('firstName'));
+            return false;
+        }
+        
+        if(!lastName) {
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Last name is required.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('lastName'));
+            return false;
+        }
+    }
+    
+    if(step === 2) {
+        // Contact Information
+        let email = (document.getElementById('email').value || '').trim().toLowerCase();
+        email = email.replace(/[\u200B-\u200D\uFEFF]/g, '');
+        const mobile = (document.getElementById('mobile').value || '').trim();
+        
+        if(!email) {
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Email is required.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('email'));
+            return false;
+        }
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if(!emailRegex.test(email)){
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Enter a valid email address.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('email'));
+            return false;
+        }
+        
+        if(!mobile) {
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Mobile number is required.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('mobile'));
+            return false;
+        }
+        
+        const mobileRegex = /^\+?[0-9\s-]{7,15}$/;
+        if(!mobileRegex.test(mobile)){
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Enter a valid mobile number.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('mobile'));
+            return false;
+        }
+        
+        // Check for duplicates
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        if(users.find(u => (u.email || '').toLowerCase() === email)){
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Email already registered.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('email'));
+            return false;
+        }
+        if(users.find(u => u.mobile === mobile)){
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Mobile number already registered.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('mobile'));
+            return false;
+        }
+    }
+    
+    if(step === 4) {
+        // File validation
+        const idUploadFile = document.getElementById('idUpload').files[0] || null;
+        
+        if(idUploadFile && idUploadFile.size > 5 * 1024 * 1024){
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> ID file must be less than 5MB.';
+            msgEl.style.display = 'block';
+            markInvalid(uploadLabel);
+            return false;
+        }
+        
+        if(idUploadFile && !['image/jpeg', 'image/png'].includes(idUploadFile.type)){
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> ID file must be JPG or PNG.';
+            msgEl.style.display = 'block';
+            markInvalid(uploadLabel);
+            return false;
+        }
+    }
+    
+    if(step === 5) {
+        // Password validation
+        const rawPassword = document.getElementById('password').value || '';
+        const rawConfirm = document.getElementById('confirmPassword').value || '';
+        const password = rawPassword.replace(/[\u200B-\u200D\uFEFF]/g, '');
+        const confirmPwd = rawConfirm.replace(/[\u200B-\u200D\uFEFF]/g, '');
+        const privacyAgree = document.getElementById('privacyAgree').checked;
+        
+        if(!password) {
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Password is required.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('password'));
+            return false;
+        }
+        
+        if(!confirmPwd) {
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Confirm password is required.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('confirmPassword'));
+            return false;
+        }
+        
+        if(password !== confirmPwd){
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Passwords do not match.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('password'));
+            markInvalid(document.getElementById('confirmPassword'));
+            const bar = document.querySelector('.pwd-bar'); 
+            if(bar){ 
+                bar.classList.add('shake'); 
+                setTimeout(()=>bar.classList.remove('shake'),420); 
+            }
+            return false;
+        }
+        
+        const passCheck = validatePassword(password);
+        if(!passCheck.ok){
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️ Password Issues:</strong><br>' + passCheck.errors.join('<br>');
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('password'));
+            const bar2 = document.querySelector('.pwd-bar'); 
+            if(bar2){ 
+                bar2.classList.add('shake'); 
+                setTimeout(()=>bar2.classList.remove('shake'),420); 
+            }
+            return false;
+        }
+        
+        if(!privacyAgree){
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> You must agree to the Privacy Notice.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('privacyAgree'));
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Next button handler
+document.getElementById('nextBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    
+    if(currentStep === totalSteps) {
+        // This is the submit button on last step
+        handleSubmit(e);
+    } else {
+        // Validate current step
+        if(validateStep(currentStep)) {
+            currentStep++;
+            showStep(currentStep);
+        }
+    }
+});
+
+// Previous button handler
+document.getElementById('prevBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    
+    if(currentStep > 1) {
+        currentStep--;
+        showStep(currentStep);
+    }
+});
+
+// Form submission
+async function handleSubmit(e) {
+    e.preventDefault();
+    
+    // Validate final step
+    if(!validateStep(currentStep)) {
+        return;
+    }
+    
     const firstName = (document.getElementById('firstName').value || '').trim();
     const middleName = (document.getElementById('middleName').value || '').trim() || null;
     const lastName = (document.getElementById('lastName').value || '').trim();
     const suffix = document.getElementById('suffix').value || null;
     let email = (document.getElementById('email').value || '').trim().toLowerCase();
-    // remove common invisible characters that can break validation
     email = email.replace(/[\u200B-\u200D\uFEFF]/g, '');
     const mobile = (document.getElementById('mobile').value || '').trim();
+    const birthdate = document.getElementById('birthdate').value || null;
     const gender = document.getElementById('gender').value || null;
     const civilStatus = document.getElementById('civilStatus').value || null;
     const address = (document.getElementById('address').value || '').trim();
     const idType = document.getElementById('idType').value || null;
     const idNumber = (document.getElementById('idNumber').value || '').trim() || null;
     const idUploadFile = document.getElementById('idUpload').files[0] || null;
-    // sanitize password inputs: remove invisible/zero-width characters that can break validation
     const rawPassword = document.getElementById('password').value || '';
-    const rawConfirm = document.getElementById('confirmPassword').value || '';
-    const password = (rawPassword).replace(/[\u200B-\u200D\uFEFF]/g, '');
-    const confirmPwd = (rawConfirm).replace(/[\u200B-\u200D\uFEFF]/g, '');
-    const privacyAgree = document.getElementById('privacyAgree').checked;
-
+    const password = rawPassword.replace(/[\u200B-\u200D\uFEFF]/g, '');
+    
     const msgEl = document.getElementById('regMessage');
-    msgEl.style.display = 'none';
-
-    // File size validation (max 5MB)
-    if(idUploadFile && idUploadFile.size > 5 * 1024 * 1024){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️ Error:</strong> ID file must be less than 5MB.';
-        msgEl.style.display = 'block';
-        markInvalid(uploadLabel || document.getElementById('idUpload'));
-        return;
-    }
-
-    // File type validation
-    if(idUploadFile && !['image/jpeg', 'image/png'].includes(idUploadFile.type)){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️ Error:</strong> ID file must be JPG or PNG format.';
-        msgEl.style.display = 'block';
-        // mark upload area invalid
-        markInvalid(uploadLabel || document.getElementById('idUpload'));
-        return;
-    }
-
-    // FRONT-END VALIDATION (UX layer)
-    // Check required fields and mark the first invalid one
-    const requiredChecks = [
-        { el: document.getElementById('firstName'), ok: !!firstName, name: 'First name' },
-        { el: document.getElementById('lastName'), ok: !!lastName, name: 'Last name' },
-        { el: document.getElementById('email'), ok: !!email, name: 'Email' },
-        { el: document.getElementById('mobile'), ok: !!mobile, name: 'Mobile' },
-        { el: document.getElementById('password'), ok: !!password, name: 'Password' },
-        { el: document.getElementById('confirmPassword'), ok: !!confirmPwd, name: 'Confirm password' }
-    ];
-    const firstMissing = requiredChecks.find(c => !c.ok);
-    if(firstMissing){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = `<strong>⚠️ Error:</strong> ${firstMissing.name} is required.`;
-        msgEl.style.display = 'block';
-        markInvalid(firstMissing.el);
-        return;
-    }
-
-    if(!privacyAgree){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️ Error:</strong> You must agree to the Privacy Notice.';
-        msgEl.style.display = 'block';
-        markInvalid(document.getElementById('privacyAgree'));
-        return;
-    }
-
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if(!emailRegex.test(email)){
-        console.debug('Invalid email input:', JSON.stringify(email));
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Enter a valid email address.';
-        msgEl.style.display = 'block';
-        markInvalid(document.getElementById('email'));
-        return;
-    }
-
-    // Mobile format validation
-    const mobileRegex = /^\+?[0-9\s-]{7,15}$/;
-    if(!mobileRegex.test(mobile)){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Enter a valid mobile number.';
-        msgEl.style.display = 'block'; return;
-    }
-
-    // Password match check
-    if(password !== confirmPwd){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Passwords do not match.';
-        msgEl.style.display = 'block';
-        markInvalid(document.getElementById('password'));
-        markInvalid(document.getElementById('confirmPassword'));
-        const bar = document.querySelector('.pwd-bar'); if(bar){ bar.classList.add('shake'); setTimeout(()=>bar.classList.remove('shake'),420); }
-        return;
-    }
-
-    // Password policy enforcement
-    const passCheck = validatePassword(password);
-    if(!passCheck.ok){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️ Password Issues:</strong><br>' + passCheck.errors.join('<br>');
-        msgEl.style.display = 'block';
-        markInvalid(document.getElementById('password'));
-        const bar2 = document.querySelector('.pwd-bar'); if(bar2){ bar2.classList.add('shake'); setTimeout(()=>bar2.classList.remove('shake'),420); }
-        return;
-    }
-
-    // CHECK FOR DUPLICATES (Back-end must re-check before DB insert)
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    if(users.find(u => (u.email || '').toLowerCase() === email)){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️ Error:</strong> An account with this email already exists.';
-        msgEl.style.display = 'block';
-        markInvalid(document.getElementById('email'));
-        return;
-    }
-    if(users.find(u => u.mobile === mobile)){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Mobile number already registered.';
-        msgEl.style.display = 'block';
-        markInvalid(document.getElementById('mobile'));
-        return;
-    }
-
-    // CONVERT FILE TO BASE64 (for localStorage - suitable for small files)
+    
+    // Convert file to base64
     let idUploadBase64 = null;
     if(idUploadFile){
         idUploadBase64 = await new Promise((resolve) => {
@@ -564,16 +1145,16 @@ document.getElementById('registerForm').addEventListener('submit', async functio
             reader.readAsDataURL(idUploadFile);
         });
     }
-
-    // STORE PASSWORD (development/demo flow)
+    
     try{
-        // NOTE: For production, perform server-side hashing and secure storage.
-        // Clear any previous invalid markers
         ['firstName','lastName','email','mobile','password','confirmPassword'].forEach(id=>{
-            const el = document.getElementById(id) || document.querySelector('.file-upload-label'); if(el) el.classList.remove('invalid');
+            const el = document.getElementById(id);
+            if(el) el.classList.remove('invalid');
         });
+        
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
         const user = {
-            id: Date.now(), // placeholder ID (server generates real one)
+            id: Date.now(),
             firstName,
             middleName,
             lastName,
@@ -586,17 +1167,17 @@ document.getElementById('registerForm').addEventListener('submit', async functio
             address,
             idType,
             idNumber,
-            idUpload: idUploadBase64, // Base64 encoded image for localStorage
-            password, // plain password to match current login flow
-            approved: false, // LGU admin approval workflow
+            idUpload: idUploadBase64,
+            password,
+            approved: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
-
+        
         users.push(user);
         localStorage.setItem('users', JSON.stringify(users));
-
-        // AUDIT LOG (for compliance & accountability)
+        
+        // Audit log
         const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
         logs.push({
             action: 'user_registration',
@@ -606,14 +1187,15 @@ document.getElementById('registerForm').addEventListener('submit', async functio
             idProvided: !!idUploadFile
         });
         localStorage.setItem('auditLogs', JSON.stringify(logs));
-
-        // SUCCESS MESSAGE
-        msgEl.style.backgroundColor = '#efe'; msgEl.style.color = '#050';
-        msgEl.innerHTML = '✅ <strong>Registration successful!</strong><br>You will be redirected to login in <span id="count">15</span> seconds. <a href="login.html" style="color:#2864ef;">Go now</a>';
+        
+        // Success message
+        msgEl.style.backgroundColor = '#efe'; 
+        msgEl.style.color = '#050';
+        msgEl.innerHTML = '✅ <strong>Success!</strong> Redirecting in <span id="count">5</span>s... <a href="login.html" style="color:#2864ef;">Go now</a>';
         msgEl.style.display = 'block';
-
-        // REDIRECT COUNTDOWN
-        let seconds = 15;
+        
+        // Redirect countdown
+        let seconds = 5;
         const countEl = document.getElementById('count');
         const interval = setInterval(() => {
             seconds -= 1;
@@ -623,14 +1205,18 @@ document.getElementById('registerForm').addEventListener('submit', async functio
                 window.location.href = 'login.html';
             }
         }, 1000);
-
-    }catch(err){
-        msgEl.style.backgroundColor = '#fee'; msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️ Error:</strong> Unexpected error during registration. Please try again.';
+        
+    } catch(err){
+        msgEl.style.backgroundColor = '#fee'; 
+        msgEl.style.color = '#c00';
+        msgEl.innerHTML = '<strong>⚠️</strong> Unexpected error. Please try again.';
         msgEl.style.display = 'block';
         console.error('Registration error:', err);
     }
-});
+}
+
+// Initialize
+showStep(currentStep);
 </script>
 </body>
 </html>
