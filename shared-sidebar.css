@@ -1,3 +1,8 @@
+/**
+ * Shared Sidebar Styles for LGU IPMS
+ * Import this file in all pages to ensure consistent sidebar appearance
+ */
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 * {
@@ -6,6 +11,7 @@
     box-sizing: border-box;
     font-family: 'Poppins', sans-serif;
 }
+
 body {
     background-color: #f8f9fa;
     height: 100vh;
@@ -40,25 +46,11 @@ body.sidebar-hidden {
     overflow-x: hidden;
     transition: transform 0.3s ease;
 }
-.user-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-bottom: 10px;
-    object-fit: cover;
-}
+
 .nav.hidden {
     transform: translateX(-100%);
 }
-/* ensure dashboard icon shows and links align */
-.nav-links a { display: flex; align-items: center; gap: 8px; }
-.nav-links a .nav-icon {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-    display: inline-block;
-    margin-right: 6px;
-}
+
 .nav-logo {
     text-decoration: none;
     cursor: pointer;
@@ -77,7 +69,6 @@ body.sidebar-hidden {
     flex-shrink: 0;
 }
 
-/* new logo image styling */
 .logo-img {
     width: 40px;
     height: 40px;
@@ -105,6 +96,7 @@ body.sidebar-hidden {
     margin-right: -4px;
 }
 
+/* Custom scrollbar for nav-links only */
 .nav-links::-webkit-scrollbar {
     width: 4px;
 }
@@ -126,7 +118,7 @@ body.sidebar-hidden {
 .nav-links a {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     padding: 12px 14px;
     text-decoration: none;
     cursor: pointer;
@@ -144,7 +136,7 @@ body.sidebar-hidden {
     background: rgba(255, 255, 255, 0.15);
     color: #ffffff;
     opacity: 1;
-    padding-left: 20px;
+    padding-left: 18px;
 }
 
 .nav-links a.active {
@@ -153,7 +145,7 @@ body.sidebar-hidden {
     opacity: 1;
     font-weight: 600;
     border-left: 4px solid #ffffff;
-    padding-left: 12px;
+    padding-left: 10px;
 }
 
 .nav-links a .nav-icon {
@@ -161,7 +153,15 @@ body.sidebar-hidden {
     height: 18px;
     object-fit: contain;
     display: inline-block;
-    margin-right: 6px;
+    margin-right: 0;
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .nav-links a .nav-icon { 
+        width: 16px; 
+        height: 16px; 
+    }
 }
 
 .nav-user {
@@ -171,6 +171,14 @@ body.sidebar-hidden {
     border-radius: 8px;
     text-align: center;
     flex-shrink: 0;
+}
+
+.user-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+    object-fit: cover;
 }
 
 .nav-username {
@@ -275,61 +283,4 @@ body.sidebar-hidden {
     padding: 30px;
     overflow-y: auto;
     flex: 1;
-}
-
-.dash-header {
-    margin-bottom: 30px;
-}
-
-.dash-header h1 {
-    font-size: 2em;
-    color: #1e3a8a;
-    margin-bottom: 5px;
-}
-
-.dash-header p {
-    color: #666;
-    font-size: 0.95em;
-}
-
-/* Module specific styles: task / milestone UI */
-.recent-projects { padding: 20px; border-radius: 12px; background: linear-gradient(180deg,#fff,#fbfcff); box-shadow:0 8px 30px rgba(12,18,34,0.04); }
-
-.controls-bar { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; }
-.controls-bar .left { flex:1; }
-.controls-bar input[type="search"] { width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(16,24,40,0.06); background:#fff; }
-.controls-bar .right { display:flex; gap:8px; align-items:center; }
-
-.inline-form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
-.inline-form select, .inline-form input[type="text"], .inline-form input[type="date"] { padding:10px 12px; border-radius:8px; border:1px solid rgba(16,24,40,0.06); background:#fff; min-width:140px; }
-.inline-form button { padding:10px 14px; border-radius:10px; border:none; background:linear-gradient(90deg,#1e3a8a,#2563eb); color:#fff; font-weight:700; cursor:pointer; }
-
-.summary { display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
-.summary .stat { background:#fff; padding:10px 14px; border-radius:10px; border:1px solid rgba(16,24,40,0.04); box-shadow:0 6px 18px rgba(12,18,34,0.03); min-width:120px; text-align:center; font-weight:700; color:#0f172a; }
-.summary .stat small { display:block; font-weight:500; color:#6b7280; font-size:.82rem; margin-top:6px; }
-
-.table-wrap { overflow:auto; margin-top:8px; }
-.table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 6px 16px rgba(12,18,34,0.03); }
-.table thead th { text-align:left; padding:10px 12px; background:rgba(16,24,40,0.03); font-weight:700; position:sticky; top:0; }
-.table tbody td { padding:10px 12px; border-top:1px solid rgba(16,24,40,0.04); color:#374151; vertical-align:middle; }
-
-.badge { display:inline-block; padding:6px 8px; border-radius:8px; font-weight:700; font-size:.85rem; }
-.status-Not\ Started { background:#f3f4f6; color:#111827; }
-.status-In\ Progress { background:#ecfdf5; color:#065f46; }
-.status-Blocked { background:#fff7ed; color:#92400e; }
-.status-Completed { background:#eef2ff; color:#1e3a8a; text-decoration:line-through; }
-
-.priority-High { color:#b91c1c; font-weight:800; }
-.priority-Low { color:#6b7280; }
-.priority-Normal { color:#0f172a; }
-
-.overdue { background: linear-gradient(90deg,#fee2e2,#fff); border-left: 4px solid #991b1b; }
-
-.action-btn { padding:6px 8px; border-radius:8px; border:none; cursor:pointer; font-weight:700; background:#eef2ff; color:#1e3a8a; }
-.action-btn.delete { background:#fee2e2; color:#991b1b; }
-
-@media (max-width:900px) {
-    .inline-form { flex-direction:column; align-items:stretch; }
-    .controls-bar { flex-direction:column; align-items:stretch; }
-    .summary { gap:8px; }
 }

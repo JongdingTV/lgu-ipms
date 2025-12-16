@@ -262,6 +262,7 @@
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
+    <script src="../shared-data.js"></script>
     <script src="project-reg.js"></script>
 
     <script>
@@ -283,18 +284,105 @@
                 return;
             }
             const html = projects.map((p, i) => {
-                return `<div style="border:1px solid #ddd;padding:8px;margin-bottom:8px;">
-                    <strong>${p.code || ''} - ${p.name}</strong><br>
-                    Location: ${p.location || ''} | Budget: ${p.budget || ''} | Status: ${p.status || 'N/A'}<br>
-                    Registered: ${p.createdAt || ''} | Registered By: ${p.registeredBy || ''}
+                return `<div style="border:1px solid #ddd;padding:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <strong>${p.code || ''} - ${p.name}</strong><br>
+                        Location: ${p.location || ''} | Budget: ${p.budget || ''} | Status: ${p.status || 'N/A'}<br>
+                        Registered: ${new Date(p.createdAt).toLocaleString() || ''} | Registered By: ${p.registeredBy || ''}
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn-view" data-index="${i}" style="padding:6px 12px;background:#2563eb;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;">View</button>
+                        <button class="btn-delete" data-index="${i}" style="padding:6px 12px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;">Delete</button>
+                    </div>
                 </div>`;
             }).join('');
             savedDiv.innerHTML = html;
+
+            // Wire up delete buttons
+            document.querySelectorAll('.btn-delete').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+                    const project = projects[index];
+                    
+                    if (confirm(`Are you sure you want to delete project "${project.name}"?\n\nThis action cannot be undone.`)) {
+                        projects.splice(index, 1);
+                        localStorage.setItem('projects', JSON.stringify(projects));
+                        msg.textContent = 'Project deleted successfully.';
+                        msg.style.display = 'block';
+                        msg.style.color = '#dc2626';
+                        setTimeout(() => {
+                            msg.style.display = 'none';
+                            msg.style.color = '#0b5';
+                        }, 3000);
+                        loadSavedProjects();
+                    }
+                });
+            });
+
+            // Wire up view buttons (optional - for future enhancement)
+            document.querySelectorAll('.btn-view').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+                    const project = projects[index];
+                    
+                    // Populate form with project data for editing
+                    document.getElementById('projCode').value = project.code || '';
+                    document.getElementById('projName').value = project.name || '';
+                    document.getElementById('projType').value = project.type || '';
+                    document.getElementById('projSector').value = project.sector || '';
+                    document.getElementById('projDescription').value = project.description || '';
+                    document.getElementById('projPriority').value = project.priority || 'Medium';
+                    document.getElementById('province').value = project.province || '';
+                    document.getElementById('barangay').value = project.barangay || '';
+                    document.getElementById('projLocation').value = project.location || '';
+                    document.getElementById('gps').value = project.gps || '';
+                    document.getElementById('lotNo').value = project.lotNo || '';
+                    document.getElementById('startDate').value = project.startDate || '';
+                    document.getElementById('endDate').value = project.endDate || '';
+                    document.getElementById('projDuration').value = project.durationMonths || '';
+                    document.getElementById('milestones').value = (project.milestones || []).join(', ');
+                    document.getElementById('projBudget').value = project.budget || '';
+                    document.getElementById('fundSources').value = project.fundSources || '';
+                    document.getElementById('budgetBreakdown').value = project.budgetBreakdown || '';
+                    document.getElementById('scopeOfWork').value = project.scopeOfWork || '';
+                    document.getElementById('designStatus').value = project.designStatus || 'Concept';
+                    document.getElementById('boqSummary').value = project.boqSummary || '';
+                    document.getElementById('procMethod').value = project.procMethod || 'Public Bidding';
+                    document.getElementById('implementingOffice').value = project.implementingOffice || '';
+                    document.getElementById('projManager').value = project.projectManager || '';
+                    document.getElementById('projManagerContact').value = project.projectManagerContact || '';
+                    document.getElementById('contractor').value = project.contractor || '';
+                    document.getElementById('contractType').value = project.contractType || 'Unit Price';
+                    document.getElementById('hasECC').checked = project.hasECC || false;
+                    document.getElementById('permits').value = project.permits || '';
+                    document.getElementById('rowStatus').value = project.rowStatus || '';
+                    document.getElementById('performanceIndicators').value = project.performanceIndicators || '';
+                    document.getElementById('reportingFrequency').value = project.reportingFrequency || 'Monthly';
+                    document.getElementById('registeredBy').value = project.registeredBy || '';
+                    document.getElementById('regDate').value = project.regDate || '';
+                    document.getElementById('status').value = project.status || 'Draft';
+                    document.getElementById('notes').value = project.notes || '';
+
+                    // Scroll to form
+                    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
+                    // Store the index for update mode
+                    form.dataset.editIndex = index;
+                    
+                    // Change button text
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    submitBtn.textContent = 'Update Project';
+                    submitBtn.style.background = '#f59e0b';
+                });
+            });
         }
 
         form.addEventListener('submit', function(e){
             e.preventDefault();
             const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+            const editIndex = form.dataset.editIndex;
 
             const p = {
                 code: document.getElementById('projCode').value,
@@ -351,19 +439,47 @@
                 createdAt: new Date().toISOString()
             };
 
-            projects.push(p);
-            localStorage.setItem('projects', JSON.stringify(projects));
-            msg.textContent = 'Project created successfully.';
+            if (editIndex !== undefined) {
+                // Update existing project
+                projects[parseInt(editIndex)] = p;
+                localStorage.setItem('projects', JSON.stringify(projects));
+                msg.textContent = 'Project updated successfully.';
+                msg.style.color = '#f59e0b';
+                delete form.dataset.editIndex;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Create Project';
+                submitBtn.style.background = '';
+            } else {
+                // Create new project
+                projects.push(p);
+                localStorage.setItem('projects', JSON.stringify(projects));
+                msg.textContent = 'Project created successfully.';
+                msg.style.color = '#0b5';
+            }
+            
             msg.style.display = 'block';
             form.reset();
             loadSavedProjects();
             // auto-fill registration date with today after reset
             document.getElementById('regDate').valueAsDate = new Date();
+            
+            // Hide message after 3 seconds
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 3000);
         });
 
         resetBtn.addEventListener('click', function(){
             form.reset();
             msg.style.display = 'none';
+            
+            // Clear edit mode if active
+            if (form.dataset.editIndex !== undefined) {
+                delete form.dataset.editIndex;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Create Project';
+                submitBtn.style.background = '';
+            }
         });
 
         // initialize

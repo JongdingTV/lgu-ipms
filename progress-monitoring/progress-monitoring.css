@@ -21,9 +21,9 @@ body.sidebar-hidden {
 
 /* NAVIGATION SIDEBAR */
 .nav {
-    width: 230px;
+    width: 260px;
     height: 100vh;
-    padding: 32px 20px;
+    padding: 24px 16px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -36,7 +36,8 @@ body.sidebar-hidden {
     top: 0;
     left: 0;
     z-index: 100;
-    overflow-y: auto;
+    overflow-y: hidden;
+    overflow-x: hidden;
     transition: transform 0.3s ease;
 }
 .user-icon {
@@ -64,15 +65,16 @@ body.sidebar-hidden {
     color: #ffffff;
     opacity: 1;
     transition: all 0.3s ease;
-    margin-bottom: 40px;
+    margin-bottom: 24px;
     font-size: 1.4em;
     font-weight: 700;
     letter-spacing: 0.5px;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding-bottom: 20px;
+    padding-bottom: 16px;
     border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
 }
 
 /* new logo image styling */
@@ -95,23 +97,47 @@ body.sidebar-hidden {
 .nav-links {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    margin-right: -4px;
+}
+
+.nav-links::-webkit-scrollbar {
+    width: 4px;
+}
+
+.nav-links::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+}
+
+.nav-links::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+.nav-links::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .nav-links a {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
+    gap: 8px;
+    padding: 12px 14px;
     text-decoration: none;
     cursor: pointer;
     color: rgba(255, 255, 255, 0.8);
     opacity: 0.8;
     transition: all 0.3s ease;
     border-radius: 8px;
-    font-size: 0.75em;
+    font-size: 0.8em;
     font-weight: 500;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .nav-links a:hover {
@@ -130,12 +156,21 @@ body.sidebar-hidden {
     padding-left: 12px;
 }
 
+.nav-links a .nav-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    display: inline-block;
+    margin-right: 6px;
+}
+
 .nav-user {
-    margin-top: 20px;
-    padding: 16px;
+    margin-top: 16px;
+    padding: 14px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     text-align: center;
+    flex-shrink: 0;
 }
 
 .nav-username {
@@ -161,8 +196,9 @@ body.sidebar-hidden {
 }
 
 .lgu-arrow-back {
-    margin-top: 20px;
+    margin-top: 12px;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .lgu-arrow-back a {
