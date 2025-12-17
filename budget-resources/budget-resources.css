@@ -29,7 +29,7 @@ body.sidebar-hidden {
     justify-content: flex-start;
     align-items: stretch;
 
-    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #2563eb 0%,  #1e3a8a 100%);
     box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
 
     position: fixed;
@@ -54,8 +54,8 @@ body.sidebar-hidden {
 /* ensure dashboard icon shows and links align */
 .nav-links a { display: flex; align-items: center; gap: 8px; }
 .nav-links a .nav-icon {
-    width: 18px;
-    height: 18px;
+    width: 25px;
+    height: 25px;
     object-fit: contain;
     display: inline-block;
     margin-right: 6px;
@@ -155,14 +155,6 @@ body.sidebar-hidden {
     font-weight: 600;
     border-left: 4px solid #ffffff;
     padding-left: 12px;
-}
-
-.nav-links a .nav-icon {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-    display: inline-block;
-    margin-right: 6px;
 }
 
 .nav-user {
