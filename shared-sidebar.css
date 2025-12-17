@@ -12,9 +12,14 @@
     font-family: 'Poppins', sans-serif;
 }
 
+html {
+    /* always show vertical scrollbar area to prevent layout shift between pages */
+    overflow-y: scroll;
+}
+
 body {
     background-color: #f8f9fa;
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     margin-left: 260px;
@@ -45,6 +50,13 @@ body.sidebar-hidden {
     overflow-y: hidden;
     overflow-x: hidden;
     transition: transform 0.3s ease;
+
+    /* Improve rendering stability when animating/positioned across page loads */
+    will-change: transform;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    backface-visibility: hidden;
+    font-family: 'Poppins', sans-serif;
 }
 
 .nav.hidden {

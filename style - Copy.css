@@ -37,6 +37,15 @@ body {
     z-index: 100;
 }
 
+/* ensure header/nav font rendering consistent */
+.nav {
+    will-change: transform;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    backface-visibility: hidden;
+    font-family: 'Poppins', sans-serif;
+}
+
 .nav-links a {
     margin-left: 25px;
     text-decoration: none;   /* ⛔ Removes underline */
