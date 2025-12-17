@@ -394,3 +394,35 @@ body.sidebar-hidden {
     .ctr-info-grid { grid-template-columns: repeat(2,1fr); }
     .chart-row.small { padding:8px 0; }
 }
+
+/* Theme overrides: make buttons colored and unify text colors */
+:root{ --primary:#0f172a; --accent:#2563eb; --muted:#6b7280; --btn-radius:8px }
+
+body, .main-content { color: var(--primary); }
+a { color: var(--accent); }
+
+/* Global button styling: apply accent and white text to all buttons */
+button, .btn, input[type="button"], input[type="submit"], .check-actions button, .inline-form button, .controls-bar button {
+    background: linear-gradient(90deg, var(--accent), #1e3a8a);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--btn-radius);
+    padding: 10px 12px;
+    cursor: pointer;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(37,99,235,0.08);
+    transition: transform .12s ease, filter .12s ease;
+}
+
+/* keep specific primary variant consistent */
+.btn.primary { background: linear-gradient(90deg,#1e3a8a,#2563eb); color: #fff; }
+
+button:hover, .btn:hover, .check-actions button:hover, .controls-bar button:hover { transform: translateY(-2px); filter: brightness(.98); }
+button:focus, .btn:focus { outline: 3px solid rgba(37,99,235,0.12); outline-offset: 2px; }
+
+/* Small tweaks for smaller inline action buttons */
+.check-actions button, .inline-form button { padding: 8px 10px; }
+
+/* Muted text alias */
+.muted { color: var(--muted); }
+

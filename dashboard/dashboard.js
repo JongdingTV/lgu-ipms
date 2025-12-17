@@ -135,3 +135,87 @@ function setupAutoRefresh() {
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', setupAutoRefresh);
+
+/* Metric card interactions: filter projects and show budget details */
+function setupMetricInteractions() {
+    const cards = document.querySelectorAll('.metric-card');
+    if (!cards || cards.length === 0) return;
+
+    cards.forEach((card, idx) => {
+        // add three-dots menu if not present
+        if (!card.querySelector('.card-menu')) {
+            const btn = document.createElement('button');
+            btn.className = 'card-menu';
+            btn.type = 'button';
+            btn.title = 'More';
+            btn.innerText = '⋯';
+            card.appendChild(btn);
+            // placeholder for menu click
+            btn.addEventListener('click', (e) => { e.stopPropagation(); /* future menu actions */ });
+        }
+
+        // click behavior on the card itself
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', async function () {
+            // animate
+            card.classList.add('pulse');
+            setTimeout(() => card.classList.remove('pulse'), 380);
+
+            // determine action by index or data attribute
+            // assumed order: 0 = Total Projects, 1 = In Progress, 2 = Completed, 3 = Budget
+            if (idx === 0) {
+                // show all projects
+                const list = fetchProjectsByFilter('all');
+                updateRecentProjectsTable(list);
+            } else if (idx === 1) {
+                const list = fetchProjectsByFilter('inProgress');
+                updateRecentProjectsTable(list);
+            } else if (idx === 2) {
+                const list = fetchProjectsByFilter('completed');
+                updateRecentProjectsTable(list);
+            } else if (idx === 3) {
+                // show budget details in the chart placeholder area
+                if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getDashboardMetrics) {
+                    const metrics = IPMS_DATA.getDashboardMetrics();
+                    if (metrics && metrics.budget) {
+                        updateBudgetUtilization(metrics.budget);
+                    }
+                }
+            }
+        });
+    });
+}
+
+function fetchProjectsByFilter(filter) {
+    if (typeof IPMS_DATA === 'undefined') return [];
+
+    // try native API if available
+    try {
+        if (filter === 'all') {
+            if (IPMS_DATA.getAllProjects) return IPMS_DATA.getAllProjects();
+            if (IPMS_DATA.getProjects) return IPMS_DATA.getProjects();
+            if (IPMS_DATA.getRecentProjects) return IPMS_DATA.getRecentProjects(1000) || [];
+        }
+
+        if (filter === 'inProgress') {
+            if (IPMS_DATA.getProjectsByStatus) return IPMS_DATA.getProjectsByStatus('In Progress');
+            const all = (IPMS_DATA.getAllProjects ? IPMS_DATA.getAllProjects() : (IPMS_DATA.getRecentProjects ? IPMS_DATA.getRecentProjects(1000) : []));
+            return all.filter(p => p.status && /progress|in progress/i.test(p.status));
+        }
+
+        if (filter === 'completed') {
+            if (IPMS_DATA.getProjectsByStatus) return IPMS_DATA.getProjectsByStatus('Completed');
+            const all = (IPMS_DATA.getAllProjects ? IPMS_DATA.getAllProjects() : (IPMS_DATA.getRecentProjects ? IPMS_DATA.getRecentProjects(1000) : []));
+            return all.filter(p => p.status && /complete|completed|finished/i.test(p.status));
+        }
+    } catch (err) {
+        console.error('Error fetching projects by filter', err);
+    }
+    return [];
+}
+
+// run interactions setup after initial render
+document.addEventListener('DOMContentLoaded', () => {
+    // small delay to ensure metric cards are rendered
+    setTimeout(setupMetricInteractions, 120);
+});
