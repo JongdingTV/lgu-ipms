@@ -22,6 +22,14 @@ document.getElementById('toggleSidebarShow').addEventListener('click', function(
     toggleBtn.classList.toggle('show');
 });
 
+// Demo fallback data (used when IPMS_DATA is not available)
+const demoProjects = [
+    { name: 'Barangay Road Rehab', location: 'Barangay San Roque', status: 'Completed', progress: 100, budget: 1200000 },
+    { name: 'Drainage Improvement', location: 'Brgy. Riverside', status: 'Completed', progress: 100, budget: 850000 },
+    { name: 'Main Street Rehab', location: 'City Center', status: 'In Progress', progress: 45, budget: 2200000 },
+    { name: 'Bridge Maintenance', location: 'Barangay East', status: 'In Progress', progress: 20, budget: 500000 }
+];
+
 /* Dashboard real-time data integration */
 function loadDashboardData() {
     // Check if shared data service is available
@@ -187,7 +195,14 @@ function setupMetricInteractions() {
 }
 
 function fetchProjectsByFilter(filter) {
-    if (typeof IPMS_DATA === 'undefined') return [];
+    // If no backend data provider is available, return demo data for the example
+    if (typeof IPMS_DATA === 'undefined') {
+        const all = demoProjects.slice();
+        if (filter === 'all') return all;
+        if (filter === 'inProgress') return all.filter(p => p.status && /progress|in progress/i.test(p.status));
+        if (filter === 'completed') return all.filter(p => p.status && /complete|completed|finished/i.test(p.status));
+        return [];
+    }
 
     // try native API if available
     try {
