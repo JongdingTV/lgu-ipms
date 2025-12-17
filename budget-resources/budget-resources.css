@@ -295,6 +295,37 @@ body.sidebar-hidden {
     font-size: 0.95em;
 }
 
+/* Section styling for better organization */
+.budget-section,
+.allocation-section,
+.expense-section,
+.summary-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.budget-section h2,
+.allocation-section h2,
+.expense-section h2,
+.summary-section h2 {
+    color: #1e3a8a;
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.summary-section h3 {
+    color: #1e3a8a;
+    font-size: 1.2em;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
 /* ===== Additional styles for Budget & Resources page ===== */
 
 /* inline form styling */
@@ -314,6 +345,14 @@ body.sidebar-hidden {
     background:#fff;
     font-size:0.95rem;
     min-width:160px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.inline-form input[type="text"]:focus,
+.inline-form input[type="number"]:focus,
+.inline-form select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
 }
 .inline-form button {
     padding:10px 14px;
@@ -324,6 +363,11 @@ body.sidebar-hidden {
     font-weight:700;
     cursor:pointer;
     box-shadow:0 8px 20px rgba(37,99,235,0.12);
+    transition: transform 0.08s ease, box-shadow 0.12s ease;
+}
+.inline-form button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
 }
 
 /* summary stat */
@@ -366,7 +410,20 @@ body.sidebar-hidden {
 
 /* controls bar helpers */
 .controls-bar { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:12px; }
-.controls-bar .left input { width:240px; max-width:100%; }
+.controls-bar .left input { 
+    width:240px; 
+    max-width:100%; 
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(16,24,40,0.06);
+    background: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.controls-bar .left input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
 .controls-bar .right { display:flex; gap:8px; align-items:center; }
 
 /* export/import buttons */
@@ -381,6 +438,12 @@ body.sidebar-hidden {
     font-weight:700;
     border:none;
     cursor:pointer;
+    transition: transform 0.08s ease, box-shadow 0.12s ease;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+.export-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
 }
 .export-btn:active { transform:translateY(1px); }
 
