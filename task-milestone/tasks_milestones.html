@@ -66,31 +66,35 @@
                 <div class="stat"><div id="tmDueWeek">0</div><small>Due this week</small></div>
             </div>
 
-            <h3>Create / Assign Task</h3>
-            <form id="taskForm" class="inline-form">
-                <select id="taskProject" required><option value="">Select project</option></select>
-                <input id="deliverable" type="text" placeholder="Deliverable (e.g., Foundation)" required>
-                <input id="taskName" type="text" placeholder="Task name (e.g., Excavate trench)" required>
-                <select id="assigneeType">
-                    <option value="Contractor">Contractor</option>
-                    <option value="LGU Engineer">LGU Engineer</option>
-                </select>
-                <input id="assignee" type="text" placeholder="Assignee name" required>
-                <input id="deadline" type="date" required>
-                <select id="priority">
-                    <option>Normal</option><option>High</option><option>Low</option>
-                </select>
-                <button type="submit">Add Task</button>
-            </form>
+            <div class="task-section">
+                <h3>Create / Assign Task</h3>
+                <form id="taskForm" class="inline-form">
+                    <select id="taskProject" required><option value="">Select project</option></select>
+                    <input id="deliverable" type="text" placeholder="Deliverable (e.g., Foundation)" required>
+                    <input id="taskName" type="text" placeholder="Task name (e.g., Excavate trench)" required>
+                    <select id="assigneeType">
+                        <option value="Contractor">Contractor</option>
+                        <option value="LGU Engineer">LGU Engineer</option>
+                    </select>
+                    <input id="assignee" type="text" placeholder="Assignee name" required>
+                    <input id="deadline" type="date" required>
+                    <select id="priority">
+                        <option>Normal</option><option>High</option><option>Low</option>
+                    </select>
+                    <button type="submit">Add Task</button>
+                </form>
+            </div>
 
-            <h3>Tasks</h3>
-            <div class="table-wrap">
-                <table id="tasksTable" class="table">
-                    <thead>
-                        <tr><th>Deliverable</th><th>Task</th><th>Assignee</th><th>Type</th><th>Priority</th><th>Deadline</th><th>Status</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <div class="tasks-section">
+                <h3>Tasks</h3>
+                <div class="table-wrap">
+                    <table id="tasksTable" class="table">
+                        <thead>
+                            <tr><th>Deliverable</th><th>Task</th><th>Assignee</th><th>Type</th><th>Priority</th><th>Deadline</th><th>Status</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </section>
