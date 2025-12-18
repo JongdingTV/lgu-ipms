@@ -30,7 +30,7 @@ body.sidebar-hidden {
     padding: 24px 16px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: stretch;
 
     background: linear-gradient(135deg, #2563eb 0%,  #1e3a8a 100%);
@@ -108,8 +108,7 @@ body.sidebar-hidden {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    flex: 1;
-    overflow-y: auto;
+    overflow-y: hidden;
     overflow-x: hidden;
     padding-right: 4px;
     margin-right: -4px;
@@ -409,6 +408,14 @@ body.sidebar-hidden {
     font-size: 1.3em;
     margin-bottom: 15px;
     font-weight: 600;
+}
+
+/* Consistent h2 styling for section headings */
+h2 {
+    color: #1e3a8a;
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-bottom: 15px;
 }
 
 .table-wrap { overflow:auto; margin-top:8px; }

@@ -30,7 +30,7 @@ body.sidebar-hidden {
     padding: 24px 16px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: stretch;
 
     background: linear-gradient(135deg, #2563eb 0%,  #1e3a8a 100%);
@@ -108,8 +108,7 @@ body.sidebar-hidden {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    flex: 1;
-    overflow-y: auto;
+    overflow-y: hidden;
     overflow-x: hidden;
     padding-right: 4px;
     margin-right: -4px;
@@ -318,9 +317,19 @@ body.sidebar-hidden {
 .ctr-right { margin-left:auto; text-align:right; display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
 .ctr-rating { color:#f59e0b; font-weight:800; letter-spacing:1px; }
 .ctr-status { font-weight:700; font-size:.78rem; padding:4px 8px; border-radius:999px; }
+.ctr-actions { display: flex; gap: 4px; margin-top: 4px; }
+.ctr-actions button { padding: 4px 8px; font-size: 0.8rem; border-radius: 4px; border: none; cursor: pointer; }
 .ctr-status.active { background:#ecfdf5; color:#065f46; }
 .ctr-status.suspended { background:#fff7ed; color:#92400e; }
 .ctr-status.blacklisted { background:#fee2e2; color:#991b1b; }
+
+/* Consistent h2 styling for section headings */
+h2 {
+    color: #0f172a;
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
 
 /* profile panel */
 .ctr-panel { display:grid; grid-template-columns: 1fr 260px; gap:16px; }
@@ -356,6 +365,23 @@ body.sidebar-hidden {
 
 /* empty state within list */
 .ctr-empty { color:#6b7280; font-style:italic; padding:12px; background:#fff; border-radius:8px; }
+
+/* Contractor form section */
+.contractor-form-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.contractor-form-section h3 {
+    color: #1e3a8a;
+    font-size: 1.3em;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
 
 /* ---- Added styles: performance chart, checklist, documents, feedback ---- */
 .chart-row.small { padding: 10px 0 18px; }

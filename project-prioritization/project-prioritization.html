@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Project Prioritization - LGU IPMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="project-prioritization.css" />
+</head>
+<body>
+    <header class="nav" id="navbar">
+        <div class="nav-logo">
+            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <span class="logo-text">IPMS</span>
+        </div>
+        <div class="nav-links">
+            <a href="../dashboard/dashboard.html"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
+            <a href="../project-registration/project_registration.html"><img src="../project-registration/list.png" class="nav-icon">Project Registration</a>
+            <a href="../progress-monitoring/progress_monitoring.html"><img src="../progress-monitoring/monitoring.png" class="nav-icon">Progress Monitoring</a>
+            <a href="../budget-resources/budget_resources.html"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
+            <a href="../task-milestone/tasks_milestones.html"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
+            <a href="../contractors/contractors.html"><img src="../contractors/contractors.png" class="nav-icon">Contractors</a>
+            <a href="project-prioritization.html" class="active"><img src="prioritization.png" alt="Priority Icon" class="nav-icon">Project Prioritization</a>
+        </div>
+        <div class="nav-user">
+            <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
+            <span class="nav-username">Welcome, User</span>
+            <a href="../login.html" class="nav-logout">Logout</a>
+        </div>
+        <div class="lgu-arrow-back">
+            <a href="#" id="toggleSidebar">
+                <img src="../dashboard/lgu-arrow-back.png" alt="Toggle sidebar">
+            </a>
+        </div>
+    </header>
+
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow">
+            <img src="../dashboard/lgu-arrow-right.png" alt="Show sidebar">
+        </a>
+    </div>
+
+    <section class="main-content">
+        <div class="dash-header">
+            <h1>Project Prioritization</h1>
+            <p>Collect and categorize citizen inputs for infrastructure project prioritization</p>
+        </div>
+
+        <div class="prioritization-section">
+            <h2>Submit Citizen Input</h2>
+            <form id="inputForm" class="input-form">
+                <input id="citizenName" type="text" placeholder="Your Name" required>
+                <input id="citizenEmail" type="email" placeholder="Email (optional)">
+                <select id="inputType" required>
+                    <option value="">Select Input Type</option>
+                    <option value="Concern">Concern</option>
+                    <option value="Suggestion">Suggestion</option>
+                    <option value="Complaint">Complaint</option>
+                </select>
+                <input id="subject" type="text" placeholder="Subject/Title" required>
+                <textarea id="description" placeholder="Describe your concern, suggestion, or complaint about infrastructure projects..." rows="4" required></textarea>
+                <select id="category">
+                    <option value="">Select Category</option>
+                    <option value="Roads">Roads</option>
+                    <option value="Drainage">Drainage</option>
+                    <option value="Buildings">Buildings</option>
+                    <option value="Water">Water Supply</option>
+                    <option value="Sanitation">Sanitation</option>
+                    <option value="Electricity">Electricity</option>
+                    <option value="Other">Other</option>
+                </select>
+                <input id="location" type="text" placeholder="Location/Area" required>
+                <select id="urgency">
+                    <option value="Low">Low Priority</option>
+                    <option value="Medium">Medium Priority</option>
+                    <option value="High">High Priority</option>
+                    <option value="Critical">Critical/Emergency</option>
+                </select>
+                <button type="submit">Submit Input</button>
+            </form>
+        </div>
+
+        <div class="inputs-section">
+            <h2>Citizen Inputs</h2>
+            <div class="filters">
+                <select id="filterType">
+                    <option value="">All Types</option>
+                    <option value="Concern">Concerns</option>
+                    <option value="Suggestion">Suggestions</option>
+                    <option value="Complaint">Complaints</option>
+                </select>
+                <select id="filterCategory">
+                    <option value="">All Categories</option>
+                    <option value="Roads">Roads</option>
+                    <option value="Drainage">Drainage</option>
+                    <option value="Buildings">Buildings</option>
+                    <option value="Water">Water Supply</option>
+                    <option value="Sanitation">Sanitation</option>
+                    <option value="Electricity">Electricity</option>
+                    <option value="Other">Other</option>
+                </select>
+                <select id="filterUrgency">
+                    <option value="">All Priorities</option>
+                    <option value="Critical">Critical</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <div class="table-wrap">
+                <table id="inputsTable" class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Subject</th>
+                            <th>Category</th>
+                            <th>Location</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="summary-section">
+            <h2>Prioritization Summary</h2>
+            <div class="summary">
+                <div class="stat"><div id="totalInputs">0</div><small>Total Inputs</small></div>
+                <div class="stat"><div id="criticalInputs">0</div><small>Critical</small></div>
+                <div class="stat"><div id="highInputs">0</div><small>High Priority</small></div>
+                <div class="stat"><div id="pendingInputs">0</div><small>Pending Review</small></div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
+    </footer>
+
+    <script src="../shared-data.js"></script>
+    <script src="project-prioritization.js"></script>
+</body>
+</html>

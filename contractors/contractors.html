@@ -22,6 +22,7 @@
             <a href="../budget-resources/budget_resources.html"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="../task-milestone/tasks_milestones.html"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
             <a href="contractors.html" class="active"><img src="contractors.png" class="nav-icon">Contractors</a>
+            <a href="../project-prioritization/project-prioritization.html"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
         </div>
         <div class="nav-user">
             <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
@@ -68,6 +69,23 @@
                 <div class="stat"><div id="ctrActive">10</div><small>Active</small></div>
                 <div class="stat"><div id="ctrAvgRating">4.2</div><small>Avg. rating</small></div>
                 <div class="stat"><div id="ctrCompl">3</div><small>Non-compliant</small></div>
+            </div>
+
+            <div class="contractor-form-section">
+                <h3 id="formTitle">Add Contractor</h3>
+                <form id="contractorForm" class="inline-form">
+                    <input id="ctrCompany" type="text" placeholder="Company Name" required>
+                    <input id="ctrLicense" type="text" placeholder="License Number" required>
+                    <input id="ctrContact" type="text" placeholder="Contact Info" required>
+                    <input id="ctrAddress" type="text" placeholder="Address" required>
+                    <select id="ctrStatus">
+                        <option value="Active">Active</option>
+                        <option value="Suspended">Suspended</option>
+                        <option value="Blacklisted">Blacklisted</option>
+                    </select>
+                    <button type="submit">Save Contractor</button>
+                    <button type="button" id="cancelEdit">Cancel</button>
+                </form>
             </div>
 
             <div class="contractors-grid">

@@ -30,7 +30,7 @@ body.sidebar-hidden {
     padding: 24px 16px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: stretch;
 
     background: linear-gradient(135deg, #2563eb 0%,  #1e3a8a 100%);
@@ -99,8 +99,7 @@ body.sidebar-hidden {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    flex: 1;
-    overflow-y: auto;
+    overflow-y: hidden;
     overflow-x: hidden;
     padding-right: 4px;
     margin-right: -4px;
@@ -128,7 +127,7 @@ body.sidebar-hidden {
 .nav-links a {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     padding: 12px 14px;
     text-decoration: none;
     cursor: pointer;
@@ -288,7 +287,7 @@ body.sidebar-hidden {
 }
 
 .main-content {
-    padding: 30px;
+    padding: 28px;
     overflow-y: auto;
     flex: 1;
 }

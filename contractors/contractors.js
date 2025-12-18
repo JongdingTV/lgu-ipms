@@ -22,6 +22,131 @@ document.getElementById('toggleSidebarShow').addEventListener('click', function(
     toggleBtn.classList.toggle('show');
 });
 
+// CRUD for Contractors
+let contractors = JSON.parse(localStorage.getItem('contractors')) || [
+    { id: 'c-acme', company: 'ACME Construction', license: '2024-AC-001', contact: 'contact@acme.com', address: '123 Main St', status: 'Active', rating: 4 },
+    { id: 'c-blueriver', company: 'Blue River Builders', license: '2023-BR-092', contact: 'info@blueriver.com', address: '456 River Rd', status: 'Suspended', rating: 3 }
+];
+let editingId = null;
+
+function saveContractors() {
+    localStorage.setItem('contractors', JSON.stringify(contractors));
+}
+
+function renderContractors() {
+    const list = document.querySelector('.ctr-list');
+    list.innerHTML = '';
+    
+    const search = document.getElementById('ctrSearch').value.toLowerCase();
+    const statusFilter = document.getElementById('ctrFilterStatus').value;
+    
+    const filtered = contractors.filter(c => {
+        if (statusFilter && c.status !== statusFilter) return false;
+        if (search && !c.company.toLowerCase().includes(search) && !c.license.toLowerCase().includes(search)) return false;
+        return true;
+    });
+    
+    if (filtered.length === 0) {
+        list.innerHTML = '<div class="ctr-empty">No contractors found.</div>';
+        return;
+    }
+    
+    filtered.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'ctr-item';
+        item.tabIndex = 0;
+        item.dataset.id = c.id;
+        item.innerHTML = `
+            <img class="ctr-avatar" src="../contractors/contractors.png" alt="">
+            <div class="ctr-meta">
+                <strong>${c.company}</strong>
+                <small>License # ${c.license}</small>
+            </div>
+            <div class="ctr-right">
+                <div class="ctr-rating">${'★'.repeat(Math.floor(c.rating || 0))}${'☆'.repeat(5 - Math.floor(c.rating || 0))}</div>
+                <div class="ctr-status ${c.status.toLowerCase()}">${c.status}</div>
+                <div class="ctr-actions">
+                    <button onclick="editContractor('${c.id}')">Edit</button>
+                    <button onclick="deleteContractor('${c.id}')">Delete</button>
+                </div>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+    
+    // Update stats
+    document.getElementById('ctrCount').textContent = contractors.length;
+    document.getElementById('ctrActive').textContent = contractors.filter(c => c.status === 'Active').length;
+    const avgRating = contractors.reduce((sum, c) => sum + (c.rating || 0), 0) / contractors.length;
+    document.getElementById('ctrAvgRating').textContent = avgRating.toFixed(1);
+    document.getElementById('ctrCompl').textContent = contractors.filter(c => c.status === 'Suspended' || c.status === 'Blacklisted').length;
+}
+
+function editContractor(id) {
+    const c = contractors.find(c => c.id === id);
+    if (!c) return;
+    editingId = id;
+    document.getElementById('ctrCompany').value = c.company;
+    document.getElementById('ctrLicense').value = c.license;
+    document.getElementById('ctrContact').value = c.contact;
+    document.getElementById('ctrAddress').value = c.address;
+    document.getElementById('ctrStatus').value = c.status;
+    document.getElementById('formTitle').textContent = 'Edit Contractor';
+    document.getElementById('contractorForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteContractor(id) {
+    if (confirm('Are you sure you want to delete this contractor?')) {
+        contractors = contractors.filter(c => c.id !== id);
+        saveContractors();
+        renderContractors();
+    }
+}
+
+document.getElementById('ctrAdd').addEventListener('click', () => {
+    editingId = null;
+    document.getElementById('contractorForm').reset();
+    document.getElementById('formTitle').textContent = 'Add Contractor';
+});
+
+document.getElementById('cancelEdit').addEventListener('click', () => {
+    editingId = null;
+    document.getElementById('contractorForm').reset();
+    document.getElementById('formTitle').textContent = 'Add Contractor';
+});
+
+document.getElementById('contractorForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const c = {
+        id: editingId || 'c-' + Math.random().toString(36).substr(2, 9),
+        company: document.getElementById('ctrCompany').value,
+        license: document.getElementById('ctrLicense').value,
+        contact: document.getElementById('ctrContact').value,
+        address: document.getElementById('ctrAddress').value,
+        status: document.getElementById('ctrStatus').value,
+        rating: 4 // default
+    };
+    
+    if (editingId) {
+        const index = contractors.findIndex(c => c.id === editingId);
+        contractors[index] = c;
+    } else {
+        contractors.push(c);
+    }
+    
+    saveContractors();
+    renderContractors();
+    document.getElementById('contractorForm').reset();
+    editingId = null;
+    document.getElementById('formTitle').textContent = 'Add Contractor';
+});
+
+document.getElementById('ctrSearch').addEventListener('input', renderContractors);
+document.getElementById('ctrFilterStatus').addEventListener('change', renderContractors);
+
+// Initial render
+document.addEventListener('DOMContentLoaded', renderContractors);
+
 /* Added features JS: performance chart, checklist, documents, feedback */
 const CT_KEY = 'contractors_module_v1';
 

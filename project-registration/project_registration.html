@@ -22,6 +22,7 @@
             <a href="../budget-resources/budget_resources.html"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="../task-milestone/tasks_milestones.html"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
             <a href="../contractors/contractors.html"><img src="../contractors/contractors.png" class="nav-icon">Contractors</a>
+            <a href="../project-prioritization/project-prioritization.html"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
         </div>
         <div class="nav-user">
             <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
@@ -256,8 +257,26 @@
 
             <div id="formMessage" style="margin-top:12px;color:#0b5;display:none;"></div>
 
-            <!-- quick list of saved projects -->
-            <div id="savedProjects" style="margin-top:18px;"></div>
+            <!-- Registered Projects Table -->
+            <div class="projects-section">
+                <h3>Registered Projects</h3>
+                <div class="table-wrap">
+                    <table id="projectsTable" class="table">
+                        <thead>
+                            <tr>
+                                <th>Project Code</th>
+                                <th>Project Name</th>
+                                <th>Type</th>
+                                <th>Sector</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </section>
 
