@@ -23,10 +23,7 @@ document.getElementById('toggleSidebarShow').addEventListener('click', function(
 });
 
 // CRUD for Contractors
-let contractors = JSON.parse(localStorage.getItem('contractors')) || [
-    { id: 'c-acme', company: 'ACME Construction', license: '2024-AC-001', contact: 'contact@acme.com', address: '123 Main St', status: 'Active', rating: 4 },
-    { id: 'c-blueriver', company: 'Blue River Builders', license: '2023-BR-092', contact: 'info@blueriver.com', address: '456 River Rd', status: 'Suspended', rating: 3 }
-];
+let contractors = JSON.parse(localStorage.getItem('contractors')) || [];
 let editingId = null;
 
 function saveContractors() {

@@ -425,30 +425,38 @@ form#projectForm .btn-row {
 
 button[type="submit"],
 button#resetBtn {
-    padding: 10px 16px;
+    padding: 12px 20px;
     border-radius: 8px;
     border: none;
     cursor: pointer;
     font-weight: 600;
     font-size: 0.95rem;
-    transition: transform .08s ease, box-shadow .12s ease;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 button[type="submit"] {
-    background: linear-gradient(90deg,var(--primary-1),var(--primary-2));
+    background: linear-gradient(135deg, #10b981, #059669);
     color: #fff;
-    box-shadow: 0 8px 24px rgba(37,99,235,0.12);
 }
 
-button[type="submit"]:hover { transform: translateY(-2px); }
+button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+}
 
 button#resetBtn {
-    background: #fff;
-    color: var(--primary-1);
-    border: 1px solid rgba(16,24,40,0.08);
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: #fff;
 }
 
-button#resetBtn:hover { box-shadow: 0 8px 18px rgba(16,24,40,0.04); transform: translateY(-1px); }
+button#resetBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(107, 114, 128, 0.3);
+}
 
 /* small helper text */
 #formMessage {
@@ -478,6 +486,91 @@ button#resetBtn:hover { box-shadow: 0 8px 18px rgba(16,24,40,0.04); transform: t
 .table thead th { text-align:left; padding:10px 12px; background:rgba(16,24,40,0.03); font-weight:700; position:sticky; top:0; }
 .table tbody td { padding:10px 12px; border-top:1px solid rgba(16,24,40,0.04); color:#374151; vertical-align:middle; }
 .table tbody tr:hover { background: rgba(37, 99, 235, 0.02); }
+
+/* Action Buttons in Table */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-edit, .btn-delete, .btn-save, .btn-cancel {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-edit {
+    background: #eef2ff;
+    color: #1e3a8a;
+}
+
+.btn-edit:hover {
+    background: #dbeafe;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.btn-delete {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.btn-delete:hover {
+    background: #fecaca;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}
+
+.btn-save {
+    background: linear-gradient(90deg, #1e3a8a, #2563eb);
+    color: white;
+}
+
+.btn-save:hover {
+    background: linear-gradient(90deg, #2563eb, #1e3a8a);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-cancel {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-cancel:hover {
+    background: #e5e7eb;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Inline editing styles */
+.editing-row {
+    background: rgba(251, 191, 36, 0.05);
+    border-left: 4px solid #f59e0b;
+}
+
+.editing-row input, .editing-row select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.editing-row input:focus, .editing-row select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
 
 /* saved projects list styling */
 #savedProjects > div {

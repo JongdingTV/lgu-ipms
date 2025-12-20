@@ -416,12 +416,6 @@ body.sidebar-hidden {
 .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 0.85em;
-    font-weight: 600;
 }
 
 /* Recent Projects */

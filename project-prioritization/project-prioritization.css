@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 html {
     overflow-y: scroll;
@@ -271,7 +271,7 @@ body.sidebar-hidden {
 }
 
 .main-content {
-    padding: 30px;
+    padding: 28px;
     overflow-y: auto;
     flex: 1;
     max-width: 1200px;
@@ -454,6 +454,10 @@ body.sidebar-hidden {
     font-weight: 600;
     font-size: .8rem;
 }
+
+.type-Concern { background: #fee2e2; color: #991b1b; }
+.type-Suggestion { background: #dbeafe; color: #1e40af; }
+.type-Complaint { background: #fef3c7; color: #92400e; }
 
 .status-Pending { background: #fef3c7; color: #92400e; }
 .status-Under\ Review { background: #dbeafe; color: #1e40af; }

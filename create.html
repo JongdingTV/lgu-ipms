@@ -1180,6 +1180,20 @@ async function handleSubmit(e) {
         users.push(user);
         localStorage.setItem('users', JSON.stringify(users));
         
+        // Set current user
+        localStorage.setItem('currentUser', JSON.stringify({
+            firstName,
+            middleName,
+            lastName,
+            suffix,
+            email,
+            mobile,
+            birthdate,
+            gender,
+            civilStatus,
+            address
+        }));
+        
         // Audit log
         const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
         logs.push({
@@ -1205,7 +1219,7 @@ async function handleSubmit(e) {
             if(countEl) countEl.textContent = seconds;
             if(seconds <= 0){
                 clearInterval(interval);
-                window.location.href = 'login.html';
+                window.location.href = 'user-dashboard/user-dashboard.html';
             }
         }, 1000);
         

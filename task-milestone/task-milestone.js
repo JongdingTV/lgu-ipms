@@ -26,7 +26,13 @@ function loadTasks() { return JSON.parse(localStorage.getItem(TM_KEY) || '[]'); 
 function saveTasks(list) { localStorage.setItem(TM_KEY, JSON.stringify(list)); }
 function uid() { return 't' + Math.random().toString(36).slice(2,9); }
 
-function getProjects() { return JSON.parse(localStorage.getItem('projects') || '[]'); }
+function getProjects() {
+    if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) {
+        return IPMS_DATA.getProjects();
+    } else {
+        return JSON.parse(localStorage.getItem('projects') || '[]');
+    }
+}
 
 function renderProjectOptions() {
     const projects = getProjects();

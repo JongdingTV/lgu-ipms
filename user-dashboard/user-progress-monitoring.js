@@ -32,15 +32,6 @@ function getProjects() {
     // Fallback to localStorage if shared-data.js is not loaded
     return JSON.parse(localStorage.getItem(projectsKey) || '[]');
 }
-function saveProjects(arr) {
-    if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.saveProjects) {
-        // If shared-data has save method, use it
-        IPMS_DATA.saveProjects(arr);
-    } else {
-        // Fallback to localStorage
-        localStorage.setItem(projectsKey, JSON.stringify(arr));
-    }
-}
 function formatCurrency(n) {
     if (!n && n !== 0) return '—';
     return '₱' + Number(n).toLocaleString();
@@ -55,8 +46,8 @@ function renderProjects() {
     const sector = document.getElementById('pmSectorFilter')?.value || '';
     const sort = document.getElementById('pmSort')?.value || 'createdAt_desc';
 
-    // Check if view-only mode (for users)
-    const isViewOnly = document.referrer.includes('user-dashboard') || window.location.search.includes('viewOnly');
+    // Check if view-only mode (for users) - always true for user view
+    const isViewOnly = true;
 
     let filtered = projects.filter(p => {
         if (status && p.status !== status) return false;
@@ -82,7 +73,7 @@ function renderProjects() {
         const progress = Number(p.progress || 0);
         const pct = Math.min(100, Math.max(0, progress));
         const statusClass = (p.status||'').replace(/\s+/g,'').toLowerCase();
-        const statusBadge = `<span class="badge status-${statusClass}">${p.status||'N/A'}</span>`;
+        const statusBadge = `<span class="status-badge ${statusClass}">${p.status||'N/A'}</span>`;
         return `
 <div class="project-card" data-idx="${idx}">
   <div class="pc-head">
@@ -211,6 +202,12 @@ function renderProjects() {
 
 // wire filters/search/sort
 document.addEventListener('DOMContentLoaded', () => {
+    // Hide export button in view-only mode
+    const exportBtn = document.getElementById('exportCsv');
+    if (true) { // Always view-only for user side
+        exportBtn.style.display = 'none';
+    }
+
     const controls = ['pmSearch','pmStatusFilter','pmSectorFilter','pmSort'];
     controls.forEach(id => {
         const el = document.getElementById(id);
@@ -219,8 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener(ev, renderProjects);
     });
 
-    const exportBtn = document.getElementById('exportCsv');
-    exportBtn?.addEventListener('click', () => {
+    const exportBtn2 = document.getElementById('exportCsv');
+    exportBtn2?.addEventListener('click', () => {
         const projects = getProjects();
         if (!projects.length) { alert('No projects to export'); return; }
         const keys = ['code','name','sector','location','province','budget','durationMonths','progress','status','createdAt'];

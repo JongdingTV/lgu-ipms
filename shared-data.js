@@ -22,6 +22,15 @@ const IPMS_DATA = {
         }
     },
 
+    // Save projects
+    saveProjects(projects) {
+        try {
+            localStorage.setItem(this.KEYS.PROJECTS, JSON.stringify(projects));
+        } catch (e) {
+            console.error('Error saving projects:', e);
+        }
+    },
+
     // Get budget data
     getBudgetData() {
         try {

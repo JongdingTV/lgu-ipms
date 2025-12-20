@@ -23,17 +23,30 @@ document.getElementById('toggleSidebarShow').addEventListener('click', function(
 });
 
 // CRUD for Projects
-let projects = JSON.parse(localStorage.getItem('projects')) || [];
+let projects = [];
 let editingIndex = -1;
 
 function saveProjects() {
-    localStorage.setItem('projects', JSON.stringify(projects));
+    if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.saveProjects) {
+        IPMS_DATA.saveProjects(projects);
+    } else {
+        localStorage.setItem('projects', JSON.stringify(projects));
+    }
+}
+
+function loadProjects() {
+    if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) {
+        projects = IPMS_DATA.getProjects();
+    } else {
+        projects = JSON.parse(localStorage.getItem('projects')) || [];
+    }
+    displayProjects();
 }
 
 function displayProjects() {
     const tbody = document.querySelector('#projectsTable tbody');
     tbody.innerHTML = '';
-    
+
     projects.forEach((project, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -44,8 +57,14 @@ function displayProjects() {
             <td>${project.projPriority}</td>
             <td>${project.status || 'Active'}</td>
             <td>
-                <button onclick="editProject(${index})">Edit</button>
-                <button onclick="deleteProject(${index})">Delete</button>
+                <div class="action-buttons">
+                    <button class="btn-edit" onclick="editProject(${index})" title="Edit Project">
+                        Edit
+                    </button>
+                    <button class="btn-delete" onclick="deleteProject(${index})" title="Delete Project">
+                        Delete
+                    </button>
+                </div>
             </td>
         `;
         tbody.appendChild(row);
@@ -55,7 +74,7 @@ function displayProjects() {
 function editProject(index) {
     const project = projects[index];
     editingIndex = index;
-    
+
     // Populate form
     document.getElementById('projCode').value = project.projCode;
     document.getElementById('projName').value = project.projName;
@@ -69,10 +88,12 @@ function editProject(index) {
     document.getElementById('endDate').value = project.endDate;
     document.getElementById('budget').value = project.budget;
     document.getElementById('contractor').value = project.contractor;
-    
-    const submitBtn = document.querySelector('#projectForm button[type="submit"]');
-    submitBtn.textContent = 'Update Project';
-    submitBtn.style.background = '#f59e0b';
+
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.innerHTML = 'Update Project';
+
+    // Scroll to form
+    document.getElementById('projectForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function deleteProject(index) {
@@ -113,15 +134,15 @@ document.getElementById('projectForm').addEventListener('submit', function(e) {
     saveProjects();
     displayProjects();
     this.reset();
-    
-    const submitBtn = this.querySelector('button[type="submit"]');
-    submitBtn.textContent = 'Create Project';
+
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.innerHTML = 'Create Project';
     submitBtn.style.background = '';
-    
+
     document.getElementById('formMessage').textContent = 'Project saved successfully!';
     document.getElementById('formMessage').style.display = 'block';
     setTimeout(() => document.getElementById('formMessage').style.display = 'none', 3000);
 });
 
 // Load projects on page load
-document.addEventListener('DOMContentLoaded', displayProjects);
+document.addEventListener('DOMContentLoaded', loadProjects);

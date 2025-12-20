@@ -28,7 +28,6 @@ const PRIORITIZATION_KEY = 'lgu_prioritization_v1';
 
 function loadInputs() {
     return JSON.parse(localStorage.getItem(PRIORITIZATION_KEY) || '[]');
-}
 
 function saveInputs(inputs) {
     localStorage.setItem(PRIORITIZATION_KEY, JSON.stringify(inputs));
@@ -110,32 +109,6 @@ function deleteInput(id) {
         renderInputs();
     }
 }
-
-document.getElementById('inputForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const input = {
-        id: uid(),
-        name: document.getElementById('citizenName').value,
-        email: document.getElementById('citizenEmail').value,
-        type: document.getElementById('inputType').value,
-        subject: document.getElementById('subject').value,
-        description: document.getElementById('description').value,
-        category: document.getElementById('category').value,
-        location: document.getElementById('location').value,
-        urgency: document.getElementById('urgency').value,
-        status: 'Pending',
-        date: new Date().toISOString()
-    };
-    
-    const inputs = loadInputs();
-    inputs.push(input);
-    saveInputs(inputs);
-    renderInputs();
-    this.reset();
-    
-    alert('Thank you for your input! It has been submitted for review.');
-});
 
 // Filter event listeners
 document.getElementById('filterType').addEventListener('change', renderInputs);

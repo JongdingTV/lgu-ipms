@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - User Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="user-dashboard.css">
+</head>
+<body>
+    <header class="nav" id="navbar">
+        <div class="nav-logo">
+            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <span class="logo-text">IPMS</span>
+        </div>
+        <div class="nav-links">
+            <a href="user-dashboard.html"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
+            <a href="user-progress-monitoring.html"><img src="../progress-monitoring/monitoring.png" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-settings.html" class="active"><img src="../dashboard/person.png" class="nav-icon"> Settings</a>
+        </div>
+        <div class="nav-user">
+            <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
+            <span class="nav-username">Welcome, User</span>
+            <a href="../login.html" class="nav-logout">Logout</a>
+        </div>
+        <div class="lgu-arrow-back">
+            <a href="#" id="toggleSidebar">
+                <img src="../dashboard/lgu-arrow-back.png" alt="Toggle sidebar">
+            </a>
+        </div>
+    </header>
+
+    <!-- Toggle button to show sidebar -->
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow">
+            <img src="../dashboard/lgu-arrow-right.png" alt="Show sidebar">
+        </a>
+    </div>
+
+    <section class="main-content">
+        <div class="dash-header">
+            <h1>Settings</h1>
+            <p>Manage your account information</p>
+        </div>
+
+        <div class="settings-form">
+            <form id="userSettingsForm">
+                <div class="form-section">
+                    <h3>Basic Information</h3>
+                    <div class="form-row">
+                        <div class="input-box">
+                            <label for="firstName">First Name *</label>
+                            <input id="firstName" name="firstName" type="text" required>
+                        </div>
+                        <div class="input-box">
+                            <label for="middleName">Middle Name</label>
+                            <input id="middleName" name="middleName" type="text">
+                        </div>
+                        <div class="input-box">
+                            <label for="lastName">Last Name *</label>
+                            <input id="lastName" name="lastName" type="text" required>
+                        </div>
+                        <div class="input-box">
+                            <label for="suffix">Suffix</label>
+                            <select id="suffix" name="suffix">
+                                <option value="">None</option>
+                                <option value="jr">Jr.</option>
+                                <option value="sr">Sr.</option>
+                                <option value="ii">II</option>
+                                <option value="iii">III</option>
+                                <option value="iv">IV</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Contact Information</h3>
+                    <div class="form-row">
+                        <div class="input-box">
+                            <label for="email">Email Address *</label>
+                            <input id="email" name="email" type="email" required>
+                        </div>
+                        <div class="input-box">
+                            <label for="mobile">Mobile Number *</label>
+                            <input id="mobile" name="mobile" type="tel" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Personal Details</h3>
+                    <div class="form-row">
+                        <div class="input-box">
+                            <label for="birthdate">Birthdate</label>
+                            <input id="birthdate" name="birthdate" type="date">
+                        </div>
+                        <div class="input-box">
+                            <label for="gender">Gender</label>
+                            <select id="gender" name="gender">
+                                <option value="">Select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                                <option value="prefer_not">Prefer not to say</option>
+                            </select>
+                        </div>
+                        <div class="input-box">
+                            <label for="civilStatus">Civil Status</label>
+                            <select id="civilStatus" name="civilStatus">
+                                <option value="">Select</option>
+                                <option value="single">Single</option>
+                                <option value="married">Married</option>
+                                <option value="widowed">Widowed</option>
+                                <option value="separated">Separated</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-box full-width">
+                        <label for="address">Address / Barangay</label>
+                        <input id="address" name="address" type="text" placeholder="Street, Barangay, City">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn">Save Changes</button>
+                    <button type="button" class="cancel-btn" onclick="window.location.href='user-dashboard.html'">Cancel</button>
+                </div>
+            </form>
+            <div id="settingsMessage" class="message" style="display: none;"></div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
+    </footer>
+
+    <script src="../shared-data.js"></script>
+    <script src="user-settings.js"></script>
+</body>
+</html>

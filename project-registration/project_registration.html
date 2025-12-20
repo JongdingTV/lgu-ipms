@@ -250,8 +250,12 @@
                 </fieldset>
 
                 <div style="margin-top:12px;">
-                    <button type="submit">Create Project</button>
-                    <button type="button" id="resetBtn">Reset</button>
+                    <button type="submit" id="submitBtn">
+                        Create Project
+                    </button>
+                    <button type="button" id="resetBtn">
+                        Reset
+                    </button>
                 </div>
             </form>
 
@@ -285,7 +289,6 @@
     </footer>
 
     <script src="../shared-data.js"></script>
-    <script src="project-reg.js"></script>
 
     <script>
         // simple client-only demo: store projects in localStorage
@@ -300,7 +303,9 @@
         }
 
         function loadSavedProjects() {
-            const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+            const projects = (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) 
+                ? IPMS_DATA.getProjects() 
+                : JSON.parse(localStorage.getItem('projects')||'[]');
             if (!projects.length) {
                 savedDiv.innerHTML = '<em>No projects yet.</em>';
                 return;
@@ -313,8 +318,8 @@
                         Registered: ${new Date(p.createdAt).toLocaleString() || ''} | Registered By: ${p.registeredBy || ''}
                     </div>
                     <div style="display:flex;gap:8px;">
-                        <button class="btn-view" data-index="${i}" style="padding:6px 12px;background:#2563eb;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;">View</button>
-                        <button class="btn-delete" data-index="${i}" style="padding:6px 12px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;">Delete</button>
+                        <button class="btn-edit" data-index="${i}">Edit</button>
+                        <button class="btn-delete" data-index="${i}">Delete</button>
                     </div>
                 </div>`;
             }).join('');
@@ -329,7 +334,11 @@
                     
                     if (confirm(`Are you sure you want to delete project "${project.name}"?\n\nThis action cannot be undone.`)) {
                         projects.splice(index, 1);
-                        localStorage.setItem('projects', JSON.stringify(projects));
+                        if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.saveProjects) {
+                            IPMS_DATA.saveProjects(projects);
+                        } else {
+                            localStorage.setItem('projects', JSON.stringify(projects));
+                        }
                         msg.textContent = 'Project deleted successfully.';
                         msg.style.display = 'block';
                         msg.style.color = '#dc2626';
@@ -342,8 +351,8 @@
                 });
             });
 
-            // Wire up view buttons (optional - for future enhancement)
-            document.querySelectorAll('.btn-view').forEach(btn => {
+            // Wire up edit buttons
+            document.querySelectorAll('.btn-edit').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const index = parseInt(this.dataset.index);
                     const projects = JSON.parse(localStorage.getItem('projects')||'[]');
@@ -395,15 +404,16 @@
                     
                     // Change button text
                     const submitBtn = form.querySelector('button[type="submit"]');
-                    submitBtn.textContent = 'Update Project';
-                    submitBtn.style.background = '#f59e0b';
+                    submitBtn.innerHTML = 'Update Project';
                 });
             });
         }
 
         form.addEventListener('submit', function(e){
             e.preventDefault();
-            const projects = JSON.parse(localStorage.getItem('projects')||'[]');
+            const projects = (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) 
+                ? IPMS_DATA.getProjects() 
+                : JSON.parse(localStorage.getItem('projects')||'[]');
             const editIndex = form.dataset.editIndex;
 
             const p = {
@@ -464,17 +474,24 @@
             if (editIndex !== undefined) {
                 // Update existing project
                 projects[parseInt(editIndex)] = p;
-                localStorage.setItem('projects', JSON.stringify(projects));
+                if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.saveProjects) {
+                    IPMS_DATA.saveProjects(projects);
+                } else {
+                    localStorage.setItem('projects', JSON.stringify(projects));
+                }
                 msg.textContent = 'Project updated successfully.';
                 msg.style.color = '#f59e0b';
                 delete form.dataset.editIndex;
                 const submitBtn = form.querySelector('button[type="submit"]');
-                submitBtn.textContent = 'Create Project';
-                submitBtn.style.background = '';
+                submitBtn.innerHTML = 'Create Project';
             } else {
                 // Create new project
                 projects.push(p);
-                localStorage.setItem('projects', JSON.stringify(projects));
+                if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.saveProjects) {
+                    IPMS_DATA.saveProjects(projects);
+                } else {
+                    localStorage.setItem('projects', JSON.stringify(projects));
+                }
                 msg.textContent = 'Project created successfully.';
                 msg.style.color = '#0b5';
             }
@@ -494,13 +511,12 @@
         resetBtn.addEventListener('click', function(){
             form.reset();
             msg.style.display = 'none';
-            
+
             // Clear edit mode if active
             if (form.dataset.editIndex !== undefined) {
                 delete form.dataset.editIndex;
-                const submitBtn = form.querySelector('button[type="submit"]');
-                submitBtn.textContent = 'Create Project';
-                submitBtn.style.background = '';
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.innerHTML = 'Create Project';
             }
         });
 
