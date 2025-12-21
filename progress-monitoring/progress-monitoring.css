@@ -424,7 +424,7 @@ h2 {
 .pm-right {
     display: flex;
     gap: 8px;
-    alighn-items: center;
+    align-items: center;
 }
 .pm-right select, .pm-right button {
     padding: 8px 12px;
