@@ -29,6 +29,8 @@ const PRIORITIZATION_KEY = 'lgu_prioritization_v1';
 function loadInputs() {
     return JSON.parse(localStorage.getItem(PRIORITIZATION_KEY) || '[]');
 
+}
+
 function saveInputs(inputs) {
     localStorage.setItem(PRIORITIZATION_KEY, JSON.stringify(inputs));
 }

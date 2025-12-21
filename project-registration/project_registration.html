@@ -297,6 +297,20 @@
         const savedDiv = document.getElementById('savedProjects');
         const resetBtn = document.getElementById('resetBtn');
 
+        // Sidebar toggle handlers (ensure arrow works even if external script not loaded)
+        const sidebarToggle = document.getElementById('toggleSidebar');
+        const sidebarShow = document.getElementById('toggleSidebarShow');
+        function toggleSidebarHandler(e) {
+            e.preventDefault();
+            const navbar = document.getElementById('navbar');
+            const toggleBtn = document.getElementById('showSidebarBtn');
+            if (navbar) navbar.classList.toggle('hidden');
+            document.body.classList.toggle('sidebar-hidden');
+            if (toggleBtn) toggleBtn.classList.toggle('show');
+        }
+        if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebarHandler);
+        if (sidebarShow) sidebarShow.addEventListener('click', toggleSidebarHandler);
+
         function fileListNames(input) {
             if (!input || !input.files) return [];
             return Array.from(input.files).map(f => f.name);
