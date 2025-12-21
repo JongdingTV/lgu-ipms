@@ -18,6 +18,7 @@
         <div class="nav-links">
             <a href="user-dashboard.php"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
             <a href="user-progress-monitoring.php" class="active"><img src="../progress-monitoring/monitoring.png" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-feedback.php"><img src="../dashboard/person.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
             <a href="user-settings.php"><img src="../dashboard/person.png" class="nav-icon"> Settings</a>
         </div>
         <div class="nav-user">

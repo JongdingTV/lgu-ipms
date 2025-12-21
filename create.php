@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $address = trim($_POST['address']);
     $id_type = $_POST['idType'];
     $id_number = trim($_POST['idNumber']);
-    $password = $_POST['password'];
+    $password = trim($_POST['password']);
     $confirm_password = $_POST['confirmPassword'];
 
     // Validate
@@ -773,7 +773,7 @@ body::before {
                     
                     <div class="input-box">
                         <label for="password">Password *</label>
-                        <input id="password" name="password" type="password" required aria-required="true" aria-describedby="pwdHelp pwdStrength" placeholder="Create a strong password" />
+                        <input id="password" name="password" type="password" required aria-required="true" aria-describedby="pwdHelp pwdStrength" placeholder="Create a strong password" autocomplete="new-password" />
                         <div id="pwdHelp" style="font-size:12px;color:#666;margin-top:8px;">Requirements: 8–12 characters, uppercase, lowercase, number, special character</div>
                         <meter id="pwdStrength" min="0" max="4" low="2" high="3" optimum="4" value="0" style="width:100%;margin-top:8px; display:none;"></meter>
                         <div class="pwd-bar" aria-hidden="true"><div class="pwd-fill" id="pwdFill"></div></div>
@@ -781,7 +781,7 @@ body::before {
 
                     <div class="input-box">
                         <label for="confirmPassword">Confirm Password *</label>
-                        <input id="confirmPassword" name="confirmPassword" type="password" required aria-required="true" placeholder="Re-enter your password" />
+                        <input id="confirmPassword" name="confirmPassword" type="password" required aria-required="true" placeholder="Re-enter your password" autocomplete="new-password" />
                     </div>
 
                     <div style="margin-top: 20px; text-align: center;">

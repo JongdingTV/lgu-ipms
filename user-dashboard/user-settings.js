@@ -21,25 +21,25 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleSidebarShow.addEventListener('click', toggleSidebarVisibility);
     }
 
-    // Load user data
-    loadUserData();
+    // Load user data - handled by PHP now
+    // loadUserData();
 
-    // Settings form submission
-    const settingsForm = document.getElementById('userSettingsForm');
-    const messageDiv = document.getElementById('settingsMessage');
+    // Settings form submission - handled by PHP now
+    // const settingsForm = document.getElementById('userSettingsForm');
+    // const messageDiv = document.getElementById('settingsMessage');
 
-    settingsForm.addEventListener('submit', function(e) {
-        e.preventDefault();
+    // settingsForm.addEventListener('submit', function(e) {
+    //     e.preventDefault();
 
-        const formData = new FormData(settingsForm);
-        const data = Object.fromEntries(formData.entries());
+    //     const formData = new FormData(settingsForm);
+    //     const data = Object.fromEntries(formData.entries());
 
-        // Save to localStorage
-        localStorage.setItem('currentUser', JSON.stringify(data));
+    //     // Save to localStorage
+    //     localStorage.setItem('currentUser', JSON.stringify(data));
 
-        // Show success message
-        showMessage('Your information has been updated successfully!', 'success');
-    });
+    //     // Show success message
+    //     showMessage('Your information has been updated successfully!', 'success');
+    // });
 
     function showMessage(text, type) {
         messageDiv.textContent = text;

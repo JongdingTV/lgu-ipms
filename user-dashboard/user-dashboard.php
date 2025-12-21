@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard - LGU IPMS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="user-dashboard.css">
 </head>
 <body>
@@ -18,6 +15,7 @@
         <div class="nav-links">
             <a href="user-dashboard.php" class="active"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
             <a href="user-progress-monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-feedback.php"><img src="../dashboard/person.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
             <a href="user-settings.php"><img src="../dashboard/person.png" class="nav-icon"> Settings</a>
         </div>
         <div class="nav-user">
@@ -102,9 +100,9 @@
                 <h3>Budget Utilization</h3>
                 <div class="chart-placeholder">
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%;">0% Used</div>
+                        <div class="progress-fill" style="width: 0%;"></div>
                     </div>
-                    <p style="margin-top: 10px; font-size: 0.9em; color: #666;">Budget utilization data</p>
+                    <p style="margin-top: 10px; font-size: 0.9em; color: #666;">Budget utilization: 0% Used</p>
                 </div>
             </div>
         </div>
@@ -136,44 +134,6 @@
                     </tr>
                 </tbody>
             </table>
-        </div>
-
-        <!-- User Feedback Form -->
-        <div class="feedback-form">
-            <h3>Submit Your Feedback or Suggestion</h3>
-            <form id="userFeedbackForm">
-                <div class="form-row">
-                    <div class="input-box">
-                        <label for="street">Street</label>
-                        <input type="text" id="street" name="street" placeholder="Enter street name" required>
-                    </div>
-                    <div class="input-box">
-                        <label for="barangay">Barangay</label>
-                        <input type="text" id="barangay" name="barangay" placeholder="Enter barangay" required>
-                    </div>
-                </div>
-                <div class="input-box">
-                    <label for="category">Category</label>
-                    <select id="category" name="category" required>
-                        <option value="">Select Category</option>
-                        <option value="transportation">Transportation (roads, bridges, airports, railways)</option>
-                        <option value="energy">Energy (power generation/transmission)</option>
-                        <option value="water-waste">Water & Waste (supply, sanitation, drainage)</option>
-                        <option value="social-infrastructure">Social Infrastructure (schools, hospitals, etc.)</option>
-                        <option value="public-buildings">Public Buildings (park, irrigation systems, gov buildings)</option>
-                    </select>
-                </div>
-                <div class="input-box">
-                    <label for="photo">Photo Attachment</label>
-                    <input type="file" id="photo" name="photo" accept="image/*">
-                </div>
-                <div class="input-box">
-                    <label for="feedback">Suggestion, Feedback, Concern</label>
-                    <textarea id="feedback" name="feedback" rows="5" placeholder="Enter your suggestion, feedback, or concern here..." required></textarea>
-                </div>
-                <button type="submit" class="submit-btn">Submit</button>
-            </form>
-            <div id="message" class="message" style="display: none;"></div>
         </div>
 
         <!-- Quick Stats -->

@@ -6,7 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         die('Database connection failed: ' . $conn->connect_error);
     }
     $email = trim($_POST['email']);
-    $password = $_POST['password'];
+    $password = trim($_POST['password']);
     $stmt = $conn->prepare("SELECT id, password, first_name, last_name FROM users WHERE email = ?");
     $stmt->bind_param('s', $email);
     $stmt->execute();
@@ -115,13 +115,13 @@ body::before {
 
             <div class="input-box">
                 <label>Email Address</label>
-                <input type="email" name="email" id="loginEmail" placeholder="name@lgu.gov.ph" required>
+                <input type="email" name="email" id="loginEmail" placeholder="name@lgu.gov.ph" required autocomplete="email">
                 <span class="icon">📧</span>
             </div>
 
             <div class="input-box">
                 <label>Password</label>
-                <input type="password" name="password" id="loginPassword" placeholder="••••••••" required>
+                <input type="password" name="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
                 <span class="icon">🔒</span>
             </div>
 
