@@ -1,3 +1,29 @@
+<?php
+session_start();
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+    if ($conn->connect_error) {
+        die('Database connection failed: ' . $conn->connect_error);
+    }
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+    $stmt = $conn->prepare("SELECT id, password, first_name, last_name FROM users WHERE email = ?");
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+        if (password_verify($password, $user['password'])) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+            header('Location: user-dashboard/user-dashboard.php');
+            exit;
+        }
+    }
+    $error = 'Invalid email or password.';
+    $conn->close();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -85,17 +111,17 @@ body::before {
         <h2 class="title">LGU Login</h2>
         <p class="subtitle">Secure access to community maintenance services.</p>
 
-        <form id="loginForm">
+        <form method="post">
 
             <div class="input-box">
                 <label>Email Address</label>
-                <input type="email" id="loginEmail" placeholder="name@lgu.gov.ph" required>
+                <input type="email" name="email" id="loginEmail" placeholder="name@lgu.gov.ph" required>
                 <span class="icon">📧</span>
             </div>
 
             <div class="input-box">
                 <label>Password</label>
-                <input type="password" id="loginPassword" placeholder="••••••••" required>
+                <input type="password" name="password" id="loginPassword" placeholder="••••••••" required>
                 <span class="icon">🔒</span>
             </div>
 
@@ -105,7 +131,12 @@ body::before {
                 <a href="create.php" class="link">Create one</a>
             </p>
 
-            <div id="loginMessage" style="margin-top:12px;color:#b00;display:none;"></div>
+            <?php if (isset($error)): ?>
+            <div style="margin-top:12px;color:#b00;"><?php echo $error; ?></div>
+            <?php endif; ?>
+            <?php if (isset($_GET['success'])): ?>
+            <div style="margin-top:12px;color:#0b0;">Account created successfully. Please log in.</div>
+            <?php endif; ?>
 
         </form>
     </div>
@@ -124,27 +155,6 @@ body::before {
     </div>
 
 </footer>
-
-<script>
-// simple login using localStorage users
-document.getElementById('loginForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-    const password = document.getElementById('loginPassword').value;
-    const msg = document.getElementById('loginMessage');
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find(u => u.email === email && u.password === password);
-    if(!user){
-        msg.style.display = 'block';
-        msg.textContent = 'Invalid email or password.';
-        return;
-    }
-    // store current user session (simple)
-    localStorage.setItem('currentUser', JSON.stringify({ email: user.email, name: user.firstName + ' ' + user.lastName }));
-    // redirect to dashboard
-    window.location.href = 'dashboard/dashboard.php';
-});
-</script>
 
 </body>
 </html>

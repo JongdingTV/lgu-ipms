@@ -1,3 +1,77 @@
+<?php
+session_start();
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+    if ($conn->connect_error) {
+        die('Database connection failed: ' . $conn->connect_error);
+    }
+
+    // Get form data
+    $first_name = trim($_POST['firstName']);
+    $middle_name = trim($_POST['middleName']);
+    $last_name = trim($_POST['lastName']);
+    $suffix = $_POST['suffix'];
+    $email = trim($_POST['email']);
+    $mobile = trim($_POST['mobile']);
+    $birthdate = $_POST['birthdate'];
+    $gender = $_POST['gender'];
+    $civil_status = $_POST['civilStatus'];
+    $address = trim($_POST['address']);
+    $id_type = $_POST['idType'];
+    $id_number = trim($_POST['idNumber']);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirmPassword'];
+
+    // Validate
+    $errors = [];
+    if (empty($first_name) || empty($last_name) || empty($email) || empty($password)) {
+        $errors[] = 'Required fields missing.';
+    }
+    if ($password !== $confirm_password) {
+        $errors[] = 'Passwords do not match.';
+    }
+    if (strlen($password) < 8) {
+        $errors[] = 'Password too short.';
+    }
+    // Check if email exists
+    $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    if ($stmt->get_result()->num_rows > 0) {
+        $errors[] = 'Email already registered.';
+    }
+    $stmt->close();
+
+    if (empty($errors)) {
+        // Handle file upload
+        $id_upload = '';
+        if (isset($_FILES['idUpload']) && $_FILES['idUpload']['error'] == 0) {
+            $upload_dir = 'uploads/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+            $file_name = uniqid() . '_' . basename($_FILES['idUpload']['name']);
+            $file_path = $upload_dir . $file_name;
+            if (move_uploaded_file($_FILES['idUpload']['tmp_name'], $file_path)) {
+                $id_upload = $file_path;
+            }
+        }
+
+        // Hash password
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+        // Insert
+        $stmt = $conn->prepare("INSERT INTO users (first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param('ssssssssssssss', $first_name, $middle_name, $last_name, $suffix, $email, $mobile, $birthdate, $gender, $civil_status, $address, $id_type, $id_number, $id_upload, $hashed_password);
+        if ($stmt->execute()) {
+            header('Location: login.php?success=1');
+            exit;
+        } else {
+            $errors[] = 'Registration failed.';
+        }
+        $stmt->close();
+    }
+    $conn->close();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -82,7 +156,7 @@ body::before {
     padding: 24px 36px 24px 36px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 /* Card header (logo, title, subtitle) */
@@ -555,7 +629,7 @@ body::before {
             </div>
         </div>
 
-        <form id="registerForm" novalidate>
+        <form method="post" enctype="multipart/form-data" id="registerForm" novalidate>
             <div class="form-content">
                 <!-- Step 1: Basic Information -->
                 <div class="form-step active" data-step="1">
@@ -620,8 +694,8 @@ body::before {
                         </div>
 
                         <div class="input-box">
-                            <label for="gender">Gender</label>
-                            <select id="gender" name="gender" aria-label="Gender">
+                            <label for="gender">Gender *</label>
+                            <select id="gender" name="gender" required aria-required="true" aria-label="Gender">
                                 <option value="">Select</option>
                                 <option value="male">Male</option>
                                 <option value="female">Female</option>
@@ -631,8 +705,8 @@ body::before {
                         </div>
 
                         <div class="input-box full-width">
-                            <label for="civilStatus">Civil Status</label>
-                            <select id="civilStatus" name="civilStatus">
+                            <label for="civilStatus">Civil Status *</label>
+                            <select id="civilStatus" name="civilStatus" required aria-required="true">
                                 <option value="">Select</option>
                                 <option value="single">Single</option>
                                 <option value="married">Married</option>
@@ -642,8 +716,8 @@ body::before {
                         </div>
 
                         <div class="input-box full-width">
-                            <label for="address">Address / Barangay</label>
-                            <input id="address" name="address" type="text" placeholder="Street, Barangay, City" />
+                            <label for="address">Address / Barangay *</label>
+                            <input id="address" name="address" type="text" required aria-required="true" placeholder="Street, Barangay, City" />
                         </div>
                     </div>
                 </div>
@@ -727,6 +801,14 @@ body::before {
                 <button type="button" class="btn-primary" id="nextBtn">Next</button>
             </div>
         </form>
+
+        <?php if (!empty($errors)): ?>
+        <div style="color:#b00; margin-top:12px;">
+            <?php foreach ($errors as $error): ?>
+            <div><?php echo $error; ?></div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
 
         <p class="small-text">Already have an account? <a href="login.php">Sign in here</a></p>
     </div>
@@ -891,10 +973,8 @@ function showStep(step) {
     
     if(step === totalSteps) {
         nextBtn.textContent = 'Create Account';
-        nextBtn.type = 'submit';
     } else {
         nextBtn.textContent = 'Next';
-        nextBtn.type = 'button';
     }
     
     updateProgress();
@@ -972,23 +1052,38 @@ function validateStep(step) {
             markInvalid(document.getElementById('mobile'));
             return false;
         }
+    }
+    
+    if(step === 3) {
+        // Personal Details
+        const address = (document.getElementById('address').value || '').trim();
+        const gender = document.getElementById('gender').value;
+        const civilStatus = document.getElementById('civilStatus').value;
         
-        // Check for duplicates
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        if(users.find(u => (u.email || '').toLowerCase() === email)){
+        if(!address) {
             msgEl.style.backgroundColor = '#fee'; 
             msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Email already registered.';
+            msgEl.innerHTML = '<strong>⚠️</strong> Address is required.';
             msgEl.style.display = 'block';
-            markInvalid(document.getElementById('email'));
+            markInvalid(document.getElementById('address'));
             return false;
         }
-        if(users.find(u => u.mobile === mobile)){
+        
+        if(!gender) {
             msgEl.style.backgroundColor = '#fee'; 
             msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Mobile number already registered.';
+            msgEl.innerHTML = '<strong>⚠️</strong> Gender is required.';
             msgEl.style.display = 'block';
-            markInvalid(document.getElementById('mobile'));
+            markInvalid(document.getElementById('gender'));
+            return false;
+        }
+        
+        if(!civilStatus) {
+            msgEl.style.backgroundColor = '#fee'; 
+            msgEl.style.color = '#c00';
+            msgEl.innerHTML = '<strong>⚠️</strong> Civil status is required.';
+            msgEl.style.display = 'block';
+            markInvalid(document.getElementById('civilStatus'));
             return false;
         }
     }
@@ -1112,7 +1207,7 @@ document.getElementById('prevBtn').addEventListener('click', function(e) {
 });
 
 // Form submission
-async function handleSubmit(e) {
+function handleSubmit(e) {
     e.preventDefault();
     
     // Validate final step
@@ -1120,116 +1215,8 @@ async function handleSubmit(e) {
         return;
     }
     
-    const firstName = (document.getElementById('firstName').value || '').trim();
-    const middleName = (document.getElementById('middleName').value || '').trim() || null;
-    const lastName = (document.getElementById('lastName').value || '').trim();
-    const suffix = document.getElementById('suffix').value || null;
-    let email = (document.getElementById('email').value || '').trim().toLowerCase();
-    email = email.replace(/[\u200B-\u200D\uFEFF]/g, '');
-    const mobile = (document.getElementById('mobile').value || '').trim();
-    const birthdate = document.getElementById('birthdate').value || null;
-    const gender = document.getElementById('gender').value || null;
-    const civilStatus = document.getElementById('civilStatus').value || null;
-    const address = (document.getElementById('address').value || '').trim();
-    const idType = document.getElementById('idType').value || null;
-    const idNumber = (document.getElementById('idNumber').value || '').trim() || null;
-    const idUploadFile = document.getElementById('idUpload').files[0] || null;
-    const rawPassword = document.getElementById('password').value || '';
-    const password = rawPassword.replace(/[\u200B-\u200D\uFEFF]/g, '');
-    
-    const msgEl = document.getElementById('regMessage');
-    
-    // Convert file to base64
-    let idUploadBase64 = null;
-    if(idUploadFile){
-        idUploadBase64 = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(idUploadFile);
-        });
-    }
-    
-    try{
-        ['firstName','lastName','email','mobile','password','confirmPassword'].forEach(id=>{
-            const el = document.getElementById(id);
-            if(el) el.classList.remove('invalid');
-        });
-        
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const user = {
-            id: Date.now(),
-            firstName,
-            middleName,
-            lastName,
-            suffix,
-            email,
-            mobile,
-            birthdate,
-            gender,
-            civilStatus,
-            address,
-            idType,
-            idNumber,
-            idUpload: idUploadBase64,
-            password,
-            approved: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        
-        users.push(user);
-        localStorage.setItem('users', JSON.stringify(users));
-        
-        // Set current user
-        localStorage.setItem('currentUser', JSON.stringify({
-            firstName,
-            middleName,
-            lastName,
-            suffix,
-            email,
-            mobile,
-            birthdate,
-            gender,
-            civilStatus,
-            address
-        }));
-        
-        // Audit log
-        const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-        logs.push({
-            action: 'user_registration',
-            email,
-            timestamp: new Date().toISOString(),
-            userAgent: navigator.userAgent || 'Unknown',
-            idProvided: !!idUploadFile
-        });
-        localStorage.setItem('auditLogs', JSON.stringify(logs));
-        
-        // Success message
-        msgEl.style.backgroundColor = '#efe'; 
-        msgEl.style.color = '#050';
-        msgEl.innerHTML = '✅ <strong>Success!</strong> Redirecting in <span id="count">5</span>s... <a href="login.php" style="color:#2864ef;">Go now</a>';
-        msgEl.style.display = 'block';
-        
-        // Redirect countdown
-        let seconds = 5;
-        const countEl = document.getElementById('count');
-        const interval = setInterval(() => {
-            seconds -= 1;
-            if(countEl) countEl.textContent = seconds;
-            if(seconds <= 0){
-                clearInterval(interval);
-                window.location.href = 'user-dashboard/user-dashboard.php';
-            }
-        }, 1000);
-        
-    } catch(err){
-        msgEl.style.backgroundColor = '#fee'; 
-        msgEl.style.color = '#c00';
-        msgEl.innerHTML = '<strong>⚠️</strong> Unexpected error. Please try again.';
-        msgEl.style.display = 'block';
-        console.error('Registration error:', err);
-    }
+    // Submit the form
+    document.getElementById('registerForm').submit();
 }
 
 // Initialize
