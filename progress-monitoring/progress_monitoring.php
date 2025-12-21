@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Progress Monitoring - User View</title>
+    <title>Progress Monitoring - LGU IPMS</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="user-dashboard.css">
+    <link rel="stylesheet" href="progress-monitoring.css">
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -16,14 +16,18 @@
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
-            <a href="user-dashboard.html"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
-            <a href="user-progress-monitoring.html" class="active"><img src="../progress-monitoring/monitoring.png" class="nav-icon"> Progress Monitoring</a>
-            <a href="user-settings.html"><img src="../dashboard/person.png" class="nav-icon"> Settings</a>
+            <a href="../dashboard/dashboard.php"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
+            <a href="../project-registration/project_registration.php"><img src="../project-registration/list.png" class="nav-icon">Project Registration</a>
+            <a href="progress_monitoring.php" class="active"><img src="monitoring.png" class="nav-icon">Progress Monitoring</a>
+            <a href="../budget-resources/budget_resources.php"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
+            <a href="../task-milestone/tasks_milestones.php"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
+            <a href="../contractors/contractors.php"><img src="../contractors/contractors.png" class="nav-icon">Contractors</a>
+            <a href="../project-prioritization/project-prioritization.php"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
         </div>
         <div class="nav-user">
             <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
             <span class="nav-username">Welcome, User</span>
-            <a href="../login.html" class="nav-logout">Logout</a>
+            <a href="../login.php" class="nav-logout">Logout</a>
         </div>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar">
@@ -41,7 +45,7 @@
     <section class="main-content">
         <div class="dash-header">
             <h1>Progress Monitoring</h1>
-            <p>View project progress in your area</p>
+            <p>View, filter and update project progress</p>
         </div>
 
         <div class="recent-projects">
@@ -92,6 +96,6 @@
     </footer>
 
     <script src="../shared-data.js"></script>
-    <script src="user-progress-monitoring.js"></script>
+    <script src="progress-monitoring.js"></script>
 </body>
 </html>

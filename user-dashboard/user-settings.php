@@ -16,14 +16,14 @@
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
-            <a href="user-dashboard.html"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
-            <a href="user-progress-monitoring.html"><img src="../progress-monitoring/monitoring.png" class="nav-icon"> Progress Monitoring</a>
-            <a href="user-settings.html" class="active"><img src="../dashboard/person.png" class="nav-icon"> Settings</a>
+            <a href="user-dashboard.php"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
+            <a href="user-progress-monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-settings.php" class="active"><img src="../dashboard/person.png" class="nav-icon"> Settings</a>
         </div>
         <div class="nav-user">
             <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
             <span class="nav-username">Welcome, User</span>
-            <a href="../login.html" class="nav-logout">Logout</a>
+            <a href="../login.php" class="nav-logout">Logout</a>
         </div>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar">
@@ -126,7 +126,7 @@
 
                 <div class="form-actions">
                     <button type="submit" class="submit-btn">Save Changes</button>
-                    <button type="button" class="cancel-btn" onclick="window.location.href='user-dashboard.html'">Cancel</button>
+                    <button type="button" class="cancel-btn" onclick="window.location.href='user-dashboard.php'">Cancel</button>
                 </div>
             </form>
             <div id="settingsMessage" class="message" style="display: none;"></div>

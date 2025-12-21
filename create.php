@@ -514,7 +514,7 @@ body::before {
 <header class="nav">
     <div class="nav-logo">🏛️ Local Government Unit Portal</div>
     <div class="nav-links">
-        <a href="dashboard/dashboard.html">Home</a>
+        <a href="dashboard/dashboard.php">Home</a>
     </div>
 </header>
 
@@ -728,7 +728,7 @@ body::before {
             </div>
         </form>
 
-        <p class="small-text">Already have an account? <a href="login.html">Sign in here</a></p>
+        <p class="small-text">Already have an account? <a href="login.php">Sign in here</a></p>
     </div>
 </div>
 
@@ -1208,7 +1208,7 @@ async function handleSubmit(e) {
         // Success message
         msgEl.style.backgroundColor = '#efe'; 
         msgEl.style.color = '#050';
-        msgEl.innerHTML = '✅ <strong>Success!</strong> Redirecting in <span id="count">5</span>s... <a href="login.html" style="color:#2864ef;">Go now</a>';
+        msgEl.innerHTML = '✅ <strong>Success!</strong> Redirecting in <span id="count">5</span>s... <a href="login.php" style="color:#2864ef;">Go now</a>';
         msgEl.style.display = 'block';
         
         // Redirect countdown
@@ -1219,7 +1219,7 @@ async function handleSubmit(e) {
             if(countEl) countEl.textContent = seconds;
             if(seconds <= 0){
                 clearInterval(interval);
-                window.location.href = 'user-dashboard/user-dashboard.html';
+                window.location.href = 'user-dashboard/user-dashboard.php';
             }
         }, 1000);
         
