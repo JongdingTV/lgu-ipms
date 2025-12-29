@@ -29,3 +29,22 @@ CREATE TABLE IF NOT EXISTS project_settings (
     id INT PRIMARY KEY,
     total_budget DECIMAL(15, 2) DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS milestones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    allocated DECIMAL(15, 2) DEFAULT 0,
+    spent DECIMAL(15, 2) DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS expenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    milestoneId INT,
+    amount DECIMAL(15, 2) NOT NULL,
+    description TEXT,
+    date DATETIME,
+    FOREIGN KEY (milestoneId) REFERENCES milestones(id) ON DELETE CASCADE
+);
+
+-- Initialize the budget row
+INSERT IGNORE INTO project_settings (id, total_budget) VALUES (1, 0);
