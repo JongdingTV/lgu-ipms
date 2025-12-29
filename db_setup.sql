@@ -23,3 +23,9 @@ CREATE TABLE users (
 
 -- Optional: Insert a test user (password: test123, hashed)
 -- INSERT INTO users (first_name, last_name, email, password) VALUES ('Test', 'User', 'test@lgu.gov.ph', '$2y$10$examplehashedpassword');
+
+-- budget module total budget 
+CREATE TABLE IF NOT EXISTS project_settings (
+    id INT PRIMARY KEY,
+    total_budget DECIMAL(15, 2) DEFAULT 0
+);
