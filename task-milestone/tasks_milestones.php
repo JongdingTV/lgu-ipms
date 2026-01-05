@@ -40,56 +40,26 @@
 
     <section class="main-content">
         <div class="dash-header">
-            <h1>Task & Milestone Management</h1>
-            <p>Deliverables per project • Assign tasks to contractors or LGU engineers • Deadline tracking</p>
+            <h1>Checking and Validation</h1>
+            <p>Monitor and validate project deliverables. Visualize completion and validation status as a percentage.</p>
         </div>
 
         <div class="recent-projects">
-            <div class="controls-bar">
-                <div class="left">
-                    <input id="tmSearch" type="search" placeholder="Search task, deliverable or assignee">
-                </div>
-                <div class="right">
-                    <select id="tmFilterProject"><option value="">All projects</option></select>
-                    <select id="tmFilterStatus">
-                        <option value="">All status</option>
-                        <option>Not Started</option><option>In Progress</option><option>Blocked</option><option>Completed</option>
-                    </select>
-                    <button id="tmExport" type="button">Export CSV</button>
+            <div class="validation-summary">
+                <h3>Validation Progress</h3>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="validationProgress" style="width: 0%"></div>
+                    </div>
+                    <span id="validationPercent">0%</span>
                 </div>
             </div>
-
-            <div class="summary">
-                <div class="stat"><div id="tmTotal">0</div><small>Total tasks</small></div>
-                <div class="stat"><div id="tmOverdue">0</div><small>Overdue</small></div>
-                <div class="stat"><div id="tmDueWeek">0</div><small>Due this week</small></div>
-            </div>
-
-            <div class="task-section">
-                <h3>Create / Assign Task</h3>
-                <form id="taskForm" class="inline-form">
-                    <select id="taskProject" required><option value="">Select project</option></select>
-                    <input id="deliverable" type="text" placeholder="Deliverable (e.g., Foundation)" required>
-                    <input id="taskName" type="text" placeholder="Task name (e.g., Excavate trench)" required>
-                    <select id="assigneeType">
-                        <option value="Contractor">Contractor</option>
-                        <option value="LGU Engineer">LGU Engineer</option>
-                    </select>
-                    <input id="assignee" type="text" placeholder="Assignee name" required>
-                    <input id="deadline" type="date" required>
-                    <select id="priority">
-                        <option>Normal</option><option>High</option><option>Low</option>
-                    </select>
-                    <button type="submit">Add Task</button>
-                </form>
-            </div>
-
             <div class="tasks-section">
-                <h3>Tasks</h3>
+                <h3>Validation Items</h3>
                 <div class="table-wrap">
                     <table id="tasksTable" class="table">
                         <thead>
-                            <tr><th>Deliverable</th><th>Task</th><th>Assignee</th><th>Type</th><th>Priority</th><th>Deadline</th><th>Status</th><th>Actions</th></tr>
+                            <tr><th>Deliverable</th><th>Status</th><th>Validated</th></tr>
                         </thead>
                         <tbody></tbody>
                     </table>

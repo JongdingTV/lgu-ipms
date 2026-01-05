@@ -1,3 +1,32 @@
+/* Validation progress bar styles */
+.validation-summary {
+    margin-bottom: 24px;
+}
+.progress-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 8px;
+}
+.progress-bar-bg {
+    width: 320px;
+    height: 24px;
+    background: #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+}
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #16a34a 0%, #2563eb 100%);
+    border-radius: 12px 0 0 12px;
+    transition: width 0.4s cubic-bezier(.4,1.4,.6,1);
+}
+.progress-bar-container span {
+    font-weight: 600;
+    color: #1e3a8a;
+    font-size: 1.1em;
+}
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 html {

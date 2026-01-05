@@ -64,101 +64,47 @@ function dueWithinWeek(d) {
     const diff = (dd - today)/(1000*60*60*24);
     return diff >=0 && diff <=7;
 }
-
 function renderTasks() {
     const tasks = loadTasks();
     const tbody = document.querySelector('#tasksTable tbody');
     tbody.innerHTML = '';
-    const q = (document.getElementById('tmSearch')?.value || '').toLowerCase();
-    const statusFilter = document.getElementById('tmFilterStatus')?.value || '';
-    const projectFilter = document.getElementById('tmFilterProject')?.value || '';
-
-    const filtered = tasks.filter(t => {
-        if (statusFilter && t.status !== statusFilter) return false;
-        if (projectFilter && (t.project || '') !== projectFilter) return false;
-        if (!q) return true;
-        return ((t.taskName||'') + ' ' + (t.deliverable||'') + ' ' + (t.assignee||'')).toLowerCase().includes(q);
-    });
-
-    filtered.forEach(t => {
+    // For validation, show deliverable, status, and a validated checkbox
+    let validatedCount = 0;
+    tasks.forEach(t => {
+        const isValidated = t.status === 'Completed' || t.validated;
+        if (isValidated) validatedCount++;
         const tr = document.createElement('tr');
-        if (isOverdue(t.deadline) && t.status !== 'Completed') tr.classList.add('overdue');
         tr.innerHTML = `
             <td>${t.deliverable || ''}</td>
-            <td>${t.taskName || ''}</td>
-            <td>${t.assignee || ''}</td>
-            <td>${t.assigneeType || ''}</td>
-            <td class="priority-${t.priority || 'Normal'}">${t.priority || 'Normal'}</td>
-            <td>${t.deadline || ''}</td>
             <td><span class="badge status-${(t.status||'Not Started').replace(/\s+/g,'\\ ')}">${t.status || 'Not Started'}</span></td>
-            <td>
-                <button class="action-btn btn-edit" data-id="${t.id}">Edit</button>
-                <button class="action-btn delete btn-delete" data-id="${t.id}">Delete</button>
-            </td>`;
+            <td><input type="checkbox" class="validate-checkbox" data-id="${t.id}" ${isValidated ? 'checked' : ''}></td>
+        `;
         tbody.appendChild(tr);
     });
 
-    // stats
+    // Calculate and show validation percentage
     const total = tasks.length;
-    const overdue = tasks.filter(t => isOverdue(t.deadline) && t.status !== 'Completed').length;
-    const week = tasks.filter(t => dueWithinWeek(t.deadline)).length;
-    document.getElementById('tmTotal').textContent = total;
-    document.getElementById('tmOverdue').textContent = overdue;
-    document.getElementById('tmDueWeek').textContent = week;
+    const percent = total ? Math.round((validatedCount / total) * 100) : 0;
+    document.getElementById('validationPercent').textContent = percent + '%';
+    document.getElementById('validationProgress').style.width = percent + '%';
 
-    // wire buttons
-    document.querySelectorAll('.btn-delete').forEach(b => b.addEventListener('click', () => {
-        const id = b.dataset.id;
-        const list = loadTasks().filter(x=> x.id !== id);
-        saveTasks(list); renderTasks();
-    }));
-    document.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', () => {
-        const id = b.dataset.id;
-        const list = loadTasks();
-        const t = list.find(x=> x.id===id);
-        if (!t) return;
-        // populate form for quick edit (overwrite if user submits)
-        document.getElementById('taskProject').value = t.project || '';
-        document.getElementById('deliverable').value = t.deliverable || '';
-        document.getElementById('taskName').value = t.taskName || '';
-        document.getElementById('assigneeType').value = t.assigneeType || 'Contractor';
-        document.getElementById('assignee').value = t.assignee || '';
-        document.getElementById('deadline').value = t.deadline || '';
-        document.getElementById('priority').value = t.priority || 'Normal';
-        // change submit to update
-        const form = document.getElementById('taskForm');
-        form.dataset.editId = id;
-        form.scrollIntoView({behavior:'smooth', block:'center'});
-    }));
+    // Wire validation checkboxes
+    document.querySelectorAll('.validate-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const id = cb.dataset.id;
+            const list = loadTasks();
+            const t = list.find(x => x.id === id);
+            if (t) {
+                t.validated = cb.checked;
+                if (cb.checked) t.status = 'Completed';
+                saveTasks(list);
+                renderTasks();
+            }
+        });
+    });
 }
-
-document.getElementById('taskForm')?.addEventListener('submit', function(ev){
-    ev.preventDefault();
-    const form = ev.target;
-    const project = document.getElementById('taskProject').value;
-    const deliverable = document.getElementById('deliverable').value.trim();
-    const taskName = document.getElementById('taskName').value.trim();
-    const assigneeType = document.getElementById('assigneeType').value;
-    const assignee = document.getElementById('assignee').value.trim();
-    const deadline = document.getElementById('deadline').value;
-    const priority = document.getElementById('priority').value || 'Normal';
-    if (!taskName || !assignee) return;
-
-    const list = loadTasks();
-    const editId = form.dataset.editId;
-    if (editId) {
-        const idx = list.findIndex(x=> x.id === editId);
-        if (idx !== -1) {
-            list[idx] = { ...list[idx], project, deliverable, taskName, assigneeType, assignee, deadline, priority };
-            saveTasks(list);
-            delete form.dataset.editId;
-        }
-    } else {
-        const t = { id: uid(), project, deliverable, taskName, assigneeType, assignee, deadline, priority, status: 'Not Started', createdAt: new Date().toISOString() };
-        list.push(t); saveTasks(list);
-    }
-    form.reset();
-    renderTasks();
+}
+// Remove task creation form logic for validation-only UI
 });
 
 document.getElementById('tmExport')?.addEventListener('click', ()=>{
