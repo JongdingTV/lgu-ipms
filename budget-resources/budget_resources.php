@@ -45,7 +45,7 @@
     <section class="main-content">
         <div class="dash-header">
             <h1>Budget & Resources</h1>
-            <p>Manage your project budget efficiently: set total budget, allocate funds to milestones, track expenses, and monitor consumption.</p>
+            <p>Manage your project budget efficiently: set total budget, define source funds for departments, track expenses, and monitor consumption.</p>
         </div>
 
         <div class="budget-section">
@@ -63,19 +63,19 @@
         </div>
 
         <div class="allocation-section">
-            <h2>Allocate Funds per Milestone</h2>
+            <h2>Source Funds</h2>
             <form id="milestoneForm" class="inline-form">
-                <input id="milestoneName" type="text" placeholder="Milestone name (e.g., Excavation)" required>
-                <input id="milestoneAlloc" type="number" min="0" step="0.01" placeholder="Allocation ₱" required>
-                <button type="submit" id="addMilestone">Add Milestone</button>
+                <input id="milestoneName" type="text" placeholder="Source name (e.g., National Grant)" required>
+                <input id="milestoneAlloc" type="number" min="0" step="0.01" placeholder="Amount ₱" required>
+                <button type="submit" id="addMilestone">Add Source</button>
             </form>
             <div class="table-wrap">
                 <table id="milestonesTable" class="table">
                     <thead>
                         <tr>
-                            <th>Milestone</th>
-                            <th>Allocated (₱)</th>
-                            <th>Spent (₱)</th>
+                            <th>Source</th>
+                            <th>Amount (₱)</th>
+                            <th>Used (₱)</th>
                             <th>Remaining (₱)</th>
                             <th>% Consumed</th>
                             <th>Actions</th>
@@ -90,7 +90,7 @@
             <h2>Track Expenses</h2>
             <form id="expenseForm" class="inline-form">
                 <select id="expenseMilestone" required>
-                    <option value="">Select milestone</option>
+                    <option value="">Select source</option>
                 </select>
                 <input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount ₱" required>
                 <input id="expenseDesc" type="text" placeholder="Description (optional)">
