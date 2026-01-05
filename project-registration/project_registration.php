@@ -1,4 +1,87 @@
 <!doctype html>
+<?php
+// Database connection
+$conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+if ($conn->connect_error) {
+    die('Database connection failed: ' . $conn->connect_error);
+}
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+    
+    if ($_POST['action'] === 'save_project') {
+        $code = trim($_POST['code']);
+        $name = trim($_POST['name']);
+        $type = trim($_POST['type']);
+        $sector = trim($_POST['sector']);
+        $description = trim($_POST['description']);
+        $priority = trim($_POST['priority']);
+        $province = trim($_POST['province']);
+        $barangay = trim($_POST['barangay']);
+        $location = trim($_POST['location']);
+        $start_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
+        $end_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
+        $duration_months = !empty($_POST['duration_months']) ? (int)$_POST['duration_months'] : null;
+        $budget = !empty($_POST['budget']) ? (float)$_POST['budget'] : null;
+        $project_manager = trim($_POST['project_manager']);
+        $status = trim($_POST['status']);
+        
+        if (isset($_POST['id']) && !empty($_POST['id'])) {
+            // Update existing project
+            $id = (int)$_POST['id'];
+            $stmt = $conn->prepare("UPDATE projects SET code=?, name=?, type=?, sector=?, description=?, priority=?, province=?, barangay=?, location=?, start_date=?, end_date=?, duration_months=?, budget=?, project_manager=?, status=? WHERE id=?");
+            $stmt->bind_param('sssssssssssidssi', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status, $id);
+        } else {
+            // Insert new project
+            $stmt = $conn->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
+        }
+        
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Project saved successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to save project: ' . $conn->error]);
+        }
+        $stmt->close();
+        exit;
+    }
+    
+    if ($_POST['action'] === 'delete_project') {
+        $id = (int)$_POST['id'];
+        $stmt = $conn->prepare("DELETE FROM projects WHERE id=?");
+        $stmt->bind_param('i', $id);
+        
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Project deleted successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to delete project: ' . $conn->error]);
+        }
+        $stmt->close();
+        exit;
+    }
+}
+
+// Handle GET request for loading projects
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
+    header('Content-Type: application/json');
+    
+    $result = $conn->query("SELECT * FROM projects ORDER BY created_at DESC");
+    $projects = [];
+    
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $projects[] = $row;
+        }
+        $result->free();
+    }
+    
+    echo json_encode($projects);
+    exit;
+}
+
+$conn->close();
+?>
 <html>
 <head>
     <meta charset="utf-8">
@@ -92,9 +175,9 @@
                     </select>
                 </fieldset>
 
-                <!-- Location & geography -->
+                <!-- Location -->
                 <fieldset>
-                    <legend>Location & Geography</legend>
+                    <legend>Location</legend>
                     <label for="province">Province / City / Municipality</label>
                     <input type="text" id="province" required>
 
@@ -103,17 +186,11 @@
 
                     <label for="projLocation">Exact Site / Address</label>
                     <input type="text" id="projLocation" required>
-
-                    <label for="gps">GPS Coordinates (lat,long)</label>
-                    <input type="text" id="gps" placeholder="e.g. 14.5995,120.9842">
-
-                    <label for="lotNo">Lot / Parcel No. / Ownership</label>
-                    <input type="text" id="lotNo">
                 </fieldset>
 
-                <!-- Schedule & timeline -->
+                <!-- Schedule -->
                 <fieldset>
-                    <legend>Schedule & Timeline</legend>
+                    <legend>Schedule</legend>
                     <label for="startDate">Estimated Start Date</label>
                     <input type="date" id="startDate">
 
@@ -122,120 +199,25 @@
 
                     <label for="projDuration">Estimated Duration (months)</label>
                     <input type="number" id="projDuration" min="0" required>
-
-                    <label for="milestones">Key Milestones (comma separated)</label>
-                    <input type="text" id="milestones" placeholder="Design complete, Procurement, Mobilization, Completion">
                 </fieldset>
 
-                <!-- Budget & funding -->
+                <!-- Budget -->
                 <fieldset>
-                    <legend>Budget & Funding</legend>
+                    <legend>Budget</legend>
                     <label for="projBudget">Total Estimated Cost</label>
                     <input type="number" id="projBudget" min="0" step="0.01" required>
-
-                    <label for="fundSources">Funding Source(s)</label>
-                    <input type="text" id="fundSources" placeholder="LGU general fund, IRA, national agency, donor">
-
-                    <label for="budgetBreakdown">Budget Breakdown (summary)</label>
-                    <textarea id="budgetBreakdown" rows="2" placeholder="Materials, Labor, Equipment, Contingencies"></textarea>
                 </fieldset>
 
-                <!-- Technical & scope -->
+                <!-- Implementation -->
                 <fieldset>
-                    <legend>Technical & Scope</legend>
-                    <label for="scopeOfWork">Scope of Work / Deliverables</label>
-                    <textarea id="scopeOfWork" rows="3"></textarea>
-
-                    <label for="designStatus">Basic Design Status</label>
-                    <select id="designStatus">
-                        <option>Concept</option>
-                        <option>Preliminary</option>
-                        <option>Detailed</option>
-                    </select>
-
-                    <label for="boqSummary">BOQ Summary / Major Quantities</label>
-                    <textarea id="boqSummary" rows="2"></textarea>
-                </fieldset>
-
-                <!-- Procurement & implementation -->
-                <fieldset>
-                    <legend>Procurement & Implementation</legend>
-                    <label for="procMethod">Procurement Method</label>
-                    <select id="procMethod">
-                        <option>Public Bidding</option>
-                        <option>Small Value Procurement</option>
-                        <option>Negotiated</option>
-                        <option>Direct Contracting</option>
-                    </select>
-
-                    <label for="implementingOffice">Implementing Office / Department</label>
-                    <input type="text" id="implementingOffice">
-
+                    <legend>Implementation</legend>
                     <label for="projManager">Project Manager / Engineer In-Charge</label>
                     <input type="text" id="projManager" placeholder="Name">
-
-                    <label for="projManagerContact">Project Manager Contact</label>
-                    <input type="tel" id="projManagerContact" placeholder="phone / email">
-
-                    <label for="contractor">Implementing Contractor (if any)</label>
-                    <input type="text" id="contractor">
-
-                    <label for="contractType">Contract Type</label>
-                    <select id="contractType">
-                        <option>Unit Price</option>
-                        <option>Lump Sum</option>
-                        <option>Time & Materials</option>
-                    </select>
                 </fieldset>
 
-                <!-- Permits & compliance -->
+                <!-- Status -->
                 <fieldset>
-                    <legend>Permits, Clearances & Compliance</legend>
-                    <label><input type="checkbox" id="hasECC"> Environmental Clearance (ECC) obtained</label>
-
-                    <label for="permits">Other Permits / Clearances</label>
-                    <input type="text" id="permits" placeholder="Building permit, Barangay clearance etc.">
-
-                    <label for="rowStatus">Right-of-way / Land Acquisition Status</label>
-                    <input type="text" id="rowStatus">
-                </fieldset>
-
-                <!-- Monitoring & admin -->
-                <fieldset>
-                    <legend>Monitoring & Administrative</legend>
-                    <label for="performanceIndicators">Performance Indicators (summary)</label>
-                    <input type="text" id="performanceIndicators" placeholder="%complete, quality metrics">
-
-                    <label for="reportingFrequency">Reporting Frequency</label>
-                    <select id="reportingFrequency">
-                        <option>Weekly</option>
-                        <option>Bi-weekly</option>
-                        <option>Monthly</option>
-                    </select>
-
-                    <label for="registeredBy">Registered By</label>
-                    <input type="text" id="registeredBy">
-
-                    <label for="regDate">Date of Registration</label>
-                    <input type="date" id="regDate">
-                </fieldset>
-
-                <!-- Attachments -->
-                <fieldset>
-                    <legend>Attachments & Supporting Documents</legend>
-                    <label for="sitePhotos">Site Photos</label>
-                    <input type="file" id="sitePhotos" multiple accept="image/*">
-
-                    <label for="plans">Plans / Drawings / BOQ (pdf)</label>
-                    <input type="file" id="plans" multiple accept=".pdf">
-
-                    <label for="otherDocs">Other Documents</label>
-                    <input type="file" id="otherDocs" multiple>
-                </fieldset>
-
-                <!-- Administrative status -->
-                <fieldset>
-                    <legend>Administrative</legend>
+                    <legend>Status</legend>
                     <label for="status">Approval Status</label>
                     <select id="status">
                         <option>Draft</option>
@@ -244,9 +226,6 @@
                         <option>On-hold</option>
                         <option>Cancelled</option>
                     </select>
-
-                    <label for="notes">Notes / Comments</label>
-                    <textarea id="notes" rows="2"></textarea>
                 </fieldset>
 
                 <div style="margin-top:12px;">
@@ -320,24 +299,30 @@
             const projects = (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) 
                 ? IPMS_DATA.getProjects() 
                 : JSON.parse(localStorage.getItem('projects')||'[]');
+            const tbody = document.querySelector('#projectsTable tbody');
+            tbody.innerHTML = '';
             if (!projects.length) {
-                savedDiv.innerHTML = '<em>No projects yet.</em>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#6b7280;">No projects registered yet.</td></tr>';
                 return;
             }
-            const html = projects.map((p, i) => {
-                return `<div style="border:1px solid #ddd;padding:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        <strong>${p.code || ''} - ${p.name}</strong><br>
-                        Location: ${p.location || ''} | Budget: ${p.budget || ''} | Status: ${p.status || 'N/A'}<br>
-                        Registered: ${new Date(p.createdAt).toLocaleString() || ''} | Registered By: ${p.registeredBy || ''}
-                    </div>
-                    <div style="display:flex;gap:8px;">
-                        <button class="btn-edit" data-index="${i}">Edit</button>
-                        <button class="btn-delete" data-index="${i}">Delete</button>
-                    </div>
-                </div>`;
-            }).join('');
-            savedDiv.innerHTML = html;
+            projects.forEach((p, i) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${p.code || ''}</td>
+                    <td>${p.name || ''}</td>
+                    <td>${p.type || ''}</td>
+                    <td>${p.sector || ''}</td>
+                    <td>${p.priority || 'Medium'}</td>
+                    <td>${p.status || 'Draft'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-edit" data-index="${i}">Edit</button>
+                            <button class="btn-delete" data-index="${i}">Delete</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
 
             // Wire up delete buttons
             document.querySelectorAll('.btn-delete').forEach(btn => {
@@ -382,33 +367,12 @@
                     document.getElementById('province').value = project.province || '';
                     document.getElementById('barangay').value = project.barangay || '';
                     document.getElementById('projLocation').value = project.location || '';
-                    document.getElementById('gps').value = project.gps || '';
-                    document.getElementById('lotNo').value = project.lotNo || '';
                     document.getElementById('startDate').value = project.startDate || '';
                     document.getElementById('endDate').value = project.endDate || '';
                     document.getElementById('projDuration').value = project.durationMonths || '';
-                    document.getElementById('milestones').value = (project.milestones || []).join(', ');
                     document.getElementById('projBudget').value = project.budget || '';
-                    document.getElementById('fundSources').value = project.fundSources || '';
-                    document.getElementById('budgetBreakdown').value = project.budgetBreakdown || '';
-                    document.getElementById('scopeOfWork').value = project.scopeOfWork || '';
-                    document.getElementById('designStatus').value = project.designStatus || 'Concept';
-                    document.getElementById('boqSummary').value = project.boqSummary || '';
-                    document.getElementById('procMethod').value = project.procMethod || 'Public Bidding';
-                    document.getElementById('implementingOffice').value = project.implementingOffice || '';
                     document.getElementById('projManager').value = project.projectManager || '';
-                    document.getElementById('projManagerContact').value = project.projectManagerContact || '';
-                    document.getElementById('contractor').value = project.contractor || '';
-                    document.getElementById('contractType').value = project.contractType || 'Unit Price';
-                    document.getElementById('hasECC').checked = project.hasECC || false;
-                    document.getElementById('permits').value = project.permits || '';
-                    document.getElementById('rowStatus').value = project.rowStatus || '';
-                    document.getElementById('performanceIndicators').value = project.performanceIndicators || '';
-                    document.getElementById('reportingFrequency').value = project.reportingFrequency || 'Monthly';
-                    document.getElementById('registeredBy').value = project.registeredBy || '';
-                    document.getElementById('regDate').value = project.regDate || '';
                     document.getElementById('status').value = project.status || 'Draft';
-                    document.getElementById('notes').value = project.notes || '';
 
                     // Scroll to form
                     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -441,46 +405,16 @@
                 province: document.getElementById('province').value,
                 barangay: document.getElementById('barangay').value,
                 location: document.getElementById('projLocation').value,
-                gps: document.getElementById('gps').value,
-                lotNo: document.getElementById('lotNo').value,
 
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
                 durationMonths: Number(document.getElementById('projDuration').value),
-                milestones: document.getElementById('milestones').value.split(',').map(s => s.trim()).filter(Boolean),
 
                 budget: Number(document.getElementById('projBudget').value),
-                fundSources: document.getElementById('fundSources').value,
-                budgetBreakdown: document.getElementById('budgetBreakdown').value,
 
-                scopeOfWork: document.getElementById('scopeOfWork').value,
-                designStatus: document.getElementById('designStatus').value,
-                boqSummary: document.getElementById('boqSummary').value,
-
-                procMethod: document.getElementById('procMethod').value,
-                implementingOffice: document.getElementById('implementingOffice').value,
                 projectManager: document.getElementById('projManager').value,
-                projectManagerContact: document.getElementById('projManagerContact').value,
-                contractor: document.getElementById('contractor').value,
-                contractType: document.getElementById('contractType').value,
-
-                hasECC: document.getElementById('hasECC').checked,
-                permits: document.getElementById('permits').value,
-                rowStatus: document.getElementById('rowStatus').value,
-
-                performanceIndicators: document.getElementById('performanceIndicators').value,
-                reportingFrequency: document.getElementById('reportingFrequency').value,
-                registeredBy: document.getElementById('registeredBy').value,
-                regDate: document.getElementById('regDate').value,
-
-                attachments: {
-                    sitePhotos: fileListNames(document.getElementById('sitePhotos')),
-                    plans: fileListNames(document.getElementById('plans')),
-                    otherDocs: fileListNames(document.getElementById('otherDocs'))
-                },
 
                 status: document.getElementById('status').value,
-                notes: document.getElementById('notes').value,
 
                 createdAt: new Date().toISOString()
             };
@@ -513,8 +447,6 @@
             msg.style.display = 'block';
             form.reset();
             loadSavedProjects();
-            // auto-fill registration date with today after reset
-            document.getElementById('regDate').valueAsDate = new Date();
             
             // Hide message after 3 seconds
             setTimeout(() => {
@@ -537,8 +469,6 @@
         // initialize
         document.addEventListener('DOMContentLoaded', function(){
             loadSavedProjects();
-            // set default registration date to today
-            document.getElementById('regDate').valueAsDate = new Date();
         });
     </script>
 </body>

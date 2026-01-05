@@ -44,168 +44,119 @@
 
     <section class="main-content">
         <div class="dash-header">
-            <h1>Contractors</h1>
+            <h1>🏗️ Contractors</h1>
             <p>Manage contractor information</p>
         </div>
 
         <div class="recent-projects">
-            <div class="controls-bar">
-                <div class="left">
-                    <input id="ctrSearch" type="search" placeholder="Search contractor, company or license">
+            <h3>➕ Add/Edit Contractor</h3>
+
+            <form id="contractorForm" enctype="multipart/form-data">
+                <!-- Basic contractor details -->
+                <fieldset>
+                    <legend>📋 Basic Information</legend>
+                    <div>
+                        <div>
+                            <label for="ctrCompany">Company Name</label>
+                            <input type="text" id="ctrCompany" required>
+                        </div>
+                        <div>
+                            <label for="ctrOwner">Owner Name</label>
+                            <input type="text" id="ctrOwner">
+                        </div>
+                        <div>
+                            <label for="ctrLicense">License Number</label>
+                            <input type="text" id="ctrLicense" required>
+                        </div>
+                    </div>
+                    <div>
+                        <div>
+                            <label for="ctrEmail">Email</label>
+                            <input type="email" id="ctrEmail">
+                        </div>
+                        <div>
+                            <label for="ctrPhone">Phone Number</label>
+                            <input type="tel" id="ctrPhone">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Additional details -->
+                <fieldset>
+                    <legend>🔧 Additional Details</legend>
+                    <div>
+                        <div>
+                            <label for="ctrAddress">Address</label>
+                            <input type="text" id="ctrAddress" required>
+                        </div>
+                        <div>
+                            <label for="ctrSpecialization">Specialization</label>
+                            <select id="ctrSpecialization">
+                                <option value="">-- Select --</option>
+                                <option>Construction</option>
+                                <option>Plumbing</option>
+                                <option>Electrical</option>
+                                <option>Civil Engineering</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="ctrExperience">Years of Experience</label>
+                            <input type="number" id="ctrExperience" min="0">
+                        </div>
+                    </div>
+                    <div>
+                        <div>
+                            <label for="ctrRating">Rating (1-5)</label>
+                            <input type="number" id="ctrRating" min="1" max="5" step="0.1">
+                        </div>
+                        <div>
+                            <label for="ctrStatus">Status</label>
+                            <select id="ctrStatus">
+                                <option value="Active">Active</option>
+                                <option value="Suspended">Suspended</option>
+                                <option value="Blacklisted">Blacklisted</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="flex: 1;">
+                            <label for="ctrNotes">Notes</label>
+                            <textarea id="ctrNotes" rows="2"></textarea>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div style="margin-top:12px;">
+                    <button type="submit" id="submitBtn">
+                        Create Contractor
+                    </button>
+                    <button type="button" id="resetBtn">
+                        Reset
+                    </button>
                 </div>
-                <div class="right">
-                    <select id="ctrFilterStatus">
-                        <option value="">All Status</option>
-                        <option>Active</option>
-                        <option>Suspended</option>
-                        <option>Blacklisted</option>
-                    </select>
-                    <button id="ctrAdd" type="button">Add Contractor</button>
+            </form>
+
+            <div id="formMessage" style="margin-top:12px;color:#0b5;display:none;"></div>
+
+            <!-- Contractors Table -->
+            <div class="contractors-section">
+                <h3>📊 Registered Contractors</h3>
+                <div class="table-wrap">
+                    <table id="contractorsTable" class="table">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>License</th>
+                                <th>Contact</th>
+                                <th>Status</th>
+                                <th>Rating</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
-            </div>
-
-            <div class="summary">
-                <div class="stat"><div id="ctrCount">12</div><small>Total contractors</small></div>
-                <div class="stat"><div id="ctrActive">10</div><small>Active</small></div>
-                <div class="stat"><div id="ctrAvgRating">4.2</div><small>Avg. rating</small></div>
-                <div class="stat"><div id="ctrCompl">3</div><small>Non-compliant</small></div>
-            </div>
-
-            <div class="contractor-form-section">
-                <h3 id="formTitle">Add Contractor</h3>
-                <form id="contractorForm" class="inline-form">
-                    <input id="ctrCompany" type="text" placeholder="Company Name" required>
-                    <input id="ctrLicense" type="text" placeholder="License Number" required>
-                    <input id="ctrContact" type="text" placeholder="Contact Info" required>
-                    <input id="ctrAddress" type="text" placeholder="Address" required>
-                    <select id="ctrStatus">
-                        <option value="Active">Active</option>
-                        <option value="Suspended">Suspended</option>
-                        <option value="Blacklisted">Blacklisted</option>
-                    </select>
-                    <button type="submit">Save Contractor</button>
-                    <button type="button" id="cancelEdit">Cancel</button>
-                </form>
-            </div>
-
-            <div class="contractors-grid">
-                <aside class="ctr-list">
-                    <!-- placeholder list items; in real module this will be dynamic -->
-                    <div class="ctr-item" tabindex="0" data-id="c-acme">
-                        <img class="ctr-avatar" src="../contractors/contractors.png" alt="">
-                        <div class="ctr-meta">
-                            <strong>ACME Construction</strong>
-                            <small>License # 2024-AC-001</small>
-                        </div>
-                        <div class="ctr-right">
-                            <div class="ctr-rating">★ ★ ★ ★ ☆</div>
-                            <div class="ctr-status active">Active</div>
-                        </div>
-                    </div>
-
-                    <div class="ctr-item" tabindex="0" data-id="c-blueriver">
-                        <img class="ctr-avatar" src="../contractors/contractors.png" alt="">
-                        <div class="ctr-meta">
-                            <strong>Blue River Builders</strong>
-                            <small>License # 2023-BR-092</small>
-                        </div>
-                        <div class="ctr-right">
-                            <div class="ctr-rating">★ ★ ★ ☆ ☆</div>
-                            <div class="ctr-status suspended">Suspended</div>
-                        </div>
-                    </div>
-
-                    <div id="contractorList" class="ctr-empty">No contractors added.</div>
-                </aside>
-
-                <main class="ctr-panel">
-                    <div class="ctr-card">
-                        <div class="ctr-card-head">
-                            <img class="ctr-large" src="../contractors/contractors.png" alt="Contractor logo">
-                            <div class="ctr-head-meta">
-                                <h2 id="ctrName">Select a contractor</h2>
-                                <div class="ctr-sub">Company • License • Contact</div>
-                                <div class="ctr-badges">
-                                    <span class="badge compliance ok">Compliant</span>
-                                    <span class="badge rating">4.2</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="ctr-info-grid">
-                            <div>
-                                <small>Contact</small>
-                                <div id="ctrContact">—</div>
-                            </div>
-                            <div>
-                                <small>Address</small>
-                                <div id="ctrAddress">—</div>
-                            </div>
-                            <div>
-                                <small>Projects Completed</small>
-                                <div id="ctrCompleted">—</div>
-                            </div>
-                            <div>
-                                <small>Avg. Performance</small>
-                                <div id="ctrPerf">—</div>
-                            </div>
-                        </div>
-
-                        <h4>History of Completed Projects</h4>
-                        <div class="table-wrap">
-                            <table class="table" id="ctrHistory">
-                                <thead><tr><th>Project</th><th>Year</th><th>Value</th><th>Performance</th></tr></thead>
-                                <tbody>
-                                    <tr><td>Barangay Road Rehab</td><td>2024</td><td>₱1,200,000</td><td>4.5</td></tr>
-                                    <tr><td>Drainage Improvement</td><td>2023</td><td>₱850,000</td><td>4.0</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <h4>Compliance & Records</h4>
-                        <div class="compliance-list">
-                            <div class="comp-item"><strong>PhilGEPS</strong> — Valid (2025)</div>
-                            <div class="comp-item"><strong>Insurance</strong> — Active</div>
-                            <div class="comp-item"><strong>OSHS</strong> — Non-conforming (missing docs)</div>
-                        </div>
-
-                        <h4>Performance trend (last 12 months)</h4>
-                        <div class="chart-row small">
-                            <canvas id="ctrPerfChart" width="720" height="160" aria-label="Performance chart"></canvas>
-                        </div>
-
-                        <h4>Compliance Checklist</h4>
-                        <div class="compliance-checklist">
-                            <form id="checklistForm" class="inline-form">
-                                <input id="checkName" type="text" placeholder="Compliance item (e.g., Insurance)" required>
-                                <input id="checkExpiry" type="date" required>
-                                <button id="addCheck" type="submit">Add</button>
-                            </form>
-                            <div id="checklistItems" class="checklist-items"></div>
-                        </div>
-
-                        <h4>Contracts & Documents</h4>
-                        <div class="documents-section">
-                            <input id="docUpload" type="file" accept=".pdf,.jpg,.png,.jpeg,.docx" />
-                            <div id="docList" class="doc-list"></div>
-                        </div>
-
-                        <h4>Feedback / Inspection Notes</h4>
-                        <div class="feedback-section">
-                            <textarea id="feedbackText" placeholder="Enter inspection notes or feedback"></textarea>
-                            <div class="inline-form">
-                                <input id="feedbackFile" type="file" accept=".jpg,.png,.pdf" />
-                                <button id="saveFeedback" type="button">Save Note</button>
-                            </div>
-                            <div id="feedbackList" class="feedback-list"></div>
-                        </div>
-
-                        <div class="ctr-actions">
-                            <button class="btn primary">View Full Profile</button>
-                            <button class="btn">Download PDF</button>
-                        </div>
-                    </div>
-                </main>
             </div>
         </div>
     </section>

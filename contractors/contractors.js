@@ -23,345 +23,161 @@ document.getElementById('toggleSidebarShow').addEventListener('click', function(
 });
 
 // CRUD for Contractors
-let contractors = JSON.parse(localStorage.getItem('contractors')) || [];
+let contractors = [];
 let editingId = null;
 
-function saveContractors() {
-    localStorage.setItem('contractors', JSON.stringify(contractors));
+async function loadContractors() {
+    try {
+        const response = await fetch('contractors-api.php');
+        if (response.ok) {
+            contractors = await response.json();
+            renderContractors();
+        } else {
+            console.error('Failed to load contractors');
+        }
+    } catch (error) {
+        console.error('Error loading contractors:', error);
+    }
 }
 
 function renderContractors() {
-    const list = document.querySelector('.ctr-list');
-    list.innerHTML = '';
-    
-    const search = document.getElementById('ctrSearch').value.toLowerCase();
-    const statusFilter = document.getElementById('ctrFilterStatus').value;
-    
-    const filtered = contractors.filter(c => {
-        if (statusFilter && c.status !== statusFilter) return false;
-        if (search && !c.company.toLowerCase().includes(search) && !c.license.toLowerCase().includes(search)) return false;
-        return true;
-    });
-    
-    if (filtered.length === 0) {
-        list.innerHTML = '<div class="ctr-empty">No contractors found.</div>';
+    const tbody = document.querySelector('#contractorsTable tbody');
+    tbody.innerHTML = '';
+    if (!contractors.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#6b7280;">No contractors registered yet.</td></tr>';
         return;
     }
-    
-    filtered.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'ctr-item';
-        item.tabIndex = 0;
-        item.dataset.id = c.id;
-        item.innerHTML = `
-            <img class="ctr-avatar" src="../contractors/contractors.png" alt="">
-            <div class="ctr-meta">
-                <strong>${c.company}</strong>
-                <small>License # ${c.license}</small>
-            </div>
-            <div class="ctr-right">
-                <div class="ctr-rating">${'★'.repeat(Math.floor(c.rating || 0))}${'☆'.repeat(5 - Math.floor(c.rating || 0))}</div>
-                <div class="ctr-status ${c.status.toLowerCase()}">${c.status}</div>
-                <div class="ctr-actions">
-                    <button onclick="editContractor('${c.id}')">Edit</button>
-                    <button onclick="deleteContractor('${c.id}')">Delete</button>
+    contractors.forEach((c) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${c.company || ''}</td>
+            <td>${c.license || ''}</td>
+            <td>${c.email || c.phone || ''}</td>
+            <td>${c.status || 'Active'}</td>
+            <td>${c.rating || 'N/A'}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-edit" data-id="${c.id}">Edit</button>
+                    <button class="btn-delete" data-id="${c.id}">Delete</button>
                 </div>
-            </div>
+            </td>
         `;
-        list.appendChild(item);
+        tbody.appendChild(row);
     });
-    
-    // Update stats
-    document.getElementById('ctrCount').textContent = contractors.length;
-    document.getElementById('ctrActive').textContent = contractors.filter(c => c.status === 'Active').length;
-    const avgRating = contractors.reduce((sum, c) => sum + (c.rating || 0), 0) / contractors.length;
-    document.getElementById('ctrAvgRating').textContent = avgRating.toFixed(1);
-    document.getElementById('ctrCompl').textContent = contractors.filter(c => c.status === 'Suspended' || c.status === 'Blacklisted').length;
 }
 
 function editContractor(id) {
-    const c = contractors.find(c => c.id === id);
+    const c = contractors.find(ctr => ctr.id == id);
     if (!c) return;
     editingId = id;
-    document.getElementById('ctrCompany').value = c.company;
-    document.getElementById('ctrLicense').value = c.license;
-    document.getElementById('ctrContact').value = c.contact;
-    document.getElementById('ctrAddress').value = c.address;
-    document.getElementById('ctrStatus').value = c.status;
-    document.getElementById('formTitle').textContent = 'Edit Contractor';
+    document.getElementById('ctrCompany').value = c.company || '';
+    document.getElementById('ctrOwner').value = c.owner || '';
+    document.getElementById('ctrLicense').value = c.license || '';
+    document.getElementById('ctrEmail').value = c.email || '';
+    document.getElementById('ctrPhone').value = c.phone || '';
+    document.getElementById('ctrAddress').value = c.address || '';
+    document.getElementById('ctrSpecialization').value = c.specialization || '';
+    document.getElementById('ctrExperience').value = c.experience || '';
+    document.getElementById('ctrRating').value = c.rating || '';
+    document.getElementById('ctrStatus').value = c.status || 'Active';
+    document.getElementById('ctrNotes').value = c.notes || '';
     document.getElementById('contractorForm').scrollIntoView({ behavior: 'smooth' });
+    const submitBtn = document.querySelector('#contractorForm button[type="submit"]');
+    submitBtn.innerHTML = 'Update Contractor';
 }
 
-function deleteContractor(id) {
-    if (confirm('Are you sure you want to delete this contractor?')) {
-        contractors = contractors.filter(c => c.id !== id);
-        saveContractors();
-        renderContractors();
+async function deleteContractor(id) {
+    if (!confirm('Are you sure you want to delete this contractor?')) return;
+    try {
+        const response = await fetch('contractors-api.php', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        if (response.ok) {
+            await loadContractors();
+        } else {
+            console.error('Failed to delete contractor');
+        }
+    } catch (error) {
+        console.error('Error deleting contractor:', error);
     }
 }
 
-document.getElementById('ctrAdd').addEventListener('click', () => {
-    editingId = null;
+document.getElementById('resetBtn').addEventListener('click', function() {
     document.getElementById('contractorForm').reset();
-    document.getElementById('formTitle').textContent = 'Add Contractor';
+    editingId = null;
+    const submitBtn = document.querySelector('#contractorForm button[type="submit"]');
+    submitBtn.innerHTML = 'Create Contractor';
+    document.getElementById('formMessage').style.display = 'none';
 });
 
-document.getElementById('cancelEdit').addEventListener('click', () => {
-    editingId = null;
-    document.getElementById('contractorForm').reset();
-    document.getElementById('formTitle').textContent = 'Add Contractor';
-});
-
-document.getElementById('contractorForm').addEventListener('submit', (e) => {
+document.getElementById('contractorForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const c = {
-        id: editingId || 'c-' + Math.random().toString(36).substr(2, 9),
+    const msg = document.getElementById('formMessage');
+    const data = {
         company: document.getElementById('ctrCompany').value,
+        owner: document.getElementById('ctrOwner').value,
         license: document.getElementById('ctrLicense').value,
-        contact: document.getElementById('ctrContact').value,
+        email: document.getElementById('ctrEmail').value,
+        phone: document.getElementById('ctrPhone').value,
         address: document.getElementById('ctrAddress').value,
+        specialization: document.getElementById('ctrSpecialization').value,
+        experience: parseInt(document.getElementById('ctrExperience').value) || 0,
+        rating: parseFloat(document.getElementById('ctrRating').value) || 0,
         status: document.getElementById('ctrStatus').value,
-        rating: 4 // default
+        notes: document.getElementById('ctrNotes').value
     };
-    
-    if (editingId) {
-        const index = contractors.findIndex(c => c.id === editingId);
-        contractors[index] = c;
-    } else {
-        contractors.push(c);
-    }
-    
-    saveContractors();
-    renderContractors();
-    document.getElementById('contractorForm').reset();
-    editingId = null;
-    document.getElementById('formTitle').textContent = 'Add Contractor';
-});
 
-document.getElementById('ctrSearch').addEventListener('input', renderContractors);
-document.getElementById('ctrFilterStatus').addEventListener('change', renderContractors);
+    try {
+        let response;
+        if (editingId) {
+            data.id = editingId;
+            response = await fetch('contractors-api.php', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        } else {
+            response = await fetch('contractors-api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        }
 
-// Initial render
-document.addEventListener('DOMContentLoaded', renderContractors);
-
-/* Added features JS: performance chart, checklist, documents, feedback */
-const CT_KEY = 'contractors_module_v1';
-
-function loadCTData() {
-    try { return JSON.parse(localStorage.getItem(CT_KEY) || '{}'); }
-    catch (e) { return {}; }
-}
-function saveCTData(data) { localStorage.setItem(CT_KEY, JSON.stringify(data)); }
-
-function ensureContractorData(id) {
-    const store = loadCTData();
-    store[id] = store[id] || { checklist: [], documents: [], feedback: [], ratings: [] };
-    saveCTData(store);
-    return store[id];
-}
-
-function renderForContractor(id) {
-    if (!id) return;
-    const sel = ensureContractorData(id);
-    renderChart(sel.ratings || []);
-    renderChecklist(id);
-    renderDocuments(id);
-    renderFeedback(id);
-    // populate header meta placeholders (can be extended)
-    document.getElementById('ctrName').textContent = document.querySelector(`.ctr-item[data-id="${id}"] .ctr-meta strong`)?.textContent || 'Contractor';
-}
-
-function renderChart(ratings) {
-    const canvas = document.getElementById('ctrPerfChart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
-    const h = canvas.height = 160 * (window.devicePixelRatio || 1);
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    // prepare 12 months
-    const months = 12;
-    let values = ratings.slice(-12);
-    if (values.length < months) {
-        // fill with recent or random sample 3.5-4.5
-        while (values.length < months) values.unshift(Math.round((3.5 + Math.random())*10)/10);
-    }
-    // draw bars
-    const barW = Math.floor(canvas.clientWidth / months) - 6;
-    const max = 5;
-    values.forEach((v,i) => {
-        const x = 6 + i*(barW+6);
-        const barH = (v / max) * (canvas.clientHeight - 30);
-        ctx.fillStyle = '#2563eb';
-        ctx.fillRect(x, canvas.clientHeight - barH - 12, barW, barH);
-        ctx.fillStyle = '#0f172a';
-        ctx.font = '11px Poppins, sans-serif';
-        ctx.fillText(v.toFixed(1), x, canvas.clientHeight - barH - 16);
-    });
-    // axis label
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '12px Poppins, sans-serif';
-    ctx.fillText('Last 12 months performance (1-5)', 8, 12);
-}
-
-function renderChecklist(id) {
-    const container = document.getElementById('checklistItems');
-    container.innerHTML = '';
-    const data = loadCTData();
-    const ct = data[id] || { checklist: [] };
-    const items = ct.checklist || [];
-    if (!items.length) container.innerHTML = '<div class="ctr-empty">No checklist items.</div>';
-    items.forEach(it => {
-        const div = document.createElement('div');
-        div.className = 'check-item';
-        const expiry = new Date(it.expiry);
-        const expired = expiry < new Date();
-        div.innerHTML = `
-            <div class="meta">
-                <div class="check-name">${it.name}</div>
-                <div class="check-expiry ${expired ? 'expired' : ''}">Expiry: ${it.expiry}</div>
-            </div>
-            <div class="check-actions">
-                <button data-id="${it.id}" class="btn renew">Renew</button>
-                <button data-id="${it.id}" class="btn delete">Delete</button>
-            </div>
-        `;
-        container.appendChild(div);
-        div.querySelector('.renew')?.addEventListener('click', ()=> {
-            const newDate = prompt('Enter new expiry date (YYYY-MM-DD)', it.expiry);
-            if (!newDate) return;
-            it.expiry = newDate;
-            saveCTData(data);
-            renderChecklist(id);
-        });
-        div.querySelector('.delete')?.addEventListener('click', ()=> {
-            data[id].checklist = data[id].checklist.filter(x=> x.id !== it.id);
-            saveCTData(data);
-            renderChecklist(id);
-        });
-    });
-}
-
-document.getElementById('checklistForm')?.addEventListener('submit', (ev) => {
-    ev.preventDefault();
-    const name = document.getElementById('checkName').value.trim();
-    const expiry = document.getElementById('checkExpiry').value;
-    const activeId = document.querySelector('.ctr-item.active')?.dataset.id;
-    if (!activeId) { alert('Select a contractor first'); return; }
-    const data = loadCTData();
-    data[activeId] = data[activeId] || { checklist: [], documents: [], feedback: [], ratings: [] };
-    data[activeId].checklist.push({ id: 'ch'+Math.random().toString(36).slice(2,9), name, expiry });
-    saveCTData(data);
-    ev.target.reset();
-    renderChecklist(activeId);
-});
-
-function renderDocuments(id) {
-    const container = document.getElementById('docList');
-    container.innerHTML = '';
-    const data = loadCTData();
-    const docs = (data[id] && data[id].documents) || [];
-    if (!docs.length) container.innerHTML = '<div class="ctr-empty">No documents uploaded.</div>';
-    docs.forEach(d => {
-        const div = document.createElement('div');
-        div.className = 'doc-item';
-        div.innerHTML = `<div>
-            <a href="${d.url}" target="_blank" rel="noopener">${d.name}</a>
-            <div class="doc-meta">${new Date(d.uploadedAt).toLocaleString()}</div>
-        </div>
-        <div style="margin-left:auto"><button data-id="${d.id}" class="btn deleteDoc">Delete</button></div>`;
-        container.appendChild(div);
-        div.querySelector('.deleteDoc')?.addEventListener('click', () => {
-            const all = loadCTData();
-            all[id].documents = all[id].documents.filter(x=> x.id !== d.id);
-            saveCTData(all);
-            renderDocuments(id);
-        });
-    });
-}
-
-document.getElementById('docUpload')?.addEventListener('change', (ev) => {
-    const f = ev.target.files[0];
-    const activeId = document.querySelector('.ctr-item.active')?.dataset.id;
-    if (!f) return;
-    if (!activeId) { alert('Select contractor before uploading'); ev.target.value=''; return; }
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const url = e.target.result;
-        const data = loadCTData();
-        data[activeId] = data[activeId] || { checklist: [], documents: [], feedback: [], ratings: [] };
-        data[activeId].documents.push({ id: 'd'+Math.random().toString(36).slice(2,9), name: f.name, url, uploadedAt: new Date().toISOString() });
-        saveCTData(data);
-        renderDocuments(activeId);
-    };
-    reader.readAsDataURL(f);
-    ev.target.value = '';
-});
-
-function renderFeedback(id) {
-    const container = document.getElementById('feedbackList');
-    container.innerHTML = '';
-    const data = loadCTData();
-    const items = (data[id] && data[id].feedback) || [];
-    if (!items.length) container.innerHTML = '<div class="ctr-empty">No feedback notes.</div>';
-    items.slice().reverse().forEach(f => {
-        const div = document.createElement('div');
-        div.className = 'feedback-item';
-        div.innerHTML = `<div class="meta">${new Date(f.date).toLocaleString()} • ${f.author||'Inspector'}</div>
-            <div class="body">${(f.text||'')}</div>
-            ${f.attachment ? `<div class="doc-meta"><a href="${f.attachment.url}" target="_blank">${f.attachment.name}</a></div>` : ''}`;
-        container.appendChild(div);
-    });
-}
-
-document.getElementById('saveFeedback')?.addEventListener('click', ()=> {
-    const activeId = document.querySelector('.ctr-item.active')?.dataset.id;
-    if (!activeId) { alert('Select contractor to attach feedback'); return; }
-    const text = document.getElementById('feedbackText').value.trim();
-    const fileInput = document.getElementById('feedbackFile');
-    const file = fileInput?.files?.[0];
-    const data = loadCTData();
-    const ct = data[activeId] = data[activeId] || { checklist: [], documents: [], feedback: [], ratings: [] };
-    const note = { id: 'f'+Math.random().toString(36).slice(2,9), text, date: new Date().toISOString(), author: 'Inspector' };
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            note.attachment = { name: file.name, url: e.target.result };
-            ct.feedback = ct.feedback || [];
-            ct.feedback.push(note);
-            saveCTData(data);
-            document.getElementById('feedbackText').value = '';
-            fileInput.value = '';
-            renderFeedback(activeId);
-        };
-        reader.readAsDataURL(file);
-    } else {
-        ct.feedback = ct.feedback || [];
-        ct.feedback.push(note);
-        saveCTData(data);
-        document.getElementById('feedbackText').value = '';
-        renderFeedback(activeId);
+        if (response.ok) {
+            msg.style.color = '#0b5';
+            msg.textContent = editingId ? 'Contractor updated successfully!' : 'Contractor created successfully!';
+            msg.style.display = 'block';
+            document.getElementById('contractorForm').reset();
+            editingId = null;
+            const submitBtn = document.querySelector('#contractorForm button[type="submit"]');
+            submitBtn.innerHTML = 'Create Contractor';
+            await loadContractors();
+        } else {
+            const error = await response.json();
+            msg.style.color = '#d00';
+            msg.textContent = 'Error: ' + (error.error || 'Unknown error');
+            msg.style.display = 'block';
+        }
+    } catch (error) {
+        msg.style.color = '#d00';
+        msg.textContent = 'Error: ' + error.message;
+        msg.style.display = 'block';
     }
 });
 
-
-// wire selection from list
-document.querySelectorAll('.ctr-item').forEach(el => {
-    el.addEventListener('click', () => {
-        document.querySelectorAll('.ctr-item').forEach(x=> x.classList.remove('active'));
-        el.classList.add('active');
-        const id = el.dataset.id;
-        renderForContractor(id);
-    });
+// Event delegation for edit and delete buttons
+document.querySelector('#contractorsTable tbody').addEventListener('click', (e) => {
+    if (e.target.classList.contains('btn-edit')) {
+        const id = e.target.dataset.id;
+        editContractor(id);
+    } else if (e.target.classList.contains('btn-delete')) {
+        const id = e.target.dataset.id;
+        deleteContractor(id);
+    }
 });
 
-// initial: select first if exists
-document.addEventListener('DOMContentLoaded', () => {
-    const first = document.querySelector('.ctr-item');
-    if (first) { first.classList.add('active'); renderForContractor(first.dataset.id); }
-    // redraw chart on resize
-    window.addEventListener('resize', ()=> {
-        const id = document.querySelector('.ctr-item.active')?.dataset.id;
-        if (id) renderForContractor(id);
-    });
-});
+// Load contractors on page load
+document.addEventListener('DOMContentLoaded', loadContractors);

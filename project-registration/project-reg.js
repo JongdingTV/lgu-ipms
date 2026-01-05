@@ -27,35 +27,42 @@ let projects = [];
 let editingIndex = -1;
 
 function saveProjects() {
-    if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.saveProjects) {
-        IPMS_DATA.saveProjects(projects);
-    } else {
-        localStorage.setItem('projects', JSON.stringify(projects));
-    }
+    // Projects are now saved via AJAX to database
+    // This function is kept for compatibility but does nothing
 }
 
 function loadProjects() {
-    if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) {
-        projects = IPMS_DATA.getProjects();
-    } else {
-        projects = JSON.parse(localStorage.getItem('projects')) || [];
-    }
-    displayProjects();
+    fetch('project_registration.php?action=load_projects')
+        .then(response => response.json())
+        .then(data => {
+            projects = data;
+            displayProjects();
+        })
+        .catch(error => {
+            console.error('Error loading projects:', error);
+            projects = [];
+            displayProjects();
+        });
 }
 
 function displayProjects() {
     const tbody = document.querySelector('#projectsTable tbody');
     tbody.innerHTML = '';
 
+    if (!projects.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#6b7280;">No projects registered yet.</td></tr>';
+        return;
+    }
+
     projects.forEach((project, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${project.projCode}</td>
-            <td>${project.projName}</td>
-            <td>${project.projType}</td>
-            <td>${project.projSector}</td>
-            <td>${project.projPriority}</td>
-            <td>${project.status || 'Active'}</td>
+            <td>${project.code}</td>
+            <td>${project.name}</td>
+            <td>${project.type}</td>
+            <td>${project.sector}</td>
+            <td>${project.priority}</td>
+            <td>${project.status}</td>
             <td>
                 <div class="action-buttons">
                     <button class="btn-edit" onclick="editProject(${index})" title="Edit Project">
@@ -76,18 +83,21 @@ function editProject(index) {
     editingIndex = index;
 
     // Populate form
-    document.getElementById('projCode').value = project.projCode;
-    document.getElementById('projName').value = project.projName;
-    document.getElementById('projType').value = project.projType;
-    document.getElementById('projSector').value = project.projSector;
-    document.getElementById('projDescription').value = project.projDescription;
-    document.getElementById('projPriority').value = project.projPriority;
+    document.getElementById('projCode').value = project.code;
+    document.getElementById('projName').value = project.name;
+    document.getElementById('projType').value = project.type;
+    document.getElementById('projSector').value = project.sector;
+    document.getElementById('projDescription').value = project.description;
+    document.getElementById('projPriority').value = project.priority;
     document.getElementById('province').value = project.province;
     document.getElementById('barangay').value = project.barangay;
-    document.getElementById('startDate').value = project.startDate;
-    document.getElementById('endDate').value = project.endDate;
-    document.getElementById('budget').value = project.budget;
-    document.getElementById('contractor').value = project.contractor;
+    document.getElementById('projLocation').value = project.location;
+    document.getElementById('startDate').value = project.start_date;
+    document.getElementById('endDate').value = project.end_date;
+    document.getElementById('projDuration').value = project.duration_months;
+    document.getElementById('projBudget').value = project.budget;
+    document.getElementById('projManager').value = project.project_manager;
+    document.getElementById('status').value = project.status;
 
     const submitBtn = document.getElementById('submitBtn');
     submitBtn.innerHTML = 'Update Project';
@@ -97,10 +107,31 @@ function editProject(index) {
 }
 
 function deleteProject(index) {
-    if (confirm('Are you sure you want to delete this project?')) {
-        projects.splice(index, 1);
-        saveProjects();
-        displayProjects();
+    const project = projects[index];
+    if (confirm(`Are you sure you want to delete project "${project.name}"?\n\nThis action cannot be undone.`)) {
+        const formData = new FormData();
+        formData.append('action', 'delete_project');
+        formData.append('id', project.id);
+
+        fetch('project_registration.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadProjects(); // Reload projects from database
+                document.getElementById('formMessage').textContent = data.message;
+                document.getElementById('formMessage').style.display = 'block';
+                setTimeout(() => document.getElementById('formMessage').style.display = 'none', 3000);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the project.');
+        });
     }
 }
 
@@ -108,40 +139,53 @@ function deleteProject(index) {
 document.getElementById('projectForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
-    const project = {
-        projCode: document.getElementById('projCode').value,
-        projName: document.getElementById('projName').value,
-        projType: document.getElementById('projType').value,
-        projSector: document.getElementById('projSector').value,
-        projDescription: document.getElementById('projDescription').value,
-        projPriority: document.getElementById('projPriority').value,
-        province: document.getElementById('province').value,
-        barangay: document.getElementById('barangay').value,
-        startDate: document.getElementById('startDate').value,
-        endDate: document.getElementById('endDate').value,
-        budget: document.getElementById('budget').value,
-        contractor: document.getElementById('contractor').value,
-        status: 'Active'
-    };
+    const formData = new FormData();
+    formData.append('action', 'save_project');
+    formData.append('code', document.getElementById('projCode').value);
+    formData.append('name', document.getElementById('projName').value);
+    formData.append('type', document.getElementById('projType').value);
+    formData.append('sector', document.getElementById('projSector').value);
+    formData.append('description', document.getElementById('projDescription').value);
+    formData.append('priority', document.getElementById('projPriority').value);
+    formData.append('province', document.getElementById('province').value);
+    formData.append('barangay', document.getElementById('barangay').value);
+    formData.append('location', document.getElementById('projLocation').value);
+    formData.append('start_date', document.getElementById('startDate').value);
+    formData.append('end_date', document.getElementById('endDate').value);
+    formData.append('duration_months', document.getElementById('projDuration').value);
+    formData.append('budget', document.getElementById('projBudget').value);
+    formData.append('project_manager', document.getElementById('projManager').value);
+    formData.append('status', document.getElementById('status').value);
     
     if (editingIndex >= 0) {
-        projects[editingIndex] = project;
-        editingIndex = -1;
-    } else {
-        projects.push(project);
+        formData.append('id', projects[editingIndex].id);
     }
-    
-    saveProjects();
-    displayProjects();
-    this.reset();
 
-    const submitBtn = document.getElementById('submitBtn');
-    submitBtn.innerHTML = 'Create Project';
-    submitBtn.style.background = '';
-
-    document.getElementById('formMessage').textContent = 'Project saved successfully!';
-    document.getElementById('formMessage').style.display = 'block';
-    setTimeout(() => document.getElementById('formMessage').style.display = 'none', 3000);
+    fetch('project_registration.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadProjects(); // Reload projects from database
+            this.reset();
+            editingIndex = -1;
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = 'Create Project';
+            
+            document.getElementById('formMessage').textContent = data.message;
+            document.getElementById('formMessage').style.display = 'block';
+            setTimeout(() => document.getElementById('formMessage').style.display = 'none', 3000);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the project.');
+    });
 });
 
 // Load projects on page load

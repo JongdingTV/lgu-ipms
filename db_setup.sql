@@ -21,8 +21,21 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE employees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'Employee',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Optional: Insert a test user (password: test123, hashed)
 -- INSERT INTO users (first_name, last_name, email, password) VALUES ('Test', 'User', 'test@lgu.gov.ph', '$2y$10$examplehashedpassword');
+
+-- Insert a test employee (password: admin123, hashed)
+INSERT INTO employees (first_name, last_name, email, password) VALUES ('Admin', 'User', 'admin@lgu.gov.ph', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
 
 -- budget module total budget 
 CREATE TABLE IF NOT EXISTS project_settings (
@@ -48,3 +61,41 @@ CREATE TABLE IF NOT EXISTS expenses (
 
 -- Initialize the budget row
 INSERT IGNORE INTO project_settings (id, total_budget) VALUES (1, 0);
+
+-- Project Registration Table
+CREATE TABLE IF NOT EXISTS projects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(50),
+    sector VARCHAR(50),
+    description TEXT,
+    priority VARCHAR(20) DEFAULT 'Medium',
+    province VARCHAR(100),
+    barangay VARCHAR(100),
+    location VARCHAR(255),
+    start_date DATE,
+    end_date DATE,
+    duration_months INT,
+    budget DECIMAL(15, 2),
+    project_manager VARCHAR(100),
+    status VARCHAR(50) DEFAULT 'Draft',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Contractors Table
+CREATE TABLE IF NOT EXISTS contractors (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    company VARCHAR(255) NOT NULL,
+    owner VARCHAR(100),
+    license VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    address TEXT,
+    specialization VARCHAR(100),
+    experience INT DEFAULT 0,
+    rating DECIMAL(2,1) DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'Active',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

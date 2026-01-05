@@ -439,13 +439,13 @@ button#resetBtn {
 }
 
 button[type="submit"] {
-    background: linear-gradient(135deg, #10b981, #059669);
+    background: linear-gradient(135deg, #2563eb 0%,  #1e3a8a 100%);
     color: #fff;
 }
 
 button[type="submit"]:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
 }
 
 button#resetBtn {
