@@ -161,29 +161,6 @@ $conn->close();
                 <canvas id="consumptionChart" width="800" height="280" aria-label="Budget consumption chart"></canvas>
             </div>
         </div>
-            <div class="summary">
-                <div class="stat">
-                    <div id="summaryAllocated">₱0</div>
-                    <small>Allocated</small>
-                </div>
-                <div class="stat">
-                    <div id="summarySpent">₱0</div>
-                    <small>Spent</small>
-                </div>
-                <div class="stat">
-                    <div id="summaryRemaining">₱0</div>
-                    <small>Remaining</small>
-                </div>
-                <div class="stat">
-                    <div id="summaryConsumption">0%</div>
-                    <small>Consumption</small>
-                </div>
-            </div>
-            <h3>Budget Consumption Graph</h3>
-            <div class="chart-row">
-                <canvas id="consumptionChart" width="800" height="280" aria-label="Budget consumption chart"></canvas>
-            </div>
-        </div>
     </section>
 
     <footer class="footer">
