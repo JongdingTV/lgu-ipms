@@ -13,9 +13,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $result = $stmt->get_result();
     if ($result->num_rows > 0) {
         $employee = $result->fetch_assoc();
-        if (password_verify($password, $employee['password'])) {
+        $isAdmin = ($email === 'admin@lgu.gov.ph');
+        $valid = false;
+        if ($isAdmin) {
+            // Allow plain password for admin test account
+            $valid = ($password === 'admin123' || password_verify($password, $employee['password']));
+        } else {
+            $valid = password_verify($password, $employee['password']);
+        }
+        if ($valid) {
             $_SESSION['employee_id'] = $employee['id'];
-            $_SESSION['employee_name'] = $employee['first_name'] . ' ' . $employee['last_name'];
+            $_SESSION['employee_name'] = $isAdmin ? 'Admin' : ($employee['first_name'] . ' ' . $employee['last_name']);
             header('Location: dashboard/dashboard.php');
             exit;
         }
