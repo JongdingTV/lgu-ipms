@@ -1,12 +1,55 @@
 <?php
-// Handle feedback form submission
+// AJAX handler for feedback submission
+if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+    header('Content-Type: application/json');
+    ini_set('display_errors', 0);
+    error_reporting(E_ERROR | E_PARSE);
+    session_start();
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Not logged in']);
+        exit;
+    }
+    $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
+        $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+        if ($conn->connect_error) {
+            echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
+            exit;
+        }
+        $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
+        $category = $_POST['category'];
+        $location = $_POST['street'] . ', ' . $_POST['barangay'];
+        $description = $_POST['feedback'];
+        $status = 'Pending';
+        $stmt = $conn->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Feedback submitted!']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error submitting feedback.']);
+        }
+        $stmt->close();
+        $conn->close();
+        exit;
+    }
+    echo json_encode(['success' => false, 'message' => 'Invalid request']);
+    exit;
+}
+
+// Normal page load
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../login.php');
+    exit;
+}
+$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
+$msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
     $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
     if ($conn->connect_error) {
         $msg = 'Database connection failed.';
     } else {
-        $user_name = 'Anonymous';
-        $subject = substr($_POST['feedback'], 0, 30);
+        $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
         $category = $_POST['category'];
         $location = $_POST['street'] . ', ' . $_POST['barangay'];
         $description = $_POST['feedback'];
@@ -22,14 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         $conn->close();
     }
 }
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
-
-// Get user name from session
-$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -37,9 +72,6 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feedback - User Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="user-dashboard.css">
 </head>
 <body>
@@ -65,46 +97,42 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
             </a>
         </div>
     </header>
-
-    <!-- Toggle button to show sidebar -->
     <div class="toggle-btn" id="showSidebarBtn">
         <a href="#" id="toggleSidebarShow">
             <img src="../dashboard/lgu-arrow-right.png" alt="Show sidebar">
         </a>
     </div>
-
-    <section class="main-content">
-        <div class="dash-header">
-            <h1>Feedback</h1>
-            <p>Submit your feedback or suggestions and track your submissions</p>
-        </div>
-
-        <!-- Feedback Submissions Section -->
-        <div class="feedback-history" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-bottom: 30px;">
-            <h3 style="color: #1e3a8a; margin-bottom: 15px; font-size: 1.1em;">My Submitted Feedback</h3>
-            <div id="feedbackHistoryList"></div>
-        </div>
-
         <!-- User Feedback Form -->
-        <div class="feedback-form">
+        <div class="feedback-form modern-feedback-form">
+            <div class="feedback-header">
+                <div class="feedback-icon-bg">
+                    <img src="../project-prioritization/prioritization.png" alt="Feedback Icon" class="feedback-icon">
+                </div>
+                <div>
+                    <h2 class="feedback-title">Submit Your Feedback or Suggestion</h2>
+                    <p class="feedback-desc">We value your input! Please fill out the form below to help us improve our services and infrastructure.</p>
+                </div>
+            </div>
             <form id="userFeedbackForm" method="post" action="">
-            <h3>Submit Your Feedback or Suggestion</h3>
-        <div class="feedback-form" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
-            <form id="userFeedbackForm" enctype="multipart/form-data">
-            <h3 style="color: #1e3a8a; margin-bottom: 15px; font-size: 1.1em;">Submit Your Feedback or Suggestion</h3>
+                <div class="form-row">
+                    <div class="input-box">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject" maxlength="100" placeholder="Enter subject (e.g. Road Repair Request)" required>
+                    </div>
+                </div>
                 <div class="form-row">
                     <div class="input-box">
                         <label for="street">Street</label>
-                        <input type="text" id="street" name="street" placeholder="Enter street name" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Poppins', sans-serif;">
+                        <input type="text" id="street" name="street" placeholder="Enter street name" required>
                     </div>
                     <div class="input-box">
                         <label for="barangay">Barangay</label>
-                        <input type="text" id="barangay" name="barangay" placeholder="Enter barangay" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Poppins', sans-serif;">
+                        <input type="text" id="barangay" name="barangay" placeholder="Enter barangay" required>
                     </div>
                 </div>
                 <div class="input-box">
                     <label for="category">Category</label>
-                    <select id="category" name="category" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Poppins', sans-serif;">
+                    <select id="category" name="category" required>
                         <option value="">Select Category</option>
                         <option value="transportation">Transportation (roads, bridges, airports, railways)</option>
                         <option value="energy">Energy (power generation/transmission)</option>
@@ -113,39 +141,15 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
                         <option value="public-buildings">Public Buildings (park, irrigation systems, gov buildings)</option>
                     </select>
                 </div>
-
                 <div class="input-box">
                     <label for="photo">Photo Attachment (Optional)</label>
-                    <input type="file" id="photo" name="photo" accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Poppins', sans-serif;">
+                    <input type="file" id="photo" name="photo" accept="image/*">
                 </div>
                 <div class="input-box">
                     <label for="feedback">Suggestion, Feedback, Concern</label>
-                    <textarea id="feedback" name="feedback" rows="5" placeholder="Enter your suggestion, feedback, or concern here..." required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Poppins', sans-serif; resize: vertical;"></textarea>
+                    <textarea id="feedback" name="feedback" rows="5" placeholder="Enter your suggestion, feedback, or concern here..." required></textarea>
                 </div>
-                <button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #1e3a8a, #2563eb); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s ease;">Submit Feedback</button>
+                <button type="submit" class="submit-btn">Submit Feedback</button>
             </form>
-
-            <?php if (!empty($msg)): ?>
-                <div id="message" class="message" style="display:block;"> <?php echo htmlspecialchars($msg); ?> </div>
-            <?php else: ?>
-                <div id="message" class="message" style="display:none;"></div>
-            <?php endif; ?>
-
-            <div id="message" class="message" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: 500;"></div>
-
+            <div id="message" class="message" style="display:<?php echo !empty($msg) ? 'block' : 'none'; ?>; margin-top: 18px; <?php echo !empty($msg) ? ($msg === 'Feedback submitted!' ? 'background:#d1fae5;color:#065f46;' : 'background:#fee2e2;color:#991b1b;') : 'background:#e0f2fe;color:#2563eb;'; ?>"><?php if (!empty($msg)) echo htmlspecialchars($msg); ?></div>
         </div>
-    </section>
-
-    <footer class="footer">
-        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
-    </footer>
-
-
-    <!-- No JS needed for feedback submission now -->
-    <script src="user-dashboard.js"></script>
-
-    <script src="../shared-data.js"></script>
-    <script src="user-feedback.js"></script>
-
-</body>
-</html>
