@@ -25,15 +25,23 @@ switch ($method) {
     case 'POST':
         // Create new contractor
         $data = json_decode(file_get_contents('php://input'), true);
-        $stmt = $conn->prepare("INSERT INTO contractors (company, owner, license, email, phone, address, specialization, experience, rating, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param('sssssssisds', $data['company'], $data['owner'], $data['license'], $data['email'], $data['phone'], $data['address'], $data['specialization'], $data['experience'], $data['rating'], $data['status'], $data['notes']);
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'id' => $conn->insert_id]);
-        } else {
-            echo json_encode(['error' => $stmt->error]);
-        }
-        $stmt->close();
-        break;
+            if (!$data) {
+                echo json_encode(['error' => 'Invalid JSON input']);
+                break;
+            }
+            $stmt = $conn->prepare("INSERT INTO contractors (company, owner, license, email, phone, address, specialization, experience, rating, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if (!$stmt) {
+                echo json_encode(['error' => 'Prepare failed: ' . $conn->error]);
+                break;
+            }
+            $stmt->bind_param('sssssssisds', $data['company'], $data['owner'], $data['license'], $data['email'], $data['phone'], $data['address'], $data['specialization'], $data['experience'], $data['rating'], $data['status'], $data['notes']);
+            if ($stmt->execute()) {
+                echo json_encode(['success' => true, 'id' => $conn->insert_id]);
+            } else {
+                echo json_encode(['error' => 'Execute failed: ' . $stmt->error]);
+            }
+            $stmt->close();
+            break;
 
     case 'PUT':
         // Update contractor
@@ -69,5 +77,3 @@ switch ($method) {
 }
 
 $conn->close();
-?></content>
-<parameter name="filePath">c:\xampp\htdocs\lgu-ipms\contractors\contractors-api.php

@@ -33,8 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $stmt = $conn->prepare("UPDATE projects SET code=?, name=?, type=?, sector=?, description=?, priority=?, province=?, barangay=?, location=?, start_date=?, end_date=?, duration_months=?, budget=?, project_manager=?, status=? WHERE id=?");
             $stmt->bind_param('sssssssssssidssi', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status, $id);
         } else {
-            // Insert new project
-            $stmt = $conn->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            // Insert new project and set created_at explicitly
+            $stmt = $conn->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
             $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
         }
         
@@ -270,13 +270,13 @@ $conn->close();
     <script src="../shared-data.js"></script>
 
     <script>
-        // simple client-only demo: store projects in localStorage
+        // --- AJAX-based Project Registration ---
         const form = document.getElementById('projectForm');
         const msg = document.getElementById('formMessage');
-        const savedDiv = document.getElementById('savedProjects');
         const resetBtn = document.getElementById('resetBtn');
+        let editProjectId = null;
 
-        // Sidebar toggle handlers (ensure arrow works even if external script not loaded)
+        // Sidebar toggle handlers (unchanged)
         const sidebarToggle = document.getElementById('toggleSidebar');
         const sidebarShow = document.getElementById('toggleSidebarShow');
         function toggleSidebarHandler(e) {
@@ -290,183 +290,143 @@ $conn->close();
         if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebarHandler);
         if (sidebarShow) sidebarShow.addEventListener('click', toggleSidebarHandler);
 
-        function fileListNames(input) {
-            if (!input || !input.files) return [];
-            return Array.from(input.files).map(f => f.name);
-        }
-
+        // Load projects from DB
         function loadSavedProjects() {
-            const projects = (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) 
-                ? IPMS_DATA.getProjects() 
-                : JSON.parse(localStorage.getItem('projects')||'[]');
-            const tbody = document.querySelector('#projectsTable tbody');
-            tbody.innerHTML = '';
-            if (!projects.length) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#6b7280;">No projects registered yet.</td></tr>';
-                return;
-            }
-            projects.forEach((p, i) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${p.code || ''}</td>
-                    <td>${p.name || ''}</td>
-                    <td>${p.type || ''}</td>
-                    <td>${p.sector || ''}</td>
-                    <td>${p.priority || 'Medium'}</td>
-                    <td>${p.status || 'Draft'}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-edit" data-index="${i}">Edit</button>
-                            <button class="btn-delete" data-index="${i}">Delete</button>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-
-            // Wire up delete buttons
-            document.querySelectorAll('.btn-delete').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const index = parseInt(this.dataset.index);
-                    const projects = JSON.parse(localStorage.getItem('projects')||'[]');
-                    const project = projects[index];
-                    
-                    if (confirm(`Are you sure you want to delete project "${project.name}"?\n\nThis action cannot be undone.`)) {
-                        projects.splice(index, 1);
-                        if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.saveProjects) {
-                            IPMS_DATA.saveProjects(projects);
-                        } else {
-                            localStorage.setItem('projects', JSON.stringify(projects));
-                        }
-                        msg.textContent = 'Project deleted successfully.';
-                        msg.style.display = 'block';
-                        msg.style.color = '#dc2626';
-                        setTimeout(() => {
-                            msg.style.display = 'none';
-                            msg.style.color = '#0b5';
-                        }, 3000);
-                        loadSavedProjects();
+            // Add cache-busting param to always get fresh data
+            fetch('project_registration.php?action=load_projects&_=' + Date.now())
+                .then(res => res.json())
+                .then(projects => {
+                    console.log('Fetched projects:', projects); // DEBUG
+                    const tbody = document.querySelector('#projectsTable tbody');
+                    tbody.innerHTML = '';
+                    if (!projects.length) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#6b7280;">No projects registered yet.</td></tr>';
+                        return;
                     }
-                });
-            });
+                    projects.forEach((p, i) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${p.code || ''}</td>
+                            <td>${p.name || ''}</td>
+                            <td>${p.type || ''}</td>
+                            <td>${p.sector || ''}</td>
+                            <td>${p.priority || 'Medium'}</td>
+                            <td>${p.status || 'Draft'}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-edit" data-id="${p.id}">Edit</button>
+                                    <button class="btn-delete" data-id="${p.id}">Delete</button>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
 
-            // Wire up edit buttons
-            document.querySelectorAll('.btn-edit').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const index = parseInt(this.dataset.index);
-                    const projects = JSON.parse(localStorage.getItem('projects')||'[]');
-                    const project = projects[index];
-                    
-                    // Populate form with project data for editing
-                    document.getElementById('projCode').value = project.code || '';
-                    document.getElementById('projName').value = project.name || '';
-                    document.getElementById('projType').value = project.type || '';
-                    document.getElementById('projSector').value = project.sector || '';
-                    document.getElementById('projDescription').value = project.description || '';
-                    document.getElementById('projPriority').value = project.priority || 'Medium';
-                    document.getElementById('province').value = project.province || '';
-                    document.getElementById('barangay').value = project.barangay || '';
-                    document.getElementById('projLocation').value = project.location || '';
-                    document.getElementById('startDate').value = project.startDate || '';
-                    document.getElementById('endDate').value = project.endDate || '';
-                    document.getElementById('projDuration').value = project.durationMonths || '';
-                    document.getElementById('projBudget').value = project.budget || '';
-                    document.getElementById('projManager').value = project.projectManager || '';
-                    document.getElementById('status').value = project.status || 'Draft';
+                    // Wire up delete buttons
+                    document.querySelectorAll('.btn-delete').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            const projectRow = this.closest('tr');
+                            if (confirm('Are you sure you want to delete this project?')) {
+                                fetch('project_registration.php', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                    body: `action=delete_project&id=${encodeURIComponent(id)}`
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    msg.textContent = data.message;
+                                    msg.style.display = 'block';
+                                    msg.style.color = data.success ? '#dc2626' : '#f00';
+                                    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+                                    loadSavedProjects();
+                                });
+                            }
+                        });
+                    });
 
-                    // Scroll to form
-                    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    
-                    // Store the index for update mode
-                    form.dataset.editIndex = index;
-                    
-                    // Change button text
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    submitBtn.innerHTML = 'Update Project';
+                    // Wire up edit buttons
+                    document.querySelectorAll('.btn-edit').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            // Find project in loaded list
+                            const project = projects.find(p => p.id == id);
+                            if (!project) return;
+                            document.getElementById('projCode').value = project.code || '';
+                            document.getElementById('projName').value = project.name || '';
+                            document.getElementById('projType').value = project.type || '';
+                            document.getElementById('projSector').value = project.sector || '';
+                            document.getElementById('projDescription').value = project.description || '';
+                            document.getElementById('projPriority').value = project.priority || 'Medium';
+                            document.getElementById('province').value = project.province || '';
+                            document.getElementById('barangay').value = project.barangay || '';
+                            document.getElementById('projLocation').value = project.location || '';
+                            document.getElementById('startDate').value = project.start_date || '';
+                            document.getElementById('endDate').value = project.end_date || '';
+                            document.getElementById('projDuration').value = project.duration_months || '';
+                            document.getElementById('projBudget').value = project.budget || '';
+                            document.getElementById('projManager').value = project.project_manager || '';
+                            document.getElementById('status').value = project.status || 'Draft';
+                            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            editProjectId = id;
+                            const submitBtn = form.querySelector('button[type="submit"]');
+                            submitBtn.innerHTML = 'Update Project';
+                        });
+                    });
                 });
-            });
         }
 
         form.addEventListener('submit', function(e){
             e.preventDefault();
-            const projects = (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) 
-                ? IPMS_DATA.getProjects() 
-                : JSON.parse(localStorage.getItem('projects')||'[]');
-            const editIndex = form.dataset.editIndex;
-
-            const p = {
-                code: document.getElementById('projCode').value,
-                name: document.getElementById('projName').value,
-                type: document.getElementById('projType').value,
-                sector: document.getElementById('projSector').value,
-                description: document.getElementById('projDescription').value,
-                priority: document.getElementById('projPriority').value,
-
-                province: document.getElementById('province').value,
-                barangay: document.getElementById('barangay').value,
-                location: document.getElementById('projLocation').value,
-
-                startDate: document.getElementById('startDate').value,
-                endDate: document.getElementById('endDate').value,
-                durationMonths: Number(document.getElementById('projDuration').value),
-
-                budget: Number(document.getElementById('projBudget').value),
-
-                projectManager: document.getElementById('projManager').value,
-
-                status: document.getElementById('status').value,
-
-                createdAt: new Date().toISOString()
-            };
-
-            if (editIndex !== undefined) {
-                // Update existing project
-                projects[parseInt(editIndex)] = p;
-                if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.saveProjects) {
-                    IPMS_DATA.saveProjects(projects);
-                } else {
-                    localStorage.setItem('projects', JSON.stringify(projects));
-                }
-                msg.textContent = 'Project updated successfully.';
-                msg.style.color = '#f59e0b';
-                delete form.dataset.editIndex;
-                const submitBtn = form.querySelector('button[type="submit"]');
-                submitBtn.innerHTML = 'Create Project';
-            } else {
-                // Create new project
-                projects.push(p);
-                if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.saveProjects) {
-                    IPMS_DATA.saveProjects(projects);
-                } else {
-                    localStorage.setItem('projects', JSON.stringify(projects));
-                }
-                msg.textContent = 'Project created successfully.';
-                msg.style.color = '#0b5';
+            const fd = new FormData();
+            fd.append('action', 'save_project');
+            fd.append('code', document.getElementById('projCode').value);
+            fd.append('name', document.getElementById('projName').value);
+            fd.append('type', document.getElementById('projType').value);
+            fd.append('sector', document.getElementById('projSector').value);
+            fd.append('description', document.getElementById('projDescription').value);
+            fd.append('priority', document.getElementById('projPriority').value);
+            fd.append('province', document.getElementById('province').value);
+            fd.append('barangay', document.getElementById('barangay').value);
+            fd.append('location', document.getElementById('projLocation').value);
+            fd.append('start_date', document.getElementById('startDate').value);
+            fd.append('end_date', document.getElementById('endDate').value);
+            fd.append('duration_months', document.getElementById('projDuration').value);
+            fd.append('budget', document.getElementById('projBudget').value);
+            fd.append('project_manager', document.getElementById('projManager').value);
+            fd.append('status', document.getElementById('status').value);
+            if (editProjectId) {
+                fd.append('id', editProjectId);
             }
-            
-            msg.style.display = 'block';
-            form.reset();
-            loadSavedProjects();
-            
-            // Hide message after 3 seconds
-            setTimeout(() => {
-                msg.style.display = 'none';
-            }, 3000);
+            fetch('project_registration.php', {
+                method: 'POST',
+                body: fd
+            })
+            .then(res => res.json())
+            .then(data => {
+                msg.textContent = data.message;
+                msg.style.display = 'block';
+                msg.style.color = data.success ? '#0b5' : '#f00';
+                if (data.success) {
+                    form.reset();
+                    editProjectId = null;
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = 'Create Project';
+                    // Force a full page reload to guarantee table updates
+                    setTimeout(() => { window.location.reload(); }, 400);
+                }
+                setTimeout(() => { msg.style.display = 'none'; }, 3000);
+            });
         });
 
         resetBtn.addEventListener('click', function(){
             form.reset();
             msg.style.display = 'none';
-
-            // Clear edit mode if active
-            if (form.dataset.editIndex !== undefined) {
-                delete form.dataset.editIndex;
-                const submitBtn = document.getElementById('submitBtn');
-                submitBtn.innerHTML = 'Create Project';
-            }
+            editProjectId = null;
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = 'Create Project';
         });
 
-        // initialize
         document.addEventListener('DOMContentLoaded', function(){
             loadSavedProjects();
         });
