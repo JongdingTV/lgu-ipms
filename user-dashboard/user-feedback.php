@@ -22,6 +22,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         $conn->close();
     }
 }
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../login.php');
+    exit;
+}
+
+// Get user name from session
+$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -48,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         </div>
         <div class="nav-user">
             <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
-            <span class="nav-username">Welcome, User</span>
+            <span class="nav-username">Welcome, <?php echo htmlspecialchars($user_name); ?></span>
             <a href="../login.php" class="nav-logout">Logout</a>
         </div>
         <div class="lgu-arrow-back">
@@ -68,26 +76,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
     <section class="main-content">
         <div class="dash-header">
             <h1>Feedback</h1>
-            <p>Submit your feedback or suggestions</p>
+            <p>Submit your feedback or suggestions and track your submissions</p>
+        </div>
+
+        <!-- Feedback Submissions Section -->
+        <div class="feedback-history" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-bottom: 30px;">
+            <h3 style="color: #1e3a8a; margin-bottom: 15px; font-size: 1.1em;">My Submitted Feedback</h3>
+            <div id="feedbackHistoryList"></div>
         </div>
 
         <!-- User Feedback Form -->
         <div class="feedback-form">
             <form id="userFeedbackForm" method="post" action="">
             <h3>Submit Your Feedback or Suggestion</h3>
+        <div class="feedback-form" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+            <form id="userFeedbackForm" enctype="multipart/form-data">
+            <h3 style="color: #1e3a8a; margin-bottom: 15px; font-size: 1.1em;">Submit Your Feedback or Suggestion</h3>
                 <div class="form-row">
                     <div class="input-box">
                         <label for="street">Street</label>
-                        <input type="text" id="street" name="street" placeholder="Enter street name" required>
+                        <input type="text" id="street" name="street" placeholder="Enter street name" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Poppins', sans-serif;">
                     </div>
                     <div class="input-box">
                         <label for="barangay">Barangay</label>
-                        <input type="text" id="barangay" name="barangay" placeholder="Enter barangay" required>
+                        <input type="text" id="barangay" name="barangay" placeholder="Enter barangay" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Poppins', sans-serif;">
                     </div>
                 </div>
                 <div class="input-box">
                     <label for="category">Category</label>
-                    <select id="category" name="category" required>
+                    <select id="category" name="category" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Poppins', sans-serif;">
                         <option value="">Select Category</option>
                         <option value="transportation">Transportation (roads, bridges, airports, railways)</option>
                         <option value="energy">Energy (power generation/transmission)</option>
@@ -98,20 +115,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
                 </div>
 
                 <div class="input-box">
-                    <label for="photo">Photo Attachment</label>
-                    <input type="file" id="photo" name="photo" accept="image/*">
+                    <label for="photo">Photo Attachment (Optional)</label>
+                    <input type="file" id="photo" name="photo" accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Poppins', sans-serif;">
                 </div>
                 <div class="input-box">
                     <label for="feedback">Suggestion, Feedback, Concern</label>
-                    <textarea id="feedback" name="feedback" rows="5" placeholder="Enter your suggestion, feedback, or concern here..." required></textarea>
+                    <textarea id="feedback" name="feedback" rows="5" placeholder="Enter your suggestion, feedback, or concern here..." required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Poppins', sans-serif; resize: vertical;"></textarea>
                 </div>
-                <button type="submit" class="submit-btn">Submit</button>
+                <button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #1e3a8a, #2563eb); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s ease;">Submit Feedback</button>
             </form>
+
             <?php if (!empty($msg)): ?>
                 <div id="message" class="message" style="display:block;"> <?php echo htmlspecialchars($msg); ?> </div>
             <?php else: ?>
                 <div id="message" class="message" style="display:none;"></div>
             <?php endif; ?>
+
+            <div id="message" class="message" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: 500;"></div>
+
         </div>
     </section>
 
@@ -119,7 +140,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
+
     <!-- No JS needed for feedback submission now -->
     <script src="user-dashboard.js"></script>
+
+    <script src="../shared-data.js"></script>
+    <script src="user-feedback.js"></script>
+
 </body>
 </html>

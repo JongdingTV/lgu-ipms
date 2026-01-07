@@ -18,6 +18,13 @@ $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 $stmt->close();
 
+// Get user name from session
+$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
+
+// Format gender and civil status for display
+$gender_display = ucfirst(str_replace('_', ' ', $user['gender'] ?? ''));
+$civil_status_display = ucfirst(str_replace('_', ' ', $user['civil_status'] ?? ''));
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $current_password = trim($_POST['currentPassword']);
     $new_password = trim($_POST['newPassword']);
@@ -54,6 +61,7 @@ $conn->close();
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="user-dashboard.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - User Dashboard</title>
@@ -76,7 +84,7 @@ $conn->close();
         </div>
         <div class="nav-user">
             <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
-            <span class="nav-username">Welcome, User</span>
+            <span class="nav-username">Welcome, <?php echo htmlspecialchars($user_name); ?></span>
             <a href="../login.php" class="nav-logout">Logout</a>
         </div>
         <div class="lgu-arrow-back">
@@ -146,11 +154,11 @@ $conn->close();
                         </div>
                         <div class="input-box">
                             <label for="gender">Gender</label>
-                            <input id="gender" name="gender" type="text" readonly value="<?php echo htmlspecialchars($user['gender']); ?>">
+                            <input id="gender" name="gender" type="text" readonly value="<?php echo htmlspecialchars($gender_display); ?>">
                         </div>
                         <div class="input-box">
                             <label for="civilStatus">Civil Status</label>
-                            <input id="civilStatus" name="civilStatus" type="text" readonly value="<?php echo htmlspecialchars($user['civil_status']); ?>">
+                            <input id="civilStatus" name="civilStatus" type="text" readonly value="<?php echo htmlspecialchars($civil_status_display); ?>">
                         </div>
                     </div>
                     <div class="input-box full-width">

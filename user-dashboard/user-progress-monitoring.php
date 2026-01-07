@@ -1,3 +1,13 @@
+<?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../login.php');
+    exit;
+}
+
+// Get user name from session
+$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
+?>
 <!doctype html>
 <html>
 <head>
@@ -23,7 +33,7 @@
         </div>
         <div class="nav-user">
             <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
-            <span class="nav-username">Welcome, User</span>
+            <span class="nav-username">Welcome, <?php echo htmlspecialchars($user_name); ?></span>
             <a href="../login.php" class="nav-logout">Logout</a>
         </div>
         <div class="lgu-arrow-back">

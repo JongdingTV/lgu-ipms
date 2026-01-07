@@ -1,9 +1,18 @@
 <?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../login.php');
+    exit;
+}
+
 // Database connection
 $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
 if ($conn->connect_error) {
     die('Database connection failed: ' . $conn->connect_error);
 }
+
+// Get user name from session
+$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
 
 // Get project statistics
 $totalProjects = $conn->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'];
@@ -23,7 +32,7 @@ $conn->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard - LGU IPMS</title>
-    <link rel="stylesheet" href="../assets/style.css" />
+    <link rel="stylesheet" href="user-dashboard.css">
     <link rel="stylesheet" href="user-dashboard.css">
 </head>
 <body>
@@ -40,7 +49,7 @@ $conn->close();
         </div>
         <div class="nav-user">
             <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
-            <span class="nav-username">Welcome, User</span>
+            <span class="nav-username">Welcome, <?php echo htmlspecialchars($user_name); ?></span>
             <a href="../login.php" class="nav-logout">Logout</a>
         </div>
         <div class="lgu-arrow-back">
@@ -102,16 +111,20 @@ $conn->close();
         <!-- Charts Section -->
         <div class="charts-container">
             <div class="chart-box">
-                <h3>Project Status in Your Area</h3>
+                <h3>Project Status Distribution</h3>
                 <div class="chart-placeholder">
                     <div class="status-legend">
                         <div class="legend-item">
                             <span class="legend-color" style="background: #10b981;"></span>
-                            <span>Completed: 0%</span>
+                            <span id="completedPercent">Completed: 0%</span>
                         </div>
                         <div class="legend-item">
                             <span class="legend-color" style="background: #f59e0b;"></span>
-                            <span>In Progress: 0%</span>
+                            <span id="inProgressPercent">In Progress: 0%</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #ef4444;"></span>
+                            <span id="otherPercent">Other: 0%</span>
                         </div>
                     </div>
                 </div>
@@ -120,9 +133,9 @@ $conn->close();
                 <h3>Budget Utilization</h3>
                 <div class="chart-placeholder">
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%;"></div>
+                        <div class="progress-fill" id="budgetProgressFill" style="width: 0%;"></div>
                     </div>
-                    <p style="margin-top: 10px; font-size: 0.9em; color: #666;">Budget utilization: 0% Used</p>
+                    <p id="budgetUtilizationText" style="margin-top: 10px; font-size: 0.9em; color: #666;">Budget utilization: 0% Used</p>
                 </div>
             </div>
         </div>
