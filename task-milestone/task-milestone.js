@@ -1,37 +1,63 @@
 // filepath: c:\Users\james\OneDrive\Documents\GitHub\lgu-ipms\task-milestone\task-milestone.js
-// sidebar toggle (keeps existing functionality)
-document.getElementById('toggleSidebar')?.addEventListener('click', function(e) {
-    e.preventDefault();
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
-document.getElementById('toggleSidebarShow')?.addEventListener('click', function(e) {
-    e.preventDefault();
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
+console.log('task-milestone.js loaded');
 
-/* Task & Milestone module (client-only demo using localStorage) */
+// sidebar toggle (keeps existing functionality)
+const sidebarToggle = document.getElementById('toggleSidebar');
+if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        const navbar = document.getElementById('navbar');
+        const body = document.body;
+        const toggleBtn = document.getElementById('showSidebarBtn');
+        navbar.classList.toggle('hidden');
+        body.classList.toggle('sidebar-hidden');
+        toggleBtn.classList.toggle('show');
+    });
+}
+
+const sidebarShow = document.getElementById('toggleSidebarShow');
+if (sidebarShow) {
+    sidebarShow.addEventListener('click', function(e) {
+        e.preventDefault();
+        const navbar = document.getElementById('navbar');
+        const body = document.body;
+        const toggleBtn = document.getElementById('showSidebarBtn');
+        navbar.classList.toggle('hidden');
+        body.classList.toggle('sidebar-hidden');
+        toggleBtn.classList.toggle('show');
+    });
+}
+
+/* Task & Milestone module - fetch projects from database */
 const TM_KEY = 'lgu_tasks_v1';
 
 function loadTasks() { return JSON.parse(localStorage.getItem(TM_KEY) || '[]'); }
 function saveTasks(list) { localStorage.setItem(TM_KEY, JSON.stringify(list)); }
 function uid() { return 't' + Math.random().toString(36).slice(2,9); }
 
+let allProjects = [];
+
+function loadProjectsFromDatabase() {
+    console.log('Loading projects from database...');
+    return fetch('tasks_milestones.php?action=load_projects')
+        .then(response => {
+            console.log('Projects response status:', response.status);
+            if (!response.ok) throw new Error('Failed to load projects');
+            return response.json();
+        })
+        .then(projects => {
+            console.log('Projects loaded:', projects);
+            allProjects = projects;
+            renderProjectOptions();
+        })
+        .catch(error => {
+            console.error('Error loading projects:', error);
+            allProjects = [];
+        });
+}
+
 function getProjects() {
-    if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) {
-        return IPMS_DATA.getProjects();
-    } else {
-        return JSON.parse(localStorage.getItem('projects') || '[]');
-    }
+    return allProjects;
 }
 
 function renderProjectOptions() {
@@ -117,14 +143,15 @@ document.getElementById('tmExport')?.addEventListener('click', ()=>{
     const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'tasks_export.csv'; a.click(); URL.revokeObjectURL(url);
 });
 
+// Initialize by loading projects from database
+document.addEventListener('DOMContentLoaded', () => {
+    loadProjectsFromDatabase();
+    renderProjectOptions();
+    renderTasks();
+});
+
 // filters
 ['tmSearch','tmFilterStatus','tmFilterProject'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', renderTasks);
     document.getElementById(id)?.addEventListener('change', renderTasks);
-});
-
-// init
-document.addEventListener('DOMContentLoaded', ()=>{
-    renderProjectOptions();
-    renderTasks();
 });

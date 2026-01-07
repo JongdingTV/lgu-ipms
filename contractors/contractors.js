@@ -1,26 +1,69 @@
-document.getElementById('toggleSidebar').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
+console.log('contractors.js loaded');
 
-document.getElementById('toggleSidebarShow').addEventListener('click', function(e) {
-    e.preventDefault();
+const sidebarToggle = document.getElementById('toggleSidebar');
+if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const navbar = document.getElementById('navbar');
+        const body = document.body;
+        const toggleBtn = document.getElementById('showSidebarBtn');
+        
+        navbar.classList.toggle('hidden');
+        body.classList.toggle('sidebar-hidden');
+        toggleBtn.classList.toggle('show');
+    });
+}
+
+const sidebarShow = document.getElementById('toggleSidebarShow');
+if (sidebarShow) {
+    sidebarShow.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const navbar = document.getElementById('navbar');
+        const body = document.body;
+        const toggleBtn = document.getElementById('showSidebarBtn');
+        
+        navbar.classList.toggle('hidden');
+        body.classList.toggle('sidebar-hidden');
+        toggleBtn.classList.toggle('show');
+    });
+}
+
+// Load projects for contractor assignment
+let allProjects = [];
+
+function loadProjectsFromDatabase() {
+    console.log('Loading projects from database...');
+    fetch('contractors.php?action=load_projects')
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) throw new Error('Failed to load projects');
+            return response.json();
+        })
+        .then(projects => {
+            console.log('Projects loaded:', projects);
+            allProjects = projects;
+            populateProjectDropdown();
+        })
+        .catch(error => {
+            console.error('Error loading projects:', error);
+            allProjects = [];
+        });
+}
+
+function populateProjectDropdown() {
+    const select = document.getElementById('projectSelect');
+    if (!select) return;
     
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
+    select.innerHTML = '<option value="">Select a project</option>';
+    allProjects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = (project.code || '') + ' - ' + (project.name || '');
+        select.appendChild(option);
+    });
+}
 
 // CRUD for Contractors
 let contractors = [];
@@ -192,4 +235,7 @@ document.querySelector('#contractorsTable tbody').addEventListener('click', (e) 
 });
 
 // Load contractors on page load
-document.addEventListener('DOMContentLoaded', loadContractors);
+document.addEventListener('DOMContentLoaded', () => {
+    loadProjectsFromDatabase();
+    loadContractors();
+});

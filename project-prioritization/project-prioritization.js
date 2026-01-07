@@ -1,35 +1,91 @@
 // Project Prioritization Module
-document.getElementById('toggleSidebar').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
+console.log('project-prioritization.js loaded');
 
-document.getElementById('toggleSidebarShow').addEventListener('click', function(e) {
-    e.preventDefault();
+const sidebarToggle = document.getElementById('toggleSidebar');
+if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const navbar = document.getElementById('navbar');
+        const body = document.body;
+        const toggleBtn = document.getElementById('showSidebarBtn');
+        
+        navbar.classList.toggle('hidden');
+        body.classList.toggle('sidebar-hidden');
+        toggleBtn.classList.toggle('show');
+    });
+}
+
+const sidebarShow = document.getElementById('toggleSidebarShow');
+if (sidebarShow) {
+    sidebarShow.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const navbar = document.getElementById('navbar');
+        const body = document.body;
+        const toggleBtn = document.getElementById('showSidebarBtn');
+        
+        navbar.classList.toggle('hidden');
+        body.classList.toggle('sidebar-hidden');
+        toggleBtn.classList.toggle('show');
+    });
+}
+
+// Load projects from database
+let allProjects = [];
+
+function loadProjectsFromDatabase() {
+    console.log('Loading projects from database...');
+    fetch('project-prioritization.php?action=load_projects')
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) throw new Error('Failed to load projects');
+            return response.json();
+        })
+        .then(projects => {
+            console.log('Projects loaded:', projects);
+            allProjects = projects;
+            renderProjects();
+        })
+        .catch(error => {
+            console.error('Error loading projects:', error);
+            allProjects = [];
+            renderProjects();
+        });
+}
+
+function renderProjects() {
+    const tbody = document.querySelector('#inputsTable tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
     
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
+    if (!allProjects.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">No projects available</td></tr>';
+        return;
+    }
     
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
+    allProjects.forEach(project => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${project.code || ''}</td>
+            <td>${project.name || ''}</td>
+            <td>${project.type || ''}</td>
+            <td>${project.priority || 'Medium'}</td>
+            <td>${project.status || 'Draft'}</td>
+            <td>${project.sector || ''}</td>
+            <td>
+                <button class="btn-small" onclick="alert('Project: ${project.name}')">View</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
 
 // CRUD for Citizen Inputs
 const PRIORITIZATION_KEY = 'lgu_prioritization_v1';
 
 function loadInputs() {
     return JSON.parse(localStorage.getItem(PRIORITIZATION_KEY) || '[]');
-
-}
 
 function saveInputs(inputs) {
     localStorage.setItem(PRIORITIZATION_KEY, JSON.stringify(inputs));
@@ -117,5 +173,5 @@ document.getElementById('filterType').addEventListener('change', renderInputs);
 document.getElementById('filterCategory').addEventListener('change', renderInputs);
 document.getElementById('filterUrgency').addEventListener('change', renderInputs);
 
-// Initialize
-document.addEventListener('DOMContentLoaded', renderInputs);
+// Initialize - load projects from database first
+document.addEventListener('DOMContentLoaded', loadProjectsFromDatabase);

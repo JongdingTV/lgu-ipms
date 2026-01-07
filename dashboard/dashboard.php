@@ -1,5 +1,20 @@
 <?php
 session_start();
+// Database connection
+$conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+if ($conn->connect_error) {
+    die('Database connection failed: ' . $conn->connect_error);
+}
+
+// Get project statistics
+$totalProjects = $conn->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'];
+$inProgressProjects = $conn->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'];
+$completedProjects = $conn->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed'")->fetch_assoc()['count'];
+$totalBudget = $conn->query("SELECT COALESCE(SUM(budget), 0) as total FROM projects")->fetch_assoc()['total'];
+
+// Get recent projects
+$recentProjects = $conn->query("SELECT id, name, location, status, budget FROM projects ORDER BY created_at DESC LIMIT 5");
+$conn->close();
 ?>
 <html>
 <head>
@@ -58,7 +73,7 @@ session_start();
                 <img src="chart.png" alt="Total Projects" class="metric-icon">
                 <div class="metric-content">
                     <h3>Total Projects</h3>
-                    <p class="metric-value">24</p>
+                    <p class="metric-value"><?php echo $totalProjects; ?></p>
                     <span class="metric-status">Active & Completed</span>
                 </div>
             </div>
@@ -66,7 +81,7 @@ session_start();
                 <img src="sandclock.png" alt="In Progress" class="metric-icon">
                 <div class="metric-content">
                     <h3>In Progress</h3>
-                    <p class="metric-value">8</p>
+                    <p class="metric-value"><?php echo $inProgressProjects; ?></p>
                     <span class="metric-status">Currently executing</span>
                 </div>
             </div>
@@ -74,7 +89,7 @@ session_start();
                 <img src="check.png" alt="Completed" class="metric-icon">
                 <div class="metric-content">
                     <h3>Completed</h3>
-                    <p class="metric-value">14</p>
+                    <p class="metric-value"><?php echo $completedProjects; ?></p>
                     <span class="metric-status">On schedule</span>
                 </div>
             </div>
@@ -82,7 +97,7 @@ session_start();
                 <img src="budget.png" alt="Total Budget" class="metric-icon">
                 <div class="metric-content">
                     <h3>Total Budget</h3>
-                    <p class="metric-value">₱0</p>
+                    <p class="metric-value">₱<?php echo number_format($totalBudget, 2); ?></p>
                     <span class="metric-status">Allocated funds</span>
                 </div>
             </div>
@@ -134,17 +149,37 @@ session_start();
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>No projects registered</td>
-                        <td>-</td>
-                        <td><span class="status-badge pending">Pending</span></td>
-                        <td>
-                            <div class="progress-small">
-                                <div class="progress-fill-small" style="width: 0%;"></div>
-                            </div>
-                        </td>
-                        <td>₱0</td>
-                    </tr>
+                    <?php
+                    if ($recentProjects && $recentProjects->num_rows > 0) {
+                        while ($project = $recentProjects->fetch_assoc()) {
+                            $statusColor = 'pending';
+                            if ($project['status'] === 'Completed') $statusColor = 'completed';
+                            elseif ($project['status'] === 'Approved') $statusColor = 'approved';
+                            elseif ($project['status'] === 'For Approval') $statusColor = 'pending';
+                            elseif ($project['status'] === 'On-hold') $statusColor = 'onhold';
+                            elseif ($project['status'] === 'Cancelled') $statusColor = 'cancelled';
+                            ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($project['name']); ?></td>
+                                <td><?php echo htmlspecialchars($project['location']); ?></td>
+                                <td><span class="status-badge <?php echo $statusColor; ?>"><?php echo $project['status']; ?></span></td>
+                                <td>
+                                    <div class="progress-small">
+                                        <div class="progress-fill-small" style="width: 0%;"></div>
+                                    </div>
+                                </td>
+                                <td>₱<?php echo number_format($project['budget'], 2); ?></td>
+                            </tr>
+                            <?php
+                        }
+                    } else {
+                        ?>
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 20px; color: #999;">No projects registered yet</td>
+                        </tr>
+                        <?php
+                    }
+                    ?>
                 </tbody>
             </table>
         </div>

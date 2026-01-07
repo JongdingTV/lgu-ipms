@@ -253,14 +253,28 @@ document.addEventListener('DOMContentLoaded', ()=>{
     });
 
     document.getElementById('btnImport').addEventListener('click', ()=>{
-        const projects = JSON.parse(localStorage.getItem('projects') || '[]');
-        if (!projects.length) { alert('No projects available to import.'); return; }
-        const proj = projects[0];
-        const data = loadData();
-        if (proj.budget) data.globalBudget = proj.budget;
-        saveData(data);
-        renderAll();
-        alert('Imported budget from first saved project (demo).');
+        // Fetch projects from database
+        console.log('Import button clicked');
+        fetch('budget_resources.php?action=load_projects')
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(projects => {
+                console.log('Projects loaded:', projects);
+                if (!projects.length) { alert('No projects available to import.'); return; }
+                const proj = projects[0];
+                const data = loadData();
+                if (proj.budget) data.globalBudget = proj.budget;
+                saveData(data);
+                renderAll();
+                alert('Imported budget from project: ' + (proj.name || 'Project ' + proj.code));
+            })
+            .catch(error => {
+                console.error('Error loading projects:', error);
+                alert('Failed to import budget from projects.');
+            });
     });
 
     window.addEventListener('resize', ()=> drawChart(loadData()));

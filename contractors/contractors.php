@@ -1,3 +1,32 @@
+<?php
+// Database connection
+$conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+if ($conn->connect_error) {
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+    exit;
+}
+
+// Handle GET request for loading projects
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
+    header('Content-Type: application/json');
+    
+    $result = $conn->query("SELECT id, code, name FROM projects ORDER BY created_at DESC");
+    $projects = [];
+    
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $projects[] = $row;
+        }
+        $result->free();
+    }
+    
+    echo json_encode($projects);
+    exit;
+}
+
+$conn->close();
+?>
 <!doctype html>
 <html>
 <head>
@@ -166,7 +195,7 @@
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
-    <script src="../shared-data.js"></script>
-    <script src="contractors.js"></script>
+    <script src="../shared-data.js?v=1"></script>
+    <script src="contractors.js?v=2"></script>
 </body>
 </html>

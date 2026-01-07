@@ -1,3 +1,33 @@
+<?php
+// Database connection
+$conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+if ($conn->connect_error) {
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+    exit;
+}
+
+// Handle API requests first (before rendering HTML)
+if (isset($_GET['action']) && $_GET['action'] === 'load_projects') {
+    header('Content-Type: application/json');
+    
+    $result = $conn->query("SELECT * FROM projects ORDER BY created_at DESC");
+    $projects = [];
+    
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $projects[] = $row;
+        }
+        $result->free();
+    }
+    
+    echo json_encode($projects);
+    $conn->close();
+    exit;
+}
+
+$conn->close();
+?>
 <!doctype html>
 <html>
 <head>
@@ -8,7 +38,6 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -96,7 +125,7 @@
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
-    <script src="../shared-data.js"></script>
-    <script src="progress-monitoring.js"></script>
+    <script src="../shared-data.js?v=1"></script>
+    <script src="progress-monitoring.js?v=2"></script>
 </body>
 </html>

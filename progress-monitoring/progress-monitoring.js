@@ -1,46 +1,61 @@
-document.getElementById('toggleSidebar').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
+console.log('progress-monitoring.js loaded');
 
-document.getElementById('toggleSidebarShow').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
-
-/* Progress monitoring logic (reads/writes localStorage 'projects') */
-const projectsKey = 'projects';
-
-function getProjects() {
-    if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) {
-        return IPMS_DATA.getProjects();
-    }
-    // Fallback to localStorage if shared-data.js is not loaded
-    return JSON.parse(localStorage.getItem(projectsKey) || '[]');
+// Sidebar toggle - use optional chaining to avoid errors
+const sidebarToggle = document.getElementById('toggleSidebar');
+if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const navbar = document.getElementById('navbar');
+        const body = document.body;
+        const toggleBtn = document.getElementById('showSidebarBtn');
+        
+        navbar.classList.toggle('hidden');
+        body.classList.toggle('sidebar-hidden');
+        toggleBtn.classList.toggle('show');
+    });
 }
-function saveProjects(arr) {
-    if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.saveProjects) {
-        // If shared-data has save method, use it
-        IPMS_DATA.saveProjects(arr);
-    } else {
-        // Fallback to localStorage
-        localStorage.setItem(projectsKey, JSON.stringify(arr));
-    }
+
+const sidebarShow = document.getElementById('toggleSidebarShow');
+if (sidebarShow) {
+    sidebarShow.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const navbar = document.getElementById('navbar');
+        const body = document.body;
+        const toggleBtn = document.getElementById('showSidebarBtn');
+        
+        navbar.classList.toggle('hidden');
+        body.classList.toggle('sidebar-hidden');
+        toggleBtn.classList.toggle('show');
+    });
 }
+
+/* Progress monitoring logic - fetch from database */
+let allProjects = [];
+
+function loadProjectsFromDatabase() {
+    console.log('Fetching projects from database...');
+    fetch('progress_monitoring.php?action=load_projects')
+        .then(response => {
+            console.log('Response received:', response.status);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Projects loaded:', data);
+            allProjects = data;
+            renderProjects();
+        })
+        .catch(error => {
+            console.error('Error loading projects:', error);
+            allProjects = [];
+            renderProjects();
+        });
+}
+
 function formatCurrency(n) {
     if (!n && n !== 0) return '—';
     return '₱' + Number(n).toLocaleString();
@@ -49,14 +64,11 @@ function formatCurrency(n) {
 function renderProjects() {
     const container = document.getElementById('projectsList');
     if (!container) return;
-    const projects = getProjects();
+    const projects = allProjects;
     const q = (document.getElementById('pmSearch')?.value || '').trim().toLowerCase();
     const status = document.getElementById('pmStatusFilter')?.value || '';
     const sector = document.getElementById('pmSectorFilter')?.value || '';
     const sort = document.getElementById('pmSort')?.value || 'createdAt_desc';
-
-    // Check if view-only mode (for users)
-    const isViewOnly = document.referrer.includes('user-dashboard') || window.location.search.includes('viewOnly');
 
     let filtered = projects.filter(p => {
         if (status && p.status !== status) return false;
@@ -65,10 +77,8 @@ function renderProjects() {
         return ((p.code||'') + ' ' + (p.name||'') + ' ' + (p.location||'')).toLowerCase().includes(q);
     });
 
-    if (sort === 'createdAt_desc') filtered.sort((a,b)=> new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-    if (sort === 'createdAt_asc') filtered.sort((a,b)=> new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
-    if (sort === 'progress_desc') filtered.sort((a,b)=> (b.progress||0) - (a.progress||0));
-    if (sort === 'progress_asc') filtered.sort((a,b)=> (a.progress||0) - (b.progress||0));
+    if (sort === 'createdAt_desc') filtered.sort((a,b)=> new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    if (sort === 'createdAt_asc') filtered.sort((a,b)=> new Date(a.created_at || 0) - new Date(b.created_at || 0));
 
     if (!filtered.length) {
         container.innerHTML = '';
@@ -99,9 +109,9 @@ function renderProjects() {
   <div class="pc-body">
     <div class="pc-info">
       <div><small>Sector</small><div>${p.sector || '—'}</div></div>
-      <div><small>Duration</small><div>${p.durationMonths || p.duration || '—'} months</div></div>
-      <div><small>Start</small><div>${p.startDate || '—'}</div></div>
-      <div><small>End</small><div>${p.endDate || '—'}</div></div>
+      <div><small>Duration</small><div>${p.duration_months || p.duration || '—'} months</div></div>
+      <div><small>Start</small><div>${p.start_date || '—'}</div></div>
+      <div><small>End</small><div>${p.end_date || '—'}</div></div>
     </div>
 
     <div class="pc-progress">
@@ -112,36 +122,17 @@ function renderProjects() {
         </div>
         <div class="progress-pct">${pct}%</div>
       </div>
-
-      <div class="progress-controls" ${isViewOnly ? 'style="display:none;"' : ''}>
-        <input class="progRange" type="range" min="0" max="100" value="${pct}">
-        <input class="progNumber" type="number" min="0" max="100" value="${pct}">
-        <select class="statusSelect">
-          <option ${p.status==='Draft'?'selected':''}>Draft</option>
-          <option ${p.status==='For Approval'?'selected':''}>For Approval</option>
-          <option ${p.status==='Approved'?'selected':''}>Approved</option>
-          <option ${p.status==='On-hold'?'selected':''}>On-hold</option>
-          <option ${p.status==='Cancelled'?'selected':''}>Cancelled</option>
-        </select>
-        <button class="btn small btnSave">Save</button>
-        <button class="btn small btnDetails">Details</button>
-      </div>
     </div>
   </div>
 
   <div class="pc-footer">
-    <small>Registered:</small> ${(p.createdAt ? new Date(p.createdAt).toLocaleString() : '—')}
+    <small>Registered:</small> ${(p.created_at ? new Date(p.created_at).toLocaleString() : '—')}
   </div>
 
-  <div class="pc-details" hidden>
-    <h4>Details & Notes</h4>
+  <div class="pc-details">
+    <h4>Details</h4>
     <div class="pc-desc">${(p.description||'No description')}</div>
-    <div class="pc-attachments"><strong>Attachments:</strong> ${(p.attachments ? ((p.attachments.sitePhotos||[]).concat(p.attachments.plans||[]).concat(p.attachments.otherDocs||[])).join(', ') : 'None')}</div>
-    <div class="pc-notes">
-      <label>Notes</label>
-      <textarea class="noteText" ${isViewOnly ? 'readonly' : ''}>${p.notes || ''}</textarea>
-      <button class="btn small btnNoteSave" ${isViewOnly ? 'style="display:none;"' : ''}>Save Note</button>
-    </div>
+    <div class="pc-manager"><strong>Project Manager:</strong> ${p.project_manager || 'N/A'}</div>
   </div>
 </div>`;
     }).join('');
@@ -221,10 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const exportBtn = document.getElementById('exportCsv');
     exportBtn?.addEventListener('click', () => {
-        const projects = getProjects();
-        if (!projects.length) { alert('No projects to export'); return; }
-        const keys = ['code','name','sector','location','province','budget','durationMonths','progress','status','createdAt'];
-        const rows = projects.map(p => keys.map(k => `"${(p[k]||'').toString().replace(/"/g,'""')}"`).join(','));
+        if (!allProjects.length) { alert('No projects to export'); return; }
+        const keys = ['code','name','sector','location','province','budget','duration_months','status','created_at'];
+        const rows = allProjects.map(p => keys.map(k => `"${(p[k]||'').toString().replace(/"/g,'""')}"`).join(','));
         const csv = ['"' + keys.join('","') + '"', ...rows].join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
@@ -235,6 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
         URL.revokeObjectURL(url);
     });
 
-    // initial render
-    renderProjects();
+    // Load projects from database
+    loadProjectsFromDatabase();
 });
