@@ -1,9 +1,18 @@
 <?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../login.php');
+    exit;
+}
+
 // Database connection
 $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
 if ($conn->connect_error) {
     die('Database connection failed: ' . $conn->connect_error);
 }
+
+// Get user name from session
+$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
 
 // Get project statistics
 $totalProjects = $conn->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'];
@@ -38,7 +47,7 @@ $conn->close();
         </div>
         <div class="nav-user">
             <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
-            <span class="nav-username">Welcome, User</span>
+            <span class="nav-username">Welcome, <?php echo htmlspecialchars($user_name); ?></span>
             <a href="../login.php" class="nav-logout">Logout</a>
         </div>
         <div class="lgu-arrow-back">

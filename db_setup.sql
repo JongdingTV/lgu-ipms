@@ -99,3 +99,19 @@ CREATE TABLE IF NOT EXISTS contractors (
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- User Feedback Table
+CREATE TABLE IF NOT EXISTS user_feedback (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    street VARCHAR(255),
+    barangay VARCHAR(255),
+    category VARCHAR(100) NOT NULL,
+    feedback TEXT NOT NULL,
+    photo_path VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'Pending',
+    admin_response TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);

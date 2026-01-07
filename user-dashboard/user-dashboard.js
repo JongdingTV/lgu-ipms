@@ -21,11 +21,6 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleSidebarShow.addEventListener('click', toggleSidebarVisibility);
     }
 
-    // Load feedback history on page load
-    if (document.getElementById('feedbackHistoryList')) {
-        loadFeedbackHistory();
-    }
-
     // Feedback form submission
     const feedbackForm = document.getElementById('userFeedbackForm');
     const messageDiv = document.getElementById('message');
@@ -84,11 +79,70 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset form
         feedbackForm.reset();
 
-        // Reload feedback history
-        if (document.getElementById('feedbackHistoryList')) {
-            loadFeedbackHistory();
-        }
+        // Reload feedback list
+        loadFeedbackHistory();
         });
+    }
+
+    // Function to load and display feedback submissions
+    function loadFeedbackHistory() {
+        const historyContainer = document.getElementById('feedbackHistoryList');
+        if (!historyContainer) return;
+
+        const USER_FEEDBACK_KEY = 'user_feedback_history';
+        const userFeedback = JSON.parse(localStorage.getItem(USER_FEEDBACK_KEY) || '[]');
+
+        if (userFeedback.length === 0) {
+            historyContainer.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No feedback submitted yet. Submit your first feedback using the form below.</p>';
+            return;
+        }
+
+        // Sort by date (newest first)
+        userFeedback.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const categoryNames = {
+            'transportation': 'Transportation',
+            'energy': 'Energy',
+            'water-waste': 'Water & Waste',
+            'social-infrastructure': 'Social Infrastructure',
+            'public-buildings': 'Public Buildings'
+        };
+
+        const html = userFeedback.map(item => {
+            const date = new Date(item.date);
+            const formattedDate = date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            return `
+                <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: #f9fafb;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <span style="display: inline-block; padding: 4px 12px; background: #dbeafe; color: #1e40af; border-radius: 20px; font-size: 0.8em; font-weight: 600; margin-right: 8px;">
+                                ${categoryNames[item.category] || item.category}
+                            </span>
+                            <span style="display: inline-block; padding: 4px 12px; background: #fef3c7; color: #92400e; border-radius: 20px; font-size: 0.8em; font-weight: 600;">
+                                ${item.status}
+                            </span>
+                        </div>
+                        <span style="font-size: 0.85em; color: #666;">${formattedDate}</span>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <strong style="color: #374151; font-size: 0.9em;">Location:</strong> 
+                        <span style="color: #6b7280; font-size: 0.9em;">${item.location || 'N/A'}</span>
+                    </div>
+                    <div style="background: white; padding: 12px; border-radius: 6px; border-left: 3px solid #2563eb;">
+                        <p style="margin: 0; color: #374151; font-size: 0.9em; line-height: 1.5;">${item.feedback || 'No feedback provided'}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        historyContainer.innerHTML = html;
     }
 
     function showMessage(text, type) {
@@ -116,65 +170,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    // Function to load and display feedback history
-    function loadFeedbackHistory() {
-        const historyContainer = document.getElementById('feedbackHistoryList');
-        if (!historyContainer) return;
-
-        const USER_FEEDBACK_KEY = 'user_feedback_history';
-        const userFeedback = JSON.parse(localStorage.getItem(USER_FEEDBACK_KEY) || '[]');
-
-        if (userFeedback.length === 0) {
-            historyContainer.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No feedback submitted yet.</p>';
-            return;
-        }
-
-        // Sort by date (newest first)
-        userFeedback.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        const html = userFeedback.map(item => {
-            const date = new Date(item.date);
-            const formattedDate = date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            const categoryNames = {
-                'transportation': 'Transportation',
-                'energy': 'Energy',
-                'water-waste': 'Water & Waste',
-                'social-infrastructure': 'Social Infrastructure',
-                'public-buildings': 'Public Buildings'
-            };
-
-            return `
-                <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: #f9fafb;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                        <div>
-                            <span style="display: inline-block; padding: 4px 12px; background: #dbeafe; color: #1e40af; border-radius: 20px; font-size: 0.8em; font-weight: 600; margin-right: 8px;">
-                                ${categoryNames[item.category] || item.category}
-                            </span>
-                            <span style="display: inline-block; padding: 4px 12px; background: #fef3c7; color: #92400e; border-radius: 20px; font-size: 0.8em; font-weight: 600;">
-                                ${item.status}
-                            </span>
-                        </div>
-                        <span style="font-size: 0.85em; color: #666;">${formattedDate}</span>
-                    </div>
-                    <div style="margin-bottom: 8px;">
-                        <strong style="color: #374151; font-size: 0.9em;">Location:</strong> 
-                        <span style="color: #6b7280; font-size: 0.9em;">${item.location}</span>
-                    </div>
-                    <div style="background: white; padding: 12px; border-radius: 6px; border-left: 3px solid #2563eb;">
-                        <p style="margin: 0; color: #374151; font-size: 0.9em; line-height: 1.5;">${item.feedback}</p>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        historyContainer.innerHTML = html;
+    // Load feedback list on page load
+    if (document.getElementById('feedbackHistoryList')) {
+        loadFeedbackHistory();
     }
 
     // Helper functions for mapping user dashboard data to prioritization format
