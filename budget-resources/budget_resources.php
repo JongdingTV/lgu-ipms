@@ -38,7 +38,6 @@ $conn->close();
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css" />
-    <link rel="stylesheet" href="budget-resources.css" />
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -139,29 +138,6 @@ $conn->close();
 
         <div class="summary-section">
             <h2>Budget Overview</h2>
-            <div class="summary">
-                <div class="stat">
-                    <div id="summaryAllocated">₱0</div>
-                    <small>Allocated</small>
-                </div>
-                <div class="stat">
-                    <div id="summarySpent">₱0</div>
-                    <small>Spent</small>
-                </div>
-                <div class="stat">
-                    <div id="summaryRemaining">₱0</div>
-                    <small>Remaining</small>
-                </div>
-                <div class="stat">
-                    <div id="summaryConsumption">0%</div>
-                    <small>Consumption</small>
-                </div>
-            </div>
-            <h3>Budget Consumption Graph</h3>
-            <div class="chart-row">
-                <canvas id="consumptionChart" width="800" height="280" aria-label="Budget consumption chart"></canvas>
-            </div>
-        </div>
             <div class="summary">
                 <div class="stat">
                     <div id="summaryAllocated">₱0</div>
