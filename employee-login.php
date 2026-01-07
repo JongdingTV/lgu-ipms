@@ -127,7 +127,7 @@ body::before {
 
             <button class="btn-primary" type="submit">Sign In</button>
 
-            <p class="small-text">For citizens, <a href="login.php" class="link">click here</a></p>
+            <!-- Removed 'For citizens, click here' button as requested -->
 
             <?php if (isset($error)): ?>
             <div style="margin-top:12px;color:#b00;"><?php echo $error; ?></div>

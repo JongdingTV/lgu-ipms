@@ -45,17 +45,17 @@
 
     <section class="main-content">
         <div class="dash-header">
-            <h1>🏗️ Contractors</h1>
+            <h1>Contractors</h1>
             <p>Manage contractor information</p>
         </div>
 
         <div class="recent-projects">
-            <h3>➕ Add/Edit Contractor</h3>
+            <h3>Add/Edit Contractor</h3>
 
             <form id="contractorForm" enctype="multipart/form-data">
                 <!-- Basic contractor details -->
                 <fieldset>
-                    <legend>📋 Basic Information</legend>
+                    <legend>Basic Information</legend>
                     <div>
                         <div>
                             <label for="ctrCompany">Company Name</label>
@@ -84,7 +84,7 @@
 
                 <!-- Additional details -->
                 <fieldset>
-                    <legend>🔧 Additional Details</legend>
+                    <legend>Additional Details</legend>
                     <div>
                         <div>
                             <label for="ctrAddress">Address</label>
@@ -142,7 +142,7 @@
 
             <!-- Contractors Table -->
             <div class="contractors-section">
-                <h3>📊 Registered Contractors</h3>
+                <h3>Registered Contractors</h3>
                 <div class="table-wrap">
                     <table id="contractorsTable" class="table">
                         <thead>

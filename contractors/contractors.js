@@ -33,9 +33,21 @@ async function loadContractors() {
             contractors = await response.json();
             renderContractors();
         } else {
+            const msg = document.getElementById('formMessage');
+            if (msg) {
+                msg.style.color = '#d00';
+                msg.textContent = 'Failed to load contractors.';
+                msg.style.display = 'block';
+            }
             console.error('Failed to load contractors');
         }
     } catch (error) {
+        const msg = document.getElementById('formMessage');
+        if (msg) {
+            msg.style.color = '#d00';
+            msg.textContent = 'Error loading contractors: ' + error.message;
+            msg.style.display = 'block';
+        }
         console.error('Error loading contractors:', error);
     }
 }
@@ -116,17 +128,17 @@ document.getElementById('contractorForm').addEventListener('submit', async (e) =
     e.preventDefault();
     const msg = document.getElementById('formMessage');
     const data = {
-        company: document.getElementById('ctrCompany').value,
-        owner: document.getElementById('ctrOwner').value,
-        license: document.getElementById('ctrLicense').value,
-        email: document.getElementById('ctrEmail').value,
-        phone: document.getElementById('ctrPhone').value,
-        address: document.getElementById('ctrAddress').value,
-        specialization: document.getElementById('ctrSpecialization').value,
+        company: document.getElementById('ctrCompany').value.trim(),
+        owner: document.getElementById('ctrOwner').value.trim(),
+        license: document.getElementById('ctrLicense').value.trim(),
+        email: document.getElementById('ctrEmail').value.trim(),
+        phone: document.getElementById('ctrPhone').value.trim(),
+        address: document.getElementById('ctrAddress').value.trim(),
+        specialization: document.getElementById('ctrSpecialization').value.trim(),
         experience: parseInt(document.getElementById('ctrExperience').value) || 0,
         rating: parseFloat(document.getElementById('ctrRating').value) || 0,
-        status: document.getElementById('ctrStatus').value,
-        notes: document.getElementById('ctrNotes').value
+        status: document.getElementById('ctrStatus').value.trim(),
+        notes: document.getElementById('ctrNotes').value.trim()
     };
 
     try {
