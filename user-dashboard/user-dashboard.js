@@ -48,60 +48,64 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (feedbackForm) {
         feedbackForm.addEventListener('submit', function(e) {
-        e.preventDefault();
+            e.preventDefault();
 
-        // Get form data
-        const formData = new FormData(feedbackForm);
-        const data = Object.fromEntries(formData.entries());
+            // Get form data
+            const formData = new FormData(feedbackForm);
+            const data = Object.fromEntries(formData.entries());
 
-        // Simple validation
-        if (!data.street || !data.barangay || !data.category || !data.feedback) {
-            showMessage('Please fill in all required fields.', 'error');
-            return;
-        }
+            // Simple validation
+            if (!data.street || !data.barangay || !data.category || !data.feedback) {
+                if (typeof showMessage === 'function' && messageDiv) {
+                    showMessage('Please fill in all required fields.', 'error');
+                }
+                return;
+            }
 
-        // Map user dashboard fields to prioritization module format
-        const prioritizationData = {
-            id: 'input_' + Math.random().toString(36).substr(2, 9),
-            name: 'Anonymous User', // Since user dashboard doesn't have name field
-            email: '', // User dashboard doesn't collect email
-            type: 'Suggestion', // Default to suggestion since it's feedback
-            subject: getCategorySubject(data.category),
-            description: data.feedback,
-            category: mapCategoryToPrioritization(data.category),
-            location: `${data.street}, ${data.barangay}`,
-            urgency: 'Medium', // Default urgency
-            status: 'Pending',
-            date: new Date().toISOString()
-        };
+            // Map user dashboard fields to prioritization module format
+            const prioritizationData = {
+                id: 'input_' + Math.random().toString(36).substr(2, 9),
+                name: 'Anonymous User', // Since user dashboard doesn't have name field
+                email: '', // User dashboard doesn't collect email
+                type: 'Suggestion', // Default to suggestion since it's feedback
+                subject: getCategorySubject(data.category),
+                description: data.feedback,
+                category: mapCategoryToPrioritization(data.category),
+                location: `${data.street}, ${data.barangay}`,
+                urgency: 'Medium', // Default urgency
+                status: 'Pending',
+                date: new Date().toISOString()
+            };
 
-        // Save to the same localStorage that project-prioritization module uses
-        const PRIORITIZATION_KEY = 'lgu_prioritization_v1';
-        const existingInputs = JSON.parse(localStorage.getItem(PRIORITIZATION_KEY) || '[]');
-        existingInputs.push(prioritizationData);
-        localStorage.setItem(PRIORITIZATION_KEY, JSON.stringify(existingInputs));
+            // Save to the same localStorage that project-prioritization module uses
+            const PRIORITIZATION_KEY = 'lgu_prioritization_v1';
+            const existingInputs = JSON.parse(localStorage.getItem(PRIORITIZATION_KEY) || '[]');
+            existingInputs.push(prioritizationData);
+            localStorage.setItem(PRIORITIZATION_KEY, JSON.stringify(existingInputs));
 
-        // Also save to user's feedback history
-        const USER_FEEDBACK_KEY = 'user_feedback_history';
-        const userFeedback = JSON.parse(localStorage.getItem(USER_FEEDBACK_KEY) || '[]');
-        userFeedback.push({
-            id: prioritizationData.id,
-            category: data.category,
-            location: `${data.street}, ${data.barangay}`,
-            feedback: data.feedback,
-            date: new Date().toISOString(),
-            status: 'Pending'
-        });
-        localStorage.setItem(USER_FEEDBACK_KEY, JSON.stringify(userFeedback));
+            // Also save to user's feedback history
+            const USER_FEEDBACK_KEY = 'user_feedback_history';
+            const userFeedback = JSON.parse(localStorage.getItem(USER_FEEDBACK_KEY) || '[]');
+            userFeedback.push({
+                id: prioritizationData.id,
+                category: data.category,
+                location: `${data.street}, ${data.barangay}`,
+                feedback: data.feedback,
+                date: new Date().toISOString(),
+                status: 'Pending'
+            });
+            localStorage.setItem(USER_FEEDBACK_KEY, JSON.stringify(userFeedback));
 
-        // Show success message
-        showMessage('Thank you for your feedback! Your submission has been received and will be reviewed by our team.', 'success');
+            // Show success message
+            if (typeof showMessage === 'function' && messageDiv) {
+                showMessage('Thank you for your feedback! Your submission has been received and will be reviewed by our team.', 'success');
+            }
 
-        // Reset form
-        feedbackForm.reset();
+            // Reset form
+            feedbackForm.reset();
 
-        // Reload feedback list
-        loadFeedbackHistory();
+            // Reload feedback list
+            loadFeedbackHistory();
         });
     }
 

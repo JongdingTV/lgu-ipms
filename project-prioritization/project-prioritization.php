@@ -50,9 +50,9 @@ $criticalInputs = 0;
 $highInputs = 0;
 $pendingInputs = 0;
 foreach ($feedbacks as $fb) {
-    if (strtolower($fb['category']) === 'critical') $criticalInputs++;
-    if (strtolower($fb['category']) === 'high') $highInputs++;
-    if (strtolower($fb['status']) === 'pending') $pendingInputs++;
+    if (isset($fb['category']) && strtolower($fb['category']) === 'critical') $criticalInputs++;
+    if (isset($fb['category']) && strtolower($fb['category']) === 'high') $highInputs++;
+    if (isset($fb['status']) && strtolower($fb['status']) === 'pending') $pendingInputs++;
 }
 
 $conn->close();
@@ -128,20 +128,20 @@ $conn->close();
                         <tbody>
                         <?php foreach ($feedbacks as $fb): ?>
                             <tr>
-                                <td style="padding:10px;"><?= htmlspecialchars($fb['date_submitted']) ?></td>
-                                <td style="padding:10px;"><?= htmlspecialchars($fb['user_name']) ?></td>
+                                <td style="padding:10px;"><?= isset($fb['date_submitted']) ? htmlspecialchars($fb['date_submitted']) : '-' ?></td>
+                                <td style="padding:10px;"><?= isset($fb['user_name']) ? htmlspecialchars($fb['user_name']) : '-' ?></td>
                                 <td style="padding:10px;">Feedback</td>
-                                <td style="padding:10px;"><?= htmlspecialchars($fb['subject']) ?></td>
-                                <td style="padding:10px;"><?= htmlspecialchars($fb['category']) ?></td>
-                                <td style="padding:10px;"><?= htmlspecialchars($fb['location']) ?></td>
-                                <td style="padding:10px;"><?= htmlspecialchars($fb['category']) ?></td>
+                                <td style="padding:10px;"><?= isset($fb['subject']) ? htmlspecialchars($fb['subject']) : '-' ?></td>
+                                <td style="padding:10px;"><?= isset($fb['category']) ? htmlspecialchars($fb['category']) : '-' ?></td>
+                                <td style="padding:10px;"><?= isset($fb['location']) ? htmlspecialchars($fb['location']) : '-' ?></td>
+                                <td style="padding:10px;"><?= isset($fb['priority']) ? htmlspecialchars($fb['priority']) : '-' ?></td>
                                 <td style="padding:10px;">
                                     <form method="post" style="display:inline;">
-                                        <input type="hidden" name="feedback_id" value="<?= $fb['id'] ?>">
+                                        <input type="hidden" name="feedback_id" value="<?= isset($fb['id']) ? $fb['id'] : '' ?>">
                                         <select name="new_status" style="padding:4px 8px;">
-                                            <option value="Pending" <?= $fb['status']==='Pending'?'selected':'' ?>>Pending</option>
-                                            <option value="Reviewed" <?= $fb['status']==='Reviewed'?'selected':'' ?>>Reviewed</option>
-                                            <option value="Addressed" <?= $fb['status']==='Addressed'?'selected':'' ?>>Addressed</option>
+                                            <option value="Pending" <?= (isset($fb['status']) && $fb['status']==='Pending')?'selected':'' ?>>Pending</option>
+                                            <option value="Reviewed" <?= (isset($fb['status']) && $fb['status']==='Reviewed')?'selected':'' ?>>Reviewed</option>
+                                            <option value="Addressed" <?= (isset($fb['status']) && $fb['status']==='Addressed')?'selected':'' ?>>Addressed</option>
                                         </select>
                                         <button type="submit" name="update_status" style="padding:4px 10px;background:#2563eb;color:#fff;border:none;border-radius:4px;cursor:pointer;">Update</button>
                                     </form>
@@ -149,7 +149,7 @@ $conn->close();
                                 <td style="padding:10px;">
                                     <details>
                                         <summary style="cursor:pointer;color:#2563eb;">View</summary>
-                                        <div style="padding:8px 0;max-width:300px;white-space:pre-wrap;"><?= htmlspecialchars($fb['description']) ?></div>
+                                        <div style="padding:8px 0;max-width:300px;white-space:pre-wrap;"><?= isset($fb['description']) ? htmlspecialchars($fb['description']) : '-' ?></div>
                                     </details>
                                 </td>
                             </tr>

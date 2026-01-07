@@ -73,33 +73,41 @@ $conn->close();
         </div>
 
         <!-- Key Metrics Section -->
-        <div class="metrics-container">
-            <div class="metric-card">
-                <img src="../dashboard/chart.png" alt="Total Projects" class="metric-icon">
+        <div class="metrics-container modern-metrics">
+            <div class="metric-card accent-blue">
+                <div class="metric-icon-bg">
+                    <img src="../dashboard/chart.png" alt="Total Projects" class="metric-icon">
+                </div>
                 <div class="metric-content">
                     <h3>Projects in Your Area</h3>
                     <p class="metric-value"><?php echo $totalProjects; ?></p>
                     <span class="metric-status">Active & Completed</span>
                 </div>
             </div>
-            <div class="metric-card">
-                <img src="../dashboard/sandclock.png" alt="In Progress" class="metric-icon">
+            <div class="metric-card accent-yellow">
+                <div class="metric-icon-bg">
+                    <img src="../dashboard/sandclock.png" alt="In Progress" class="metric-icon">
+                </div>
                 <div class="metric-content">
                     <h3>In Progress</h3>
                     <p class="metric-value"><?php echo $inProgressProjects; ?></p>
                     <span class="metric-status">Currently executing</span>
                 </div>
             </div>
-            <div class="metric-card">
-                <img src="../dashboard/check.png" alt="Completed" class="metric-icon">
+            <div class="metric-card accent-green">
+                <div class="metric-icon-bg">
+                    <img src="../dashboard/check.png" alt="Completed" class="metric-icon">
+                </div>
                 <div class="metric-content">
                     <h3>Completed</h3>
                     <p class="metric-value"><?php echo $completedProjects; ?></p>
                     <span class="metric-status">On schedule</span>
                 </div>
             </div>
-            <div class="metric-card">
-                <img src="../dashboard/budget.png" alt="Total Budget" class="metric-icon">
+            <div class="metric-card accent-purple">
+                <div class="metric-icon-bg">
+                    <img src="../dashboard/budget.png" alt="Total Budget" class="metric-icon">
+                </div>
                 <div class="metric-content">
                     <h3>Allocated Budget</h3>
                     <p class="metric-value">₱<?php echo number_format($totalBudget, 2); ?></p>
