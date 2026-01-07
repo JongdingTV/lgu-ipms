@@ -43,13 +43,19 @@
     <section class="main-content">
         <div class="dash-header">
             <h1>Feedback</h1>
-            <p>Submit your feedback or suggestions</p>
+            <p>Submit your feedback or suggestions and view your history</p>
+        </div>
+
+        <!-- Feedback History Section -->
+        <div class="feedback-history" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-bottom: 30px;">
+            <h3 style="color: #1e3a8a; margin-bottom: 15px; font-size: 1.1em;">Your Feedback History</h3>
+            <div id="feedbackHistoryList"></div>
         </div>
 
         <!-- User Feedback Form -->
-        <div class="feedback-form">
+        <div class="feedback-form" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
             <form id="userFeedbackForm">
-            <h3>Submit Your Feedback or Suggestion</h3>
+            <h3 style="color: #1e3a8a; margin-bottom: 15px; font-size: 1.1em;">Submit Your Feedback or Suggestion</h3>
                 <div class="form-row">
                     <div class="input-box">
                         <label for="street">Street</label>
@@ -80,9 +86,9 @@
                     <label for="feedback">Suggestion, Feedback, Concern</label>
                     <textarea id="feedback" name="feedback" rows="5" placeholder="Enter your suggestion, feedback, or concern here..." required></textarea>
                 </div>
-                <button type="submit" class="submit-btn">Submit</button>
+                <button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #1e3a8a, #2563eb); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s ease;">Submit</button>
             </form>
-            <div id="message" class="message" style="display: none;"></div>
+            <div id="message" class="message" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: 500;"></div>
         </div>
     </section>
 

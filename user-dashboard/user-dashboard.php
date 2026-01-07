@@ -21,7 +21,7 @@ $conn->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard - LGU IPMS</title>
-    <link rel="stylesheet" href="../assets/style.css" />
+    <link rel="stylesheet" href="user-dashboard.css">
     <link rel="stylesheet" href="user-dashboard.css">
 </head>
 <body>
@@ -100,16 +100,20 @@ $conn->close();
         <!-- Charts Section -->
         <div class="charts-container">
             <div class="chart-box">
-                <h3>Project Status in Your Area</h3>
+                <h3>Project Status Distribution</h3>
                 <div class="chart-placeholder">
                     <div class="status-legend">
                         <div class="legend-item">
                             <span class="legend-color" style="background: #10b981;"></span>
-                            <span>Completed: 0%</span>
+                            <span id="completedPercent">Completed: 0%</span>
                         </div>
                         <div class="legend-item">
                             <span class="legend-color" style="background: #f59e0b;"></span>
-                            <span>In Progress: 0%</span>
+                            <span id="inProgressPercent">In Progress: 0%</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #ef4444;"></span>
+                            <span id="otherPercent">Other: 0%</span>
                         </div>
                     </div>
                 </div>
@@ -118,9 +122,9 @@ $conn->close();
                 <h3>Budget Utilization</h3>
                 <div class="chart-placeholder">
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%;"></div>
+                        <div class="progress-fill" id="budgetProgressFill" style="width: 0%;"></div>
                     </div>
-                    <p style="margin-top: 10px; font-size: 0.9em; color: #666;">Budget utilization: 0% Used</p>
+                    <p id="budgetUtilizationText" style="margin-top: 10px; font-size: 0.9em; color: #666;">Budget utilization: 0% Used</p>
                 </div>
             </div>
         </div>

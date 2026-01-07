@@ -22,14 +22,24 @@ document.getElementById('toggleSidebarShow').addEventListener('click', function(
     toggleBtn.classList.toggle('show');
 });
 
-/* Progress monitoring logic (reads/writes localStorage 'projects') */
+/* Progress monitoring logic - fetches from database */
 const projectsKey = 'projects';
 
-function getProjects() {
+async function getProjects() {
+    try {
+        const response = await fetch('../progress-monitoring/progress_monitoring.php?action=load_projects');
+        if (response.ok) {
+            const projects = await response.json();
+            return projects;
+        }
+    } catch (error) {
+        console.error('Error fetching projects:', error);
+    }
+    
+    // Fallback to localStorage
     if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getProjects) {
         return IPMS_DATA.getProjects();
     }
-    // Fallback to localStorage if shared-data.js is not loaded
     return JSON.parse(localStorage.getItem(projectsKey) || '[]');
 }
 function formatCurrency(n) {
@@ -37,10 +47,10 @@ function formatCurrency(n) {
     return '₱' + Number(n).toLocaleString();
 }
 
-function renderProjects() {
+async function renderProjects() {
     const container = document.getElementById('projectsList');
     if (!container) return;
-    const projects = getProjects();
+    const projects = await getProjects();
     const q = (document.getElementById('pmSearch')?.value || '').trim().toLowerCase();
     const status = document.getElementById('pmStatusFilter')?.value || '';
     const sector = document.getElementById('pmSectorFilter')?.value || '';
@@ -70,7 +80,7 @@ function renderProjects() {
     }
 
     const html = filtered.map((p, idx) => {
-        const progress = Number(p.progress || 0);
+        const progress = Number(p.progress || p.percent_complete || 0);
         const pct = Math.min(100, Math.max(0, progress));
         const statusClass = (p.status||'').replace(/\s+/g,'').toLowerCase();
         const statusBadge = `<span class="status-badge ${statusClass}">${p.status||'N/A'}</span>`;
@@ -90,9 +100,9 @@ function renderProjects() {
   <div class="pc-body">
     <div class="pc-info">
       <div><small>Sector</small><div>${p.sector || '—'}</div></div>
-      <div><small>Duration</small><div>${p.durationMonths || p.duration || '—'} months</div></div>
-      <div><small>Start</small><div>${p.startDate || '—'}</div></div>
-      <div><small>End</small><div>${p.endDate || '—'}</div></div>
+      <div><small>Duration</small><div>${p.duration_months || p.durationMonths || p.duration || '—'} months</div></div>
+      <div><small>Start</small><div>${p.start_date || p.startDate || '—'}</div></div>
+      <div><small>End</small><div>${p.end_date || p.endDate || '—'}</div></div>
     </div>
 
     <div class="pc-progress">
@@ -121,7 +131,7 @@ function renderProjects() {
   </div>
 
   <div class="pc-footer">
-    <small>Registered:</small> ${(p.createdAt ? new Date(p.createdAt).toLocaleString() : '—')}
+    <small>Registered:</small> ${(p.created_at || p.createdAt ? new Date(p.created_at || p.createdAt).toLocaleString() : '—')}
   </div>
 
   <div class="pc-details" hidden>
