@@ -1,31 +1,39 @@
-<!doctype html>
 <?php
 // Database connection
 $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
 if ($conn->connect_error) {
-    die('Database connection failed: ' . $conn->connect_error);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $conn->connect_error]);
+    exit;
 }
 
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
+    error_reporting(E_ALL);
     
     if ($_POST['action'] === 'save_project') {
+        // Validate required fields
+        if (empty($_POST['code']) || empty($_POST['name'])) {
+            echo json_encode(['success' => false, 'message' => 'Project Code and Name are required']);
+            exit;
+        }
+        
         $code = trim($_POST['code']);
         $name = trim($_POST['name']);
-        $type = trim($_POST['type']);
-        $sector = trim($_POST['sector']);
-        $description = trim($_POST['description']);
-        $priority = trim($_POST['priority']);
-        $province = trim($_POST['province']);
-        $barangay = trim($_POST['barangay']);
-        $location = trim($_POST['location']);
+        $type = isset($_POST['type']) ? trim($_POST['type']) : '';
+        $sector = isset($_POST['sector']) ? trim($_POST['sector']) : '';
+        $description = isset($_POST['description']) ? trim($_POST['description']) : '';
+        $priority = isset($_POST['priority']) ? trim($_POST['priority']) : 'Medium';
+        $province = isset($_POST['province']) ? trim($_POST['province']) : '';
+        $barangay = isset($_POST['barangay']) ? trim($_POST['barangay']) : '';
+        $location = isset($_POST['location']) ? trim($_POST['location']) : '';
         $start_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
         $end_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
         $duration_months = !empty($_POST['duration_months']) ? (int)$_POST['duration_months'] : null;
         $budget = !empty($_POST['budget']) ? (float)$_POST['budget'] : null;
-        $project_manager = trim($_POST['project_manager']);
-        $status = trim($_POST['status']);
+        $project_manager = isset($_POST['project_manager']) ? trim($_POST['project_manager']) : '';
+        $status = isset($_POST['status']) ? trim($_POST['status']) : 'Draft';
         
         if (isset($_POST['id']) && !empty($_POST['id'])) {
             // Update existing project
@@ -41,9 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Project saved successfully']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to save project: ' . $conn->error]);
+            echo json_encode(['success' => false, 'message' => 'Failed to save project: ' . $stmt->error]);
         }
-        $stmt->close();
+        if ($stmt) $stmt->close();
         exit;
     }
     
@@ -82,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 
 $conn->close();
 ?>
+<!doctype html>
 <html>
 <head>
         <link rel="stylesheet" href="../assets/style.css" />
@@ -403,19 +412,42 @@ $conn->close();
                 method: 'POST',
                 body: fd
             })
-            .then(res => res.json())
-            .then(data => {
-                msg.textContent = data.message;
-                msg.style.display = 'block';
-                msg.style.color = data.success ? '#0b5' : '#f00';
-                if (data.success) {
-                    form.reset();
-                    editProjectId = null;
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    submitBtn.innerHTML = 'Create Project';
-                    // Force a full page reload to guarantee table updates
-                    setTimeout(() => { window.location.reload(); }, 400);
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('HTTP Error: ' + res.status);
                 }
+                return res.text();
+            })
+            .then(text => {
+                console.log('Response text:', text);
+                try {
+                    const data = JSON.parse(text);
+                    msg.textContent = data.message;
+                    msg.style.display = 'block';
+                    msg.style.color = data.success ? '#0b5' : '#f00';
+                    if (data.success) {
+                        form.reset();
+                        editProjectId = null;
+                        const submitBtn = form.querySelector('button[type="submit"]');
+                        submitBtn.innerHTML = 'Create Project';
+                        // Reload the projects table without full page reload
+                        loadSavedProjects();
+                    }
+                    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+                } catch (e) {
+                    console.error('JSON Parse Error:', e);
+                    console.error('Raw response:', text);
+                    msg.textContent = 'Error: Invalid response from server. Check browser console.';
+                    msg.style.display = 'block';
+                    msg.style.color = '#f00';
+                    setTimeout(() => { msg.style.display = 'none'; }, 5000);
+                }
+            })
+            .catch(error => {
+                console.error('Fetch Error:', error);
+                msg.textContent = 'Error: ' + error.message;
+                msg.style.display = 'block';
+                msg.style.color = '#f00';
                 setTimeout(() => { msg.style.display = 'none'; }, 3000);
             });
         });
