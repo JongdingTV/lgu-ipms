@@ -54,15 +54,37 @@ function loadProjectsFromDatabase() {
 
 function populateProjectDropdown() {
     const select = document.getElementById('projectSelect');
-    if (!select) return;
+    if (select) {
+        select.innerHTML = '<option value="">Select a project</option>';
+        allProjects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = (project.code || '') + ' - ' + (project.name || '');
+            select.appendChild(option);
+        });
+    }
     
-    select.innerHTML = '<option value="">Select a project</option>';
-    allProjects.forEach(project => {
-        const option = document.createElement('option');
-        option.value = project.id;
-        option.textContent = (project.code || '') + ' - ' + (project.name || '');
-        select.appendChild(option);
-    });
+    // Also display projects in the table
+    const tbody = document.querySelector('#projectsTable tbody');
+    if (tbody) {
+        tbody.innerHTML = '';
+        if (!allProjects.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">No projects available</td></tr>';
+            return;
+        }
+        
+        allProjects.forEach(project => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${project.code || ''}</td>
+                <td>${project.name || ''}</td>
+                <td>${project.type || ''}</td>
+                <td>${project.sector || ''}</td>
+                <td>${project.status || 'Draft'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
 }
 
 // CRUD for Contractors

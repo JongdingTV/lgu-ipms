@@ -11,7 +11,7 @@ if ($conn->connect_error) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    $result = $conn->query("SELECT code, name, id FROM projects ORDER BY created_at DESC");
+    $result = $conn->query("SELECT * FROM projects ORDER BY created_at DESC");
     $projects = [];
     
     if ($result) {
@@ -22,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     }
     
     echo json_encode($projects);
+    $conn->close();
     exit;
 }
 
@@ -37,7 +38,6 @@ $conn->close();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
     <header class="nav" id="navbar">

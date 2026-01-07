@@ -86,6 +86,7 @@ const PRIORITIZATION_KEY = 'lgu_prioritization_v1';
 
 function loadInputs() {
     return JSON.parse(localStorage.getItem(PRIORITIZATION_KEY) || '[]');
+}
 
 function saveInputs(inputs) {
     localStorage.setItem(PRIORITIZATION_KEY, JSON.stringify(inputs));
@@ -168,10 +169,13 @@ function deleteInput(id) {
     }
 }
 
-// Filter event listeners
-document.getElementById('filterType').addEventListener('change', renderInputs);
-document.getElementById('filterCategory').addEventListener('change', renderInputs);
-document.getElementById('filterUrgency').addEventListener('change', renderInputs);
+// Filter event listeners - safely check if elements exist
+['filterType', 'filterCategory', 'filterUrgency'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('change', renderInputs);
+    }
+});
 
 // Initialize - load projects from database first
 document.addEventListener('DOMContentLoaded', loadProjectsFromDatabase);

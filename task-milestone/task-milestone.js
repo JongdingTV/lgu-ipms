@@ -129,9 +129,6 @@ function renderTasks() {
         });
     });
 }
-}
-// Remove task creation form logic for validation-only UI
-});
 
 document.getElementById('tmExport')?.addEventListener('click', ()=>{
     const tasks = loadTasks();

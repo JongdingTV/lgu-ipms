@@ -37,7 +37,6 @@ $conn->close();
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css" />
-    <link rel="stylesheet" href="contractors.css" />
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -169,6 +168,25 @@ $conn->close();
 
             <div id="formMessage" style="margin-top:12px;color:#0b5;display:none;"></div>
 
+            <!-- Projects Section -->
+            <div class="projects-section" style="margin-top:30px;">
+                <h3>Available Projects</h3>
+                <div class="table-wrap">
+                    <table id="projectsTable" class="table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Sector</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Contractors Table -->
             <div class="contractors-section">
                 <h3>Registered Contractors</h3>
@@ -196,6 +214,6 @@ $conn->close();
     </footer>
 
     <script src="../shared-data.js?v=1"></script>
-    <script src="contractors.js?v=2"></script>
+    <script src="contractors.js?v=3"></script>
 </body>
 </html>
