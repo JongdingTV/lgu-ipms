@@ -1,3 +1,28 @@
+<?php
+// Handle feedback form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
+    $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+    if ($conn->connect_error) {
+        $msg = 'Database connection failed.';
+    } else {
+        $user_name = 'Anonymous';
+        $subject = substr($_POST['feedback'], 0, 30);
+        $category = $_POST['category'];
+        $location = $_POST['street'] . ', ' . $_POST['barangay'];
+        $description = $_POST['feedback'];
+        $status = 'Pending';
+        $stmt = $conn->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
+        if ($stmt->execute()) {
+            $msg = 'Feedback submitted!';
+        } else {
+            $msg = 'Error submitting feedback.';
+        }
+        $stmt->close();
+        $conn->close();
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -48,7 +73,7 @@
 
         <!-- User Feedback Form -->
         <div class="feedback-form">
-            <form id="userFeedbackForm">
+            <form id="userFeedbackForm" method="post" action="">
             <h3>Submit Your Feedback or Suggestion</h3>
                 <div class="form-row">
                     <div class="input-box">
@@ -82,7 +107,11 @@
                 </div>
                 <button type="submit" class="submit-btn">Submit</button>
             </form>
-            <div id="message" class="message" style="display: none;"></div>
+            <?php if (!empty($msg)): ?>
+                <div id="message" class="message" style="display:block;"> <?php echo htmlspecialchars($msg); ?> </div>
+            <?php else: ?>
+                <div id="message" class="message" style="display:none;"></div>
+            <?php endif; ?>
         </div>
     </section>
 
@@ -90,7 +119,7 @@
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
-    <script src="../shared-data.js"></script>
+    <!-- No JS needed for feedback submission now -->
     <script src="user-dashboard.js"></script>
 </body>
 </html>

@@ -1,3 +1,24 @@
+// Render feedback review table from localStorage
+function renderUserFeedbackTable() {
+    const feedbacks = JSON.parse(localStorage.getItem('lgu_prioritization_v1') || '[]');
+    const tbody = document.querySelector('#userFeedbackTable tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!feedbacks.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:#999;">No feedback submitted yet</td></tr>';
+        return;
+    }
+    feedbacks.forEach(fb => {
+        tbody.innerHTML += `<tr>
+            <td>${new Date(fb.date).toLocaleDateString()}</td>
+            <td>${fb.subject}</td>
+            <td>${fb.category}</td>
+            <td><span class="status-badge">${fb.status}</span></td>
+        </tr>`;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', renderUserFeedbackTable);
 // User Dashboard JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {

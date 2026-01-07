@@ -13,6 +13,8 @@ $totalBudget = $conn->query("SELECT COALESCE(SUM(budget), 0) as total FROM proje
 
 // Get recent projects
 $recentProjects = $conn->query("SELECT id, name, location, status, budget FROM projects ORDER BY created_at DESC LIMIT 5");
+// Get user feedback from database
+$feedbacks = $conn->query("SELECT id, subject, category, status, date_submitted FROM feedback ORDER BY date_submitted DESC LIMIT 20");
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -175,19 +177,34 @@ $conn->close();
         </div>
 
         <!-- Quick Stats -->
-        <div class="quick-stats">
-            <div class="stat-item">
-                <h4>Average Project Duration</h4>
-                <p>0 months</p>
-            </div>
-            <div class="stat-item">
-                <h4>On-Time Delivery Rate</h4>
-                <p>0%</p>
-            </div>
-            <div class="stat-item">
-                <h4>Budget Variance</h4>
-                <p>0%</p>
-            </div>
+        <div class="feedback-review" style="margin:40px auto 0;max-width:900px;">
+            <h3 style="font-size:1.2rem;font-weight:600;color:#2563eb;margin-bottom:18px;">Your Feedback Review</h3>
+            <table class="projects-table" style="width:100%;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.07);overflow:hidden;">
+                <thead style="background:#f1f5f9;">
+                    <tr>
+                        <th style="padding:12px 8px;font-weight:600;color:#1e3a8a;">Date</th>
+                        <th style="padding:12px 8px;font-weight:600;color:#1e3a8a;">Subject</th>
+                        <th style="padding:12px 8px;font-weight:600;color:#1e3a8a;">Category</th>
+                        <th style="padding:12px 8px;font-weight:600;color:#1e3a8a;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php
+                if ($feedbacks && $feedbacks->num_rows > 0) {
+                    while ($fb = $feedbacks->fetch_assoc()) {
+                        echo '<tr>';
+                        echo '<td>' . date('M d, Y', strtotime($fb['date_submitted'])) . '</td>';
+                        echo '<td>' . htmlspecialchars($fb['subject']) . '</td>';
+                        echo '<td>' . htmlspecialchars($fb['category']) . '</td>';
+                        echo '<td><span class="status-badge">' . htmlspecialchars($fb['status']) . '</span></td>';
+                        echo '</tr>';
+                    }
+                } else {
+                    echo '<tr><td colspan="4" style="text-align:center;padding:20px;color:#999;">No feedback submitted yet</td></tr>';
+                }
+                ?>
+                </tbody>
+            </table>
         </div>
     </section>
 

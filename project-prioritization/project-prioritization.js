@@ -64,21 +64,41 @@ function renderProjects() {
         return;
     }
     
-    allProjects.forEach(project => {
+    // Load feedback items from localStorage
+    const feedbacks = JSON.parse(localStorage.getItem('lgu_prioritization_v1') || '[]');
+    feedbacks.forEach(input => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${project.code || ''}</td>
-            <td>${project.name || ''}</td>
-            <td>${project.type || ''}</td>
-            <td>${project.priority || 'Medium'}</td>
-            <td>${project.status || 'Draft'}</td>
-            <td>${project.sector || ''}</td>
+            <td>${new Date(input.date).toLocaleDateString()}</td>
+            <td>${input.name}</td>
+            <td><span class="badge type-${input.type}">${input.type}</span></td>
+            <td>${input.subject}</td>
+            <td>${input.category}</td>
+            <td>${input.location}</td>
+            <td><span class="badge urgency-${input.urgency}">${input.urgency}</span></td>
+            <td><span class="badge status-${input.status.replace(/\s+/g, '\ ')}">${input.status}</span></td>
             <td>
-                <button class="btn-small" onclick="alert('Project: ${project.name}')">View</button>
+                <button onclick="alert('Feedback: ${input.description}')">View</button>
+                <button onclick="updateStatus('${input.id}', 'Under Review')">Review</button>
+                <button onclick="updateStatus('${input.id}', 'Addressed')">Address</button>
+                <button onclick="deleteInput('${input.id}')">Delete</button>
             </td>
         `;
         tbody.appendChild(tr);
     });
+    updateSummary(feedbacks);
+}
+
+function updateProjectSummary() {
+    const total = allProjects.length;
+    const critical = allProjects.filter(p => p.priority === 'Critical').length;
+    const high = allProjects.filter(p => p.priority === 'High').length;
+    const pending = allProjects.filter(p => p.status === 'Pending').length;
+    
+    document.getElementById('totalInputs').textContent = total;
+    document.getElementById('criticalInputs').textContent = critical;
+    document.getElementById('highInputs').textContent = high;
+    document.getElementById('pendingInputs').textContent = pending;
 }
 
 // CRUD for Citizen Inputs
@@ -157,7 +177,7 @@ function updateStatus(id, status) {
     if (input) {
         input.status = status;
         saveInputs(inputs);
-        renderInputs();
+        renderProjects();
     }
 }
 
