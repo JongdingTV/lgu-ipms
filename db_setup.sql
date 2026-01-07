@@ -115,3 +115,14 @@ CREATE TABLE IF NOT EXISTS user_feedback (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
+
+CREATE TABLE feedback (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_name VARCHAR(100) DEFAULT 'Anonymous',
+    subject VARCHAR(255),
+    category VARCHAR(100),
+    location VARCHAR(255),
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'Pending',
+    date_submitted DATETIME DEFAULT CURRENT_TIMESTAMP
+);
