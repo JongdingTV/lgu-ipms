@@ -1151,12 +1151,31 @@ button[type="submit"]:hover {
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.15s ease;
+    transition: all 0.15s ease;
     border-left: 4px solid #3762c8;
+    border-top: 2px solid transparent;
 }
 
 .project-card:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Risk level border indicators */
+.project-card.risk-critical {
+    border-top-color: #dc2626;
+}
+
+.project-card.risk-high {
+    border-top-color: #ea580c;
+}
+
+.project-card.risk-medium {
+    border-top-color: #f59e0b;
+}
+
+.project-card.risk-low {
+    border-top-color: #10b981;
 }
 
 .project-card h4 {
@@ -1171,6 +1190,260 @@ button[type="submit"]:hover {
     font-size: 0.9rem;
     margin-bottom: 8px;
     line-height: 1.5;
+}
+
+.project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
+.project-title-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.project-title-section h4 {
+    margin-bottom: 0;
+}
+
+.project-header-right {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+}
+
+.timeline-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.timeline-badge.timeline-upcoming {
+    background: #dbeafe;
+    color: #0369a1;
+}
+
+.timeline-badge.timeline-active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.timeline-badge.timeline-overdue {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.timeline-badge.timeline-unknown {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.risk-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.risk-badge.risk-critical {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.risk-badge.risk-high {
+    background: linear-gradient(135deg, #fed7aa 0%, #fed7aa 100%);
+    color: #92400e;
+    border: 1px solid #fdba74;
+}
+
+.risk-badge.risk-medium {
+    background: linear-gradient(135deg, #fef3c7 0%, #fef3c7 100%);
+    color: #78350f;
+    border: 1px solid #fcd34d;
+}
+
+.risk-badge.risk-low {
+    background: linear-gradient(135deg, #dcfce7 0%, #dcfce7 100%);
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+.project-timeline-info {
+    display: flex;
+    gap: 16px;
+    padding: 10px;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin: 12px 0;
+    font-size: 0.85rem;
+}
+
+.timeline-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.timeline-label {
+    font-weight: 600;
+    color: #475569;
+}
+
+.timeline-value {
+    color: #1e293b;
+    font-size: 0.9rem;
+}
+
+.project-header h4 {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Contractors Section Styles */
+.contractors-section {
+    background: linear-gradient(135deg, #f0f4ff 0%, #f5f3ff 100%);
+    padding: 12px;
+    border-radius: 8px;
+    margin: 12px 0;
+    border-left: 3px solid #7c3aed;
+}
+
+.contractors-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4c1d95;
+    margin-bottom: 8px;
+}
+
+.contractor-count {
+    background: #7c3aed;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.contractors-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: white;
+    border: 1px solid #e9d5ff;
+    border-radius: 6px;
+    margin: 4px 4px 4px 0;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.contractors-badge.empty {
+    background: #faf5ff;
+    border-color: #ddd6fe;
+    color: #9f7aea;
+    font-style: italic;
+}
+
+.contractor-badge {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 10px;
+    background: linear-gradient(135deg, #ede9fe 0%, #f3e8ff 100%);
+    border: 1px solid #d8b4fe;
+    border-radius: 6px;
+    margin: 4px 4px 4px 0;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.1);
+}
+
+.contractor-badge.extra {
+    background: #faf5ff;
+    border-color: #ddd6fe;
+    color: #6d28d9;
+    font-weight: 600;
+    justify-content: center;
+}
+
+.contractor-name {
+    font-weight: 600;
+    color: #5b21b6;
+}
+
+.contractor-rating {
+    color: #d97706;
+    font-weight: 500;
+}
+
+/* Statistics Section */
+.pm-stats-wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-box {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-top: 3px solid #3762c8;
+    transition: all 0.3s ease;
+}
+
+.stat-box:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(55, 98, 200, 0.15);
+}
+
+.stat-box.stat-total {
+    border-top-color: #3762c8;
+}
+
+.stat-box.stat-approved {
+    border-top-color: #10b981;
+}
+
+.stat-box.stat-progress {
+    border-top-color: #f59e0b;
+}
+
+.stat-box.stat-completed {
+    border-top-color: #06b6d4;
+}
+
+.stat-box.stat-contractors {
+    border-top-color: #7c3aed;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 6px;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+    letter-spacing: 0.3px;
 }
 
 .pm-empty {

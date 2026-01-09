@@ -7,6 +7,17 @@ if ($conn->connect_error) {
     exit;
 }
 
+// Create contractor_project_assignments table if it doesn't exist
+$conn->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    contractor_id INT NOT NULL,
+    project_id INT NOT NULL,
+    assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_assignment (contractor_id, project_id),
+    FOREIGN KEY (contractor_id) REFERENCES contractors(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+)");
+
 // Handle GET request for loading contractors
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_contractors') {
     header('Content-Type: application/json');
@@ -46,24 +57,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     exit;
 }
 
-// Handle DELETE request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_contractor') {
+// Handle POST request for assigning contractor to project
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'assign_contractor') {
     header('Content-Type: application/json');
     
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    $contractor_id = isset($_POST['contractor_id']) ? (int)$_POST['contractor_id'] : 0;
+    $project_id = isset($_POST['project_id']) ? (int)$_POST['project_id'] : 0;
     
-    if ($id > 0) {
-        $stmt = $conn->prepare("DELETE FROM contractors WHERE id=?");
-        $stmt->bind_param("i", $id);
+    if ($contractor_id > 0 && $project_id > 0) {
+        // Create table if it doesn't exist
+        $conn->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            contractor_id INT NOT NULL,
+            project_id INT NOT NULL,
+            assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_assignment (contractor_id, project_id),
+            FOREIGN KEY (contractor_id) REFERENCES contractors(id) ON DELETE CASCADE,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )");
+        
+        $stmt = $conn->prepare("INSERT INTO contractor_project_assignments (contractor_id, project_id) VALUES (?, ?)");
+        $stmt->bind_param("ii", $contractor_id, $project_id);
         
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Contractor deleted successfully']);
+            echo json_encode(['success' => true, 'message' => 'Contractor assigned to project successfully']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to delete contractor: ' . $conn->error]);
+            if (strpos($stmt->error, 'Duplicate') !== false) {
+                echo json_encode(['success' => false, 'message' => 'This contractor is already assigned to this project']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to assign contractor: ' . $stmt->error]);
+            }
         }
         $stmt->close();
     } else {
-        echo json_encode(['success' => false, 'message' => 'Invalid contractor ID']);
+        echo json_encode(['success' => false, 'message' => 'Invalid contractor or project ID']);
+    }
+    exit;
+}
+
+// Handle POST request for removing contractor from project
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'unassign_contractor') {
+    header('Content-Type: application/json');
+    
+    $contractor_id = isset($_POST['contractor_id']) ? (int)$_POST['contractor_id'] : 0;
+    $project_id = isset($_POST['project_id']) ? (int)$_POST['project_id'] : 0;
+    
+    if ($contractor_id > 0 && $project_id > 0) {
+        $stmt = $conn->prepare("DELETE FROM contractor_project_assignments WHERE contractor_id=? AND project_id=?");
+        $stmt->bind_param("ii", $contractor_id, $project_id);
+        
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Contractor unassigned from project']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to unassign contractor']);
+        }
+        $stmt->close();
+    }
+    exit;
+}
+
+// Handle GET request for loading assigned projects for a contractor
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_assigned_projects') {
+    header('Content-Type: application/json');
+    
+    $contractor_id = isset($_GET['contractor_id']) ? (int)$_GET['contractor_id'] : 0;
+    
+    if ($contractor_id > 0) {
+        $stmt = $conn->prepare("SELECT p.id, p.code, p.name FROM projects p 
+                               INNER JOIN contractor_project_assignments cpa ON p.id = cpa.project_id 
+                               WHERE cpa.contractor_id = ?");
+        $stmt->bind_param("i", $contractor_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $projects = [];
+        
+        while ($row = $result->fetch_assoc()) {
+            $projects[] = $row;
+        }
+        
+        echo json_encode($projects);
+        $stmt->close();
+    } else {
+        echo json_encode([]);
     }
     exit;
 }
@@ -80,6 +155,23 @@ $conn->close();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .btn-assign {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+        .btn-assign:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+    </style>
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -89,7 +181,7 @@ $conn->close();
         </div>
         <div class="nav-links">
             <a href="../dashboard/dashboard.php"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
-            <a href="../project-registration/project_registration.php"><img src="../project-registration/list.png" class="nav-icon">Project Registration</a>
+            <a href="../project-registration/project_registration.php"><img src="../project-registration/list.png" class="nav-icon">Project Registration    ▼</a>
             <a href="../progress-monitoring/progress_monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon">Progress Monitoring</a>
             <a href="../budget-resources/budget_resources.php"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="../task-milestone/tasks_milestones.php"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
@@ -171,6 +263,7 @@ $conn->close();
                                 <th>Contact Email</th>
                                 <th>Status</th>
                                 <th>Rating</th>
+                                <th>Projects Assigned</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -225,27 +318,55 @@ $conn->close();
 
         // Load contractors from database
         function loadContractors() {
-            fetch('registered_contractors.php?action=load_contractors&_=' + Date.now())
-                .then(res => res.json())
-                .then(contractors => {
-                    console.log('Contractors loaded:', contractors);
-                    allContractors = contractors;
-                    renderContractors(contractors);
+            console.log('loadContractors called');
+            const url = 'registered_contractors.php?action=load_contractors&_=' + Date.now();
+            console.log('Fetching from:', url);
+            
+            fetch(url)
+                .then(res => {
+                    console.log('Response received, status:', res.status);
+                    console.log('Response ok:', res.ok);
+                    return res.text();
+                })
+                .then(text => {
+                    console.log('Response text:', text);
+                    try {
+                        const contractors = JSON.parse(text);
+                        console.log('Contractors parsed:', contractors);
+                        allContractors = contractors;
+                        renderContractors(contractors);
+                    } catch (e) {
+                        console.error('JSON parse error:', e, 'Text was:', text);
+                    }
                 })
                 .catch(error => {
                     console.error('Error loading contractors:', error);
                     const tbody = document.querySelector('#contractorsTable tbody');
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#c00;">Error loading contractors. Check console.</td></tr>';
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#c00;">Error: ' + error.message + '</td></tr>';
                 });
         }
 
         // Load projects from database
         function loadProjects() {
-            fetch('registered_contractors.php?action=load_projects&_=' + Date.now())
-                .then(res => res.json())
-                .then(projects => {
-                    allProjects = projects;
-                    renderProjects(projects);
+            console.log('loadProjects called');
+            const url = 'registered_contractors.php?action=load_projects&_=' + Date.now();
+            console.log('Fetching projects from:', url);
+            
+            fetch(url)
+                .then(res => {
+                    console.log('Projects response status:', res.status);
+                    return res.text();
+                })
+                .then(text => {
+                    console.log('Projects response text:', text);
+                    try {
+                        const projects = JSON.parse(text);
+                        console.log('Projects parsed:', projects);
+                        allProjects = projects;
+                        renderProjects(projects);
+                    } catch (e) {
+                        console.error('Projects JSON parse error:', e);
+                    }
                 })
                 .catch(error => console.error('Error loading projects:', error));
         }
@@ -272,18 +393,25 @@ $conn->close();
             renderContractors(filtered);
         }
 
-        searchInput.addEventListener('input', filterContractors);
-        statusFilter.addEventListener('change', filterContractors);
+        if (searchInput) searchInput.addEventListener('input', filterContractors);
+        if (statusFilter) statusFilter.addEventListener('change', filterContractors);
 
         // Render contractors table
         function renderContractors(contractors) {
+            console.log('renderContractors called with:', contractors);
             const tbody = document.querySelector('#contractorsTable tbody');
+            if (!tbody) {
+                console.error('Cannot find #contractorsTable tbody');
+                return;
+            }
             tbody.innerHTML = '';
             
-            if (!contractors.length) {
+            if (!contractors || !contractors.length) {
+                console.log('No contractors to display');
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#6b7280;">No contractors found.</td></tr>';
                 return;
             }
+            console.log('Rendering', contractors.length, 'contractors');
 
             contractors.forEach(c => {
                 const row = document.createElement('tr');
@@ -294,12 +422,39 @@ $conn->close();
                     <td><span class="status-badge ${(c.status || '').toLowerCase()}">${c.status || 'N/A'}</span></td>
                     <td>${c.rating ? '⭐ ' + c.rating + '/5' : '—'}</td>
                     <td>
+                        <button class="btn-view-projects" data-id="${c.id}" style="padding: 8px 14px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s ease;">View Projects</button>
+                    </td>
+                    <td>
                         <div class="action-buttons">
+                            <button class="btn-assign" data-id="${c.id}">Assign Projects</button>
                             <button class="btn-delete" data-id="${c.id}">🗑️ Delete</button>
                         </div>
                     </td>
                 `;
                 tbody.appendChild(row);
+            });
+
+            // Wire up view projects buttons
+            document.querySelectorAll('#contractorsTable .btn-view-projects').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const contractorId = this.dataset.id;
+                    const contractorRow = this.closest('tr');
+                    const contractorName = contractorRow.querySelector('td:nth-child(1)').textContent;
+                    openProjectsModal(contractorId, contractorName);
+                });
+            });
+
+            // Wire up assign buttons
+            document.querySelectorAll('#contractorsTable .btn-assign').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Assign button clicked');
+                    const contractorId = this.dataset.id;
+                    const contractorRow = this.closest('tr');
+                    const contractorName = contractorRow.querySelector('td:nth-child(1)').textContent;
+                    console.log('Opening modal for contractor:', contractorName, 'ID:', contractorId);
+                    openAssignModal(contractorId, contractorName);
+                });
             });
 
             // Wire up delete buttons
@@ -337,9 +492,13 @@ $conn->close();
         // Render projects table
         function renderProjects(projects) {
             const tbody = document.querySelector('#projectsTable tbody');
+            if (!tbody) {
+                console.error('Projects table tbody not found');
+                return;
+            }
             tbody.innerHTML = '';
             
-            if (!projects.length) {
+            if (!projects || !projects.length) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#6b7280;">No projects available.</td></tr>';
                 return;
             }
@@ -379,11 +538,341 @@ $conn->close();
             });
         }
 
-        // Load data on page load
-        document.addEventListener('DOMContentLoaded', () => {
+        // Assignment Modal Functions
+        function openAssignModal(contractorId, contractorName) {
+            console.log('openAssignModal called with:', contractorId, contractorName);
+            const modal = document.getElementById('assignmentModal');
+            console.log('Modal element:', modal);
+            if (!modal) {
+                console.error('assignmentModal not found in DOM');
+                return;
+            }
+            document.getElementById('assignContractorId').value = contractorId;
+            document.getElementById('assignmentTitle').textContent = `Assign "${contractorName}" to Projects`;
+            
+            // Load available projects
+            loadProjectsForAssignment(contractorId);
+            modal.style.display = 'flex';
+            console.log('Modal display set to flex');
+        }
+
+        function closeAssignModal() {
+            document.getElementById('assignmentModal').style.display = 'none';
+        }
+
+        function openProjectsModal(contractorId, contractorName) {
+            console.log('openProjectsModal called for:', contractorName);
+            const modal = document.getElementById('projectsViewModal');
+            if (!modal) {
+                console.error('projectsViewModal not found');
+                return;
+            }
+            
+            document.getElementById('projectsViewTitle').textContent = `Projects Assigned to ${contractorName}`;
+            const projectsList = document.getElementById('projectsViewList');
+            projectsList.innerHTML = '<p style="text-align: center; color: #999;">Loading projects...</p>';
+            
+            // Get assigned projects
+            fetch(`registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`)
+                .then(res => res.text())
+                .then(text => {
+                    try {
+                        const projects = JSON.parse(text);
+                        console.log('Assigned projects:', projects);
+                        projectsList.innerHTML = '';
+                        
+                        if (!projects || projects.length === 0) {
+                            projectsList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No Projects Assigned</p>';
+                            return;
+                        }
+                        
+                        projects.forEach(p => {
+                            const div = document.createElement('div');
+                            div.style.cssText = 'padding: 12px 16px; margin: 10px 0; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 6px;';
+                            div.innerHTML = `
+                                <div><strong>${p.code}</strong> - ${p.name}</div>
+                                <small style="color: #666;">${p.type || 'N/A'} • ${p.sector || 'N/A'}</small>
+                            `;
+                            projectsList.appendChild(div);
+                        });
+                    } catch (e) {
+                        console.error('Error parsing projects:', e);
+                        projectsList.innerHTML = '<p style="color: red;">Error loading projects</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    projectsList.innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+                });
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeProjectsModal() {
+            const modal = document.getElementById('projectsViewModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function loadProjectsForAssignment(contractorId) {
+            console.log('loadProjectsForAssignment called with contractorId:', contractorId);
+            const projectsList = document.getElementById('projectsList');
+            projectsList.innerHTML = '<p style="text-align: center; color: #999;">Loading projects...</p>';
+            
+            // Get already assigned projects
+            fetch(`registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`)
+                .then(res => res.text())
+                .then(text => {
+                    console.log('Assigned projects response:', text);
+                    try {
+                        const assignedProjects = JSON.parse(text);
+                        const assignedIds = assignedProjects.map(p => p.id);
+                        console.log('Assigned IDs:', assignedIds);
+                        
+                        // Get all available projects
+                        return fetch('registered_contractors.php?action=load_projects')
+                            .then(res => res.text())
+                            .then(text => {
+                                console.log('All projects response:', text);
+                                const projects = JSON.parse(text);
+                                console.log('Projects parsed:', projects);
+                                
+                                projectsList.innerHTML = '';
+                                
+                                if (!projects || !projects.length) {
+                                    projectsList.innerHTML = '<p style="text-align: center; color: #999;">No projects available</p>';
+                                    return;
+                                }
+                                
+                                projects.forEach(p => {
+                                    const projectId = String(p.id);
+                                    const isAssigned = assignedIds.map(id => String(id)).includes(projectId);
+                                    console.log(`Project ${projectId}: assigned=${isAssigned}`);
+                                    
+                                    const div = document.createElement('div');
+                                    div.style.cssText = 'padding: 10px; margin: 8px 0; background: #f9fafb; border-radius: 6px; border-left: 3px solid ' + (isAssigned ? '#10b981' : '#e5e7eb') + ';';
+                                    div.innerHTML = `
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <input type="checkbox" class="project-checkbox" data-project-id="${projectId}" ${isAssigned ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;">
+                                            <div>
+                                                <strong>${p.code}</strong> - ${p.name}
+                                                <br><small style="color: #999;">${p.type || 'N/A'} • ${p.sector || 'N/A'}</small>
+                                            </div>
+                                        </div>
+                                    `;
+                                    projectsList.appendChild(div);
+                                });
+                            });
+                    } catch (e) {
+                        console.error('JSON parse error for assigned projects:', e, 'Text:', text);
+                        projectsList.innerHTML = '<p style="text-align: center; color: red;">Error loading assigned projects</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading assigned projects:', error);
+                    projectsList.innerHTML = '<p style="text-align: center; color: red;">Error: ' + error.message + '</p>';
+                });
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('assignmentModal');
+            if (e.target === modal) {
+                closeAssignModal();
+            }
+        });
+
+        // Save assignments handler function
+        async function saveAssignmentsHandler() {
+            console.log('=== SAVE ASSIGNMENTS HANDLER CALLED ===');
+            const saveBtn = document.getElementById('saveAssignments');
+            saveBtn.disabled = true;
+            saveBtn.textContent = '⏳ Saving...';
+            
+            const contractorId = document.getElementById('assignContractorId').value;
+            console.log('Contractor ID:', contractorId);
+            
+            if (!contractorId) {
+                console.error('No contractor ID');
+                alert('Error: No contractor selected');
+                saveBtn.disabled = false;
+                saveBtn.textContent = '✓ Save Assignments';
+                return;
+            }
+            
+            const checkboxes = document.querySelectorAll('.project-checkbox');
+            console.log('Found', checkboxes.length, 'checkboxes');
+            
+            if (checkboxes.length === 0) {
+                console.error('No checkboxes found');
+                alert('No projects to assign');
+                saveBtn.disabled = false;
+                saveBtn.textContent = '✓ Save Assignments';
+                return;
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+            
+            // Process each checkbox
+            for (let i = 0; i < checkboxes.length; i++) {
+                const checkbox = checkboxes[i];
+                const projectId = String(checkbox.getAttribute('data-project-id')).trim();
+                const isChecked = checkbox.checked;
+                
+                console.log(`Processing checkbox ${i}: projectId="${projectId}", checked=${isChecked}`);
+                
+                if (!projectId) {
+                    console.error(`Checkbox ${i} has no projectId`);
+                    failCount++;
+                    continue;
+                }
+
+                const action = isChecked ? 'assign_contractor' : 'unassign_contractor';
+                const body = `action=${action}&contractor_id=${contractorId}&project_id=${projectId}`;
+                
+                console.log(`Sending request: ${action}`, body);
+                
+                try {
+                    const response = await fetch('registered_contractors.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: body
+                    });
+                    
+                    const text = await response.text();
+                    console.log(`Response for ${action}:`, text);
+                    
+                    const data = JSON.parse(text);
+                    if (data.success) {
+                        successCount++;
+                        console.log(`Success: ${action} project ${projectId}`);
+                    } else {
+                        failCount++;
+                        console.error(`Failed: ${action} project ${projectId}:`, data.message);
+                    }
+                } catch (err) {
+                    failCount++;
+                    console.error(`Error processing ${action}:`, err);
+                }
+            }
+
+            console.log('=== ALL PROCESSING COMPLETE ===');
+            console.log('Success:', successCount, 'Fail:', failCount);
+            
+            // Show notification
+            showSuccessNotification('✅ Assignments Saved!', `Successfully updated ${successCount} project(s)`);
+            
+            // Close and refresh
+            setTimeout(() => {
+                closeAssignModal();
+                loadContractors();
+            }, 1500);
+            
+            saveBtn.disabled = false;
+            saveBtn.textContent = '✓ Save Assignments';
+        }
+
+        // Success notification function
+        function showSuccessNotification(title, message) {
+            const notification = document.createElement('div');
+            notification.id = 'successNotification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 30px;
+                right: 30px;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                padding: 20px 30px;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+                z-index: 2000;
+                min-width: 300px;
+                animation: slideIn 0.4s ease-out;
+                font-family: 'Poppins', sans-serif;
+            `;
+            
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 24px;">✓</div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 16px;">${title}</div>
+                        <div style="font-size: 14px; opacity: 0.95; margin-top: 4px;">${message}</div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Add animation styles
+            const style = document.createElement('style');
+            if (!document.getElementById('notificationStyles')) {
+                style.id = 'notificationStyles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                    @keyframes slideOut {
+                        from {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Auto remove after 4 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.4s ease-out';
+                setTimeout(() => {
+                    notification.remove();
+                }, 400);
+            }, 4000);
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                loadContractors();
+                loadProjects();
+            });
+        } else {
             loadContractors();
             loadProjects();
-        });
+        }
     </script>
+
+    <!-- Assignment Modal -->
+    <div id="assignmentModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 20px;">
+        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <input type="hidden" id="assignContractorId" value="">
+            <h2 id="assignmentTitle" style="margin: 0 0 20px 0; color: #1f2937;"></h2>
+            <div id="projectsList" style="margin-bottom: 20px; max-height: 400px; overflow-y: auto;"></div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeAssignModal()" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; color: #6b7280; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+                <button id="saveAssignments" onclick="saveAssignmentsHandler()" style="padding: 10px 20px; background: #3762c8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">✓ Save Assignments</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects View Modal -->
+    <div id="projectsViewModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 20px;">
+        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <h2 id="projectsViewTitle" style="margin: 0 0 20px 0; color: #1f2937;"></h2>
+            <div id="projectsViewList" style="margin-bottom: 20px; max-height: 400px; overflow-y: auto;"></div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeProjectsModal()" style="padding: 10px 20px; background: #3762c8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Close</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

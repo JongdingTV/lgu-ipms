@@ -8,34 +8,52 @@ if ($conn->connect_error) {
 }
 
 // Handle API requests first (before rendering HTML)
-if (isset($_GET['action']) && $_GET['action'] === 'load_projects') {
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    // Use prepared statement for security and performance
-    $stmt = $conn->prepare("
-        SELECT 
-            id, code, name, description, location, province, sector, 
-            budget, progress, status, project_manager, 
-            start_date, end_date, duration_months, created_at 
-        FROM projects 
-        ORDER BY created_at DESC 
-        LIMIT 500
-    ");
+    // Create contractor_project_assignments table if it doesn't exist
+    $conn->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        contractor_id INT NOT NULL,
+        project_id INT NOT NULL,
+        assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(contractor_id) REFERENCES contractors(id) ON DELETE CASCADE,
+        FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )");
+    
+    // Simple query first - use safe column selection
+    $result = $conn->query("SELECT id, code, name, description, location, province, sector, budget, status, project_manager, start_date, end_date, duration_months, created_at FROM projects ORDER BY created_at DESC LIMIT 500");
     
     $projects = [];
     
-    if ($stmt) {
-        $stmt->execute();
-        $result = $stmt->get_result();
+    if ($result) {
         while ($row = $result->fetch_assoc()) {
+            // Add a default progress value (can be 0-100)
+            $row['progress'] = isset($row['progress']) ? $row['progress'] : 0;
+            
+            // Get assigned contractors for this project
+            $contractorsQuery = $conn->query("
+                SELECT c.id, c.company, c.rating 
+                FROM contractors c
+                INNER JOIN contractor_project_assignments cpa ON c.id = cpa.contractor_id
+                WHERE cpa.project_id = " . intval($row['id'])
+            );
+            
+            $contractors = [];
+            if ($contractorsQuery) {
+                while ($contractor = $contractorsQuery->fetch_assoc()) {
+                    $contractors[] = $contractor;
+                }
+                $contractorsQuery->free();
+            }
+            
+            $row['assigned_contractors'] = $contractors;
             $projects[] = $row;
         }
         $result->free();
-        $stmt->close();
     }
     
     echo json_encode($projects);
-    $conn->close();
     exit;
 }
 
@@ -92,6 +110,30 @@ $conn->close();
         </div>
 
         <div class="pm-section card">
+            <!-- Statistics Summary -->
+            <div class="pm-stats-wrapper">
+                <div class="stat-box stat-total">
+                    <div class="stat-number" id="statTotal">0</div>
+                    <div class="stat-label">Total Projects</div>
+                </div>
+                <div class="stat-box stat-approved">
+                    <div class="stat-number" id="statApproved">0</div>
+                    <div class="stat-label">Approved</div>
+                </div>
+                <div class="stat-box stat-progress">
+                    <div class="stat-number" id="statInProgress">0</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-box stat-completed">
+                    <div class="stat-number" id="statCompleted">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-box stat-contractors">
+                    <div class="stat-number" id="statContractors">0</div>
+                    <div class="stat-label">Assigned Contractors</div>
+                </div>
+            </div>
+
             <!-- Control Panel -->
             <div class="pm-controls-wrapper">
                 <div class="pm-controls">
@@ -109,6 +151,7 @@ $conn->close();
                                 <option>Approved</option>
                                 <option>On-hold</option>
                                 <option>Cancelled</option>
+                                <option>Completed</option>
                             </select>
                         </div>
 
@@ -122,6 +165,26 @@ $conn->close();
                                 <option>Water</option>
                                 <option>Sanitation</option>
                                 <option>Other</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="pmProgressFilter">Progress</label>
+                            <select id="pmProgressFilter" title="Filter by progress">
+                                <option value="">All Progress</option>
+                                <option value="0-25">0-25%</option>
+                                <option value="25-50">25-50%</option>
+                                <option value="50-75">50-75%</option>
+                                <option value="75-100">75-100%</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="pmContractorFilter">Has Contractors</label>
+                            <select id="pmContractorFilter" title="Filter by contractors">
+                                <option value="">All Projects</option>
+                                <option value="assigned">With Contractors</option>
+                                <option value="unassigned">No Contractors</option>
                             </select>
                         </div>
 

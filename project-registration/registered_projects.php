@@ -90,7 +90,7 @@ $conn->close();
             <a href="../progress-monitoring/progress_monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon">Progress Monitoring</a>
             <a href="../budget-resources/budget_resources.php"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="../task-milestone/tasks_milestones.php"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
-            <a href="../contractors/contractors.php"><img src="../contractors/contractors.png" class="nav-icon">Contractors</a>
+            <a href="../contractors/contractors.php"><img src="../contractors/contractors.png" class="nav-icon">Contractors    ▼</a>
             <a href="../project-prioritization/project-prioritization.php"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
         </div>
         <div class="nav-user">
@@ -195,22 +195,30 @@ $conn->close();
         const msg = document.getElementById('formMessage');
 
         function loadProjects() {
+            console.log('loadProjects called');
             fetch('registered_projects.php?action=load_projects&_=' + Date.now())
-                .then(res => res.json())
+                .then(res => {
+                    console.log('Response status:', res.status);
+                    return res.json();
+                })
                 .then(projects => {
+                    console.log('Projects loaded:', projects);
                     allProjects = projects;
                     renderProjects(projects);
                 })
                 .catch(error => {
                     console.error('Error loading projects:', error);
-                    msg.textContent = 'Error loading projects';
-                    msg.style.color = '#dc2626';
-                    msg.style.display = 'block';
+                    const tbody = document.querySelector('#projectsTable tbody');
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#c00;">Error loading projects. Check console.</td></tr>';
                 });
         }
 
         function renderProjects(projects = allProjects) {
             const tbody = document.querySelector('#projectsTable tbody');
+            if (!tbody) {
+                console.error('Table tbody not found');
+                return;
+            }
             tbody.innerHTML = '';
             
             if (!projects.length) {
@@ -294,30 +302,33 @@ $conn->close();
             renderProjects(filtered);
         }
 
-        searchInput.addEventListener('input', filterProjects);
-        statusFilter.addEventListener('change', filterProjects);
+        if (searchInput) searchInput.addEventListener('input', filterProjects);
+        if (statusFilter) statusFilter.addEventListener('change', filterProjects);
 
         // Export CSV functionality
-        document.getElementById('exportCsv').addEventListener('click', () => {
-            if (!allProjects.length) {
-                alert('No projects to export');
-                return;
-            }
+        const exportCsvBtn = document.getElementById('exportCsv');
+        if (exportCsvBtn) {
+            exportCsvBtn.addEventListener('click', () => {
+                if (!allProjects.length) {
+                    alert('No projects to export');
+                    return;
+                }
 
-            const keys = ['code', 'name', 'type', 'sector', 'priority', 'status'];
-            const headers = keys.map(k => k.charAt(0).toUpperCase() + k.slice(1)).join(',');
-            const rows = allProjects.map(p => 
-                keys.map(k => `"${String(p[k] || '').replace(/"/g, '""')}"`)
-                    .join(',')
-            );
-            
-            const csv = [headers, ...rows].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `projects_${new Date().toISOString().slice(0, 10)}.csv`;
-            link.click();
-        });
+                const keys = ['code', 'name', 'type', 'sector', 'priority', 'status'];
+                const headers = keys.map(k => k.charAt(0).toUpperCase() + k.slice(1)).join(',');
+                const rows = allProjects.map(p => 
+                    keys.map(k => `"${String(p[k] || '').replace(/"/g, '""')}"`)
+                        .join(',')
+                );
+                
+                const csv = [headers, ...rows].join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `projects_${new Date().toISOString().slice(0, 10)}.csv`;
+                link.click();
+            });
+        }
 
         // Dropdown navigation toggle
         const projectRegToggle = document.getElementById('projectRegToggle');
@@ -341,8 +352,12 @@ $conn->close();
             });
         }
 
-        // Load projects on page load
-        document.addEventListener('DOMContentLoaded', loadProjects);
+        // Load projects when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadProjects);
+        } else {
+            loadProjects();
+        }
     </script>
 </body>
 </html>
