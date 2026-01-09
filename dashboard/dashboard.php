@@ -67,7 +67,7 @@ $conn->close();
 
         <!-- Key Metrics Section -->
         <div class="metrics-container">
-            <div class="metric-card">
+            <div class="metric-card card">
                 <img src="chart.png" alt="Total Projects" class="metric-icon">
                 <div class="metric-content">
                     <h3>Total Projects</h3>
@@ -75,7 +75,7 @@ $conn->close();
                     <span class="metric-status">Active & Completed</span>
                 </div>
             </div>
-            <div class="metric-card">
+            <div class="metric-card card">
                 <img src="sandclock.png" alt="In Progress" class="metric-icon">
                 <div class="metric-content">
                     <h3>In Progress</h3>
@@ -83,7 +83,7 @@ $conn->close();
                     <span class="metric-status">Currently executing</span>
                 </div>
             </div>
-            <div class="metric-card">
+            <div class="metric-card card">
                 <img src="check.png" alt="Completed" class="metric-icon">
                 <div class="metric-content">
                     <h3>Completed</h3>
@@ -91,7 +91,7 @@ $conn->close();
                     <span class="metric-status">On schedule</span>
                 </div>
             </div>
-            <div class="metric-card">
+            <div class="metric-card card">
                 <img src="budget.png" alt="Total Budget" class="metric-icon">
                 <div class="metric-content">
                     <h3>Total Budget</h3>
@@ -103,7 +103,7 @@ $conn->close();
 
         <!-- Charts Section -->
         <div class="charts-container">
-            <div class="chart-box">
+            <div class="chart-box card">
                 <h3>Project Status Distribution</h3>
                 <div class="chart-placeholder">
                     <div class="status-legend">
@@ -122,7 +122,7 @@ $conn->close();
                     </div>
                 </div>
             </div>
-            <div class="chart-box">
+            <div class="chart-box card">
                 <h3>Budget Utilization</h3>
                 <div class="chart-placeholder">
                     <div class="progress-bar">
@@ -134,7 +134,7 @@ $conn->close();
         </div>
 
         <!-- Recent Projects Section -->
-        <div class="recent-projects">
+        <div class="recent-projects card">
             <h3>Recent Projects</h3>
             <table class="projects-table">
                 <thead>
@@ -183,7 +183,7 @@ $conn->close();
         </div>
 
         <!-- Quick Stats -->
-        <div class="quick-stats">
+        <div class="quick-stats card">
             <div class="stat-item">
                 <h4>Average Project Duration</h4>
                 <p>0 months</p>
