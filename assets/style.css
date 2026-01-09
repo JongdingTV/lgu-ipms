@@ -33,7 +33,7 @@ body.sidebar-hidden {
     justify-content: space-between;
     align-items: stretch;
 
-    background: linear-gradient(135deg, #2563eb 0%,  #1e3a8a 100%);
+    background: white;
     box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
 
     position: fixed;

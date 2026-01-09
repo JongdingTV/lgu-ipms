@@ -116,13 +116,13 @@ CREATE TABLE IF NOT EXISTS user_feedback (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE TABLE feedback (
+-- Password Reset Tokens Table
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_name VARCHAR(100) DEFAULT 'Anonymous',
-    subject VARCHAR(255),
-    category VARCHAR(100),
-    location VARCHAR(255),
-    description TEXT,
-    status VARCHAR(50) DEFAULT 'Pending',
-    date_submitted DATETIME DEFAULT CURRENT_TIMESTAMP
+    user_id INT NOT NULL,
+    token VARCHAR(64) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
