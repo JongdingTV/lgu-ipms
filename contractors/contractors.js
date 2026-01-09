@@ -30,194 +30,22 @@ if (sidebarShow) {
     });
 }
 
-// Load projects for contractor assignment
-let allProjects = [];
-
-function loadProjectsFromDatabase() {
-    console.log('Loading projects from database...');
-    fetch('contractors.php?action=load_projects')
-        .then(response => {
-            console.log('Response status:', response.status);
-            if (!response.ok) throw new Error('Failed to load projects');
-            return response.json();
-        })
-        .then(projects => {
-            console.log('Projects loaded:', projects);
-            allProjects = projects;
-            populateProjectDropdown();
-        })
-        .catch(error => {
-            console.error('Error loading projects:', error);
-            allProjects = [];
-        });
-}
-
-function populateProjectDropdown() {
-    const select = document.getElementById('projectSelect');
-    if (select) {
-        select.innerHTML = '<option value="">Select a project</option>';
-        allProjects.forEach(project => {
-            const option = document.createElement('option');
-            option.value = project.id;
-            option.textContent = (project.code || '') + ' - ' + (project.name || '');
-            select.appendChild(option);
-        });
-    }
-    
-    // Also display projects in the table
-    const tbody = document.querySelector('#projectsTable tbody');
-    if (tbody) {
-        tbody.innerHTML = '';
-        if (!allProjects.length) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">No projects available</td></tr>';
-            return;
-        }
-        
-        allProjects.forEach(project => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${project.code || ''}</td>
-                <td>${project.name || ''}</td>
-                <td>${project.type || ''}</td>
-                <td>${project.sector || ''}</td>
-                <td>${project.status || 'Draft'}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-}
-
-// CRUD for Contractors
-let contractors = [];
+// Contractor form handling
+const contractorForm = document.getElementById('contractorForm');
+const formMessage = document.getElementById('formMessage');
+const resetBtn = document.getElementById('resetBtn');
 let editingId = null;
 
-// Helper function to get current contractors
-async function loadContractorsData() {
-    try {
-        const response = await fetch('contractors-api.php');
-        if (response.ok) {
-            return await response.json();
-        }
-        return [];
-    } catch (error) {
-        console.error('Error loading contractors data:', error);
-        return [];
-    }
-}
-
-async function loadContractors() {
-    try {
-        const response = await fetch('contractors-api.php');
-        if (response.ok) {
-            contractors = await response.json();
-            renderContractors();
-        } else {
-            const msg = document.getElementById('formMessage');
-            if (msg) {
-                msg.style.color = '#d00';
-                msg.textContent = 'Failed to load contractors.';
-                msg.style.display = 'block';
-            }
-            console.error('Failed to load contractors');
-        }
-    } catch (error) {
-        const msg = document.getElementById('formMessage');
-        if (msg) {
-            msg.style.color = '#d00';
-            msg.textContent = 'Error loading contractors: ' + error.message;
-            msg.style.display = 'block';
-        }
-        console.error('Error loading contractors:', error);
-    }
-}
-
-function renderContractors() {
-    const tbody = document.querySelector('#contractorsTable tbody');
-    tbody.innerHTML = '';
-    if (!contractors.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#6b7280;">No contractors registered yet.</td></tr>';
-        return;
-    }
-    contractors.forEach((c) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${c.company || ''}</td>
-            <td>${c.license || ''}</td>
-            <td>${c.email || c.phone || ''}</td>
-            <td>${c.status || 'Active'}</td>
-            <td>${c.rating || 'N/A'}</td>
-            <td>
-                <div class="action-buttons">
-                    <button class="btn-edit" data-id="${c.id}">Edit</button>
-                    <button class="btn-delete" data-id="${c.id}">Delete</button>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-function editContractor(id) {
-    const c = contractors.find(ctr => ctr.id == id);
-    if (!c) return;
-    editingId = id;
-    document.getElementById('ctrCompany').value = c.company || '';
-    document.getElementById('ctrOwner').value = c.owner || '';
-    document.getElementById('ctrLicense').value = c.license || '';
-    document.getElementById('ctrEmail').value = c.email || '';
-    document.getElementById('ctrPhone').value = c.phone || '';
-    document.getElementById('ctrAddress').value = c.address || '';
-    document.getElementById('ctrSpecialization').value = c.specialization || '';
-    document.getElementById('ctrExperience').value = c.experience || '';
-    document.getElementById('ctrRating').value = c.rating || '';
-    document.getElementById('ctrStatus').value = c.status || 'Active';
-    document.getElementById('ctrNotes').value = c.notes || '';
-    document.getElementById('contractorForm').scrollIntoView({ behavior: 'smooth' });
-    const submitBtn = document.querySelector('#contractorForm button[type="submit"]');
-    submitBtn.innerHTML = 'Update Contractor';
-}
-
-async function deleteContractor(id) {
-    const contractors = await loadContractorsData();
-    const contractor = contractors.find(c => c.id === id);
-    
-    showConfirmation({
-        title: 'Delete Contractor',
-        message: 'This contractor will be permanently removed from the system. This action cannot be undone.',
-        itemName: `Contractor: ${contractor ? contractor.company : 'Unknown'}`,
-        icon: '🗑️',
-        confirmText: 'Delete Permanently',
-        cancelText: 'Cancel',
-        onConfirm: async () => {
-            try {
-                const response = await fetch('contractors-api.php', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id })
-                });
-                if (response.ok) {
-                    await loadContractors();
-                } else {
-                    console.error('Failed to delete contractor');
-                }
-            } catch (error) {
-                console.error('Error deleting contractor:', error);
-            }
-        }
-    });
-}
-
 document.getElementById('resetBtn').addEventListener('click', function() {
-    document.getElementById('contractorForm').reset();
+    contractorForm.reset();
     editingId = null;
-    const submitBtn = document.querySelector('#contractorForm button[type="submit"]');
+    const submitBtn = contractorForm.querySelector('button[type="submit"]');
     submitBtn.innerHTML = 'Create Contractor';
-    document.getElementById('formMessage').style.display = 'none';
+    formMessage.style.display = 'none';
 });
 
-document.getElementById('contractorForm').addEventListener('submit', async (e) => {
+contractorForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const msg = document.getElementById('formMessage');
     const data = {
         company: document.getElementById('ctrCompany').value.trim(),
         owner: document.getElementById('ctrOwner').value.trim(),
@@ -250,40 +78,47 @@ document.getElementById('contractorForm').addEventListener('submit', async (e) =
         }
 
         if (response.ok) {
-            msg.style.color = '#0b5';
-            msg.textContent = editingId ? 'Contractor updated successfully!' : 'Contractor created successfully!';
-            msg.style.display = 'block';
-            document.getElementById('contractorForm').reset();
+            formMessage.style.color = '#0b5';
+            formMessage.textContent = editingId ? 'Contractor updated successfully!' : 'Contractor created successfully!';
+            formMessage.style.display = 'block';
+            contractorForm.reset();
             editingId = null;
-            const submitBtn = document.querySelector('#contractorForm button[type="submit"]');
+            const submitBtn = contractorForm.querySelector('button[type="submit"]');
             submitBtn.innerHTML = 'Create Contractor';
-            await loadContractors();
+            setTimeout(() => { formMessage.style.display = 'none'; }, 3000);
         } else {
             const error = await response.json();
-            msg.style.color = '#d00';
-            msg.textContent = 'Error: ' + (error.error || 'Unknown error');
-            msg.style.display = 'block';
+            formMessage.style.color = '#d00';
+            formMessage.textContent = 'Error: ' + (error.error || 'Unknown error');
+            formMessage.style.display = 'block';
         }
     } catch (error) {
-        msg.style.color = '#d00';
-        msg.textContent = 'Error: ' + error.message;
-        msg.style.display = 'block';
+        formMessage.style.color = '#d00';
+        formMessage.textContent = 'Error: ' + error.message;
+        formMessage.style.display = 'block';
     }
 });
 
-// Event delegation for edit and delete buttons
-document.querySelector('#contractorsTable tbody').addEventListener('click', (e) => {
-    if (e.target.classList.contains('btn-edit')) {
-        const id = e.target.dataset.id;
-        editContractor(id);
-    } else if (e.target.classList.contains('btn-delete')) {
-        const id = e.target.dataset.id;
-        deleteContractor(id);
-    }
-});
-
-// Load contractors on page load
+// Dropdown navigation toggle
 document.addEventListener('DOMContentLoaded', () => {
-    loadProjectsFromDatabase();
-    loadContractors();
+    const contractorsToggle = document.getElementById('contractorsToggle');
+    const navItemGroup = contractorsToggle?.closest('.nav-item-group');
+    
+    if (contractorsToggle && navItemGroup) {
+        // Keep dropdown open by default
+        navItemGroup.classList.add('open');
+        
+        contractorsToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            navItemGroup.classList.toggle('open');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!navItemGroup.contains(e.target)) {
+                navItemGroup.classList.remove('open');
+            }
+        });
+    }
 });

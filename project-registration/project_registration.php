@@ -110,11 +110,29 @@ $conn->close();
         </div>
         <div class="nav-links">
             <a href="../dashboard/dashboard.php"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
-            <a href="project_registration.php" class="active"><img src="list.png" class="nav-icon">Project Registration</a>
+            
+            <!-- Project Registration with Submenu -->
+            <div class="nav-item-group">
+                <a href="project_registration.php" class="active nav-main-item" id="projectRegToggle">
+                    <img src="list.png" class="nav-icon">Project Registration
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="nav-submenu" id="projectRegSubmenu">
+                    <a href="project_registration.php" class="nav-submenu-item active">
+                        <span class="submenu-icon">➕</span>
+                        <span>New Project</span>
+                    </a>
+                    <a href="registered_projects.php" class="nav-submenu-item">
+                        <span class="submenu-icon">📋</span>
+                        <span>Registered Projects</span>
+                    </a>
+                </div>
+            </div>
+            
             <a href="../progress-monitoring/progress_monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon">Progress Monitoring</a>
             <a href="../budget-resources/budget_resources.php"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="../task-milestone/tasks_milestones.php"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
-            <a href="../contractors/contractors.php"><img src="../contractors/contractors.png" class="nav-icon">Contractors</a>
+            <a href="../contractors/contractors.php"><img src="../contractors/contractors.png" class="nav-icon">Contractors    ▼</a>
             <a href="../project-prioritization/project-prioritization.php"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
         </div>
         <div class="nav-user">
@@ -249,27 +267,6 @@ $conn->close();
             </form>
 
             <div id="formMessage" style="margin-top:12px;color:#0b5;display:none;"></div>
-
-            <!-- Registered Projects Table -->
-            <div class="projects-section">
-                <h3>Registered Projects</h3>
-                <div class="table-wrap">
-                    <table id="projectsTable" class="table">
-                        <thead>
-                            <tr>
-                                <th>Project Code</th>
-                                <th>Project Name</th>
-                                <th>Type</th>
-                                <th>Sector</th>
-                                <th>Priority</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     </section>
 
@@ -308,6 +305,11 @@ $conn->close();
                 .then(projects => {
                     console.log('Fetched projects:', projects); // DEBUG
                     const tbody = document.querySelector('#projectsTable tbody');
+                    const projectCount = document.getElementById('projectCount');
+                    
+                    // Update project count
+                    projectCount.textContent = `${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`;
+                    
                     tbody.innerHTML = '';
                     if (!projects.length) {
                         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#6b7280;">No projects registered yet.</td></tr>';
@@ -462,6 +464,28 @@ $conn->close();
             });
         });
 
+        // Dropdown navigation toggle
+        const projectRegToggle = document.getElementById('projectRegToggle');
+        const navItemGroup = projectRegToggle?.closest('.nav-item-group');
+        
+        if (projectRegToggle && navItemGroup) {
+            // Keep dropdown open by default
+            navItemGroup.classList.add('open');
+            
+            projectRegToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                navItemGroup.classList.toggle('open');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!navItemGroup.contains(e.target)) {
+                    navItemGroup.classList.remove('open');
+                }
+            });
+        }
+
         resetBtn.addEventListener('click', function(){
             form.reset();
             msg.style.display = 'none';
@@ -470,6 +494,7 @@ $conn->close();
             submitBtn.innerHTML = 'Create Project';
         });
 
+        // Load projects on page load
         document.addEventListener('DOMContentLoaded', function(){
             loadSavedProjects();
         });
