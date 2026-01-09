@@ -337,21 +337,31 @@ $conn->close();
                         btn.addEventListener('click', function() {
                             const id = this.dataset.id;
                             const projectRow = this.closest('tr');
-                            if (confirm('Are you sure you want to delete this project?')) {
-                                fetch('project_registration.php', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                    body: `action=delete_project&id=${encodeURIComponent(id)}`
-                                })
-                                .then(res => res.json())
-                                .then(data => {
-                                    msg.textContent = data.message;
-                                    msg.style.display = 'block';
-                                    msg.style.color = data.success ? '#dc2626' : '#f00';
-                                    setTimeout(() => { msg.style.display = 'none'; }, 3000);
-                                    loadSavedProjects();
-                                });
-                            }
+                            const projectName = projectRow.querySelector('td:nth-child(2)').textContent;
+                            
+                            showConfirmation({
+                                title: 'Delete Project',
+                                message: 'This project and all associated data will be permanently deleted. This action cannot be undone.',
+                                itemName: `Project: ${projectName}`,
+                                icon: '🗑️',
+                                confirmText: 'Delete Permanently',
+                                cancelText: 'Cancel',
+                                onConfirm: () => {
+                                    fetch('project_registration.php', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                        body: `action=delete_project&id=${encodeURIComponent(id)}`
+                                    })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        msg.textContent = data.message;
+                                        msg.style.display = 'block';
+                                        msg.style.color = data.success ? '#dc2626' : '#f00';
+                                        setTimeout(() => { msg.style.display = 'none'; }, 3000);
+                                        loadSavedProjects();
+                                    });
+                                }
+                            });
                         });
                     });
 

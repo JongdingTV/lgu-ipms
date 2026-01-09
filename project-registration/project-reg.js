@@ -108,31 +108,40 @@ function editProject(index) {
 
 function deleteProject(index) {
     const project = projects[index];
-    if (confirm(`Are you sure you want to delete project "${project.name}"?\n\nThis action cannot be undone.`)) {
-        const formData = new FormData();
-        formData.append('action', 'delete_project');
-        formData.append('id', project.id);
+    showConfirmation({
+        title: 'Delete Project',
+        message: 'This action cannot be undone. The project and all associated data will be permanently deleted.',
+        itemName: `Project: ${project.name}`,
+        icon: '🗑️',
+        confirmText: 'Delete Permanently',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+            const formData = new FormData();
+            formData.append('action', 'delete_project');
+            formData.append('id', project.id);
 
-        fetch('project_registration.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                loadProjects(); // Reload projects from database
-                document.getElementById('formMessage').textContent = data.message;
-                document.getElementById('formMessage').style.display = 'block';
-                setTimeout(() => document.getElementById('formMessage').style.display = 'none', 3000);
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while deleting the project.');
-        });
-    }
+            fetch('project_registration.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadProjects(); // Reload projects from database
+                    document.getElementById('formMessage').textContent = data.message;
+                    document.getElementById('formMessage').style.display = 'block';
+                    setTimeout(() => document.getElementById('formMessage').style.display = 'none', 3000);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the project.');
+            });
+        }
+    });
+}
 }
 
 // Override the form submission to handle CRUD

@@ -91,6 +91,20 @@ function populateProjectDropdown() {
 let contractors = [];
 let editingId = null;
 
+// Helper function to get current contractors
+async function loadContractorsData() {
+    try {
+        const response = await fetch('contractors-api.php');
+        if (response.ok) {
+            return await response.json();
+        }
+        return [];
+    } catch (error) {
+        console.error('Error loading contractors data:', error);
+        return [];
+    }
+}
+
 async function loadContractors() {
     try {
         const response = await fetch('contractors-api.php');
@@ -164,21 +178,33 @@ function editContractor(id) {
 }
 
 async function deleteContractor(id) {
-    if (!confirm('Are you sure you want to delete this contractor?')) return;
-    try {
-        const response = await fetch('contractors-api.php', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
-        });
-        if (response.ok) {
-            await loadContractors();
-        } else {
-            console.error('Failed to delete contractor');
+    const contractors = await loadContractorsData();
+    const contractor = contractors.find(c => c.id === id);
+    
+    showConfirmation({
+        title: 'Delete Contractor',
+        message: 'This contractor will be permanently removed from the system. This action cannot be undone.',
+        itemName: `Contractor: ${contractor ? contractor.company : 'Unknown'}`,
+        icon: '🗑️',
+        confirmText: 'Delete Permanently',
+        cancelText: 'Cancel',
+        onConfirm: async () => {
+            try {
+                const response = await fetch('contractors-api.php', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                if (response.ok) {
+                    await loadContractors();
+                } else {
+                    console.error('Failed to delete contractor');
+                }
+            } catch (error) {
+                console.error('Error deleting contractor:', error);
+            }
         }
-    } catch (error) {
-        console.error('Error deleting contractor:', error);
-    }
+    });
 }
 
 document.getElementById('resetBtn').addEventListener('click', function() {

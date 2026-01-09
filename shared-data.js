@@ -59,3 +59,98 @@ const IPMS_DATA = {
 
 // Make IPMS_DATA available globally
 window.IPMS_DATA = IPMS_DATA;
+
+/* ============================================
+   CONFIRMATION MODAL UTILITY
+   ============================================ */
+
+// Create confirmation modal if it doesn't exist
+function initializeConfirmationModal() {
+    if (document.getElementById('confirmationModal')) return;
+    
+    const modal = document.createElement('div');
+    modal.id = 'confirmationModal';
+    modal.className = 'confirmation-modal';
+    modal.innerHTML = `
+        <div class="confirmation-content">
+            <div class="confirmation-icon" id="confirmIcon">⚠️</div>
+            <h2 class="confirmation-title" id="confirmTitle">Confirm Action</h2>
+            <p class="confirmation-message" id="confirmMessage">Are you sure?</p>
+            <div class="confirmation-item" id="confirmItemName" style="display: none;"></div>
+            <div class="confirmation-buttons">
+                <button class="confirmation-btn btn-confirm-cancel" id="btnConfirmCancel">Cancel</button>
+                <button class="confirmation-btn btn-confirm-delete" id="btnConfirmDelete">Delete</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Setup cancel button
+    document.getElementById('btnConfirmCancel').addEventListener('click', () => {
+        closeConfirmationModal();
+    });
+}
+
+// Show confirmation modal
+function showConfirmation(options = {}) {
+    initializeConfirmationModal();
+    
+    const {
+        title = 'Confirm Deletion',
+        message = 'Are you sure you want to delete this item?',
+        itemName = null,
+        icon = '⚠️',
+        confirmText = 'Delete',
+        cancelText = 'Cancel',
+        onConfirm = () => {},
+        onCancel = () => {}
+    } = options;
+    
+    const modal = document.getElementById('confirmationModal');
+    document.getElementById('confirmIcon').textContent = icon;
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+    
+    const itemNameDiv = document.getElementById('confirmItemName');
+    if (itemName) {
+        itemNameDiv.textContent = itemName;
+        itemNameDiv.style.display = 'block';
+    } else {
+        itemNameDiv.style.display = 'none';
+    }
+    
+    document.getElementById('btnConfirmDelete').textContent = confirmText;
+    document.getElementById('btnConfirmCancel').textContent = cancelText;
+    
+    // Remove old event listeners
+    const oldDeleteBtn = document.getElementById('btnConfirmDelete');
+    const newDeleteBtn = oldDeleteBtn.cloneNode(true);
+    oldDeleteBtn.parentNode.replaceChild(newDeleteBtn, oldDeleteBtn);
+    
+    // Add new event listeners
+    newDeleteBtn.addEventListener('click', () => {
+        closeConfirmationModal();
+        onConfirm();
+    });
+    
+    document.getElementById('btnConfirmCancel').onclick = () => {
+        closeConfirmationModal();
+        onCancel();
+    };
+    
+    modal.classList.add('show');
+}
+
+// Close confirmation modal
+function closeConfirmationModal() {
+    const modal = document.getElementById('confirmationModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+// Make functions globally available
+window.showConfirmation = showConfirmation;
+window.closeConfirmationModal = closeConfirmationModal;
+window.initializeConfirmationModal = initializeConfirmationModal;
+

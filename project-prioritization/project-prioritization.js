@@ -41,11 +41,22 @@ function updateStatus(id, status) {
 }
 
 function deleteInput(id) {
-    if (confirm('Are you sure you want to delete this input?')) {
-        const inputs = loadInputs().filter(i => i.id !== id);
-        saveInputs(inputs);
-        renderInputs();
-    }
+    const inputs = loadInputs();
+    const input = inputs.find(i => i.id === id);
+    
+    showConfirmation({
+        title: 'Delete Feedback',
+        message: 'This feedback entry will be permanently removed. This action cannot be undone.',
+        itemName: `Feedback: ${input ? input.subject : 'Unknown'}`,
+        icon: '🗑️',
+        confirmText: 'Delete Permanently',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+            const remaining = loadInputs().filter(i => i.id !== id);
+            saveInputs(remaining);
+            renderInputs();
+        }
+    });
 }
 
 // Filter event listeners with debouncing - safely check if elements exist
