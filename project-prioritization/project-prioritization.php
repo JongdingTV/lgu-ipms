@@ -108,169 +108,184 @@ $conn->close();
             <p>Review and prioritize citizen inputs for infrastructure project planning</p>
         </div>
 
-        <div class="inputs-section" style="max-width:1100px;margin:40px auto 0;">
-                <!-- Feedback Table -->
-            <div class="card" style="background:#fff;border-radius:18px;box-shadow:0 4px 24px rgba(37,99,235,0.07);padding:40px 32px;">
-                <h2 style="font-size:1.5rem;font-weight:700;color:#2563eb;margin-bottom:24px;letter-spacing:-1px;">User Feedback & Concerns</h2>
-                <div class="table-wrap" style="overflow-x:auto;">
+        <div class="inputs-section">
+            <!-- Search & Filter Controls -->
+            <div class="feedback-controls">
+                <div class="search-group">
+                    <label for="fbSearch">Search by Control Number or Name</label>
+                    <input id="fbSearch" type="search" placeholder="e.g., CTL-001 or John Doe">
+                </div>
+                <div class="feedback-actions">
+                    <button id="clearSearch" class="secondary">Clear</button>
+                    <button id="exportData">Export CSV</button>
+                </div>
+            </div>
+
+            <!-- Feedback Table -->
+            <div class="card">
+                <h2>User Feedback & Concerns</h2>
+                <div class="table-wrap">
                     <table id="inputsTable" class="feedback-table">
                         <thead>
                             <tr>
+                                <th>Control #</th>
                                 <th>Date</th>
                                 <th>Name</th>
                                 <th>Subject</th>
                                 <th>Category</th>
                                 <th>Location</th>
                                 <th>Status</th>
-                                <th>Description</th>
-                                <th>Action</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                         <?php if (empty($feedbacks)): ?>
                             <tr>
-                                <td colspan="8" style="text-align:center; color:#999; padding:32px; font-size:1.1em;">No feedback found in the database. Please submit feedback from the user dashboard.</td>
+                                <td colspan="8">
+                                    <div class="no-results">
+                                        <div class="no-results-icon">📋</div>
+                                        <div class="no-results-title">No Feedback Found</div>
+                                        <div class="no-results-text">No feedback submitted yet. Please check back later.</div>
+                                    </div>
+                                </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($feedbacks as $fb): ?>
+                            <?php $count = 1; foreach ($feedbacks as $fb): ?>
                                 <?php $fb_lc = array_change_key_case($fb, CASE_LOWER); ?>
                                 <tr class="<?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ? 'pending-row' : '' ?>">
+                                    <td><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></td>
                                     <td><?= isset($fb_lc['date_submitted']) ? htmlspecialchars($fb_lc['date_submitted']) : '-' ?></td>
                                     <td><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></td>
                                     <td><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></td>
                                     <td><?= isset($fb_lc['category']) ? htmlspecialchars($fb_lc['category']) : '-' ?></td>
                                     <td><?= isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-' ?></td>
                                     <td>
-                                        <form method="post" style="display:inline;">
-                                            <input type="hidden" name="feedback_id" value="<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">
-                                            <select name="new_status" class="status-select">
-                                                <option value="Pending" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ?'selected':'' ?>>Pending</option>
-                                                <option value="Reviewed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Reviewed') ?'selected':'' ?>>Reviewed</option>
-                                                <option value="Addressed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Addressed') ?'selected':'' ?>>Addressed</option>
-                                            </select>
-                                            <button type="submit" name="update_status" class="update-btn">Update</button>
-                                        </form>
-                                    </td>
-                                    <td>
-                                        <details>
-                                            <summary class="view-summary">View</summary>
-                                            <div class="desc-content">
-                                                <?= isset($fb_lc['description']) ? htmlspecialchars($fb_lc['description']) : '-' ?>
-                                            </div>
-                                        </details>
-                                    </td>
-                                    <td>
                                         <span class="badge <?= (isset($fb_lc['status']) ? strtolower($fb_lc['status']) : '') ?>">
                                             <?= isset($fb_lc['status']) ? htmlspecialchars($fb_lc['status']) : '-' ?>
                                         </span>
                                     </td>
+                                    <td>
+                                        <button class="edit-btn" onclick="openEditModal('edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">Edit</button>
+                                        <button class="view-btn" onclick="openModal('modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">View Details</button>
+                                    </td>
                                 </tr>
-                            <?php endforeach; ?>
+
+                                <!-- Edit Modal for Status -->
+                                <div id="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h2>Update Feedback Status</h2>
+                                            <button class="modal-close" onclick="closeEditModal('edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">&times;</button>
+                                        </div>
+                                        <form method="post" class="modal-form">
+                                            <div class="modal-body">
+                                                <div class="modal-field">
+                                                    <span class="modal-label">Control Number:</span>
+                                                    <div class="modal-value"><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></div>
+                                                </div>
+                                                <div class="modal-field">
+                                                    <span class="modal-label">From:</span>
+                                                    <div class="modal-value"><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></div>
+                                                </div>
+                                                <div class="modal-field">
+                                                    <span class="modal-label">Subject:</span>
+                                                    <div class="modal-value"><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></div>
+                                                </div>
+                                                <div class="modal-field">
+                                                    <label for="status-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal-label">Change Status:</label>
+                                                    <select id="status-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" name="new_status" class="status-dropdown">
+                                                        <option value="Pending" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ?'selected':'' ?>>Pending</option>
+                                                        <option value="Reviewed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Reviewed') ?'selected':'' ?>>Reviewed</option>
+                                                        <option value="Addressed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Addressed') ?'selected':'' ?>>Addressed</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <input type="hidden" name="feedback_id" value="<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">
+                                                <button type="button" class="modal-btn modal-btn-close" onclick="closeEditModal('edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">Cancel</button>
+                                                <button type="submit" name="update_status" class="modal-btn modal-btn-action">Save Changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <!-- Modal for this feedback -->
+                                <div id="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h2>Feedback Details</h2>
+                                            <button class="modal-close" onclick="closeModal('modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">&times;</button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="modal-field">
+                                                <span class="modal-label">Control Number:</span>
+                                                <div class="modal-value"><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></div>
+                                            </div>
+                                            <div class="modal-field">
+                                                <span class="modal-label">Submitted By:</span>
+                                                <div class="modal-value"><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></div>
+                                            </div>
+                                            <div class="modal-field">
+                                                <span class="modal-label">Date Submitted:</span>
+                                                <div class="modal-value"><?= isset($fb_lc['date_submitted']) ? htmlspecialchars($fb_lc['date_submitted']) : '-' ?></div>
+                                            </div>
+                                            <div class="modal-field">
+                                                <span class="modal-label">Subject:</span>
+                                                <div class="modal-value"><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></div>
+                                            </div>
+                                            <div class="modal-field">
+                                                <span class="modal-label">Category:</span>
+                                                <div class="modal-value"><?= isset($fb_lc['category']) ? htmlspecialchars($fb_lc['category']) : '-' ?></div>
+                                            </div>
+                                            <div class="modal-field">
+                                                <span class="modal-label">Location:</span>
+                                                <div class="modal-value"><?= isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-' ?></div>
+                                            </div>
+                                            <div class="modal-field">
+                                                <span class="modal-label">Status:</span>
+                                                <div class="modal-value">
+                                                    <span class="badge <?= (isset($fb_lc['status']) ? strtolower($fb_lc['status']) : '') ?>">
+                                                        <?= isset($fb_lc['status']) ? htmlspecialchars($fb_lc['status']) : '-' ?>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="modal-field">
+                                                <span class="modal-label">Message / Description:</span>
+                                                <div class="modal-value"><?= isset($fb_lc['description']) ? htmlspecialchars($fb_lc['description']) : '-' ?></div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button class="modal-btn modal-btn-close" onclick="closeModal('modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php $count++; endforeach; ?>
                         <?php endif; ?>
                         </tbody>
                     </table>
-<style>
-.feedback-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(37,99,235,0.07);
-}
-.feedback-table th, .feedback-table td {
-  padding: 14px 10px;
-  text-align: left;
-  border-bottom: 1px solid #e5e7eb;
-}
-.feedback-table th {
-  background: #f1f5f9;
-  color: #1e3a8a;
-  font-weight: 600;
-  font-size: 1em;
-}
-.feedback-table tr:last-child td {
-  border-bottom: none;
-}
-.pending-row {
-  background: #fef9c3;
-}
-.status-select {
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #1e293b;
-}
-.update-btn {
-  padding: 4px 10px;
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 6px;
-}
-.update-btn:hover {
-  background: #1e40af;
-}
-.view-summary {
-  cursor: pointer;
-  color: #2563eb;
-  font-weight: 500;
-}
-.desc-content {
-  padding: 8px 0;
-  max-width: 300px;
-  white-space: pre-wrap;
-  color: #334155;
-}
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.95em;
-  font-weight: 500;
-  background: #e0e7ff;
-  color: #3730a3;
-}
-.badge.pending {
-  background: #fef9c3;
-  color: #92400e;
-}
-.badge.reviewed {
-  background: #d1fae5;
-  color: #065f46;
-}
-.badge.addressed {
-  background: #e0f2fe;
-  color: #2563eb;
-}
-</style>
                 </div>
             </div>
         </div>
 
-        <div class="summary-section" style="max-width:1100px;margin:32px auto 0;">
-            <div class="card" style="background:#fff;border-radius:18px;box-shadow:0 4px 24px rgba(37,99,235,0.07);padding:32px 32px;">
-                <h2 style="font-size:1.2rem;font-weight:700;color:#2563eb;margin-bottom:18px;">Feedback Summary</h2>
-                <div class="summary" style="display:flex;gap:40px;justify-content:center;flex-wrap:wrap;">
-                    <div class="stat" style="text-align:center;min-width:120px;">
-                        <div id="totalInputs" style="font-size:1.5em;font-weight:700;color:#1e3a8a;"><?= $totalInputs ?></div>
-                        <small style="color:#64748b;">Total Feedback</small>
+        <div class="summary-section">
+            <div class="card">
+                <h2>Feedback Summary</h2>
+                <div class="summary">
+                    <div class="stat">
+                        <div id="totalInputs"><?= $totalInputs ?></div>
+                        <small>Total Feedback</small>
                     </div>
-                    <div class="stat" style="text-align:center;min-width:120px;">
-                        <div id="criticalInputs" style="font-size:1.5em;font-weight:700;color:#e11d48;"><?= $criticalInputs ?></div>
-                        <small style="color:#64748b;">Critical Priority</small>
+                    <div class="stat">
+                        <div id="criticalInputs" style="color: #dc2626;"><?= $criticalInputs ?></div>
+                        <small>Critical Priority</small>
                     </div>
-                    <div class="stat" style="text-align:center;min-width:120px;">
-                        <div id="highInputs" style="font-size:1.5em;font-weight:700;color:#f59e42;"><?= $highInputs ?></div>
-                        <small style="color:#64748b;">High Priority</small>
+                    <div class="stat">
+                        <div id="highInputs" style="color: #f59e0b;"><?= $highInputs ?></div>
+                        <small>High Priority</small>
                     </div>
-                    <div class="stat" style="text-align:center;min-width:120px;">
-                        <div id="pendingInputs" style="font-size:1.5em;font-weight:700;color:#2563eb;"><?= $pendingInputs ?></div>
-                        <small style="color:#64748b;">Pending Status</small>
+                    <div class="stat">
+                        <div id="pendingInputs" style="color: #3762c8;"><?= $pendingInputs ?></div>
+                        <small>Pending Status</small>
                     </div>
                 </div>
             </div>
@@ -283,5 +298,116 @@ $conn->close();
 
     <script src="../shared-data.js?v=1"></script>
     <script src="project-prioritization.js?v=99"></script>
+    <script>
+        // Modal Functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Edit Modal Functions
+        function openEditModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                document.querySelectorAll('.modal.show').forEach(modal => {
+                    modal.classList.remove('show');
+                });
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('fbSearch');
+        const clearBtn = document.getElementById('clearSearch');
+        const table = document.getElementById('inputsTable');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+        function filterTable() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            let visibleCount = 0;
+
+            Array.from(rows).forEach(row => {
+                if (row.querySelector('.no-results')) return;
+
+                const controlNum = row.cells[0]?.textContent.toLowerCase() || '';
+                const name = row.cells[2]?.textContent.toLowerCase() || '';
+
+                const matches = searchTerm === '' || 
+                               controlNum.includes(searchTerm) || 
+                               name.includes(searchTerm);
+
+                row.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            // Show no results message if needed
+            const noResultsRow = Array.from(rows).find(r => r.querySelector('.no-results'));
+            if (noResultsRow) {
+                noResultsRow.style.display = visibleCount === 0 ? '' : 'none';
+            }
+        }
+
+        searchInput.addEventListener('input', filterTable);
+
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            filterTable();
+            searchInput.focus();
+        });
+
+        // Export CSV function
+        document.getElementById('exportData').addEventListener('click', function() {
+            let csv = 'Control Number,Date,Name,Subject,Category,Location,Status\n';
+            
+            Array.from(rows).forEach((row, index) => {
+                if (row.querySelector('.no-results')) return;
+                
+                const cells = row.getElementsByTagName('td');
+                if (cells.length > 0 && row.style.display !== 'none') {
+                    const rowData = [
+                        cells[0]?.textContent || '',
+                        cells[1]?.textContent || '',
+                        cells[2]?.textContent || '',
+                        cells[3]?.textContent || '',
+                        cells[4]?.textContent || '',
+                        cells[5]?.textContent || '',
+                        cells[6]?.textContent || ''
+                    ];
+                    csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
+                }
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'feedback_' + new Date().toISOString().split('T')[0] + '.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+    </script>
 </body>
 </html>

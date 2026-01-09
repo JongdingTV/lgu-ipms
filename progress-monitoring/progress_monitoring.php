@@ -78,7 +78,7 @@ $conn->close();
             <p>View, filter and update project progress</p>
         </div>
 
-        <div class="recent-projects">
+        <div class="recent-projects card">
             <div class="pm-controls">
                 <div class="pm-left">
                     <input id="pmSearch" type="search" placeholder="Search by project code, name or location">
