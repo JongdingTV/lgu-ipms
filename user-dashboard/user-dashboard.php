@@ -44,8 +44,8 @@ $conn->close();
         <div class="nav-links">
             <a href="user-dashboard.php" class="active"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
             <a href="user-progress-monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon"> Progress Monitoring</a>
-            <a href="user-feedback.php"><img src="../dashboard/person.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php"><img src="../dashboard/person.png" class="nav-icon"> Settings</a>
+            <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
+            <a href="user-settings.php"><img src="settings.png" class="nav-icon"> Settings</a>
         </div>
         <div class="nav-user">
             <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
@@ -203,6 +203,7 @@ $conn->close();
             <table class="projects-table" style="width:100%;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.07);overflow:hidden;">
                 <thead style="background:#f1f5f9;">
                     <tr>
+                        <th style="padding:12px 8px;font-weight:600;color:#1e3a8a;">Control No.</th>
                         <th style="padding:12px 8px;font-weight:600;color:#1e3a8a;">Date</th>
                         <th style="padding:12px 8px;font-weight:600;color:#1e3a8a;">Subject</th>
                         <th style="padding:12px 8px;font-weight:600;color:#1e3a8a;">Category</th>
@@ -212,16 +213,20 @@ $conn->close();
                 <tbody>
                 <?php
                 if ($feedbacks && $feedbacks->num_rows > 0) {
+                    $count = 1;
                     while ($fb = $feedbacks->fetch_assoc()) {
+                        $controlNo = 'CTL-' . str_pad($count, 3, '0', STR_PAD_LEFT);
                         echo '<tr>';
-                        echo '<td>' . date('M d, Y', strtotime($fb['date_submitted'])) . '</td>';
-                        echo '<td>' . htmlspecialchars($fb['subject']) . '</td>';
-                        echo '<td>' . htmlspecialchars($fb['category']) . '</td>';
-                        echo '<td><span class="status-badge">' . htmlspecialchars($fb['status']) . '</span></td>';
+                        echo '<td style="padding:12px 8px;"><strong>' . $controlNo . '</strong></td>';
+                        echo '<td style="padding:12px 8px;">' . date('M d, Y', strtotime($fb['date_submitted'])) . '</td>';
+                        echo '<td style="padding:12px 8px;">' . htmlspecialchars($fb['subject']) . '</td>';
+                        echo '<td style="padding:12px 8px;">' . htmlspecialchars($fb['category']) . '</td>';
+                        echo '<td style="padding:12px 8px;"><span class="status-badge">' . htmlspecialchars($fb['status']) . '</span></td>';
                         echo '</tr>';
+                        $count++;
                     }
                 } else {
-                    echo '<tr><td colspan="4" style="text-align:center;padding:20px;color:#999;">No feedback submitted yet</td></tr>';
+                    echo '<tr><td colspan="5" style="text-align:center;padding:20px;color:#999;">No feedback submitted yet</td></tr>';
                 }
                 ?>
                 </tbody>
