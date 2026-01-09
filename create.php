@@ -81,16 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="style - Copy.css">
 <style>
 body {
     min-height: 100vh;
-    height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    padding-top: 60px;
-    padding-bottom: 60px;
+    padding-top: 80px;
+    padding-bottom: 80px;
 
     /* background image + blur */
     background: url("cityhall.jpeg") center/cover no-repeat fixed;
@@ -112,30 +110,17 @@ body::before {
 
 /* Ensure content is above the blur */
 .nav { 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    right: 0; 
-    width: 100%; 
-    z-index: 100;
-    height: 60px;
-    padding: 12px 60px;
-}
-
-.footer {
     position: fixed;
-    bottom: 0;
+    top: 0;
     left: 0;
     right: 0;
     width: 100%;
-    z-index: 1;
-    height: 60px;
-    padding: 12px 45px;
+    z-index: 100;
 }
 
-.wrapper { 
-    position: relative; 
-    z-index: 1; 
+.wrapper, .footer { 
+    position: relative;
+    z-index: 1;
 }
 
 /* Fixed wrapper - no scroll */
@@ -143,20 +128,19 @@ body::before {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 30px 20px;
+    align-items: flex-start;
+    padding: 40px 20px;
     overflow: visible;
 }
 
-/* Make card fixed size */
+/* Card layout (auto height; page scroll instead of inner scroll) */
 .wrapper .card {
     width: 620px;
     max-width: 95%;
-    height: 570px;
-    padding: 24px 36px 24px 36px;
+    padding: 28px 36px 28px 36px;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    margin: 0 auto;
 }
 
 /* Card header (logo, title, subtitle) */
@@ -260,15 +244,10 @@ body::before {
     border-radius: 2px;
 }
 
-/* Form content area - scrollable if needed */
+/* Form content area - no inner scrollbar, let page scroll */
 .form-content {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    margin-bottom: 12px;
-    padding-right: 8px;
-    min-height: 260px;
-    max-height: 260px;
+    margin-bottom: 16px;
 }
 
 /* Custom scrollbar */
@@ -535,18 +514,13 @@ body::before {
     }
     
     .wrapper {
-        padding: 15px 10px;
+        padding: 20px 10px;
+        align-items: stretch;
     }
     
     .wrapper .card { 
-        padding: 18px 18px 20px 18px;
+        padding: 20px 18px 22px 18px;
         width: 100%;
-        height: 520px;
-    }
-    
-    .form-content {
-        min-height: 240px;
-        max-height: 240px;
     }
     
     .progress-step-label {
