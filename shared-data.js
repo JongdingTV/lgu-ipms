@@ -154,3 +154,35 @@ window.showConfirmation = showConfirmation;
 window.closeConfirmationModal = closeConfirmationModal;
 window.initializeConfirmationModal = initializeConfirmationModal;
 
+/* ============================================
+   LOGOUT CONFIRMATION
+   ============================================ */
+
+// Setup logout confirmation on all pages
+function setupLogoutConfirmation() {
+    const logoutLinks = document.querySelectorAll('.nav-logout');
+    logoutLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const logoutUrl = link.getAttribute('href');
+            
+            showConfirmation({
+                title: 'Logout',
+                message: 'You will be logged out of your account. Are you sure you want to continue?',
+                itemName: 'Session will be ended',
+                icon: '🚪',
+                confirmText: 'Logout',
+                cancelText: 'Cancel',
+                onConfirm: () => {
+                    window.location.href = logoutUrl;
+                }
+            });
+        });
+    });
+}
+
+// Initialize logout confirmation when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    setupLogoutConfirmation();
+});
+
