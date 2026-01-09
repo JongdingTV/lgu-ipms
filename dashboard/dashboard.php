@@ -45,7 +45,7 @@ $conn->close();
         <div class="nav-user">
             <img src="person.png" alt="User Icon" class="user-icon">
             <span class="nav-username">Welcome <?php echo isset($_SESSION['employee_name']) ? $_SESSION['employee_name'] : 'Admin'; ?></span>
-            <a href="../employee-login.php" class="nav-logout">Logout</a>
+            <a href="../index.php" class="nav-logout">Logout</a>
         </div>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar">
