@@ -72,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feedback - User Dashboard</title>
+    <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="user-dashboard.css">
 </head>
 <body>
