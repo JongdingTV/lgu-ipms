@@ -11,14 +11,27 @@ if ($conn->connect_error) {
 if (isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    $result = $conn->query("SELECT * FROM projects ORDER BY created_at DESC");
+    // Use prepared statement for security and performance
+    $stmt = $conn->prepare("
+        SELECT 
+            id, code, name, description, location, province, sector, 
+            budget, progress, status, project_manager, 
+            start_date, end_date, duration_months, created_at 
+        FROM projects 
+        ORDER BY created_at DESC 
+        LIMIT 500
+    ");
+    
     $projects = [];
     
-    if ($result) {
+    if ($stmt) {
+        $stmt->execute();
+        $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
             $projects[] = $row;
         }
         $result->free();
+        $stmt->close();
     }
     
     echo json_encode($projects);
@@ -75,49 +88,76 @@ $conn->close();
     <section class="main-content">
         <div class="dash-header">
             <h1>Progress Monitoring</h1>
-            <p>View, filter and update project progress</p>
+            <p>Track and manage project progress in real-time</p>
         </div>
 
-        <div class="recent-projects card">
-            <div class="pm-controls">
-                <div class="pm-left">
-                    <input id="pmSearch" type="search" placeholder="Search by project code, name or location">
-                </div>
-                <div class="pm-right">
-                    <select id="pmStatusFilter" title="Filter by status">
-                        <option value="">All Status</option>
-                        <option>Draft</option>
-                        <option>For Approval</option>
-                        <option>Approved</option>
-                        <option>On-hold</option>
-                        <option>Cancelled</option>
-                    </select>
+        <div class="pm-section card">
+            <!-- Control Panel -->
+            <div class="pm-controls-wrapper">
+                <div class="pm-controls">
+                    <div class="pm-left">
+                        <label for="pmSearch">Search Projects</label>
+                        <input id="pmSearch" type="search" placeholder="🔍 Search by code, name or location...">
+                    </div>
+                    <div class="pm-right">
+                        <div class="filter-group">
+                            <label for="pmStatusFilter">Status</label>
+                            <select id="pmStatusFilter" title="Filter by status">
+                                <option value="">All Status</option>
+                                <option>Draft</option>
+                                <option>For Approval</option>
+                                <option>Approved</option>
+                                <option>On-hold</option>
+                                <option>Cancelled</option>
+                            </select>
+                        </div>
 
-                    <select id="pmSectorFilter" title="Filter by sector">
-                        <option value="">All Sectors</option>
-                        <option>Road</option>
-                        <option>Drainage</option>
-                        <option>Building</option>
-                        <option>Water</option>
-                        <option>Sanitation</option>
-                        <option>Other</option>
-                    </select>
+                        <div class="filter-group">
+                            <label for="pmSectorFilter">Sector</label>
+                            <select id="pmSectorFilter" title="Filter by sector">
+                                <option value="">All Sectors</option>
+                                <option>Road</option>
+                                <option>Drainage</option>
+                                <option>Building</option>
+                                <option>Water</option>
+                                <option>Sanitation</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
 
-                    <select id="pmSort" title="Sort">
-                        <option value="createdAt_desc">Newest</option>
-                        <option value="createdAt_asc">Oldest</option>
-                        <option value="progress_desc">Progress (high → low)</option>
-                        <option value="progress_asc">Progress (low → high)</option>
-                    </select>
+                        <div class="filter-group">
+                            <label for="pmSort">Sort</label>
+                            <select id="pmSort" title="Sort">
+                                <option value="createdAt_desc">Newest</option>
+                                <option value="createdAt_asc">Oldest</option>
+                                <option value="progress_desc">Progress (high → low)</option>
+                                <option value="progress_asc">Progress (low → high)</option>
+                            </select>
+                        </div>
 
-                    <button id="exportCsv" type="button">Export CSV</button>
+                        <button id="exportCsv" type="button" class="btn-export">📥 Export CSV</button>
+                    </div>
                 </div>
             </div>
 
-            <h3>Tracked Projects</h3>
-            <div id="projectsList" class="projects-list">Loading projects...</div>
+            <!-- Projects Display -->
+            <div class="pm-content">
+                <h3>Tracked Projects</h3>
+                <div id="projectsList" class="projects-list">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Loading projects...</p>
+                    </div>
+                </div>
 
-            <div id="pmEmpty" class="pm-empty" style="display:none;">No projects match your filters.</div>
+                <div id="pmEmpty" class="pm-empty" style="display:none;">
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p>No projects match your filters</p>
+                        <small>Try adjusting your search criteria</small>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 

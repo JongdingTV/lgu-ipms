@@ -1,18 +1,18 @@
-document.getElementById('toggleSidebar').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
+// Debounce helper for expensive operations
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
-document.getElementById('toggleSidebarShow').addEventListener('click', function(e) {
-    e.preventDefault();
-    
+// Optimize event listeners
+const sidebarToggle = () => {
     const navbar = document.getElementById('navbar');
     const body = document.body;
     const toggleBtn = document.getElementById('showSidebarBtn');
@@ -20,7 +20,12 @@ document.getElementById('toggleSidebarShow').addEventListener('click', function(
     navbar.classList.toggle('hidden');
     body.classList.toggle('sidebar-hidden');
     toggleBtn.classList.toggle('show');
-});
+};
+
+const toggleBtn1 = document.getElementById('toggleSidebar');
+const toggleBtn2 = document.getElementById('toggleSidebarShow');
+if (toggleBtn1) toggleBtn1.addEventListener('click', (e) => { e.preventDefault(); sidebarToggle(); });
+if (toggleBtn2) toggleBtn2.addEventListener('click', (e) => { e.preventDefault(); sidebarToggle(); });
 
 // Demo fallback data (used when IPMS_DATA is not available)
 const demoProjects = [];
@@ -119,18 +124,21 @@ function updateQuickStats(analytics) {
     if (statItems[2]) statItems[2].textContent = (analytics.budgetVariance >= 0 ? '+' : '') + analytics.budgetVariance + '%';
 }
 
+// Debounced refresh function
+const debouncedLoadDashboardData = debounce(loadDashboardData, 500);
+
 // Auto-refresh dashboard when returning from other pages
 function setupAutoRefresh() {
     // Refresh on page load
     loadDashboardData();
 
     // Refresh when window gains focus (user returns to dashboard)
-    window.addEventListener('focus', loadDashboardData);
+    window.addEventListener('focus', debouncedLoadDashboardData);
 
-    // Refresh every 30 seconds if page is visible
+    // Refresh every 30 seconds if page is visible (use debounce to prevent overlapping calls)
     setInterval(() => {
         if (!document.hidden) {
-            loadDashboardData();
+            debouncedLoadDashboardData();
         }
     }, 30000);
 }
@@ -153,20 +161,18 @@ function setupMetricInteractions() {
             btn.innerText = '⋯';
             card.appendChild(btn);
             // placeholder for menu click
-            btn.addEventListener('click', (e) => { e.stopPropagation(); /* future menu actions */ });
+            btn.addEventListener('click', (e) => { e.stopPropagation(); });
         }
 
         // click behavior on the card itself
         card.style.cursor = 'pointer';
-        card.addEventListener('click', async function () {
+        card.addEventListener('click', function () {
             // animate
             card.classList.add('pulse');
             setTimeout(() => card.classList.remove('pulse'), 380);
 
             // determine action by index or data attribute
-            // assumed order: 0 = Total Projects, 1 = In Progress, 2 = Completed, 3 = Budget
             if (idx === 0) {
-                // show all projects
                 const list = fetchProjectsByFilter('all');
                 updateRecentProjectsTable(list);
             } else if (idx === 1) {
@@ -176,7 +182,6 @@ function setupMetricInteractions() {
                 const list = fetchProjectsByFilter('completed');
                 updateRecentProjectsTable(list);
             } else if (idx === 3) {
-                // show budget details in the chart placeholder area
                 if (typeof IPMS_DATA !== 'undefined' && IPMS_DATA.getDashboardMetrics) {
                     const metrics = IPMS_DATA.getDashboardMetrics();
                     if (metrics && metrics.budget) {
@@ -189,7 +194,6 @@ function setupMetricInteractions() {
 }
 
 function fetchProjectsByFilter(filter) {
-    // If no backend data provider is available, return demo data for the example
     if (typeof IPMS_DATA === 'undefined') {
         const all = demoProjects.slice();
         if (filter === 'all') return all;
@@ -198,7 +202,6 @@ function fetchProjectsByFilter(filter) {
         return [];
     }
 
-    // try native API if available
     try {
         if (filter === 'all') {
             if (IPMS_DATA.getAllProjects) return IPMS_DATA.getAllProjects();
@@ -223,8 +226,7 @@ function fetchProjectsByFilter(filter) {
     return [];
 }
 
-// run interactions setup after initial render
+// Run interactions setup after initial render
 document.addEventListener('DOMContentLoaded', () => {
-    // small delay to ensure metric cards are rendered
     setTimeout(setupMetricInteractions, 120);
 });

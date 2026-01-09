@@ -38,10 +38,10 @@ function submitFeedback($conn) {
     $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
     
     // Get POST data
-    $street = $conn->real_escape_string($_POST['street'] ?? '');
-    $barangay = $conn->real_escape_string($_POST['barangay'] ?? '');
-    $category = $conn->real_escape_string($_POST['category'] ?? '');
-    $feedback = $conn->real_escape_string($_POST['feedback'] ?? '');
+    $street = $_POST['street'] ?? '';
+    $barangay = $_POST['barangay'] ?? '';
+    $category = $_POST['category'] ?? '';
+    $feedback = $_POST['feedback'] ?? '';
     
     // Validate required fields
     if (empty($street) || empty($barangay) || empty($category) || empty($feedback)) {

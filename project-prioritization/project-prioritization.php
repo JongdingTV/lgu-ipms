@@ -12,14 +12,16 @@ if ($conn->connect_error) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    $result = $conn->query("SELECT * FROM projects ORDER BY priority DESC, created_at DESC");
+    $stmt = $conn->prepare("SELECT id, name, description, priority, status, created_at FROM projects ORDER BY priority DESC, created_at DESC LIMIT 100");
     $projects = [];
     
-    if ($result) {
+    if ($stmt) {
+        $stmt->execute();
+        $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
             $projects[] = $row;
         }
-        $result->free();
+        $stmt->close();
     }
     
     echo json_encode($projects);
@@ -29,20 +31,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 // Handle feedback status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     $feedback_id = intval($_POST['feedback_id']);
-    $new_status = $conn->real_escape_string($_POST['new_status']);
-    $conn->query("UPDATE feedback SET status='$new_status' WHERE id=$feedback_id");
+    $new_status = $_POST['new_status'];
+    
+    // Validate status value
+    $allowed_statuses = ['Pending', 'Reviewed', 'Addressed'];
+    if (!in_array($new_status, $allowed_statuses)) {
+        header('Location: project-prioritization.php?error=invalid_status');
+        exit;
+    }
+    
+    $stmt = $conn->prepare("UPDATE feedback SET status = ? WHERE id = ?");
+    if ($stmt) {
+        $stmt->bind_param('si', $new_status, $feedback_id);
+        $stmt->execute();
+        $stmt->close();
+    }
     header('Location: project-prioritization.php');
     exit;
 }
 
-// Fetch feedback for display
-$feedback_result = $conn->query("SELECT * FROM feedback ORDER BY date_submitted DESC");
-$feedbacks = [];
-if ($feedback_result) {
+// Fetch feedback for display with pagination
+$offset = 0;
+$limit = 50;
+if (isset($_GET['page']) && is_numeric($_GET['page'])) {
+    $offset = (intval($_GET['page']) - 1) * $limit;
+}
+
+$stmt = $conn->prepare("SELECT id, user_name, subject, description, category, location, status, date_submitted FROM feedback ORDER BY date_submitted DESC LIMIT ? OFFSET ?");
+if ($stmt) {
+    $stmt->bind_param('ii', $limit, $offset);
+    $stmt->execute();
+    $feedback_result = $stmt->get_result();
+    $feedbacks = [];
     while ($row = $feedback_result->fetch_assoc()) {
         $feedbacks[] = $row;
     }
-    $feedback_result->free();
+    $stmt->close();
+} else {
+    $feedbacks = [];
 }
 
 // Feedback summary stats
@@ -299,34 +325,67 @@ $conn->close();
     <script src="../shared-data.js?v=1"></script>
     <script src="project-prioritization.js?v=99"></script>
     <script>
+        // Initialize all modals to closed state
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.remove('show');
+        });
+
         // Modal Functions
         function openModal(modalId) {
-            document.getElementById(modalId).classList.add('show');
-            document.body.style.overflow = 'hidden';
+            // Close all other modals first
+            document.querySelectorAll('.modal.show').forEach(m => {
+                m.classList.remove('show');
+            });
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
         }
 
         function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('show');
-            document.body.style.overflow = 'auto';
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            }
         }
 
         // Edit Modal Functions
         function openEditModal(modalId) {
-            document.getElementById(modalId).classList.add('show');
-            document.body.style.overflow = 'hidden';
+            // Close all other modals first
+            document.querySelectorAll('.modal.show').forEach(m => {
+                m.classList.remove('show');
+            });
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
         }
 
         function closeEditModal(modalId) {
-            document.getElementById(modalId).classList.remove('show');
-            document.body.style.overflow = 'auto';
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            }
         }
 
-        // Close modal when clicking outside
+        // Close modal when clicking outside (only on the overlay, not the content)
         window.addEventListener('click', function(event) {
-            if (event.target.classList.contains('modal')) {
+            // Only close if clicking on the modal overlay itself, not on content
+            if (event.target.classList && event.target.classList.contains('modal')) {
                 event.target.classList.remove('show');
                 document.body.style.overflow = 'auto';
             }
+        }, true);
+
+        // Prevent event bubbling from modal content
+        document.querySelectorAll('.modal-content').forEach(content => {
+            content.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
         });
 
         // Close modal with Escape key

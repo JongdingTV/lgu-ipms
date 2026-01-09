@@ -1,6 +1,19 @@
 // Project Prioritization Module
 console.log('project-prioritization.js loaded');
 
+// Debounce helper for search operations
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 // All feedback table manipulation code is disabled to allow PHP-rendered feedback to display from the database.
 function updateSummary(inputs) {
     document.getElementById('totalInputs').textContent = inputs.length;
@@ -35,11 +48,14 @@ function deleteInput(id) {
     }
 }
 
-// Filter event listeners - safely check if elements exist
-['filterType', 'filterCategory', 'filterUrgency'].forEach(id => {
+// Filter event listeners with debouncing - safely check if elements exist
+const filterElements = ['filterType', 'filterCategory', 'filterUrgency'];
+const debouncedRenderInputs = debounce(renderInputs, 300);
+
+filterElements.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
-        el.addEventListener('change', renderInputs);
+        el.addEventListener('change', debouncedRenderInputs);
     }
 });
 
