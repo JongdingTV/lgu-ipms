@@ -301,7 +301,7 @@ body::before {
 
         <img src="logocityhall.png" class="icon-top">
 
-        <h2 class="title">LGU Login</h2>
+        <h2 class="title">LGU Login TRY</h2>
 
         <?php if ($showOtpForm && isset($_SESSION['pending_user'])): ?>
             <p class="subtitle">We sent a one-time verification code to your email. Enter it below to continue.</p>
