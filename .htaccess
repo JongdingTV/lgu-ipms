@@ -1,0 +1,13 @@
+# Allow direct access to physical files and directories
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Allow direct access to existing files and directories
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    # Don't rewrite requests for non-existent files/dirs (let them 404 naturally)
+</IfModule>
+
+# Ensure PHP files are executable
+<FilesMatch "\.php$">
+    Allow from all
+</FilesMatch>

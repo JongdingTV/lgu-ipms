@@ -3,36 +3,41 @@
 // Call this in PHP and echo the output in the HTML head
 
 function get_app_config_script() {
-    $document_root = $_SERVER['DOCUMENT_ROOT'];
-    $script_path = __DIR__;
+    $pathname = $_SERVER['REQUEST_URI'] ?? '/';
+    $path_parts = array_filter(explode('/', trim($pathname, '/')));
     
-    // Relative path from document root
-    $relative_path = str_replace($document_root, '', $script_path);
-    $path_parts = array_filter(explode('/', trim($relative_path, '/')));
-    
-    // Known subdirectories
+    // Known subdirectories in the app
     $known_dirs = ['dashboard', 'contractors', 'project-registration', 'progress-monitoring', 
                    'budget-resources', 'task-milestone', 'project-prioritization', 'user-dashboard'];
     
     $app_root = '/';
     
-    // Find if we're in a subdirectory
+    // Find which known directory we're in
     foreach ($path_parts as $i => $part) {
         if (in_array($part, $known_dirs)) {
+            // The root is everything before this known directory
             $app_root = '/' . implode('/', array_slice($path_parts, 0, $i)) . '/';
             break;
         }
     }
     
-    // Fallback: if we have path parts and first one isn't a known dir, it's the app
-    if ($app_root === '/' && count($path_parts) > 0) {
-        $app_root = '/' . $path_parts[0] . '/';
+    // If no known directory found and we have path parts, use the first one as app root
+    if ($app_root === '/' && count($path_parts) > 0 && !in_array($path_parts[0], $known_dirs)) {
+        // Check if the first part looks like an app name (not a file)
+        if (!preg_match('/\.(php|html|js|css)$/', $path_parts[0])) {
+            $app_root = '/' . $path_parts[0] . '/';
+        }
     }
     
     return <<<HTML
 <script>
 window.APP_ROOT = '$app_root';
 window.getApiUrl = function(endpoint) {
+    // If APP_ROOT is /, endpoint already has the correct path
+    // If APP_ROOT is something else, prepend it
+    if (window.APP_ROOT === '/') {
+        return '/' + endpoint;
+    }
     return window.APP_ROOT + endpoint;
 };
 console.log('APP_ROOT configured as:', window.APP_ROOT);
