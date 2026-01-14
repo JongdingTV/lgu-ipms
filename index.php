@@ -1,7 +1,7 @@
 <?php
 session_start();
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+    $conn = new mysqli('localhost', 'root', '', 'lgu_ipms');
     if ($conn->connect_error) {
         die('Database connection failed: ' . $conn->connect_error);
     }
