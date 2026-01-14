@@ -42,6 +42,7 @@ $db->close();
     <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="user-dashboard.css">
     <?php echo get_app_config_script(); ?>
+    <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
     <header class="nav" id="navbar">

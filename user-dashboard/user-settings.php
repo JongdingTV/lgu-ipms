@@ -73,6 +73,7 @@ $db->close();
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="user-dashboard.css">
     <?php echo get_app_config_script(); ?>
+    <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
     <header class="nav" id="navbar">
