@@ -16,7 +16,13 @@ function get_app_config_script() {
     foreach ($path_parts as $i => $part) {
         if (in_array($part, $known_dirs)) {
             // The root is everything before this known directory
-            $app_root = '/' . implode('/', array_slice($path_parts, 0, $i)) . '/';
+            if ($i > 0) {
+                // There are path segments before the known directory
+                $app_root = '/' . implode('/', array_slice($path_parts, 0, $i)) . '/';
+            } else {
+                // Known directory is the first part - we're at app root
+                $app_root = '/';
+            }
             break;
         }
     }
