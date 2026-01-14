@@ -10,7 +10,7 @@ if ($db->connect_error) {
 // Get project statistics
 $totalProjects = $db->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'];
 $inProgressProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'];
-$completedProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed')")->fetch_assoc()['count'];
+$completedProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed'")->fetch_assoc()['count'];
 $totalBudget = $db->query("SELECT COALESCE(SUM(budget), 0) as total FROM projects")->fetch_assoc()['total'];
 
 // Get recent projects
