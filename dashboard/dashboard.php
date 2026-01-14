@@ -4,18 +4,18 @@ session_start();
 require '../database.php';
 require '../config-path.php';
 if ($db->connect_error) {
-    die('Database connection failed: ' . $conn->connect_error);
+    die('Database connection failed: ' . $db->connect_error);
 }
 
 // Get project statistics
-$totalProjects = $conn->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'];
-$inProgressProjects = $conn->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'];
-$completedProjects = $conn->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed'")->fetch_assoc()['count'];
-$totalBudget = $conn->query("SELECT COALESCE(SUM(budget), 0) as total FROM projects")->fetch_assoc()['total'];
+$totalProjects = $db->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'];
+$inProgressProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'];
+$completedProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed')")->fetch_assoc()['count'];
+$totalBudget = $db->query("SELECT COALESCE(SUM(budget), 0) as total FROM projects")->fetch_assoc()['total'];
 
 // Get recent projects
-$recentProjects = $conn->query("SELECT id, name, location, status, budget FROM projects ORDER BY created_at DESC LIMIT 5");
-$conn->close();
+$recentProjects = $db->query("SELECT id, name, location, status, budget FROM projects ORDER BY created_at DESC LIMIT 5");
+$db->close();
 ?>
 <html>
 <head>

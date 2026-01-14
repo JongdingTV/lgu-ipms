@@ -41,9 +41,9 @@ function isRememberedDeviceForUser($userId) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
-    if ($conn->connect_error) {
-        die('Database connection failed: ' . $conn->connect_error);
+    $db = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
+    if ($db->connect_error) {
+        die('Database connection failed: ' . $db->connect_error);
     }
 
     // STEP 2: Verify OTP
@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $email = trim($_POST['email'] ?? '');
         $password = trim($_POST['password'] ?? '');
 
-        $stmt = $conn->prepare("SELECT id, password, first_name, last_name, email FROM users WHERE email = ?");
+        $stmt = $db->prepare("SELECT id, password, first_name, last_name, email FROM users WHERE email = ?");
         $stmt->bind_param('s', $email);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -216,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    $conn->close();
+    $db->close();
 }
 ?>
 <!DOCTYPE html>

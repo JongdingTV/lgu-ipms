@@ -2,7 +2,7 @@
 // Database connection
 require '../database.php';
 require '../config-path.php';
-if ($conn->connect_error) {
+if ($db->connect_error) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
@@ -12,7 +12,7 @@ if ($conn->connect_error) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    $result = $conn->query("SELECT * FROM projects ORDER BY created_at DESC");
+    $result = $db->query("SELECT * FROM projects ORDER BY created_at DESC");
     $projects = [];
     
     if ($result) {
@@ -23,11 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     }
     
     echo json_encode($projects);
-    $conn->close();
+    $db->close();
     exit;
 }
 
-$conn->close();
+$db->close();
 ?>
 <!doctype html>
 <html>

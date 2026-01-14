@@ -13,7 +13,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         require '../database.php';
         require '../config-path.php';
-        if ($conn->connect_error) {
+        if ($db->connect_error) {
             echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
             exit;
         }
@@ -22,7 +22,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
         $location = $_POST['street'] . ', ' . $_POST['barangay'];
         $description = $_POST['feedback'];
         $status = 'Pending';
-        $stmt = $conn->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Feedback submitted!']);
@@ -30,7 +30,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
             echo json_encode(['success' => false, 'message' => 'Error submitting feedback.']);
         }
         $stmt->close();
-        $conn->close();
+        $db->close();
         exit;
     }
     echo json_encode(['success' => false, 'message' => 'Invalid request']);
@@ -48,8 +48,8 @@ require '../config-path.php';
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
-    $conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
-    if ($conn->connect_error) {
+    $db = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
+    if ($db->connect_error) {
         $msg = 'Database connection failed.';
     } else {
         $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         $location = $_POST['street'] . ', ' . $_POST['barangay'];
         $description = $_POST['feedback'];
         $status = 'Pending';
-        $stmt = $conn->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
         if ($stmt->execute()) {
             $msg = 'Feedback submitted!';
@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
             $msg = 'Error submitting feedback.';
         }
         $stmt->close();
-        $conn->close();
+        $db->close();
     }
 }
 ?>

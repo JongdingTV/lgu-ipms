@@ -40,11 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if (isset($_POST['id']) && !empty($_POST['id'])) {
             // Update existing project
             $id = (int)$_POST['id'];
-            $stmt = $conn->prepare("UPDATE projects SET code=?, name=?, type=?, sector=?, description=?, priority=?, province=?, barangay=?, location=?, start_date=?, end_date=?, duration_months=?, budget=?, project_manager=?, status=? WHERE id=?");
+            $stmt = $db->prepare("UPDATE projects SET code=?, name=?, type=?, sector=?, description=?, priority=?, province=?, barangay=?, location=?, start_date=?, end_date=?, duration_months=?, budget=?, project_manager=?, status=? WHERE id=?");
             $stmt->bind_param('sssssssssssidssi', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status, $id);
         } else {
             // Insert new project and set created_at explicitly
-            $stmt = $conn->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+            $stmt = $db->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
             $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
         }
         
@@ -59,13 +59,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     
     if ($_POST['action'] === 'delete_project') {
         $id = (int)$_POST['id'];
-        $stmt = $conn->prepare("DELETE FROM projects WHERE id=?");
+        $stmt = $db->prepare("DELETE FROM projects WHERE id=?");
         $stmt->bind_param('i', $id);
         
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Project deleted successfully']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to delete project: ' . $conn->error]);
+            echo json_encode(['success' => false, 'message' => 'Failed to delete project: ' . $db->error]);
         }
         $stmt->close();
         exit;
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    $result = $conn->query("SELECT * FROM projects ORDER BY created_at DESC");
+    $result = $db->query("SELECT * FROM projects ORDER BY created_at DESC");
     $projects = [];
     
     if ($result) {
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     exit;
 }
 
-$conn->close();
+$db->close();
 ?>
 <!doctype html>
 <html>

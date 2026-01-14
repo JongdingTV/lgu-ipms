@@ -12,7 +12,7 @@ if ($db->connect_error) {
 if (isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    $result = $conn->query("SELECT id, code, name, budget FROM projects ORDER BY created_at DESC");
+    $result = $db->query("SELECT id, code, name, budget FROM projects ORDER BY created_at DESC");
     $projects = [];
     
     if ($result) {
@@ -23,11 +23,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     }
     
     echo json_encode($projects);
-    $conn->close();
+    $db->close();
     exit;
 }
 
-$conn->close();
+$db->close();
 ?>
 <!doctype html>
 <html>

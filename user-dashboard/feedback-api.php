@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 // Database connection
 require '../database.php';
 require '../config-path.php';
-if ($conn->connect_error) {
+if ($db->connect_error) {
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
 }
@@ -15,15 +15,15 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 switch ($action) {
     case 'submit_feedback':
-        submitFeedback($conn);
+        submitFeedback($db);
         break;
     
     case 'get_user_feedback':
-        getUserFeedback($conn);
+        getUserFeedback($db);
         break;
     
     case 'update_status':
-        updateFeedbackStatus($conn);
+        updateFeedbackStatus($db);
         break;
     
     default:
@@ -31,10 +31,10 @@ switch ($action) {
         break;
 }
 
-$conn->close();
+$db->close();
 
 // Function to submit new feedback
-function submitFeedback($conn) {
+function submitFeedback($db) {
     // Get user ID from session (if logged in)
     $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
     
@@ -71,7 +71,7 @@ function submitFeedback($conn) {
     $sql = "INSERT INTO user_feedback (user_id, street, barangay, category, feedback, photo_path, status) 
             VALUES (?, ?, ?, ?, ?, ?, 'Pending')";
     
-    $stmt = $conn->prepare($sql);
+    $stmt = $db->prepare($sql);
     $stmt->bind_param('isssss', $user_id, $street, $barangay, $category, $feedback, $photo_path);
     
     if ($stmt->execute()) {
@@ -106,7 +106,7 @@ function submitFeedback($conn) {
 }
 
 // Function to get user's feedback
-function getUserFeedback($conn) {
+function getUserFeedback($db) {
     $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
     
     // If no user_id in session, try to get all feedback (for guest users using session ID)
@@ -117,12 +117,12 @@ function getUserFeedback($conn) {
     
     if ($user_id) {
         $sql .= "WHERE user_id = ? ORDER BY created_at DESC";
-        $stmt = $conn->prepare($sql);
+        $stmt = $db->prepare($sql);
         $stmt->bind_param('i', $user_id);
     } else {
         // For guest users, get all feedback (they can see community feedback)
         $sql .= "ORDER BY created_at DESC";
-        $stmt = $conn->prepare($sql);
+        $stmt = $db->prepare($sql);
     }
     
     $stmt->execute();
@@ -138,7 +138,7 @@ function getUserFeedback($conn) {
 }
 
 // Function to update feedback status (admin only)
-function updateFeedbackStatus($conn) {
+function updateFeedbackStatus($db) {
     // Check if user is admin (you may need to adjust this check)
     if (!isset($_SESSION['employee_id'])) {
         echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -146,8 +146,8 @@ function updateFeedbackStatus($conn) {
     }
     
     $feedback_id = intval($_POST['feedback_id'] ?? 0);
-    $status = $conn->real_escape_string($_POST['status'] ?? '');
-    $admin_response = $conn->real_escape_string($_POST['admin_response'] ?? '');
+    $status = $db->real_escape_string($_POST['status'] ?? '');
+    $admin_response = $db->real_escape_string($_POST['admin_response'] ?? '');
     
     if ($feedback_id <= 0) {
         echo json_encode(['success' => false, 'message' => 'Invalid feedback ID']);
@@ -155,7 +155,7 @@ function updateFeedbackStatus($conn) {
     }
     
     $sql = "UPDATE user_feedback SET status = ?, admin_response = ? WHERE id = ?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $db->prepare($sql);
     $stmt->bind_param('ssi', $status, $admin_response, $feedback_id);
     
     if ($stmt->execute()) {

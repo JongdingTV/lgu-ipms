@@ -2,7 +2,7 @@
 // Database connection
 require '../database.php';
 require '../config-path.php';
-if ($conn->connect_error) {
+if ($db->connect_error) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     header('Content-Type: application/json');
     
     // Create contractor_project_assignments table if it doesn't exist
-    $conn->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
+    $db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
         id INT PRIMARY KEY AUTO_INCREMENT,
         contractor_id INT NOT NULL,
         project_id INT NOT NULL,
@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     )");
     
     // Simple query first - use safe column selection
-    $result = $conn->query("SELECT id, code, name, description, location, province, sector, budget, status, project_manager, start_date, end_date, duration_months, created_at FROM projects ORDER BY created_at DESC LIMIT 500");
+    $result = $db->query("SELECT id, code, name, description, location, province, sector, budget, status, project_manager, start_date, end_date, duration_months, created_at FROM projects ORDER BY created_at DESC LIMIT 500");
     
     $projects = [];
     
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             $row['progress'] = isset($row['progress']) ? $row['progress'] : 0;
             
             // Get assigned contractors for this project
-            $contractorsQuery = $conn->query("
+            $contractorsQuery = $db->query("
                 SELECT c.id, c.company, c.rating 
                 FROM contractors c
                 INNER JOIN contractor_project_assignments cpa ON c.id = cpa.contractor_id
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     exit;
 }
 
-$conn->close();
+$db->close();
 ?>
 <!doctype html>
 <html>

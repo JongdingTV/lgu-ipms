@@ -13,7 +13,7 @@ if ($db->connect_error) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    $stmt = $conn->prepare("SELECT id, name, description, priority, status, created_at FROM projects ORDER BY priority DESC, created_at DESC LIMIT 100");
+    $stmt = $db->prepare("SELECT id, name, description, priority, status, created_at FROM projects ORDER BY priority DESC, created_at DESC LIMIT 100");
     $projects = [];
     
     if ($stmt) {
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
         exit;
     }
     
-    $stmt = $conn->prepare("UPDATE feedback SET status = ? WHERE id = ?");
+    $stmt = $db->prepare("UPDATE feedback SET status = ? WHERE id = ?");
     if ($stmt) {
         $stmt->bind_param('si', $new_status, $feedback_id);
         $stmt->execute();
@@ -58,7 +58,7 @@ if (isset($_GET['page']) && is_numeric($_GET['page'])) {
     $offset = (intval($_GET['page']) - 1) * $limit;
 }
 
-$stmt = $conn->prepare("SELECT id, user_name, subject, description, category, location, status, date_submitted FROM feedback ORDER BY date_submitted DESC LIMIT ? OFFSET ?");
+$stmt = $db->prepare("SELECT id, user_name, subject, description, category, location, status, date_submitted FROM feedback ORDER BY date_submitted DESC LIMIT ? OFFSET ?");
 if ($stmt) {
     $stmt->bind_param('ii', $limit, $offset);
     $stmt->execute();
@@ -83,7 +83,7 @@ foreach ($feedbacks as $fb) {
     if (isset($fb['status']) && strtolower($fb['status']) === 'pending') $pendingInputs++;
 }
 
-$conn->close();
+$db->close();
 ?>
 <!doctype html>
 <html>

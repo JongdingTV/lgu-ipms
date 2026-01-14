@@ -8,24 +8,24 @@ if (!isset($_SESSION['user_id'])) {
 // Database connection
 require '../database.php';
 require '../config-path.php';
-if ($conn->connect_error) {
-    die('Database connection failed: ' . $conn->connect_error);
+if ($db->connect_error) {
+    die('Database connection failed: ' . $db->connect_error);
 }
 
 // Get user name from session
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
 
 // Get project statistics
-$totalProjects = $conn->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'];
-$inProgressProjects = $conn->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'];
-$completedProjects = $conn->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed'")->fetch_assoc()['count'];
-$totalBudget = $conn->query("SELECT COALESCE(SUM(budget), 0) as total FROM projects")->fetch_assoc()['total'];
+$totalProjects = $db->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'];
+$inProgressProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'];
+$completedProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed'")->fetch_assoc()['count'];
+$totalBudget = $db->query("SELECT COALESCE(SUM(budget), 0) as total FROM projects")->fetch_assoc()['total'];
 
 // Get recent projects
-$recentProjects = $conn->query("SELECT id, name, location, status, budget FROM projects ORDER BY created_at DESC LIMIT 5");
+$recentProjects = $db->query("SELECT id, name, location, status, budget FROM projects ORDER BY created_at DESC LIMIT 5");
 // Get user feedback from database
-$feedbacks = $conn->query("SELECT id, subject, category, status, date_submitted FROM feedback ORDER BY date_submitted DESC LIMIT 20");
-$conn->close();
+$feedbacks = $db->query("SELECT id, subject, category, status, date_submitted FROM feedback ORDER BY date_submitted DESC LIMIT 20");
+$db->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">

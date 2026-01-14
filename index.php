@@ -4,11 +4,11 @@ require 'database.php';
 require 'config-path.php';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($db->connect_error) {
-        die('Database connection failed: ' . $conn->connect_error);
+        die('Database connection failed: ' . $db->connect_error);
     }
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
-    $stmt = $conn->prepare("SELECT id, password, first_name, last_name FROM employees WHERE email = ?");
+    $stmt = $db->prepare("SELECT id, password, first_name, last_name FROM employees WHERE email = ?");
     $stmt->bind_param('s', $email);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
     $error = 'Invalid email or password.';
-    $conn->close();
+    $db->close();
 }
 ?>
 <!DOCTYPE html>

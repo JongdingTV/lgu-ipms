@@ -1,7 +1,8 @@
 <?php
 // Database connection
-require '../database.php';require '../config-path.php';
-if ($conn->connect_error) {
+require '../database.php';
+require '../config-path.php';
+if ($db->connect_error) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
@@ -11,7 +12,7 @@ if ($conn->connect_error) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    $result = $conn->query("SELECT id, code, name, type, sector, priority, status, created_at FROM projects ORDER BY created_at DESC");
+    $result = $db->query("SELECT id, code, name, type, sector, priority, status, created_at FROM projects ORDER BY created_at DESC");
     $projects = [];
     
     if ($result) {
@@ -32,13 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     
     if ($id > 0) {
-        $stmt = $conn->prepare("DELETE FROM projects WHERE id=?");
+        $stmt = $db->prepare("DELETE FROM projects WHERE id=?");
         $stmt->bind_param("i", $id);
         
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Project deleted successfully']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to delete project: ' . $conn->error]);
+            echo json_encode(['success' => false, 'message' => 'Failed to delete project: ' . $db->error]);
         }
         $stmt->close();
     } else {
@@ -47,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-$conn->close();
+$db->close();
 ?>
 <!doctype html>
 <html>

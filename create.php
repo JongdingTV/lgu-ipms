@@ -4,7 +4,7 @@ require 'database.php';
 require 'config-path.php';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($db->connect_error) {
-        die('Database connection failed: ' . $conn->connect_error);
+        die('Database connection failed: ' . $db->connect_error);
     }
 
     // Get form data
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $errors[] = 'Password too short.';
     }
     // Check if email exists
-    $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+    $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
     $stmt->bind_param('s', $email);
     $stmt->execute();
     if ($stmt->get_result()->num_rows > 0) {
@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
         // Insert
-        $stmt = $conn->prepare("INSERT INTO users (first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT INTO users (first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param('ssssssssssssss', $first_name, $middle_name, $last_name, $suffix, $email, $mobile, $birthdate, $gender, $civil_status, $address, $id_type, $id_number, $id_upload, $hashed_password);
         if ($stmt->execute()) {
             header('Location: login.php?success=1');
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         $stmt->close();
     }
-    $conn->close();
+    $db->close();
 }
 ?>
 <!DOCTYPE html>

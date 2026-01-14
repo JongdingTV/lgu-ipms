@@ -9,7 +9,7 @@ if ($db->connect_error) {
 }
 
 // Create contractor_project_assignments table if it doesn't exist
-$conn->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
+$db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
     id INT PRIMARY KEY AUTO_INCREMENT,
     contractor_id INT NOT NULL,
     project_id INT NOT NULL,
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     header('Content-Type: application/json');
     
     // Match the actual database column names from contractors-api.php
-    $result = $conn->query("SELECT id, company, license, email, phone, status, rating FROM contractors ORDER BY id DESC LIMIT 100");
+    $result = $db->query("SELECT id, company, license, email, phone, status, rating FROM contractors ORDER BY id DESC LIMIT 100");
     $contractors = [];
     
     if ($result) {
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         }
         $result->free();
     } else {
-        error_log("Contractors query error: " . $conn->error);
+        error_log("Contractors query error: " . $db->error);
     }
     
     echo json_encode($contractors);
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    $result = $conn->query("SELECT id, code, name, type, sector, status FROM projects ORDER BY created_at DESC");
+    $result = $db->query("SELECT id, code, name, type, sector, status FROM projects ORDER BY created_at DESC");
     $projects = [];
     
     if ($result) {
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     
     if ($contractor_id > 0 && $project_id > 0) {
         // Create table if it doesn't exist
-        $conn->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
+        $db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
             id INT AUTO_INCREMENT PRIMARY KEY,
             contractor_id INT NOT NULL,
             project_id INT NOT NULL,
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
         )");
         
-        $stmt = $conn->prepare("INSERT INTO contractor_project_assignments (contractor_id, project_id) VALUES (?, ?)");
+        $stmt = $db->prepare("INSERT INTO contractor_project_assignments (contractor_id, project_id) VALUES (?, ?)");
         $stmt->bind_param("ii", $contractor_id, $project_id);
         
         if ($stmt->execute()) {
@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $project_id = isset($_POST['project_id']) ? (int)$_POST['project_id'] : 0;
     
     if ($contractor_id > 0 && $project_id > 0) {
-        $stmt = $conn->prepare("DELETE FROM contractor_project_assignments WHERE contractor_id=? AND project_id=?");
+        $stmt = $db->prepare("DELETE FROM contractor_project_assignments WHERE contractor_id=? AND project_id=?");
         $stmt->bind_param("ii", $contractor_id, $project_id);
         
         if ($stmt->execute()) {
@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $contractor_id = isset($_GET['contractor_id']) ? (int)$_GET['contractor_id'] : 0;
     
     if ($contractor_id > 0) {
-        $stmt = $conn->prepare("SELECT p.id, p.code, p.name FROM projects p 
+        $stmt = $db->prepare("SELECT p.id, p.code, p.name FROM projects p 
                                INNER JOIN contractor_project_assignments cpa ON p.id = cpa.project_id 
                                WHERE cpa.contractor_id = ?");
         $stmt->bind_param("i", $contractor_id);
@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     exit;
 }
 
-$conn->close();
+$db->close();
 ?>
 <!doctype html>
 <html>
