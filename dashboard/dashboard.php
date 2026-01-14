@@ -1,8 +1,20 @@
 <?php
 session_start();
+// Import security functions
+require '../session-auth.php';
 // Database connection
 require '../database.php';
 require '../config-path.php';
+
+// Set no-cache headers to prevent back button access to protected pages
+set_no_cache_headers();
+
+// Check authentication - redirect to login if not authenticated
+check_auth();
+
+// Check for suspicious activity (user-agent changes, etc.)
+check_suspicious_activity();
+
 if ($db->connect_error) {
     die('Database connection failed: ' . $db->connect_error);
 }

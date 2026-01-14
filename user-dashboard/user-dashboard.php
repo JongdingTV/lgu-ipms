@@ -1,8 +1,14 @@
 <?php
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
-    exit;
+// Import security functions
+require '../session-auth.php';
+
+// Protect page
+set_no_cache_headers();
+check_auth();
+check_suspicious_activity();
+
+require '../database.php';
+require '../config-path.php';
 }
 
 // Database connection

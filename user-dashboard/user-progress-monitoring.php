@@ -1,9 +1,11 @@
 <?php
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+// Import security functions
+require '../session-auth.php';
+
+// Protect page
+set_no_cache_headers();
+check_auth();
+check_suspicious_activity();
 
 // Get user name from session
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';

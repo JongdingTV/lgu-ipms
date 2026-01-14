@@ -1,20 +1,19 @@
 <?php
-session_start();
+// Include security functions
+require 'session-auth.php';
+require 'database.php';
 
-// Clear all session data and cookies related to login
-$_SESSION = [];
-if (ini_get('session.use_cookies')) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params['path'], $params['domain'],
-        $params['secure'], $params['httponly']
-    );
-}
-// Also clear remembered device token
-setcookie('remember_device', '', time() - 3600, '/', '', false, true);
+// Log the logout event
+log_security_event('USER_LOGOUT', 'User successfully logged out');
 
-session_destroy();
+// Destroy session using our secure function
+destroy_session();
 
-header('Location: login.php');
+// Add no-cache headers to ensure page isn't cached
+set_no_cache_headers();
+
+// Redirect to login page
+header('Location: login.php?logout=1');
 exit;
+
 

@@ -1,7 +1,19 @@
 <?php
+// Import security functions
+require '../session-auth.php';
 // Database connection
 require '../database.php';
 require '../config-path.php';
+
+// Set no-cache headers to prevent back button access
+set_no_cache_headers();
+
+// Check authentication
+check_auth();
+
+// Check for suspicious activity
+check_suspicious_activity();
+
 if ($db->connect_error) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);

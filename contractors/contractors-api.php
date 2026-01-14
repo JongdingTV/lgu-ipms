@@ -1,4 +1,11 @@
 <?php
+// Import security functions
+require '../session-auth.php';
+
+// Check authentication for API requests
+check_auth();
+check_suspicious_activity();
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');

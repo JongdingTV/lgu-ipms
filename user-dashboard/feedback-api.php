@@ -1,5 +1,11 @@
 <?php
-session_start();
+// Import security functions
+require '../session-auth.php';
+
+// Check authentication
+check_auth();
+check_suspicious_activity();
+
 header('Content-Type: application/json');
 
 // Database connection

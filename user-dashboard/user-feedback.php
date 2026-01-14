@@ -1,10 +1,17 @@
 <?php
+// Import security functions
+require '../session-auth.php';
+require '../database.php';
+
 // AJAX handler for feedback submission
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
     header('Content-Type: application/json');
     ini_set('display_errors', 0);
     error_reporting(E_ERROR | E_PARSE);
-    session_start();
+    
+    // Check authentication
+    check_auth();
+    
     if (!isset($_SESSION['user_id'])) {
         echo json_encode(['success' => false, 'message' => 'Not logged in']);
         exit;

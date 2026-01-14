@@ -1,5 +1,11 @@
 <?php
-session_start();
+// Include security authentication
+require __DIR__ . '/session-auth.php';
+require __DIR__ . '/database.php';
+require __DIR__ . '/config-path.php';
+
+// Set no-cache headers on login page
+set_no_cache_headers();
 
 // Secret used to sign "remember this device" tokens (10‑day trust)
 define('REMEMBER_DEVICE_SECRET', 'change_this_to_a_random_secret_key');
@@ -13,8 +19,6 @@ use PHPMailer\PHPMailer\Exception;
 require __DIR__ . '/vendor/PHPMailer/PHPMailer.php';
 require __DIR__ . '/vendor/PHPMailer/SMTP.php';
 require __DIR__ . '/vendor/PHPMailer/Exception.php';
-require __DIR__ . '/database.php';
-require __DIR__ . '/config-path.php';
 
 // By default, show the normal email/password form
 $showOtpForm = isset($_SESSION['pending_user'], $_SESSION['otp'], $_SESSION['otp_time']);
@@ -144,16 +148,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     // STEP 1: Email + Password + initial OTP send
     elseif (isset($_POST['login_submit'])) {
-        $email = trim($_POST['email'] ?? '');
-        $password = trim($_POST['password'] ?? '');
+        // Check rate limiting (brute force protection)
+        if (is_rate_limited('login', 5, 300)) {
+            $error = 'Too many login attempts. Please try again in 5 minutes.';
+            log_security_event('RATE_LIMIT_EXCEEDED', 'Too many failed login attempts');
+        } else {
+            $email = trim($_POST['email'] ?? '');
+            $password = trim($_POST['password'] ?? '');
+            $email = sanitize_email($email);
 
-        $stmt = $db->prepare("SELECT id, password, first_name, last_name, email FROM users WHERE email = ?");
-        $stmt->bind_param('s', $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
+            $stmt = $db->prepare("SELECT id, password, first_name, last_name, email FROM users WHERE email = ?");
+            $stmt->bind_param('s', $email);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-        if ($result->num_rows > 0) {
-            $user = $result->fetch_assoc();
+            if ($result->num_rows > 0) {
+                $user = $result->fetch_assoc();
             if (password_verify($password, $user['password'])) {
 
                 // If this device is remembered for this user, skip OTP entirely
@@ -207,11 +217,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $showOtpForm = false;
                 }
             } else {
+                // Failed login attempt - record it
                 $error = 'Invalid email or password.';
+                record_attempt('login');
+                log_security_event('FAILED_LOGIN', 'Failed login attempt with email: ' . $email);
                 $showOtpForm = false;
             }
         } else {
+            // User not found - record attempt
             $error = 'Invalid email or password.';
+            record_attempt('login');
+            log_security_event('FAILED_LOGIN', 'Login attempt with non-existent email: ' . $email);
             $showOtpForm = false;
         }
     }
