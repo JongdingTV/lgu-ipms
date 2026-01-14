@@ -45,7 +45,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
-    $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+    $conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
     if ($conn->connect_error) {
         $msg = 'Database connection failed.';
     } else {

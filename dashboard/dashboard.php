@@ -1,7 +1,7 @@
 <?php
 session_start();
 // Database connection
-$conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+$conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
 if ($conn->connect_error) {
     die('Database connection failed: ' . $conn->connect_error);
 }
