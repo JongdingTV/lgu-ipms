@@ -33,14 +33,27 @@ function get_app_config_script() {
 <script>
 window.APP_ROOT = '$app_root';
 window.getApiUrl = function(endpoint) {
-    // If APP_ROOT is /, endpoint already has the correct path
-    // If APP_ROOT is something else, prepend it
-    if (window.APP_ROOT === '/') {
-        return '/' + endpoint;
+    // Handle both with and without leading slash
+    if (!endpoint) {
+        console.error('getApiUrl called with empty endpoint');
+        return '/';
     }
-    return window.APP_ROOT + endpoint;
+    
+    let cleanEndpoint = endpoint;
+    if (cleanEndpoint.startsWith('/')) {
+        cleanEndpoint = cleanEndpoint.substring(1);
+    }
+    
+    // If APP_ROOT is /, return absolute path with /
+    if (window.APP_ROOT === '/') {
+        return '/' + cleanEndpoint;
+    }
+    
+    // Otherwise, combine APP_ROOT with endpoint
+    return window.APP_ROOT + cleanEndpoint;
 };
 console.log('APP_ROOT configured as:', window.APP_ROOT);
+console.log('getApiUrl function available:', typeof window.getApiUrl === 'function');
 </script>
 HTML;
 }

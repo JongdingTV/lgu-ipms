@@ -197,6 +197,16 @@ $db->close();
 
         function loadProjects() {
             console.log('loadProjects called');
+            console.log('getApiUrl available?', typeof window.getApiUrl);
+            console.log('APP_ROOT value:', window.APP_ROOT);
+            
+            if (typeof window.getApiUrl !== 'function') {
+                console.error('❌ getApiUrl function not available!');
+                const tbody = document.querySelector('#projectsTable tbody');
+                if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#c00;">Error: API configuration not loaded. Please refresh the page.</td></tr>';
+                return;
+            }
+            
             fetch(getApiUrl('project-registration/registered_projects.php?action=load_projects&_=' + Date.now()))
                 .then(res => {
                     console.log('Response status:', res.status);

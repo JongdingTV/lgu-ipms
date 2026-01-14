@@ -101,6 +101,20 @@ function loadProjectsFromDatabase() {
     
     console.log('=== LOADING PROJECTS ===');
     console.log('Current URL:', window.location.href);
+    console.log('getApiUrl function defined?', typeof window.getApiUrl);
+    console.log('APP_ROOT value:', window.APP_ROOT);
+    
+    // Check if getApiUrl is available
+    if (typeof window.getApiUrl !== 'function') {
+        console.error('❌ getApiUrl function not available!');
+        const container = document.getElementById('projectsList');
+        if (container) {
+            container.innerHTML = '<div style="color: red; padding: 20px;">Error: API configuration not loaded. Please refresh the page.</div>';
+        }
+        hideLoadingState();
+        return;
+    }
+    
     console.log('Fetching from: progress_monitoring.php?action=load_projects');
     
     // Use getApiUrl to ensure it works from any location
