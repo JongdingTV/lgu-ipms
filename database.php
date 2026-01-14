@@ -1,6 +1,6 @@
 <?php
 // Database Configuration
-$db = new mysqli('localhost', 'root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
+$db = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
 
 // Check connection
 if ($db->connect_error) {
