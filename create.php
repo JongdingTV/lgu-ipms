@@ -1,7 +1,12 @@
 <?php
-session_start();
+// Include security functions
+require 'session-auth.php';
 require 'database.php';
 require 'config-path.php';
+
+// Add no-cache headers
+set_no_cache_headers();
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($db->connect_error) {
         die('Database connection failed: ' . $db->connect_error);
@@ -83,6 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style - Copy.css">
+<?php echo get_app_config_script(); ?>
+<script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
 body {
     min-height: 100vh;
