@@ -41,11 +41,6 @@
         }
     });
     
-    // Prevent page caching in older browsers
-    if (window.location && window.location.hash === '') {
-        window.location.hash = '#no-back';
-    }
-    
     // Monitor for page visibility (tab switching)
     document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
