@@ -60,7 +60,6 @@ $db->close();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="../shared-config.js"></script>
     <?php echo get_app_config_script(); ?>
 </head>
 <body>
@@ -174,9 +173,8 @@ $db->close();
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
-    <script src="../shared-data.js"></script>
-
-    <script>
+    <script src="../shared-data.js?v=<?php echo time(); ?>"></script>
+    <script src="project-reg.js?v=<?php echo time(); ?>"></script>
         // Sidebar toggle handlers
         const sidebarToggle = document.getElementById('toggleSidebar');
         const sidebarShow = document.getElementById('toggleSidebarShow');
