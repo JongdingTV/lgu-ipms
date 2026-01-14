@@ -54,6 +54,25 @@ const IPMS_DATA = {
             console.error('Error deleting project:', e);
             return false;
         }
+    },
+    
+    // Get dashboard metrics from stored projects
+    getDashboardMetrics: function() {
+        const projects = this.getProjects();
+        
+        return {
+            totalProjects: projects.length,
+            approvedProjects: projects.filter(p => p.status === 'Approved').length,
+            inProgressProjects: projects.filter(p => {
+                const progress = Number(p.progress || 0);
+                return progress > 0 && progress < 100;
+            }).length,
+            completedProjects: projects.filter(p => {
+                const progress = Number(p.progress || 0);
+                return progress === 100 || p.status === 'Completed';
+            }).length,
+            totalBudget: projects.reduce((sum, p) => sum + Number(p.budget || 0), 0)
+        };
     }
 };
 
