@@ -81,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feedback - User Dashboard</title>
+    <link rel="icon" type="image/png" href="../logocityhall.png">
     <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="user-dashboard.css">
     <?php echo get_app_config_script(); ?>
