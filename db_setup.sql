@@ -1,6 +1,4 @@
--- Database setup for LGU IPMS
-CREATE DATABASE IF NOT EXISTS lgu_ipms;
-USE lgu_ipms;
+USE ipms_lgu;
 
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
