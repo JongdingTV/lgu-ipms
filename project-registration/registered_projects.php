@@ -175,6 +175,7 @@ $db->close();
 
     <script src="../shared-data.js?v=<?php echo time(); ?>"></script>
     <script src="project-reg.js?v=<?php echo time(); ?>"></script>
+    <script>
         // Sidebar toggle handlers
         const sidebarToggle = document.getElementById('toggleSidebar');
         const sidebarShow = document.getElementById('toggleSidebarShow');
