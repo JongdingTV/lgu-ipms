@@ -230,7 +230,7 @@ $db->close();
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
-    <script src="../shared-data.js?v=1"></script>
-    <script src="progress-monitoring.js?v=2"></script>
+    <script src="../shared-data.js?v=<?php echo time(); ?>"></script>
+    <script src="progress-monitoring.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>
