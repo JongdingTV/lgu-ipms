@@ -1,5 +1,4 @@
 <?php
-session_start();
 // Import security functions
 require '../session-auth.php';
 // Database connection

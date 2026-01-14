@@ -9,10 +9,6 @@ check_suspicious_activity();
 
 require '../database.php';
 require '../config-path.php';
-}
-
-// Database connection
-require '../database.php';
 require '../config-path.php';
 if ($db->connect_error) {
     die('Database connection failed: ' . $db->connect_error);

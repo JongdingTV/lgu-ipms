@@ -45,11 +45,10 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 }
 
 // Normal page load
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
-    exit;
-}
+set_no_cache_headers();
+check_auth();
+check_suspicious_activity();
+
 require '../database.php';
 require '../config-path.php';
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
