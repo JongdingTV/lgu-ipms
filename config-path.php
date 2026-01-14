@@ -33,27 +33,34 @@ function get_app_config_script() {
 <script>
 window.APP_ROOT = '$app_root';
 window.getApiUrl = function(endpoint) {
+    console.log('[getApiUrl] Called with:', endpoint);
+    
     // Handle both with and without leading slash
     if (!endpoint) {
-        console.error('getApiUrl called with empty endpoint');
+        console.error('[getApiUrl] Empty endpoint!');
         return '/';
     }
     
     let cleanEndpoint = endpoint;
     if (cleanEndpoint.startsWith('/')) {
         cleanEndpoint = cleanEndpoint.substring(1);
+        console.log('[getApiUrl] Removed leading slash:', cleanEndpoint);
     }
     
     // If APP_ROOT is /, return absolute path with /
     if (window.APP_ROOT === '/') {
-        return '/' + cleanEndpoint;
+        const result = '/' + cleanEndpoint;
+        console.log('[getApiUrl] APP_ROOT is /, returning:', result);
+        return result;
     }
     
     // Otherwise, combine APP_ROOT with endpoint
-    return window.APP_ROOT + cleanEndpoint;
+    const result = window.APP_ROOT + cleanEndpoint;
+    console.log('[getApiUrl] APP_ROOT is ' + window.APP_ROOT + ', returning:', result);
+    return result;
 };
-console.log('APP_ROOT configured as:', window.APP_ROOT);
-console.log('getApiUrl function available:', typeof window.getApiUrl === 'function');
+console.log('✅ APP_ROOT configured as:', window.APP_ROOT);
+console.log('✅ getApiUrl function available:', typeof window.getApiUrl === 'function');
 </script>
 HTML;
 }
