@@ -64,13 +64,13 @@ contractorForm.addEventListener('submit', async (e) => {
         let response;
         if (editingId) {
             data.id = editingId;
-            response = await fetch('contractors-api.php', {
+            response = await fetch(getApiUrl('contractors/contractors-api.php'), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
         } else {
-            response = await fetch('contractors-api.php', {
+            response = await fetch(getApiUrl('contractors/contractors-api.php'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)

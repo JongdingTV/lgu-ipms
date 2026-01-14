@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     document.getElementById('btnImport').addEventListener('click', ()=>{
         // Fetch projects from database
         console.log('Import button clicked');
-        fetch('budget_resources.php?action=load_projects')
+        fetch(getApiUrl('budget-resources/budget_resources.php?action=load_projects'))
             .then(response => {
                 console.log('Response status:', response.status);
                 if (!response.ok) throw new Error('Network response was not ok');

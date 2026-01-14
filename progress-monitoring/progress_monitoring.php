@@ -1,6 +1,7 @@
 <?php
 // Database connection
-$conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
+require '../database.php';
+require '../config-path.php';
 if ($conn->connect_error) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
@@ -69,6 +70,7 @@ $conn->close();
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <?php echo get_app_config_script(); ?>
 </head>
 <body>
     <header class="nav" id="navbar">

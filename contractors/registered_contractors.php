@@ -1,7 +1,8 @@
 <?php
 // Database connection
-$conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
-if ($conn->connect_error) {
+require '../database.php';
+require '../config-path.php';
+if ($db->connect_error) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
@@ -155,6 +156,7 @@ $conn->close();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <?php echo get_app_config_script(); ?>
     <style>
         .btn-assign {
             padding: 8px 16px;
@@ -319,7 +321,7 @@ $conn->close();
         // Load contractors from database
         function loadContractors() {
             console.log('loadContractors called');
-            const url = 'registered_contractors.php?action=load_contractors&_=' + Date.now();
+            const url = getApiUrl('contractors/registered_contractors.php?action=load_contractors&_=' + Date.now());
             console.log('Fetching from:', url);
             
             fetch(url)
@@ -349,7 +351,7 @@ $conn->close();
         // Load projects from database
         function loadProjects() {
             console.log('loadProjects called');
-            const url = 'registered_contractors.php?action=load_projects&_=' + Date.now();
+            const url = getApiUrl('contractors/registered_contractors.php?action=load_projects&_=' + Date.now());
             console.log('Fetching projects from:', url);
             
             fetch(url)
@@ -472,7 +474,7 @@ $conn->close();
                         confirmText: 'Delete Permanently',
                         cancelText: 'Cancel',
                         onConfirm: () => {
-                            fetch('registered_contractors.php', {
+                            fetch(getApiUrl('contractors/registered_contractors.php'), {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                                 body: `action=delete_contractor&id=${encodeURIComponent(id)}`
@@ -573,7 +575,7 @@ $conn->close();
             projectsList.innerHTML = '<p style="text-align: center; color: #999;">Loading projects...</p>';
             
             // Get assigned projects
-            fetch(`registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`)
+            fetch(getApiUrl(`contractors/registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`))
                 .then(res => res.text())
                 .then(text => {
                     try {
@@ -619,7 +621,7 @@ $conn->close();
             projectsList.innerHTML = '<p style="text-align: center; color: #999;">Loading projects...</p>';
             
             // Get already assigned projects
-            fetch(`registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`)
+            fetch(getApiUrl(`contractors/registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`))
                 .then(res => res.text())
                 .then(text => {
                     console.log('Assigned projects response:', text);
@@ -629,7 +631,7 @@ $conn->close();
                         console.log('Assigned IDs:', assignedIds);
                         
                         // Get all available projects
-                        return fetch('registered_contractors.php?action=load_projects')
+                        return fetch(getApiUrl('contractors/registered_contractors.php?action=load_projects'))
                             .then(res => res.text())
                             .then(text => {
                                 console.log('All projects response:', text);
@@ -733,7 +735,7 @@ $conn->close();
                 console.log(`Sending request: ${action}`, body);
                 
                 try {
-                    const response = await fetch('registered_contractors.php', {
+                    const response = await fetch(getApiUrl('contractors/registered_contractors.php'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: body

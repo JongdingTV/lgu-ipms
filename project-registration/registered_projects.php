@@ -1,6 +1,6 @@
 <?php
 // Database connection
-$conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
+require '../database.php';require '../config-path.php';
 if ($conn->connect_error) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
@@ -59,6 +59,8 @@ $conn->close();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="../shared-config.js"></script>
+    <?php echo get_app_config_script(); ?>
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -196,7 +198,7 @@ $conn->close();
 
         function loadProjects() {
             console.log('loadProjects called');
-            fetch('registered_projects.php?action=load_projects&_=' + Date.now())
+            fetch(getApiUrl('project-registration/registered_projects.php?action=load_projects&_=' + Date.now()))
                 .then(res => {
                     console.log('Response status:', res.status);
                     return res.json();
@@ -261,7 +263,7 @@ $conn->close();
                         confirmText: 'Delete Permanently',
                         cancelText: 'Cancel',
                         onConfirm: () => {
-                            fetch('registered_projects.php', {
+                            fetch(getApiUrl('project-registration/registered_projects.php'), {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                                 body: `action=delete_project&id=${encodeURIComponent(id)}`

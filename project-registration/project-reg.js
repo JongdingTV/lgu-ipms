@@ -32,7 +32,7 @@ function saveProjects() {
 }
 
 function loadProjects() {
-    fetch('project_registration.php?action=load_projects')
+    fetch(getApiUrl('project-registration/project_registration.php?action=load_projects'))
         .then(response => response.json())
         .then(data => {
             projects = data;
@@ -120,7 +120,7 @@ function deleteProject(index) {
             formData.append('action', 'delete_project');
             formData.append('id', project.id);
 
-            fetch('project_registration.php', {
+            fetch(getApiUrl('project-registration/project_registration.php'), {
                 method: 'POST',
                 body: formData
             })

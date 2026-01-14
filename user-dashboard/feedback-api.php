@@ -3,7 +3,8 @@ session_start();
 header('Content-Type: application/json');
 
 // Database connection
-$conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
+require '../database.php';
+require '../config-path.php';
 if ($conn->connect_error) {
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;

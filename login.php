@@ -13,6 +13,8 @@ use PHPMailer\PHPMailer\Exception;
 require __DIR__ . '/vendor/PHPMailer/PHPMailer.php';
 require __DIR__ . '/vendor/PHPMailer/SMTP.php';
 require __DIR__ . '/vendor/PHPMailer/Exception.php';
+require __DIR__ . '/database.php';
+require __DIR__ . '/config-path.php';
 
 // By default, show the normal email/password form
 $showOtpForm = isset($_SESSION['pending_user'], $_SESSION['otp'], $_SESSION['otp_time']);

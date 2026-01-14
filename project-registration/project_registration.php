@@ -1,9 +1,11 @@
 <?php
 // Database connection
-$conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
-if ($conn->connect_error) {
+require '../database.php';
+require '../config-path.php';
+
+if ($db->connect_error) {
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $conn->connect_error]);
+    echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $db->connect_error]);
     exit;
 }
 
@@ -101,6 +103,7 @@ $conn->close();
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/style.css" />
+    <?php echo get_app_config_script(); ?>
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -300,7 +303,7 @@ $conn->close();
         // Load projects from DB
         function loadSavedProjects() {
             // Add cache-busting param to always get fresh data
-            fetch('project_registration.php?action=load_projects&_=' + Date.now())
+            fetch(getApiUrl('project-registration/project_registration.php?action=load_projects&_=' + Date.now()))
                 .then(res => res.json())
                 .then(projects => {
                     console.log('Fetched projects:', projects); // DEBUG
@@ -349,7 +352,7 @@ $conn->close();
                                 confirmText: 'Delete Permanently',
                                 cancelText: 'Cancel',
                                 onConfirm: () => {
-                                    fetch('project_registration.php', {
+                                    fetch(getApiUrl('project-registration/project_registration.php'), {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                                         body: `action=delete_project&id=${encodeURIComponent(id)}`
@@ -420,7 +423,7 @@ $conn->close();
             if (editProjectId) {
                 fd.append('id', editProjectId);
             }
-            fetch('project_registration.php', {
+            fetch(getApiUrl('project-registration/project_registration.php'), {
                 method: 'POST',
                 body: fd
             })

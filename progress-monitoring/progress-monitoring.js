@@ -103,8 +103,8 @@ function loadProjectsFromDatabase() {
     console.log('Current URL:', window.location.href);
     console.log('Fetching from: progress_monitoring.php?action=load_projects');
     
-    // Use absolute path to ensure it works from subdirectory
-    const fetchUrl = '/lgu-ipms/progress-monitoring/progress_monitoring.php?action=load_projects';
+    // Use getApiUrl to ensure it works from any location\n    const fetchUrl = getApiUrl('progress-monitoring/progress_monitoring.php?action=load_projects');",
+    <newString>"    // Use absolute path to ensure it works from subdirectory\n    const fetchUrl = '/lgu-ipms/progress-monitoring/progress_monitoring.php?action=load_projects';"
     console.log('Full fetch URL:', fetchUrl);
     
     fetch(fetchUrl)

@@ -4,9 +4,10 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
-$conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
-if ($conn->connect_error) {
-    die(json_encode(['error' => 'Database connection failed: ' . $conn->connect_error]));
+require '../database.php';
+require '../config-path.php';
+if ($db->connect_error) {
+    die(json_encode(['error' => 'Database connection failed: ' . $db->connect_error]));
 }
 
 $method = $_SERVER['REQUEST_METHOD'];

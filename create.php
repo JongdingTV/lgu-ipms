@@ -1,8 +1,9 @@
 <?php
 session_start();
+require 'database.php';
+require 'config-path.php';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
-    if ($conn->connect_error) {
+    if ($db->connect_error) {
         die('Database connection failed: ' . $conn->connect_error);
     }
 

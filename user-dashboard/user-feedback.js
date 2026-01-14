@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('action', 'submit_feedback');
 
             try {
-                const response = await fetch('feedback-api.php', {
+                const response = await fetch(getApiUrl('user-dashboard/feedback-api.php'), {
                     method: 'POST',
                     body: formData
                 });
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!historyContainer) return;
 
         try {
-            const response = await fetch('feedback-api.php?action=get_user_feedback');
+            const response = await fetch(getApiUrl('user-dashboard/feedback-api.php?action=get_user_feedback'));
             const result = await response.json();
 
             if (!result.success || !result.feedbacks || result.feedbacks.length === 0) {

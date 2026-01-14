@@ -5,7 +5,8 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
+require '../database.php';
+require '../config-path.php';
 if ($conn->connect_error) {
     die('Database connection failed: ' . $conn->connect_error);
 }
@@ -69,6 +70,7 @@ $conn->close();
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="user-dashboard.css">
+    <?php echo get_app_config_script(); ?>
 </head>
 <body>
     <header class="nav" id="navbar">

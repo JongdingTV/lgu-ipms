@@ -1,8 +1,9 @@
 <?php
 session_start();
 // Database connection
-$conn = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
-if ($conn->connect_error) {
+require '../database.php';
+require '../config-path.php';
+if ($db->connect_error) {
     die('Database connection failed: ' . $conn->connect_error);
 }
 
@@ -24,6 +25,7 @@ $conn->close();
     <title>LGU Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <?php echo get_app_config_script(); ?>
 </head>
 <body>
     <header class="nav" id="navbar">

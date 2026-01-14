@@ -238,7 +238,7 @@ async function loadUserData() {
     // Load projects data from database
     let projects = [];
     try {
-        const response = await fetch('../progress-monitoring/progress_monitoring.php?action=load_projects');
+        const response = await fetch(getApiUrl('progress-monitoring/progress_monitoring.php?action=load_projects'));
         if (response.ok) {
             projects = await response.json();
         }

@@ -11,7 +11,8 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
     }
     $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
-        $conn = new mysqli('localhost:3307', 'root', '', 'lgu_ipms');
+        require '../database.php';
+        require '../config-path.php';
         if ($conn->connect_error) {
             echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
             exit;
@@ -42,6 +43,8 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: ../login.php');
     exit;
 }
+require '../database.php';
+require '../config-path.php';
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
@@ -74,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
     <title>Feedback - User Dashboard</title>
     <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="user-dashboard.css">
+    <?php echo get_app_config_script(); ?>
 </head>
 <body>
     <header class="nav" id="navbar">

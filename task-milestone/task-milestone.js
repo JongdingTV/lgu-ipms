@@ -39,7 +39,7 @@ let allProjects = [];
 
 function loadProjectsFromDatabase() {
     console.log('Loading projects from database...');
-    return fetch('tasks_milestones.php?action=load_projects')
+    return fetch(getApiUrl('task-milestone/tasks_milestones.php?action=load_projects'))
         .then(response => {
             console.log('Projects response status:', response.status);
             if (!response.ok) throw new Error('Failed to load projects');
