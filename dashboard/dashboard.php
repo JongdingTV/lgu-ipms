@@ -41,8 +41,6 @@ $db->close();
     <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
-    <button class="burger-menu" id="burgerMenu" aria-label="Open sidebar"><span></span></button>
-    <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
     <header class="nav" id="navbar">
         <div class="nav-logo">
             <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
@@ -61,6 +59,11 @@ $db->close();
             <img src="person.png" alt="User Icon" class="user-icon">
             <span class="nav-username">Welcome <?php echo isset($_SESSION['employee_name']) ? $_SESSION['employee_name'] : 'Admin'; ?></span>
             <a href="../index.php" class="nav-logout">Logout</a>
+        </div>
+        <div class="lgu-arrow-back">
+            <a href="#" id="toggleSidebar">
+                <img src="lgu-arrow-back.png" alt="Toggle sidebar">
+            </a>
         </div>
     </header>
 
@@ -217,27 +220,5 @@ $db->close();
 
     <script src="../shared-data.js"></script>
     <script src="dashboard.js"></script>
-    <script>
-    // Mobile sidebar burger logic
-    const burger = document.getElementById('burgerMenu');
-    const sidebar = document.getElementById('navbar');
-    const overlay = document.getElementById('sidebarOverlay');
-    function openSidebar() {
-        sidebar.classList.add('open');
-        overlay.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-    function closeSidebar() {
-        sidebar.classList.remove('open');
-        overlay.classList.add('hidden');
-        document.body.style.overflow = '';
-    }
-    burger.addEventListener('click', openSidebar);
-    overlay.addEventListener('click', closeSidebar);
-    // Optional: close sidebar on resize to desktop
-    window.addEventListener('resize', function() {
-        if (window.innerWidth > 900) closeSidebar();
-    });
-    </script>
 </body>
 </html>
