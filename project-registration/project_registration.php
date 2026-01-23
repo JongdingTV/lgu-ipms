@@ -102,6 +102,9 @@ $db->close();
 <html>
 <head>
         <link rel="stylesheet" href="../assets/style.css" />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Project Registration - LGU IPMS</title>

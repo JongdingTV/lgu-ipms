@@ -486,8 +486,10 @@ $db->close();
     function setSidebarHidden(hidden) {
         if (hidden) {
             document.body.classList.add('sidebar-hidden');
+            if (showSidebarBtn) showSidebarBtn.classList.add('show');
         } else {
             document.body.classList.remove('sidebar-hidden');
+            if (showSidebarBtn) showSidebarBtn.classList.remove('show');
         }
     }
     if (toggleSidebarBtn) {
@@ -502,5 +504,7 @@ $db->close();
             setSidebarHidden(false);
         });
     }
+    // On load, ensure open button is hidden
+    if (showSidebarBtn) showSidebarBtn.classList.remove('show');
 </body>
 </html>
