@@ -478,5 +478,29 @@ $db->close();
             window.URL.revokeObjectURL(url);
         });
     </script>
+    // Sidebar toggle logic
+    const sidebar = document.getElementById('navbar');
+    const mainContent = document.querySelector('.main-content');
+    const toggleSidebarBtn = document.getElementById('toggleSidebar');
+    const showSidebarBtn = document.getElementById('showSidebarBtn');
+    function setSidebarHidden(hidden) {
+        if (hidden) {
+            document.body.classList.add('sidebar-hidden');
+        } else {
+            document.body.classList.remove('sidebar-hidden');
+        }
+    }
+    if (toggleSidebarBtn) {
+        toggleSidebarBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            setSidebarHidden(true);
+        });
+    }
+    if (showSidebarBtn) {
+        showSidebarBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            setSidebarHidden(false);
+        });
+    }
 </body>
 </html>

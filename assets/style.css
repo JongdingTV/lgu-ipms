@@ -2607,11 +2607,12 @@ button[type="submit"]:hover {
 }
 
 .dropdown-arrow {
-    margin-left: auto;
-    font-size: 0.75rem;
+    margin-left: 8px;
+    font-size: 1rem;
     display: inline-block;
     font-weight: 700;
     color: inherit;
+    vertical-align: middle;
 }
 
 .nav-submenu {
@@ -2634,14 +2635,14 @@ button[type="submit"]:hover {
 .nav-submenu-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 16px 10px 40px;
+    gap: 8px;
+    padding: 8px 16px 8px 28px;
     text-decoration: none;
     color: #6b7280;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     transition: all 0.2s ease;
     border-radius: 6px;
-    margin: 4px 12px;
+    margin: 2px 8px;
     font-weight: 500;
     border-left: 3px solid transparent;
 }
@@ -2650,7 +2651,7 @@ button[type="submit"]:hover {
     background: rgba(55, 98, 200, 0.1);
     color: #3762c8;
     border-left-color: #3762c8;
-    padding-left: 48px;
+    padding-left: 36px;
 }
 
 .nav-submenu-item.active {
