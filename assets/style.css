@@ -2651,7 +2651,7 @@ button[type="submit"]:hover {
     background: rgba(55, 98, 200, 0.1);
     color: #3762c8;
     border-left-color: #3762c8;
-    padding-left: 28px;
+    padding-left: 36px;
 }
 
 .nav-submenu-item.active {
