@@ -1,47 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>LGU-IPMS | Landing Page</title>
-	<link rel="stylesheet" href="assets/style.css">
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+	<title>LGU Citizen Portal</title>
+	<link rel="icon" type="image/png" href="assets/road.jpeg" />
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+	<link href="https://fonts.googleapis.com/css?family=Merriweather+Sans:400,700" rel="stylesheet" />
 	<style>
 		body {
-			margin: 0;
-			padding: 0;
-			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-			background: linear-gradient(120deg, #2980b9, #6dd5fa, #ffffff);
 			min-height: 100vh;
+			background: linear-gradient(120deg, #2980b9, #6dd5fa, #ffffff);
+			font-family: 'Merriweather Sans', Arial, sans-serif;
 		}
-		.landing-container {
+		.masthead {
+			background: url('assets/road.jpeg') center/cover no-repeat;
+			min-height: 60vh;
 			display: flex;
-			flex-direction: column;
 			align-items: center;
 			justify-content: center;
-			min-height: 100vh;
-			text-align: center;
+			color: #fff;
+			text-shadow: 0 2px 8px rgba(0,0,0,0.3);
 		}
-		.logo {
-			width: 120px;
-			margin-bottom: 24px;
+		.masthead h1 {
+			font-size: 2.5rem;
+			font-weight: bold;
 		}
-		h1 {
-			font-size: 2.8rem;
-			color: #1a3c5d;
-			margin-bottom: 12px;
-		}
-		p {
+		.masthead p {
 			font-size: 1.2rem;
-			color: #333;
-			margin-bottom: 32px;
 		}
-		.landing-btns {
-			display: flex;
-			gap: 20px;
-			flex-wrap: wrap;
-			justify-content: center;
+		.feature-img {
+			width: 100%;
+			max-width: 320px;
+			border-radius: 12px;
+			margin: 1rem auto;
+			box-shadow: 0 2px 12px rgba(0,0,0,0.08);
 		}
-		.landing-btn {
+		.btn-login {
 			background: #2980b9;
 			color: #fff;
 			border: none;
@@ -51,25 +46,68 @@
 			cursor: pointer;
 			transition: background 0.2s;
 			text-decoration: none;
+			margin-top: 1.5rem;
 		}
-		.landing-btn:hover {
+		.btn-login:hover {
 			background: #1a3c5d;
 		}
-		@media (max-width: 600px) {
-			h1 { font-size: 2rem; }
-			.landing-btn { padding: 12px 20px; font-size: 1rem; }
+		.section-title {
+			color: #1a3c5d;
+			margin-top: 2rem;
+			margin-bottom: 1rem;
+		}
+		.facility-img {
+			width: 100%;
+			max-width: 200px;
+			border-radius: 8px;
+			margin-bottom: 1rem;
+		}
+		.footer {
+			background: #f8f9fa;
+			color: #888;
+			text-align: center;
+			padding: 1.5rem 0 0.5rem 0;
+			margin-top: 2rem;
 		}
 	</style>
 </head>
 <body>
-	<div class="landing-container">
-		<img src="assets/logo.png" alt="LGU-IPMS Logo" class="logo" onerror="this.style.display='none'">
-		<h1>Welcome to LGU-IPMS</h1>
-		<p>Local Government Unit Infrastructure Project Monitoring System</p>
-		<div class="landing-btns">
-			<a href="dashboard/dashboard.php" class="landing-btn">Admin Login</a>
-			<a href="user-dashboard/index.php" class="landing-btn">User Portal</a>
+	<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+		<div class="container">
+			<a class="navbar-brand fw-bold" href="#">LGU Citizen Portal</a>
 		</div>
-	</div>
+	</nav>
+	<header class="masthead">
+		<div class="container text-center">
+			<h1>Welcome to LGU Infrastructure & Utilities Services</h1>
+			<p>Access community infrastructure maintenance requests and track progress securely.</p>
+			<a href="user-dashboard/index.php" class="btn-login">User Login</a>
+		</div>
+	</header>
+	<section class="container text-center">
+		<h2 class="section-title">Community Facilities & Services</h2>
+		<div class="row justify-content-center">
+			<div class="col-md-3 col-6 mb-4">
+				<img src="assets/road.jpeg" alt="Road" class="facility-img">
+				<div>Efficient Service</div>
+			</div>
+			<div class="col-md-3 col-6 mb-4">
+				<img src="assets/drainage.jpg" alt="Drainage" class="facility-img">
+				<div>Sustainability</div>
+			</div>
+			<div class="col-md-3 col-6 mb-4">
+				<img src="assets/construction.jpg" alt="Construction" class="facility-img">
+				<div>Strong Management</div>
+			</div>
+			<div class="col-md-3 col-6 mb-4">
+				<img src="assets/bridge.jpg" alt="Bridge" class="facility-img">
+				<div>Digital Innovation</div>
+			</div>
+		</div>
+	</section>
+	<footer class="footer">
+		<div>© 2026 LGU Citizen Portal · All Rights Reserved</div>
+	</footer>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
