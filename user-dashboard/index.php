@@ -1,8 +1,8 @@
 <?php
 // Include security authentication
-require __DIR__ . '/session-auth.php';
-require __DIR__ . '/database.php';
-require __DIR__ . '/config-path.php';
+require dirname(__DIR__) . '/session-auth.php';
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/config-path.php';
 
 // Set no-cache headers on login page
 set_no_cache_headers();
