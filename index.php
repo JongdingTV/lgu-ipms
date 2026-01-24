@@ -81,7 +81,7 @@
 		<div class="container text-center">
 			<h1>Welcome to LGU Infrastructure & Utilities Services</h1>
 			<p>Access community infrastructure maintenance requests and track progress securely.</p>
-			<a href="user-dashboard/index.php" class="btn-login">User Login</a>
+			<a href="user-dashboard/user-login.php" class="btn-login">User Login</a>
 		</div>
 	</header>
 	<section class="container text-center">
