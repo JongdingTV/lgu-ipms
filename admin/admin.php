@@ -1,4 +1,7 @@
 <?php
+// Start session first
+session_start();
+
 // Include configuration and database files first
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/session-auth.php';
@@ -36,7 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     if ($valid) {
                         $_SESSION['employee_id'] = $employee['id'];
                         $_SESSION['employee_name'] = $isAdmin ? 'Admin' : ($employee['first_name'] . ' ' . $employee['last_name']);
-                        header('Location: dashboard/dashboard.php');
+                        $_SESSION['user_type'] = 'employee';
+                        header('Location: /admin/dashboard/dashboard.php');
                         exit;
                     } else {
                         $error = 'Invalid email or password.';
@@ -60,13 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LGU | Employee Login</title>
-<link rel="icon" type="image/png" href="logocityhall.png">
+<link rel="icon" type="image/png" href="/logocityhall.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/style.css">
 <?php echo get_app_config_script(); ?>
-<script src="security-no-back.js?v=<?php echo time(); ?>"></script>
+<script src="/security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
 
 body {
@@ -139,7 +143,7 @@ body::before {
 <div class="wrapper">
     <div class="card">
 
-        <img src="logocityhall.png" class="icon-top">
+        <img src="/logocityhall.png" class="icon-top">
 
         <h2 class="title">Employee Login</h2>
         <p class="subtitle">Secure access for LGU employees.</p>
