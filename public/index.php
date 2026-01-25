@@ -246,7 +246,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 			<h1>Welcome to LGU Infrastructure & Project Management</h1>
 			<p>Access community infrastructure maintenance requests and track project progress securely.</p>
 			<div>
-				<a href="/user-dashboard/user-login.php" class="btn-login">
+				<a href="user-dashboard/user-login.php" class="btn-login">
 					<i class="fas fa-user-circle"></i> Citizen Login
 				</a>
 				<a href="/admin/admin.php" class="btn-login secondary">
