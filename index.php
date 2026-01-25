@@ -12,7 +12,7 @@ require_once INCLUDES_PATH . '/auth.php';
 // If user is authenticated, redirect to their dashboard
 if (is_authenticated()) {
 	if (get_current_user_type() === 'employee') {
-		header('Location: /admin/admin.php');
+		header('Location: /admin/index.php');
 	} else {
 		header('Location: /user-dashboard/user-dashboard.php');
 	}

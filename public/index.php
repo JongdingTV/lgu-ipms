@@ -516,7 +516,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 						<a class="nav-link" href="#about"><i class="fas fa-info-circle"></i> About</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="/admin/admin.php"><i class="fas fa-sign-in-alt"></i> Login</a>
+						<a class="nav-link" href="/admin/index.php"><i class="fas fa-sign-in-alt"></i> Login</a>
 					</li>
 				</ul>
 			</div>
@@ -532,7 +532,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 				<a href="/user-dashboard/user-login.php" class="btn-primary-custom btn-citizen">
 					<i class="fas fa-user-circle"></i> Citizen Access
 				</a>
-				<a href="/admin/admin.php" class="btn-primary-custom btn-employee">
+				<a href="/admin/index.php" class="btn-primary-custom btn-employee">
 					<i class="fas fa-briefcase"></i> Employee Access
 				</a>
 			</div>
@@ -720,7 +720,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 		<div class="container">
 			<h2>Ready to Get Started?</h2>
 			<p>Join thousands of communities managing infrastructure efficiently</p>
-			<a href="/admin/admin.php" class="btn-cta">
+			<a href="/admin/index.php" class="btn-cta">
 				<i class="fas fa-arrow-right"></i> Access Portal Now
 			</a>
 		</div>
@@ -740,7 +740,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 					<div class="footer-section">
 						<h5>Quick Links</h5>
 						<ul>
-							<li><a href="/admin/admin.php">Employee Login</a></li>
+							<li><a href="/admin/index.php">Employee Login</a></li>
 							<li><a href="/user-dashboard/user-login.php">Citizen Login</a></li>
 							<li><a href="#features">Features</a></li>
 							<li><a href="#about">About</a></li>

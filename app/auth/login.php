@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 					session_regenerate_id(true);
 					
 					// Redirect to existing admin page
-					header('Location: /admin/admin.php');
+					header('Location: /admin/index.php');
 					exit;
 				} else {
 					$error = 'Invalid email or password.';
