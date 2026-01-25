@@ -636,50 +636,46 @@ $db->close();
         // Load projects on page load
         document.addEventListener('DOMContentLoaded', function(){
             loadSavedProjects();
-            
-            // Dropdown toggle handlers
-            const projectRegToggle = document.getElementById('projectRegToggle');
-            const projectRegSubmenu = document.getElementById('projectRegSubmenu');
-            const projectRegGroup = projectRegToggle.closest('.nav-item-group');
-            
-            const contractorsToggle = document.getElementById('contractorsToggle');
-            const contractorsSubmenu = document.getElementById('contractorsSubmenu');
-            const contractorsGroup = contractorsToggle.closest('.nav-item-group');
-            
-            // Project Registration dropdown
-            if (projectRegToggle && projectRegGroup) {
-                projectRegToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    projectRegGroup.classList.toggle('open');
-                    // Close contractors dropdown if open
-                    if (contractorsGroup) contractorsGroup.classList.remove('open');
-                });
-            }
-            
-            // Contractors dropdown
-            if (contractorsToggle && contractorsGroup) {
-                contractorsToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    contractorsGroup.classList.toggle('open');
-                    // Close project registration dropdown if open
-                    if (projectRegGroup) projectRegGroup.classList.remove('open');
-                });
-            }
-            
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.nav-item-group')) {
-                    if (projectRegGroup) projectRegGroup.classList.remove('open');
-                    if (contractorsGroup) contractorsGroup.classList.remove('open');
-                }
+        });
+
+        // Dropdown toggle handlers - run immediately
+        const projectRegToggle = document.getElementById('projectRegToggle');
+        const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
+        const contractorsToggle = document.getElementById('contractorsToggle');
+        const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
+
+        if (projectRegToggle && projectRegGroup) {
+            projectRegToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                projectRegGroup.classList.toggle('open');
+                if (contractorsGroup) contractorsGroup.classList.remove('open');
             });
-            
-            // Close dropdowns when clicking on a submenu item
-            document.querySelectorAll('.nav-submenu-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    if (projectRegGroup) projectRegGroup.classList.remove('open');
-                    if (contractorsGroup) contractorsGroup.classList.remove('open');
-                });
+        }
+
+        if (contractorsToggle && contractorsGroup) {
+            contractorsToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                contractorsGroup.classList.toggle('open');
+                if (projectRegGroup) projectRegGroup.classList.remove('open');
+            });
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.nav-item-group')) {
+                if (projectRegGroup) projectRegGroup.classList.remove('open');
+                if (contractorsGroup) contractorsGroup.classList.remove('open');
+            }
+        });
+
+        // Close dropdowns when clicking on a submenu item
+        document.querySelectorAll('.nav-submenu-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (projectRegGroup) projectRegGroup.classList.remove('open');
+                if (contractorsGroup) contractorsGroup.classList.remove('open');
             });
         });
     </script>
