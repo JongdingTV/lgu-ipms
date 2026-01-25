@@ -39,7 +39,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 	<style>
 		body {
 			min-height: 100vh;
-			background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('/assets/cityhall.jpeg') center/cover no-repeat fixed;
+			background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('/cityhall.jpeg') center/cover no-repeat fixed;
 			font-family: 'Merriweather Sans', Arial, sans-serif;
 		}
 		
