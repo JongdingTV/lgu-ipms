@@ -58,7 +58,7 @@ body {
     flex-direction: column;
 
     /* NEW — background image + blur */
-    background: url("cityhall.jpeg") center/cover no-repeat fixed;
+    background: url("/cityhall.jpeg") center/cover no-repeat fixed;
     position: relative;
     padding-top: 80px;
 }
