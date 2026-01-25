@@ -249,7 +249,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 				<a href="user-dashboard/user-login.php" class="btn-login">
 					<i class="fas fa-user-circle"></i> Citizen Login
 				</a>
-				<a href="/admin/admin.php" class="btn-login secondary">
+				<a href="admin/admin.php" class="btn-login secondary">
 					<i class="fas fa-briefcase"></i> Employee Login
 				</a>
 			</div>
