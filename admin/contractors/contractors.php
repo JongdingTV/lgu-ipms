@@ -99,7 +99,7 @@ $db->close();
             
             <!-- Contractors with Submenu -->
             <div class="nav-item-group">
-                <a href="contractors.php" class="active nav-main-item" id="contractorsToggle">
+                <a href="contractors.php" class="nav-main-item" id="contractorsToggle">
                     <img src="contractors.png" class="nav-icon">Contractors
                     <span class="dropdown-arrow">▼</span>
                 </a>
@@ -241,9 +241,12 @@ $db->close();
     <script>
         // Set active submenu item based on current URL
         const currentPage = window.location.pathname;
+        const currentFileName = currentPage.split('/').pop() || 'index.php';
         document.querySelectorAll('.nav-submenu-item').forEach(item => {
             item.classList.remove('active');
-            if (currentPage.includes(item.getAttribute('href'))) {
+            const href = item.getAttribute('href');
+            const hrefFileName = href.split('/').pop();
+            if (hrefFileName === currentFileName || currentPage.includes(hrefFileName)) {
                 item.classList.add('active');
             }
         });
