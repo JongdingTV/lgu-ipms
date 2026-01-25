@@ -1,9 +1,9 @@
 <?php
 // Import security functions
-require '../session-auth.php';
+require dirname(__DIR__, 2) . '/session-auth.php';
 // Database connection
-require '../database.php';
-require '../config-path.php';
+require dirname(__DIR__, 2) . '/database.php';
+require dirname(__DIR__, 2) . '/config-path.php';
 
 // Set no-cache headers to prevent back button access
 set_no_cache_headers();

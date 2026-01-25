@@ -1,9 +1,9 @@
 <?php
-// Import security functions
-require '../session-auth.php';
+// Import security functions - go up 2 levels to root
+require dirname(__DIR__, 2) . '/session-auth.php';
 // Database connection
-require '../database.php';
-require '../config-path.php';
+require dirname(__DIR__, 2) . '/database.php';
+require dirname(__DIR__, 2) . '/config-path.php';
 
 // Set no-cache headers to prevent back button access to protected pages
 set_no_cache_headers();
@@ -30,20 +30,20 @@ $db->close();
 ?>
 <html>
 <head>
-        <link rel="stylesheet" href="../assets/style.css" />
+        <link rel="stylesheet" href="../../assets/style.css" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LGU Dashboard</title>
-    <link rel="icon" type="image/png" href="../logocityhall.png">
+    <link rel="icon" type="image/png" href="../../logocityhall.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <?php echo get_app_config_script(); ?>
-    <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
+    <script src="../../security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
     <header class="nav" id="navbar">
         <div class="nav-logo">
-            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <img src="../../logocityhall.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
@@ -58,7 +58,7 @@ $db->close();
         <div class="nav-user">
             <img src="person.png" alt="User Icon" class="user-icon">
             <span class="nav-username">Welcome <?php echo isset($_SESSION['employee_name']) ? $_SESSION['employee_name'] : 'Admin'; ?></span>
-            <a href="../index.php" class="nav-logout">Logout</a>
+            <a href="../../logout.php" class="nav-logout">Logout</a>
         </div>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar">
@@ -218,7 +218,7 @@ $db->close();
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
-    <script src="../shared-data.js"></script>
+    <script src="../../shared-data.js"></script>
     <script src="dashboard.js"></script>
 </body>
 </html>
