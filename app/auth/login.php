@@ -43,8 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 					// Regenerate session ID for security
 					session_regenerate_id(true);
 					
-					// Redirect to admin dashboard
-					header('Location: ' . asset('../../app/admin/dashboard.php'));
+					// Redirect to existing admin page
+					header('Location: /admin/admin.php');
 					exit;
 				} else {
 					$error = 'Invalid email or password.';
@@ -61,8 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 					// Regenerate session ID for security
 					session_regenerate_id(true);
 					
-					// Redirect to citizen dashboard
-					header('Location: ' . asset('../../app/user/dashboard.php'));
+					// Redirect to existing citizen login/dashboard
+					header('Location: /user-dashboard/user-dashboard.php');
 					exit;
 				} else {
 					$error = 'Invalid email or password.';

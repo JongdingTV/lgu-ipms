@@ -233,7 +233,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 						<a class="nav-link" href="#stats">About</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="<?php echo asset('../../app/auth/login.php'); ?>">Admin Login</a>
+						<a class="nav-link" href="/admin/admin.php">Admin Login</a>
 					</li>
 				</ul>
 			</div>
@@ -246,10 +246,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 			<h1>Welcome to LGU Infrastructure & Project Management</h1>
 			<p>Access community infrastructure maintenance requests and track project progress securely.</p>
 			<div>
-				<a href="<?php echo asset('../../app/auth/login.php?type=citizen'); ?>" class="btn-login">
+				<a href="/user-dashboard/user-login.php" class="btn-login">
 					<i class="fas fa-user-circle"></i> Citizen Login
 				</a>
-				<a href="<?php echo asset('../../app/auth/login.php?type=employee'); ?>" class="btn-login secondary">
+				<a href="/admin/admin.php" class="btn-login secondary">
 					<i class="fas fa-briefcase"></i> Employee Login
 				</a>
 			</div>

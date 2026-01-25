@@ -9,5 +9,5 @@ require_once CONFIG_PATH . '/app.php';
 require_once INCLUDES_PATH . '/auth.php';
 
 // Logout the user
-logout('/public/index.php?logged_out=1');
+logout('/public/index.php');
 ?>
