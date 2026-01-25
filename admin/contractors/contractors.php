@@ -50,102 +50,20 @@ $db->close();
     <?php echo get_app_config_script(); ?>
     <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
     <style>
-        /* Dropdown Navigation Styling */
-        .nav-item-group {
-            position: relative;
-        }
-
-        .nav-main-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            color: rgba(255, 255, 255, 0.9) !important;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.95rem;
-            white-space: nowrap;
-            transition: all 0.3s ease;
-            border-radius: 6px;
-        }
-
-        .nav-main-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff !important;
-        }
-
-        .dropdown-arrow {
-            font-size: 0.7rem;
-            transition: transform 0.3s ease;
-            display: inline-block;
-            margin-left: 4px;
-        }
-
-        .nav-item-group.open .dropdown-arrow {
-            transform: rotate(180deg);
-        }
-
-        .nav-submenu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            min-width: 220px;
-            margin-top: 8px;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1000;
-            overflow: hidden;
-        }
-
-        .nav-item-group.open .nav-submenu {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .nav-submenu-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            color: #374151;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-            border-left: 3px solid transparent;
-            white-space: nowrap;
-        }
-
-        .nav-submenu-item:hover {
-            background: #f3f4f6;
-            color: #1f2937;
-            padding-left: 18px;
-            border-left-color: #3b82f6;
-        }
-
-        .nav-submenu-item.active {
-            background: #eff6ff;
-            color: #1e40af;
-            border-left-color: #3b82f6;
-            font-weight: 600;
-        }
-
-        .submenu-icon {
-            font-size: 1.1rem;
-            flex-shrink: 0;
-        }
-
-        .nav-submenu-item span:last-child {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        .nav-item-group { position: relative; display: inline-block; }
+        .nav-main-item { display: flex !important; align-items: center; gap: 8px; padding: 10px 16px !important; color: #374151; text-decoration: none; font-weight: 500; font-size: 0.95rem; transition: all 0.2s ease; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+        .nav-main-item:hover { background: #f3f4f6; color: #1f2937; padding-left: 18px !important; }
+        .nav-main-item.active { background: #eff6ff; color: #1e40af; font-weight: 600; }
+        .nav-icon { width: 20px; height: 20px; display: inline-block; margin-right: 4px; }
+        .dropdown-arrow { display: inline-block; margin-left: 4px; transition: transform 0.3s ease; }
+        .nav-item-group.open .dropdown-arrow { transform: rotate(180deg); }
+        .nav-submenu { position: absolute; top: 100%; left: 0; background: white; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); min-width: 220px; margin-top: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; overflow: hidden; }
+        .nav-item-group.open .nav-submenu { opacity: 1; visibility: visible; transform: translateY(0); }
+        .nav-submenu-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #374151; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; border-left: 3px solid transparent; white-space: nowrap; }
+        .nav-submenu-item:hover { background: #f3f4f6; color: #1f2937; padding-left: 18px; border-left-color: #3b82f6; }
+        .nav-submenu-item.active { background: #eff6ff; color: #1e40af; border-left-color: #3b82f6; font-weight: 600; }
+        .submenu-icon { font-size: 1.1rem; flex-shrink: 0; }
+        .nav-submenu-item span:last-child { flex: 1; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body>
