@@ -38,7 +38,7 @@ $db->close();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <?php echo get_app_config_script(); ?>
-    <script src="../../security-no-back.js?v=<?php echo time(); ?>"></script>
+    <script src="/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
     <header class="nav" id="navbar">
