@@ -1,40 +1,57 @@
 <?php
-// Include security functions
-require dirname(__DIR__) . '/session-auth.php';
+// Include configuration and database files first
 require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/config-path.php';
 
 // Add no-cache headers to prevent cached login page from being shown after logout
 set_no_cache_headers();
+
+$error = '';
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if ($db->connect_error) {
-        die('Database connection failed: ' . $db->connect_error);
-    }
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
-    $stmt = $db->prepare("SELECT id, password, first_name, last_name FROM employees WHERE email = ?");
-    $stmt->bind_param('s', $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result->num_rows > 0) {
-        $employee = $result->fetch_assoc();
-        $isAdmin = ($email === 'admin@lgu.gov.ph');
-        $valid = false;
-        if ($isAdmin) {
-            // Allow plain password for admin test account
-            $valid = ($password === 'admin123' || password_verify($password, $employee['password']));
+    // Check database connection before processing
+    if (!isset($db) || $db->connect_error) {
+        $error = 'Database connection error. Please try again later.';
+    } else {
+        $email = isset($_POST['email']) ? trim($_POST['email']) : '';
+        $password = isset($_POST['password']) ? trim($_POST['password']) : '';
+        
+        if (!empty($email) && !empty($password)) {
+            $stmt = $db->prepare("SELECT id, password, first_name, last_name FROM employees WHERE email = ?");
+            if ($stmt) {
+                $stmt->bind_param('s', $email);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($result->num_rows > 0) {
+                    $employee = $result->fetch_assoc();
+                    $isAdmin = ($email === 'admin@lgu.gov.ph');
+                    $valid = false;
+                    if ($isAdmin) {
+                        // Allow plain password for admin test account
+                        $valid = ($password === 'admin123' || password_verify($password, $employee['password']));
+                    } else {
+                        $valid = password_verify($password, $employee['password']);
+                    }
+                    if ($valid) {
+                        $_SESSION['employee_id'] = $employee['id'];
+                        $_SESSION['employee_name'] = $isAdmin ? 'Admin' : ($employee['first_name'] . ' ' . $employee['last_name']);
+                        header('Location: dashboard/dashboard.php');
+                        exit;
+                    } else {
+                        $error = 'Invalid email or password.';
+                    }
+                } else {
+                    $error = 'Invalid email or password.';
+                }
+                $stmt->close();
+            } else {
+                $error = 'Database error. Please try again later.';
+            }
         } else {
-            $valid = password_verify($password, $employee['password']);
-        }
-        if ($valid) {
-            $_SESSION['employee_id'] = $employee['id'];
-            $_SESSION['employee_name'] = $isAdmin ? 'Admin' : ($employee['first_name'] . ' ' . $employee['last_name']);
-            header('Location: dashboard/dashboard.php');
-            exit;
+            $error = 'Please enter both email and password.';
         }
     }
-    $error = 'Invalid email or password.';
-    $db->close();
 }
 ?>
 <!DOCTYPE html>
