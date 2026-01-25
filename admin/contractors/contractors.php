@@ -53,7 +53,7 @@ $db->close();
 <body>
     <header class="nav" id="navbar">
         <div class="nav-logo">
-            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
