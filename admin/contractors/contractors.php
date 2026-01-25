@@ -321,48 +321,42 @@ $db->close();
     </footer>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Dropdown toggle handlers
-            const projectRegToggle = document.getElementById('projectRegToggle');
-            const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
-            
-            const contractorsToggle = document.getElementById('contractorsToggle');
-            const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
-            
-            // Project Registration dropdown
-            if (projectRegToggle && projectRegGroup) {
-                projectRegToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    projectRegGroup.classList.toggle('open');
-                    // Close contractors dropdown if open
-                    if (contractorsGroup) contractorsGroup.classList.remove('open');
-                });
-            }
-            
-            // Contractors dropdown
-            if (contractorsToggle && contractorsGroup) {
-                contractorsToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    contractorsGroup.classList.toggle('open');
-                    // Close project registration dropdown if open
-                    if (projectRegGroup) projectRegGroup.classList.remove('open');
-                });
-            }
-            
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.nav-item-group')) {
-                    if (projectRegGroup) projectRegGroup.classList.remove('open');
-                    if (contractorsGroup) contractorsGroup.classList.remove('open');
-                }
+        // Dropdown toggle handlers - run immediately
+        const projectRegToggle = document.getElementById('projectRegToggle');
+        const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
+        const contractorsToggle = document.getElementById('contractorsToggle');
+        const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
+        
+        if (projectRegToggle && projectRegGroup) {
+            projectRegToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                projectRegGroup.classList.toggle('open');
+                if (contractorsGroup) contractorsGroup.classList.remove('open');
             });
-            
-            // Close dropdowns when clicking on a submenu item
-            document.querySelectorAll('.nav-submenu-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    if (projectRegGroup) projectRegGroup.classList.remove('open');
-                    if (contractorsGroup) contractorsGroup.classList.remove('open');
-                });
+        }
+        
+        if (contractorsToggle && contractorsGroup) {
+            contractorsToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                contractorsGroup.classList.toggle('open');
+                if (projectRegGroup) projectRegGroup.classList.remove('open');
+            });
+        }
+        
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.nav-item-group')) {
+                if (projectRegGroup) projectRegGroup.classList.remove('open');
+                if (contractorsGroup) contractorsGroup.classList.remove('open');
+            }
+        });
+        
+        document.querySelectorAll('.nav-submenu-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (projectRegGroup) projectRegGroup.classList.remove('open');
+                if (contractorsGroup) contractorsGroup.classList.remove('open');
             });
         });
     </script>

@@ -507,40 +507,42 @@ $db->close();
         });
 
         // Dropdown handlers
-        document.addEventListener('DOMContentLoaded', function() {
-            const projectRegToggle = document.getElementById('projectRegToggle');
-            const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
-            const contractorsToggle = document.getElementById('contractorsToggle');
-            const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
-            
-            if (projectRegToggle && projectRegGroup) {
-                projectRegToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    projectRegGroup.classList.toggle('open');
-                    if (contractorsGroup) contractorsGroup.classList.remove('open');
-                });
-            }
-            
-            if (contractorsToggle && contractorsGroup) {
-                contractorsToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    contractorsGroup.classList.toggle('open');
-                    if (projectRegGroup) projectRegGroup.classList.remove('open');
-                });
-            }
-            
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.nav-item-group')) {
-                    if (projectRegGroup) projectRegGroup.classList.remove('open');
-                    if (contractorsGroup) contractorsGroup.classList.remove('open');
-                }
+        // Dropdown handlers
+        const projectRegToggle = document.getElementById('projectRegToggle');
+        const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
+        const contractorsToggle = document.getElementById('contractorsToggle');
+        const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
+        
+        if (projectRegToggle && projectRegGroup) {
+            projectRegToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                projectRegGroup.classList.toggle('open');
+                if (contractorsGroup) contractorsGroup.classList.remove('open');
             });
-            
-            document.querySelectorAll('.nav-submenu-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    if (projectRegGroup) projectRegGroup.classList.remove('open');
-                    if (contractorsGroup) contractorsGroup.classList.remove('open');
-                });
+        }
+        
+        if (contractorsToggle && contractorsGroup) {
+            contractorsToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                contractorsGroup.classList.toggle('open');
+                if (projectRegGroup) projectRegGroup.classList.remove('open');
+            });
+        }
+        
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.nav-item-group')) {
+                if (projectRegGroup) projectRegGroup.classList.remove('open');
+                if (contractorsGroup) contractorsGroup.classList.remove('open');
+            }
+        });
+        
+        document.querySelectorAll('.nav-submenu-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (projectRegGroup) projectRegGroup.classList.remove('open');
+                if (contractorsGroup) contractorsGroup.classList.remove('open');
             });
         });
     </script>
