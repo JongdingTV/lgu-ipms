@@ -144,7 +144,7 @@ $db->close();
                     <span class="dropdown-arrow">▼</span>
                 </a>
                 <div class="nav-submenu" id="projectRegSubmenu">
-                    <a href="project_registration.php" class="nav-submenu-item active">
+                    <a href="project_registration.php" class="nav-submenu-item">
                         <span class="submenu-icon">➕</span>
                         <span>New Project</span>
                     </a>
@@ -321,6 +321,15 @@ $db->close();
     <script src="../shared-data.js"></script>
 
     <script>
+        // Set active submenu item based on current URL
+        const currentPage = window.location.pathname;
+        document.querySelectorAll('.nav-submenu-item').forEach(item => {
+            item.classList.remove('active');
+            if (currentPage.includes(item.getAttribute('href'))) {
+                item.classList.add('active');
+            }
+        });
+
         // --- AJAX-based Project Registration ---
         const form = document.getElementById('projectForm');
         const msg = document.getElementById('formMessage');

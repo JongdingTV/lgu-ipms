@@ -104,7 +104,7 @@ $db->close();
                     <span class="dropdown-arrow">▼</span>
                 </a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="contractors.php" class="nav-submenu-item active">
+                    <a href="contractors.php" class="nav-submenu-item">
                         <span class="submenu-icon">➕</span>
                         <span>Add Contractor</span>
                     </a>
@@ -239,6 +239,15 @@ $db->close();
     </footer>
 
     <script>
+        // Set active submenu item based on current URL
+        const currentPage = window.location.pathname;
+        document.querySelectorAll('.nav-submenu-item').forEach(item => {
+            item.classList.remove('active');
+            if (currentPage.includes(item.getAttribute('href'))) {
+                item.classList.add('active');
+            }
+        });
+
         // Dropdown toggle handlers - run immediately
         const projectRegToggle = document.getElementById('projectRegToggle');
         const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
