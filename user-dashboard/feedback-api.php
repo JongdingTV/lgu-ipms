@@ -1,6 +1,6 @@
 <?php
 // Import security functions
-require '../session-auth.php';
+require dirname(__DIR__) . '/session-auth.php';
 
 // Check authentication
 check_auth();
@@ -9,8 +9,8 @@ check_suspicious_activity();
 header('Content-Type: application/json');
 
 // Database connection
-require '../database.php';
-require '../config-path.php';
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/config-path.php';
 if ($db->connect_error) {
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;

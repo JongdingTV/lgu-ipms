@@ -13,7 +13,7 @@ destroy_session();
 set_no_cache_headers();
 
 // Redirect to login page
-header('Location: login.php?logout=1');
+header('Location: user-dashboard/user-login.php?logout=1');
 exit;
 
 

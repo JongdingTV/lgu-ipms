@@ -1,7 +1,8 @@
 <?php
 // Import security functions
-require '../session-auth.php';
-require '../database.php';
+require dirname(__DIR__) . '/session-auth.php';
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/config-path.php';
 
 // AJAX handler for feedback submission
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
@@ -18,8 +19,6 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
     }
     $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
-        require '../database.php';
-        require '../config-path.php';
         if ($db->connect_error) {
             echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
             exit;

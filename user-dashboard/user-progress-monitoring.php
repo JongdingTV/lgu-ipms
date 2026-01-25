@@ -1,6 +1,6 @@
 <?php
 // Import security functions
-require '../session-auth.php';
+require dirname(__DIR__) . '/session-auth.php';
 
 // Protect page
 set_no_cache_headers();
