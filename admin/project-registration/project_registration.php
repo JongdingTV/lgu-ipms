@@ -508,28 +508,6 @@ $db->close();
             });
         });
 
-        // Dropdown navigation toggle
-        const projectRegToggle = document.getElementById('projectRegToggle');
-        const navItemGroup = projectRegToggle?.closest('.nav-item-group');
-        
-        if (projectRegToggle && navItemGroup) {
-            // Keep dropdown open by default
-            navItemGroup.classList.add('open');
-            
-            projectRegToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                navItemGroup.classList.toggle('open');
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!navItemGroup.contains(e.target)) {
-                    navItemGroup.classList.remove('open');
-                }
-            });
-        }
-
         resetBtn.addEventListener('click', function(){
             form.reset();
             msg.style.display = 'none';
@@ -543,7 +521,7 @@ $db->close();
             loadSavedProjects();
         });
 
-        // Dropdown toggle handlers - run immediately
+        // Dropdown toggle handlers
         const projectRegToggle = document.getElementById('projectRegToggle');
         const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
         const contractorsToggle = document.getElementById('contractorsToggle');
@@ -567,7 +545,6 @@ $db->close();
             });
         }
 
-        // Close dropdowns when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.nav-item-group')) {
                 if (projectRegGroup) projectRegGroup.classList.remove('open');
@@ -575,7 +552,6 @@ $db->close();
             }
         });
 
-        // Close dropdowns when clicking on a submenu item
         document.querySelectorAll('.nav-submenu-item').forEach(item => {
             item.addEventListener('click', function(e) {
                 e.stopPropagation();

@@ -507,7 +507,6 @@ $db->close();
         });
 
         // Dropdown handlers
-        // Dropdown handlers
         const projectRegToggle = document.getElementById('projectRegToggle');
         const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
         const contractorsToggle = document.getElementById('contractorsToggle');
