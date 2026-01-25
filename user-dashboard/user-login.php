@@ -16,9 +16,9 @@ use PHPMailer\PHPMailer\Exception;
 
 // IMPORTANT:
 // Make sure you have a local copy of PHPMailer in: /vendor/PHPMailer
-require __DIR__ . '/vendor/PHPMailer/PHPMailer.php';
-require __DIR__ . '/vendor/PHPMailer/SMTP.php';
-require __DIR__ . '/vendor/PHPMailer/Exception.php';
+require dirname(__DIR__) . '/vendor/PHPMailer/PHPMailer.php';
+require dirname(__DIR__) . '/vendor/PHPMailer/SMTP.php';
+require dirname(__DIR__) . '/vendor/PHPMailer/Exception.php';
 
 // By default, show the normal email/password form
 $showOtpForm = isset($_SESSION['pending_user'], $_SESSION['otp'], $_SESSION['otp_time']);

@@ -1,8 +1,8 @@
 <?php
 // Include security functions
-require 'session-auth.php';
-require 'database.php';
-require 'config-path.php';
+require dirname(__DIR__) . '/session-auth.php';
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/config-path.php';
 
 // Add no-cache headers to prevent cached login page from being shown after logout
 set_no_cache_headers();
