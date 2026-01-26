@@ -10,6 +10,15 @@ define('ASSETS_URL', '/assets');
 require_once CONFIG_PATH . '/app.php';
 require_once INCLUDES_PATH . '/helpers.php';
 require_once INCLUDES_PATH . '/security.php';
+
+// Set comprehensive security headers
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+header('Content-Security-Policy: default-src \'self\'; script-src \'self\' \'unsafe-inline\' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; style-src \'self\' \'unsafe-inline\' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -557,7 +566,7 @@ require_once INCLUDES_PATH . '/security.php';
 	<nav class="navbar navbar-expand-lg sticky-top">
 		<div class="container-fluid">
 			<a class="navbar-brand" href="/">
-				<img src="<?php echo ASSETS_URL; ?>/logocityhall.png" alt="City Hall Logo" class="logo-img">
+				<img src="<?php echo ASSETS_URL; ?>/logocityhall.png" alt="" class="logo-img">
 				<span class="brand-text">LGU IPMS</span>
 			</a>
 			<button class="navbar-toggler hamburger-menu" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
