@@ -127,8 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step3_verify'])) {
                 unset($_SESSION['admin_code_time']);
                 unset($_SESSION['admin_code_attempts']);
                 
-                // Redirect
-                header('Location: /admin/manage-employees.php');
+                // Redirect to admin login page
+                header('Location: /admin/index.php');
                 exit;
             } else {
                 $attempts_left = 5 - $_SESSION['admin_code_attempts'];
