@@ -1,23 +1,19 @@
-# Restrict direct access to admin directory
+# Admin directory security
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Allow index.php to be accessed
-    RewriteRule ^index\.php$ - [L]
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    
-    # Hide the admin directory from directory listings
-    Options -Indexes
+    # Prevent direct access to sensitive files
+    RewriteRule ^(config|database)(/|$) - [F]
+    RewriteRule ^\.env$ - [F]
 </IfModule>
 
-# Prevent access from unauthorized sources
-<IfModule mod_authz_core.c>
-    # Allow only legitimate requests
-    SetEnvIF Request_URI "\.php$" ALLOW=1
-</IfModule>
+# Allow PHP files in this directory
+<FilesMatch "\.php$">
+    Allow from all
+</FilesMatch>
 
-# Secure the admin area
+# Prevent directory listing
+Options -Indexes
 <FilesMatch "\.php$">
     <IfModule mod_headers.c>
         Header always set X-Frame-Options "DENY"

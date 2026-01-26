@@ -22,32 +22,20 @@
     Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self';"
 </IfModule>
 
-# Allow direct access to physical files and directories
+# Rewrite Engine for URL handling
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Block access to sensitive directories
+    # Block access to sensitive directories and files
     RewriteRule ^(config|includes|database|storage|vendor)(/|$) - [F]
     RewriteRule ^\.env$ - [F]
     RewriteRule ^\.git - [F]
+    RewriteRule ^\.sql$ - [F]
     
     # Allow direct access to existing files and directories
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
 </IfModule>
-
-# Allow public and admin PHP files
-<Directory "/var/www/html/lgu-ipms/public">
-    <IfModule mod_authz_core.c>
-        Require all granted
-    </IfModule>
-</Directory>
-
-<Directory "/var/www/html/lgu-ipms/admin">
-    <IfModule mod_authz_core.c>
-        Require all granted
-    </IfModule>
-</Directory>
 
 # Hide server information
 <IfModule mod_headers.c>
@@ -58,13 +46,15 @@
 </IfModule>
 
 # PHP Security Settings
-<IfModule mod_php5.c>
+<IfModule mod_php.c>
     php_flag display_errors off
     php_flag log_errors on
-    php_value error_log /var/log/php_errors.log
     php_value upload_max_filesize 10M
     php_value post_max_size 10M
     php_flag session.cookie_httponly on
     php_flag session.cookie_secure on
     php_value session.cookie_samesite "Strict"
 </IfModule>
+
+# Prevent directory listing
+Options -Indexes
