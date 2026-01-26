@@ -12,9 +12,16 @@ set_no_cache_headers();
 
 // Check if user is accessing admin page without verification or login
 // If not logged in AND not verified, redirect to verification
-if (!isset($_SESSION['employee_id']) && !isset($_SESSION['admin_verified'])) {
-    header('Location: /public/admin-verify.php');
-    exit;
+if (!isset($_SESSION['employee_id'])) {
+    // User not logged in - check if they're in the verification process
+    if (isset($_SESSION['admin_verified']) && isset($_SESSION['verified_employee_id'])) {
+        // User has passed verification - they can proceed to login
+        // Admin login form will be shown below
+    } else {
+        // User has not verified - redirect to verification page
+        header('Location: /public/admin-verify.php');
+        exit;
+    }
 }
 
 // If already logged in, proceed normally

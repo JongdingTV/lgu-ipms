@@ -1,11 +1,12 @@
 <?php
 /**
- * Admin Access Verification Page
- * Provides secure verification before admin login
+ * Enhanced Admin Access Verification Page
+ * Three-layer security verification before admin access
  */
 
 require_once dirname(__DIR__) . '/config/app.php';
 require_once INCLUDES_PATH . '/helpers.php';
+require_once dirname(__DIR__) . '/database.php';
 
 // Enable secure session
 if (session_status() === PHP_SESSION_NONE) {
@@ -24,38 +25,95 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
 $error = '';
 $success = '';
-$step = 1; // Step 1: Request verification code, Step 2: Enter verification code
+$step = 1; // Step 1: Employee ID + Password, Step 2: Code verification, Step 3: Confirmation
 
-// Handle verification code request
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_code'])) {
-    $email = sanitize_input($_POST['email'] ?? '', 'email');
+// DATABASE CONNECTION
+$db = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
+if ($db->connect_error) {
+    die('Database connection failed: ' . $db->connect_error);
+}
+
+// Handle restart button
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['restart'])) {
+    unset($_SESSION['temp_employee_id']);
+    unset($_SESSION['temp_employee_email']);
+    unset($_SESSION['temp_employee_name']);
+    unset($_SESSION['admin_verification_code']);
+    unset($_SESSION['admin_verification_time']);
+    unset($_SESSION['admin_verification_attempts']);
+    $step = 1;
+    $error = '';
+    $success = '';
+}
+
+// STEP 1: Verify Employee ID and Password
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_credentials'])) {
+    $employee_id = sanitize_input($_POST['employee_id'] ?? '', 'text');
+    $password = trim($_POST['password'] ?? '');
     
-    if (empty($email)) {
-        $error = 'Please enter your email address.';
+    if (empty($employee_id) || empty($password)) {
+        $error = 'Please enter both Employee ID and password.';
     } else {
-        // Generate 6-digit verification code
-        $verification_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        // Query the employees table for this employee
+        $stmt = $db->prepare("SELECT id, email, first_name, last_name, password FROM employees WHERE id = ? OR email = ?");
+        $stmt->bind_param('ss', $employee_id, $employee_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            $employee = $result->fetch_assoc();
+            
+            // Verify password
+            if (password_verify($password, $employee['password'])) {
+                // Credentials verified! Store temporarily and move to step 2
+                $_SESSION['temp_employee_id'] = $employee['id'];
+                $_SESSION['temp_employee_email'] = $employee['email'];
+                $_SESSION['temp_employee_name'] = $employee['first_name'] . ' ' . $employee['last_name'];
+                $_SESSION['temp_verification_time'] = time();
+                
+                $step = 2;
+                $success = 'Credentials verified. Please request verification code.';
+            } else {
+                $error = 'Invalid password. Please try again.';
+                $step = 1;
+            }
+        } else {
+            $error = 'Employee not found. Please check your Employee ID.';
+            $step = 1;
+        }
+        $stmt->close();
+    }
+}
+
+// STEP 2: Send verification code
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_code'])) {
+    // Check if credentials were already verified in this session
+    if (!isset($_SESSION['temp_employee_email'])) {
+        $error = 'Please verify your credentials first.';
+        $step = 1;
+    } else {
+        // Generate 8-digit verification code (stronger than 6 digits)
+        $verification_code = str_pad(rand(10000000, 99999999), 8, '0', STR_PAD_LEFT);
         
         // Store in session (valid for 10 minutes)
         $_SESSION['admin_verification_code'] = $verification_code;
-        $_SESSION['admin_verification_email'] = $email;
         $_SESSION['admin_verification_time'] = time();
         $_SESSION['admin_verification_attempts'] = 0;
         
         // In production, send email with code
         // For demo, show code on screen
-        $success = "Verification code sent! (Demo: <strong>" . $verification_code . "</strong>)";
-        $step = 2;
+        $success = "Verification code sent to " . substr($_SESSION['temp_employee_email'], 0, 3) . "***. (Demo: <strong>" . $verification_code . "</strong>)";
+        $step = 3;
     }
 }
 
-// Handle verification code submission
+// STEP 3: Verify code
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
     $entered_code = sanitize_input($_POST['code'] ?? '');
     
-    // Check if session has valid verification data
-    if (!isset($_SESSION['admin_verification_code'])) {
-        $error = 'Please request a verification code first.';
+    // Check if all previous steps were completed
+    if (!isset($_SESSION['admin_verification_code']) || !isset($_SESSION['temp_employee_id'])) {
+        $error = 'Session expired. Please start over.';
         $step = 1;
     } else {
         // Check if code is expired (10 minutes)
@@ -63,30 +121,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
         if ($elapsed > 600) {
             $error = 'Verification code expired. Please request a new one.';
             unset($_SESSION['admin_verification_code']);
-            $step = 1;
+            $step = 2;
         } else {
             // Check attempts (max 5 attempts)
             $_SESSION['admin_verification_attempts'] = ($_SESSION['admin_verification_attempts'] ?? 0) + 1;
             
             if ($_SESSION['admin_verification_attempts'] > 5) {
-                $error = 'Too many failed attempts. Please request a new code.';
+                $error = 'Too many failed attempts. Please start over.';
                 unset($_SESSION['admin_verification_code']);
+                unset($_SESSION['temp_employee_id']);
+                unset($_SESSION['temp_employee_email']);
                 $step = 1;
             } elseif ($entered_code === $_SESSION['admin_verification_code']) {
-                // Code verified! Proceed to admin login
+                // All verifications passed! Grant admin access
                 $_SESSION['admin_verified'] = true;
                 $_SESSION['admin_verified_time'] = time();
+                $_SESSION['verified_employee_id'] = $_SESSION['temp_employee_id'];
+                
+                // Clean up temporary data
+                unset($_SESSION['temp_employee_id']);
+                unset($_SESSION['temp_employee_email']);
+                unset($_SESSION['temp_employee_name']);
+                unset($_SESSION['admin_verification_code']);
+                unset($_SESSION['admin_verification_time']);
                 
                 // Redirect to admin login
                 header('Location: /admin/index.php');
                 exit;
             } else {
                 $error = 'Invalid verification code. Please try again. (' . (5 - $_SESSION['admin_verification_attempts']) . ' attempts remaining)';
-                $step = 2;
+                $step = 3;
             }
         }
     }
 }
+
+$db->close();
 
 // Helper function to sanitize input
 function sanitize_input($input, $type = 'text') {
@@ -352,50 +422,92 @@ function sanitize_input($input, $type = 'text') {
         <div class="step-indicator">
             <div class="step <?php echo ($step >= 1) ? 'active' : ''; ?>"></div>
             <div class="step <?php echo ($step >= 2) ? 'active' : ''; ?>"></div>
+            <div class="step <?php echo ($step >= 3) ? 'active' : ''; ?>"></div>
         </div>
 
         <div class="info-box">
             <i class="fas fa-info-circle"></i>
-            <strong>For security:</strong> A verification code will be sent to your email. This protects your admin account from unauthorized access.
+            <strong>Multi-layer Security:</strong> Identification → Email Verification → Code Confirmation
         </div>
 
         <?php if ($step == 1): ?>
-            <!-- Step 1: Request Verification Code -->
+            <!-- STEP 1: Employee ID + Password -->
             <form method="POST">
                 <div class="form-group">
-                    <label for="email">
-                        <i class="fas fa-envelope"></i> Email Address
+                    <label for="employee_id">
+                        <i class="fas fa-id-card"></i> Employee ID
                     </label>
                     <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        placeholder="Enter your admin email" 
+                        type="text" 
+                        id="employee_id" 
+                        name="employee_id" 
+                        placeholder="Enter your employee ID" 
                         required 
-                        autocomplete="email"
+                        autocomplete="off"
                     />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock"></i> Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Enter your password" 
+                        required 
+                        autocomplete="current-password"
+                    />
+                </div>
+
+                <button type="submit" name="verify_credentials" class="submit-btn">
+                    <i class="fas fa-sign-in-alt"></i> Verify Identity
+                </button>
+            </form>
+
+        <?php elseif ($step == 2): ?>
+            <!-- STEP 2: Request Verification Code -->
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> <strong>Identity Verified!</strong>
+                <br><small>Employee: <?php echo htmlspecialchars($_SESSION['temp_employee_name'] ?? ''); ?></small>
+            </div>
+
+            <form method="POST">
+                <div class="info-box" style="background: #fffacd; border-left-color: var(--secondary); margin-bottom: 1.5rem;">
+                    <i class="fas fa-envelope"></i>
+                    <strong>Next:</strong> A 8-digit code will be sent to your registered email address.
                 </div>
 
                 <button type="submit" name="request_code" class="submit-btn">
                     <i class="fas fa-paper-plane"></i> Send Verification Code
                 </button>
+
+                <button type="submit" name="restart" class="submit-btn" style="background: #999; margin-top: 0.5rem;">
+                    <i class="fas fa-arrow-left"></i> Start Over
+                </button>
             </form>
 
-        <?php else: ?>
-            <!-- Step 2: Enter Verification Code -->
+        <?php elseif ($step == 3): ?>
+            <!-- STEP 3: Enter Verification Code -->
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> <strong>Code Sent!</strong>
+                <br><small>Verification code sent to <?php echo substr(htmlspecialchars($_SESSION['temp_employee_email'] ?? ''), 0, 3); ?>***</small>
+            </div>
+
             <form method="POST">
                 <div class="form-group">
                     <label for="code">
-                        <i class="fas fa-key"></i> Verification Code
+                        <i class="fas fa-key"></i> Verification Code (8 digits)
                     </label>
                     <input 
                         type="text" 
                         id="code" 
                         name="code" 
                         class="code-input" 
-                        placeholder="000000" 
-                        maxlength="6" 
-                        pattern="[0-9]{6}" 
+                        placeholder="00000000" 
+                        maxlength="8" 
+                        pattern="[0-9]{8}" 
                         required 
                         autocomplete="off"
                     />
@@ -409,15 +521,19 @@ function sanitize_input($input, $type = 'text') {
                     <i class="fas fa-check"></i> Verify & Access Admin
                 </button>
 
-                <button type="button" class="submit-btn" onclick="goBackToEmail()" style="background: #999; margin-top: 0.5rem;">
-                    <i class="fas fa-arrow-left"></i> Back
+                <button type="button" class="submit-btn" onclick="location.reload()" style="background: #999; margin-top: 0.5rem;">
+                    <i class="fas fa-arrow-left"></i> Request New Code
                 </button>
             </form>
 
             <script>
-                function goBackToEmail() {
-                    location.reload();
-                }
+                // Auto-submit when 8 digits entered
+                document.getElementById('code')?.addEventListener('input', function() {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                    if (this.value.length === 8) {
+                        this.form.submit();
+                    }
+                });
             </script>
 
         <?php endif; ?>
