@@ -145,6 +145,18 @@ body::before {
     right: 0;
     width: 100%;
 }
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-logo img {
+    height: 45px;
+    width: auto;
+    object-fit: contain;
+}
 </style>
 </head>
 
