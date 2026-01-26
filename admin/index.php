@@ -10,12 +10,15 @@ require dirname(__DIR__) . '/config-path.php';
 // Add no-cache headers to prevent cached login page from being shown after logout
 set_no_cache_headers();
 
-// Check if user is accessing without verification (from homepage)
-if (!isset($_SESSION['employee_id']) && (!isset($_SESSION['admin_verified']) || $_SESSION['admin_verified'] !== true)) {
-    // User not logged in and not verified - redirect to verification page
+// Check if user is accessing admin page without verification or login
+// If not logged in AND not verified, redirect to verification
+if (!isset($_SESSION['employee_id']) && !isset($_SESSION['admin_verified'])) {
     header('Location: /public/admin-verify.php');
     exit;
 }
+
+// If already logged in, proceed normally
+// If verified but not logged in, show login form (admin_verified persists)
 
 $error = '';
 
@@ -154,6 +157,13 @@ body::before {
 
         <h2 class="title">Employee Login</h2>
         <p class="subtitle">Secure access for LGU employees.</p>
+
+        <?php if (isset($_SESSION['admin_verified'])): ?>
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 12px; border-radius: 6px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.2em;">✅</span>
+            <span><strong>Verified!</strong> You've passed 2FA verification. Now enter your credentials.</span>
+        </div>
+        <?php endif; ?>
 
         <form method="post">
 
