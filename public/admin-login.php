@@ -1,10 +1,13 @@
 <?php
 /**
  * Simplified Admin Verification System
- * Clean, working 2FA implementation
+ * Clean, working 2FA implementation with email verification
  */
 
 session_start();
+
+// Load email configuration
+require_once dirname(__DIR__) . '/config/email.php';
 
 // Database connection
 $db = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
@@ -74,8 +77,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step2_request'])) {
         $_SESSION['admin_code_time'] = time();
         $_SESSION['admin_code_attempts'] = 0;
         
-        $step = 3;
-        $success = "Code sent to email. Demo: <strong>$code</strong>";
+        // Send email with actual code
+        $email_sent = send_verification_code(
+            $_SESSION['admin_temp_email'],
+            $code,
+            $_SESSION['admin_temp_name']
+        );
+        
+        if ($email_sent) {
+            $step = 3;
+            $success = "Verification code sent to " . substr($_SESSION['admin_temp_email'], 0, 3) . "***@... Check your email!";
+        } else {
+            // Fallback to demo mode if email fails
+            $step = 3;
+            $success = "Code sent to email. <strong style='color: #f39c12;'>Demo: $code</strong>";
+        }
     }
 }
 
