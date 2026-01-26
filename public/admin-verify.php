@@ -4,10 +4,6 @@
  * Three-layer security verification before admin access
  */
 
-require_once dirname(__DIR__) . '/config/app.php';
-require_once INCLUDES_PATH . '/helpers.php';
-require_once dirname(__DIR__) . '/database.php';
-
 // Enable secure session
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', 1);
@@ -17,11 +13,39 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// DATABASE CONNECTION
+$db = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
+if ($db->connect_error) {
+    die('Database connection failed: ' . $db->connect_error);
+}
+$db->set_charset("utf8mb4");
+
 // Set security headers
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('X-XSS-Protection: 1; mode=block');
 header('Referrer-Policy: strict-origin-when-cross-origin');
+
+// Helper function to sanitize input
+function sanitize_input($input, $type = 'text') {
+    if (is_array($input)) {
+        return array_map(function($value) use ($type) {
+            return sanitize_input($value, $type);
+        }, $input);
+    }
+    
+    switch ($type) {
+        case 'email':
+            return filter_var($input, FILTER_SANITIZE_EMAIL);
+        case 'int':
+            return filter_var($input, FILTER_VALIDATE_INT);
+        case 'url':
+            return filter_var($input, FILTER_SANITIZE_URL);
+        case 'text':
+        default:
+            return htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
+    }
+}
 
 $error = '';
 $success = '';
@@ -39,12 +63,6 @@ if (isset($_SESSION['temp_employee_id'])) {
     $step = 1; // Default - not yet verified
 }
 
-// DATABASE CONNECTION
-$db = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
-if ($db->connect_error) {
-    die('Database connection failed: ' . $db->connect_error);
-}
-
 // Handle restart button
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['restart'])) {
     unset($_SESSION['temp_employee_id']);
@@ -60,41 +78,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['restart'])) {
 
 // STEP 1: Verify Employee ID and Password
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_credentials'])) {
-    $employee_id = sanitize_input($_POST['employee_id'] ?? '', 'text');
+    $employee_id = trim($_POST['employee_id'] ?? '');
     $password = trim($_POST['password'] ?? '');
     
     if (empty($employee_id) || empty($password)) {
         $error = 'Please enter both Employee ID and password.';
+        $step = 1;
     } else {
         // Query the employees table for this employee
         $stmt = $db->prepare("SELECT id, email, first_name, last_name, password FROM employees WHERE id = ? OR email = ?");
+        
         if ($stmt) {
             $stmt->bind_param('ss', $employee_id, $employee_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($result->num_rows > 0) {
-                $employee = $result->fetch_assoc();
+            if (!$stmt->execute()) {
+                $error = 'Database query error: ' . $stmt->error;
+                $step = 1;
+            } else {
+                $result = $stmt->get_result();
                 
-                // Verify password
-                if (password_verify($password, $employee['password'])) {
-                    // Credentials verified! Store temporarily and move to step 2
-                    $_SESSION['temp_employee_id'] = $employee['id'];
-                    $_SESSION['temp_employee_email'] = $employee['email'];
-                    $_SESSION['temp_employee_name'] = $employee['first_name'] . ' ' . $employee['last_name'];
-                    $_SESSION['temp_verification_time'] = time();
+                if ($result->num_rows > 0) {
+                    $employee = $result->fetch_assoc();
                     
-                    $step = 2;
-                    $success = 'Credentials verified. Please request verification code.';
+                    // Verify password
+                    if (password_verify($password, $employee['password'])) {
+                        // Credentials verified! Store temporarily and move to step 2
+                        $_SESSION['temp_employee_id'] = $employee['id'];
+                        $_SESSION['temp_employee_email'] = $employee['email'];
+                        $_SESSION['temp_employee_name'] = $employee['first_name'] . ' ' . $employee['last_name'];
+                        $_SESSION['temp_verification_time'] = time();
+                        
+                        $step = 2;
+                        $success = 'Credentials verified. Please request verification code.';
+                    } else {
+                        $error = 'Invalid password. Please try again.';
+                        $step = 1;
+                    }
                 } else {
-                    $error = 'Invalid password. Please try again.';
+                    $error = 'Employee not found. Please check your Employee ID.';
                     $step = 1;
                 }
-            } else {
-                $error = 'Employee not found. Please check your Employee ID.';
-                $step = 1;
+                $stmt->close();
             }
-            $stmt->close();
         } else {
             $error = 'Database error: ' . $db->error;
             $step = 1;
@@ -126,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_code'])) {
 
 // STEP 3: Verify code
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
-    $entered_code = sanitize_input($_POST['code'] ?? '');
+    $entered_code = trim($_POST['code'] ?? '');
     
     // Check if all previous steps were completed
     if (!isset($_SESSION['admin_verification_code']) || !isset($_SESSION['temp_employee_id'])) {
@@ -162,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
                 unset($_SESSION['admin_verification_code']);
                 unset($_SESSION['admin_verification_time']);
                 
-                // Redirect to manage employees page (or admin login if they want full access)
+                // Redirect to manage employees page
                 header('Location: /admin/manage-employees.php');
                 exit;
             } else {
@@ -174,27 +198,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
 }
 
 $db->close();
-
-// Helper function to sanitize input
-function sanitize_input($input, $type = 'text') {
-    if (is_array($input)) {
-        return array_map(function($value) use ($type) {
-            return sanitize_input($value, $type);
-        }, $input);
-    }
-    
-    switch ($type) {
-        case 'email':
-            return filter_var($input, FILTER_SANITIZE_EMAIL);
-        case 'int':
-            return filter_var($input, FILTER_VALIDATE_INT);
-        case 'url':
-            return filter_var($input, FILTER_SANITIZE_URL);
-        case 'text':
-        default:
-            return htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
