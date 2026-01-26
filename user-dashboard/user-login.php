@@ -164,72 +164,72 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             if ($result->num_rows > 0) {
                 $user = $result->fetch_assoc();
-            if (password_verify($password, $user['password'])) {
+                if (password_verify($password, $user['password'])) {
 
-                // If this device is remembered for this user, skip OTP entirely
-                if (isRememberedDeviceForUser($user['id'])) {
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
-                    header('Location: user-dashboard/user-dashboard.php');
-                    exit;
-                }
+                    // If this device is remembered for this user, skip OTP entirely
+                    if (isRememberedDeviceForUser($user['id'])) {
+                        $_SESSION['user_id'] = $user['id'];
+                        $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+                        header('Location: user-dashboard/user-dashboard.php');
+                        exit;
+                    }
 
-                // Store user temporarily until OTP is verified
-                $_SESSION['pending_user'] = $user;
+                    // Store user temporarily until OTP is verified
+                    $_SESSION['pending_user'] = $user;
 
-                // Generate OTP (same style as LGU portal)
-                $otp = (string)rand(100000, 999999);
-                $_SESSION['otp'] = $otp;
-                $_SESSION['otp_time'] = time();
+                    // Generate OTP (same style as LGU portal)
+                    $otp = (string)rand(100000, 999999);
+                    $_SESSION['otp'] = $otp;
+                    $_SESSION['otp_time'] = time();
 
-                // Send OTP email using LGU portal Gmail account
-                $mail = new PHPMailer(true);
-                try {
-                    $mail->isSMTP();
-                    $mail->Host       = 'smtp.gmail.com';
-                    $mail->SMTPAuth   = true;
-                    $mail->Username   = 'lguportalph@gmail.com';
-                    $mail->Password   = 'zsozvbpsggclkcno';
-                    $mail->SMTPSecure = 'tls';
-                    $mail->Port       = 587;
+                    // Send OTP email using LGU portal Gmail account
+                    $mail = new PHPMailer(true);
+                    try {
+                        $mail->isSMTP();
+                        $mail->Host       = 'smtp.gmail.com';
+                        $mail->SMTPAuth   = true;
+                        $mail->Username   = 'lguportalph@gmail.com';
+                        $mail->Password   = 'zsozvbpsggclkcno';
+                        $mail->SMTPSecure = 'tls';
+                        $mail->Port       = 587;
 
-                    $mail->setFrom('lguportalph@gmail.com', 'LGU Portal');
-                    $mail->addAddress($email);
+                        $mail->setFrom('lguportalph@gmail.com', 'LGU Portal');
+                        $mail->addAddress($email);
 
-                    $mail->isHTML(true);
-                    $mail->Subject = 'Verify Your Identity: LGU Citizen Portal OTP Code';
+                        $mail->isHTML(true);
+                        $mail->Subject = 'Verify Your Identity: LGU Citizen Portal OTP Code';
 
-                    // Simple email body; you can copy the fancy HTML from the LGU portal if desired
-                    $mail->Body = '
-                        <p>Dear citizen,</p>
-                        <p>Your one-time verification code for the LGU Citizen Portal is:</p>
-                        <p style="font-size:24px;font-weight:bold;letter-spacing:4px;">' . $otp . '</p>
-                        <p>This code is valid for <strong>10 minutes</strong> and can only be used once.</p>
-                        <p>If you did not request this, you can safely ignore this email.</p>
-                    ';
+                        // Simple email body; you can copy the fancy HTML from the LGU portal if desired
+                        $mail->Body = '
+                            <p>Dear citizen,</p>
+                            <p>Your one-time verification code for the LGU Citizen Portal is:</p>
+                            <p style="font-size:24px;font-weight:bold;letter-spacing:4px;">' . $otp . '</p>
+                            <p>This code is valid for <strong>10 minutes</strong> and can only be used once.</p>
+                            <p>If you did not request this, you can safely ignore this email.</p>
+                        ';
 
-                    $mail->send();
-                    $showOtpForm = true;
-                } catch (Exception $e) {
-                    $error = 'Failed to send OTP. Please try again later.';
-                    // Clean up pending login if email fails
-                    unset($_SESSION['pending_user'], $_SESSION['otp'], $_SESSION['otp_time']);
+                        $mail->send();
+                        $showOtpForm = true;
+                    } catch (Exception $e) {
+                        $error = 'Failed to send OTP. Please try again later.';
+                        // Clean up pending login if email fails
+                        unset($_SESSION['pending_user'], $_SESSION['otp'], $_SESSION['otp_time']);
+                        $showOtpForm = false;
+                    }
+                } else {
+                    // Failed login attempt - record it
+                    $error = 'Invalid email or password.';
+                    record_attempt('login');
+                    log_security_event('FAILED_LOGIN', 'Failed login attempt with email: ' . $email);
                     $showOtpForm = false;
                 }
             } else {
-                // Failed login attempt - record it
+                // User not found - record attempt
                 $error = 'Invalid email or password.';
                 record_attempt('login');
-                log_security_event('FAILED_LOGIN', 'Failed login attempt with email: ' . $email);
+                log_security_event('FAILED_LOGIN', 'Login attempt with non-existent email: ' . $email);
                 $showOtpForm = false;
             }
-        } else {
-            // User not found - record attempt
-            $error = 'Invalid email or password.';
-            record_attempt('login');
-            log_security_event('FAILED_LOGIN', 'Login attempt with non-existent email: ' . $email);
-            $showOtpForm = false;
-        }
     }
 
     $db->close();
