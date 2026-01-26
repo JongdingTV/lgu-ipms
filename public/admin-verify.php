@@ -50,8 +50,14 @@ function sanitize_input($input, $type = 'text') {
 $error = '';
 $success = '';
 $step = 1; // Default to Step 1
+$debug_info = [];
 
 // Determine current step based on session state
+$debug_info[] = "SESSION temp_employee_id: " . (isset($_SESSION['temp_employee_id']) ? $_SESSION['temp_employee_id'] : 'NOT SET');
+$debug_info[] = "SESSION admin_verification_code: " . (isset($_SESSION['admin_verification_code']) ? 'SET' : 'NOT SET');
+$debug_info[] = "REQUEST METHOD: " . $_SERVER['REQUEST_METHOD'];
+$debug_info[] = "POST verify_credentials: " . (isset($_POST['verify_credentials']) ? 'YES' : 'NO');
+
 if (isset($_SESSION['temp_employee_id'])) {
     // User has passed Step 1, check if they've requested code
     if (isset($_SESSION['admin_verification_code'])) {
@@ -62,6 +68,8 @@ if (isset($_SESSION['temp_employee_id'])) {
 } else {
     $step = 1; // Default - not yet verified
 }
+
+$debug_info[] = "Determined step: " . $step;
 
 // Handle restart button
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['restart'])) {
@@ -425,6 +433,12 @@ $db->close();
             </div>
             <h1>Admin Access</h1>
             <p>Secure Verification Required</p>
+        </div>
+
+        <!-- DEBUG INFO -->
+        <div style="background: #ffffcc; border: 1px solid #cccc00; padding: 10px; margin-bottom: 15px; font-size: 12px; font-family: monospace;">
+            <strong>DEBUG:</strong><br>
+            <?php foreach ($debug_info as $info) { echo $info . "<br>"; } ?>
         </div>
 
         <?php if ($error): ?>
