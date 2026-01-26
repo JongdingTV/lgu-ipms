@@ -66,12 +66,15 @@ function get_login_url() {
         }
     }
     
-    // Build login URL
-    if ($in_subdirectory) {
-        // We're in a subdirectory, go back to root login
-        return $protocol . $host . '/login.php';
+    // Build login URL based on user type
+    $user_type = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : '';
+    
+    if ($user_type === 'employee' || strpos($request_uri, '/admin') !== false) {
+        // Admin/Employee login
+        return $protocol . $host . '/public/admin-login.php';
     } else {
-        return $protocol . $host . '/login.php';
+        // Citizen/User login
+        return $protocol . $host . '/user-dashboard/user-login.php';
     }
 }
 
