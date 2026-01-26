@@ -333,15 +333,15 @@ body {
 /* NEW — Blur overlay */
 body::before {
     content: "";
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-
+    width: 100vw;
+    height: 100vh;
     backdrop-filter: blur(6px); /* actual blur */
     background: rgba(0, 0, 0, 0.35); /* dark overlay */
-    z-index: 0; /* keeps blur behind content */
+    z-index: -1; /* keeps blur behind content and allows clicking */
+    pointer-events: none;
 }
 
 /* Make content appear ABOVE blur */
