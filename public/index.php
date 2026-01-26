@@ -464,6 +464,86 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 			opacity: 0.85;
 		}
 
+		/* Security Features Section */
+		.security-features {
+			padding: 5rem 0;
+			background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+		}
+
+		.security-card {
+			background: var(--white);
+			border-radius: 12px;
+			padding: 2rem;
+			text-align: center;
+			transition: all 0.3s ease;
+			border: 2px solid #e0e0e0;
+			height: 100%;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+			position: relative;
+			overflow: hidden;
+		}
+
+		.security-card::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 4px;
+			background: linear-gradient(90deg, var(--info), var(--success));
+			transform: scaleX(0);
+			transform-origin: left;
+			transition: transform 0.3s ease;
+		}
+
+		.security-card:hover {
+			transform: translateY(-8px);
+			box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+			border-color: var(--info);
+		}
+
+		.security-card:hover::before {
+			transform: scaleX(1);
+		}
+
+		.security-icon {
+			width: 70px;
+			height: 70px;
+			margin: 0 auto 1.5rem;
+			background: linear-gradient(135deg, var(--info), #5dade2);
+			border-radius: 12px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 2.2rem;
+			color: var(--white);
+			box-shadow: 0 6px 15px rgba(52, 152, 219, 0.25);
+		}
+
+		.security-card h5 {
+			font-weight: 700;
+			margin-bottom: 1rem;
+			color: var(--primary);
+			font-size: 1.15rem;
+		}
+
+		.security-card p {
+			color: #666;
+			font-size: 0.95rem;
+			margin-bottom: 1rem;
+			line-height: 1.5;
+		}
+
+		.security-card .badge {
+			display: inline-block;
+			background: linear-gradient(135deg, var(--success), #1e8449);
+			color: white;
+			padding: 0.4rem 0.8rem;
+			border-radius: 20px;
+			font-size: 0.8rem;
+			font-weight: 600;
+		}
+
 		/* Responsive */
 		@media (max-width: 768px) {
 			.hero h1 {
@@ -529,7 +609,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 				<a href="/user-dashboard/user-login.php" class="btn-primary-custom btn-citizen">
 					<i class="fas fa-user-circle"></i> Citizen Access
 				</a>
-				<a href="/admin/index.php" class="btn-primary-custom btn-employee">
+				<a href="/public/admin-verify.php" class="btn-primary-custom btn-employee">
 					<i class="fas fa-briefcase"></i> Employee Access
 				</a>
 			</div>
@@ -600,6 +680,82 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 						</div>
 						<h5>Reporting & Analytics</h5>
 						<p>Generate comprehensive reports and gain insights into project performance</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Security Features Section -->
+	<section class="security-features">
+		<div class="container">
+			<h2 class="section-title"><i class="fas fa-lock"></i> Advanced Security</h2>
+			<p class="section-subtitle">Multi-layered protection for your infrastructure data</p>
+			
+			<div class="row g-4">
+				<div class="col-md-6 col-lg-4">
+					<div class="security-card">
+						<div class="security-icon">
+							<i class="fas fa-fingerprint"></i>
+						</div>
+						<h5>Two-Factor Authentication</h5>
+						<p>Email-based verification codes protect admin accounts from unauthorized access</p>
+						<span class="badge">Enabled</span>
+					</div>
+				</div>
+
+				<div class="col-md-6 col-lg-4">
+					<div class="security-card">
+						<div class="security-icon">
+							<i class="fas fa-lock"></i>
+						</div>
+						<h5>Encryption</h5>
+						<p>End-to-end encryption and secure HTTPS connections for all data transmission</p>
+						<span class="badge">Standard</span>
+					</div>
+				</div>
+
+				<div class="col-md-6 col-lg-4">
+					<div class="security-card">
+						<div class="security-icon">
+							<i class="fas fa-shield-alt"></i>
+						</div>
+						<h5>Access Control</h5>
+						<p>Role-based access control ensures users only access what they need</p>
+						<span class="badge">Active</span>
+					</div>
+				</div>
+
+				<div class="col-md-6 col-lg-4">
+					<div class="security-card">
+						<div class="security-icon">
+							<i class="fas fa-eye"></i>
+						</div>
+						<h5>Activity Monitoring</h5>
+						<p>Complete audit logs track all user activities for compliance and security</p>
+						<span class="badge">Logging</span>
+					</div>
+				</div>
+
+				<div class="col-md-6 col-lg-4">
+					<div class="security-card">
+						<div class="security-icon">
+							<i class="fas fa-virus-slash"></i>
+						</div>
+						<h5>Malware Protection</h5>
+						<p>Automated scanning and validation prevent malicious uploads and injections</p>
+						<span class="badge">Protected</span>
+					</div>
+				</div>
+
+				<div class="col-md-6 col-lg-4">
+					<div class="security-card">
+						<div class="security-icon">
+							<i class="fas fa-sync-alt"></i>
+						</div>
+						<h5>Regular Backups</h5>
+						<p>Automatic daily backups ensure data recovery in any situation</p>
+						<span class="badge">Daily</span>
 					</div>
 				</div>
 			</div>

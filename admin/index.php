@@ -10,6 +10,13 @@ require dirname(__DIR__) . '/config-path.php';
 // Add no-cache headers to prevent cached login page from being shown after logout
 set_no_cache_headers();
 
+// Check if user is accessing without verification (from homepage)
+if (!isset($_SESSION['employee_id']) && (!isset($_SESSION['admin_verified']) || $_SESSION['admin_verified'] !== true)) {
+    // User not logged in and not verified - redirect to verification page
+    header('Location: /public/admin-verify.php');
+    exit;
+}
+
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
