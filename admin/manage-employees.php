@@ -5,16 +5,16 @@
  */
 
 session_start();
-require_once dirname(__DIR__) . '/session-auth.php';
-
-// Check if user is logged in and is admin
-if (!isset($_SESSION['employee_id'])) {
-    header('Location: /public/admin-verify.php');
-    exit;
-}
 
 // DATABASE CONNECTION
 require_once dirname(__DIR__) . '/database.php';
+require_once dirname(__DIR__) . '/session-auth.php';
+
+// Check if user is logged in or at least verified through 2FA
+if (!isset($_SESSION['employee_id']) && !isset($_SESSION['admin_verified'])) {
+    header('Location: /public/admin-verify.php');
+    exit;
+}
 
 $message = '';
 $error = '';
