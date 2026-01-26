@@ -115,9 +115,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_credentials']))
                 if ($result->num_rows > 0) {
                     $employee = $result->fetch_assoc();
                     $debug_info[] = "STEP 1: Found employee ID " . $employee['id'];
+                    $debug_info[] = "STEP 1: Employee email: " . $employee['email'];
+                    $debug_info[] = "STEP 1: DB password hash: " . substr($employee['password'], 0, 20) . "...";
+                    $debug_info[] = "STEP 1: Entered password: '$password'";
                     
                     // Verify password
-                    if (password_verify($password, $employee['password'])) {
+                    $password_match = password_verify($password, $employee['password']);
+                    $debug_info[] = "STEP 1: password_verify result: " . ($password_match ? 'TRUE' : 'FALSE');
+                    
+                    if ($password_match) {
                         // Credentials verified! Store temporarily and move to step 2
                         $_SESSION['temp_employee_id'] = $employee['id'];
                         $_SESSION['temp_employee_email'] = $employee['email'];
