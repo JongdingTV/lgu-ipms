@@ -6,15 +6,10 @@ define('INCLUDES_PATH', ROOT_PATH . '/includes');
 define('CONFIG_PATH', ROOT_PATH . '/config');
 define('ASSETS_URL', '/assets');
 
-// Load configuration
+// Load configuration and security
 require_once CONFIG_PATH . '/app.php';
 require_once INCLUDES_PATH . '/helpers.php';
-
-// Set security headers
-header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: SAMEORIGIN');
-header('X-XSS-Protection: 1; mode=block');
-header('Referrer-Policy: strict-origin-when-cross-origin');
+require_once INCLUDES_PATH . '/security.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -22,11 +17,12 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="robots" content="noindex, nofollow" />
 	<title>LGU Infrastructure & Project Management System</title>
 	<meta name="description" content="Manage infrastructure projects, track progress, and connect with your community.">
 	<meta name="keywords" content="LGU, Infrastructure, Projects, Government Services">
 	<meta name="theme-color" content="#1e3a5f">
-	<link rel="icon" type="image/png" href="<?php echo ASSETS_URL; ?>/images/logo.png" />
+	<link rel="icon" type="image/png" href="<?php echo ASSETS_URL; ?>/images/logocityhall.png" />
 	
 	<!-- Bootstrap CSS -->
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -69,21 +65,59 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 			background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%) !important;
 			box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 			backdrop-filter: blur(10px);
-			padding: 1rem 0;
+			padding: 0.5rem 0;
 		}
 
 		.navbar-brand {
 			font-weight: 800;
-			font-size: 1.6rem;
+			font-size: 1.4rem;
 			color: var(--white) !important;
 			display: flex;
 			align-items: center;
-			gap: 0.5rem;
+			gap: 0.7rem;
 			letter-spacing: -0.5px;
 		}
 
-		.navbar-brand i {
-			font-size: 1.8rem;
+		.logo-img {
+			height: 50px;
+			width: auto;
+			border-radius: 8px;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+		}
+
+		.brand-text {
+			font-weight: 700;
+			letter-spacing: 0.5px;
+		}
+
+		/* Custom Hamburger Menu */
+		.hamburger-menu {
+			border: none;
+			padding: 0.25rem 0.5rem !important;
+			display: flex;
+			flex-direction: column;
+			gap: 5px;
+		}
+
+		.hamburger-icon {
+			width: 25px;
+			height: 3px;
+			background-color: white;
+			display: block;
+			transition: all 0.3s ease;
+			border-radius: 2px;
+		}
+
+		.hamburger-menu:not(.collapsed) .hamburger-icon:nth-child(1) {
+			transform: rotate(45deg) translate(10px, 10px);
+		}
+
+		.hamburger-menu:not(.collapsed) .hamburger-icon:nth-child(2) {
+			opacity: 0;
+		}
+
+		.hamburger-menu:not(.collapsed) .hamburger-icon:nth-child(3) {
+			transform: rotate(-45deg) translate(8px, -8px);
 		}
 
 		.nav-link {
@@ -92,6 +126,20 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 			margin: 0 0.8rem;
 			position: relative;
 			transition: all 0.3s ease;
+		}
+
+		.nav-link.citizen-login-link {
+			background: linear-gradient(135deg, var(--secondary), #e67e22);
+			padding: 0.5rem 1.2rem !important;
+			border-radius: 25px;
+			margin-left: 1rem !important;
+			color: white !important;
+			box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+		}
+
+		.nav-link.citizen-login-link:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 6px 16px rgba(243, 156, 18, 0.4);
 		}
 
 		.nav-link:hover {
@@ -208,13 +256,21 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 			color: var(--white);
 		}
 
-		.btn-employee {
-			background: var(--white);
-			color: var(--primary);
+		.btn-citizen:hover {
+			background: linear-gradient(135deg, #e67e22 0%, #d66d0f 100%);
+			color: var(--white);
 		}
 
-		.btn-employee:hover {
-			color: var(--primary);
+		.btn-secondary {
+			background: rgba(255, 255, 255, 0.15);
+			color: var(--white);
+			border: 2px solid rgba(255, 255, 255, 0.3);
+		}
+
+		.btn-secondary:hover {
+			background: rgba(255, 255, 255, 0.25);
+			border-color: rgba(255, 255, 255, 0.5);
+			color: var(--white);
 		}
 
 		@keyframes float {
@@ -501,11 +557,13 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 	<nav class="navbar navbar-expand-lg sticky-top">
 		<div class="container-fluid">
 			<a class="navbar-brand" href="/">
-				<i class="fas fa-building"></i>
-				LGU IPMS
+				<img src="<?php echo ASSETS_URL; ?>/images/logocityhall.png" alt="City Hall Logo" class="logo-img">
+				<span class="brand-text">LGU IPMS</span>
 			</a>
-			<button class="navbar-toggler bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-				<span class="navbar-toggler-icon"></span>
+			<button class="navbar-toggler hamburger-menu" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="hamburger-icon"></span>
+				<span class="hamburger-icon"></span>
+				<span class="hamburger-icon"></span>
 			</button>
 			<div class="collapse navbar-collapse" id="navbarNav">
 				<ul class="navbar-nav ms-auto">
@@ -516,7 +574,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 						<a class="nav-link" href="#about"><i class="fas fa-info-circle"></i> About</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="/admin/index.php"><i class="fas fa-sign-in-alt"></i> Login</a>
+						<a class="nav-link citizen-login-link" href="/user-dashboard/user-login.php"><i class="fas fa-sign-in-alt"></i> Citizen Login</a>
 					</li>
 				</ul>
 			</div>
@@ -526,14 +584,14 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 	<!-- Hero Section -->
 	<section class="hero">
 		<div class="hero-content">
-			<h1><i class="fas fa-rocket"></i> Infrastructure Made Simple</h1>
-			<p class="subtitle">Manage projects, track progress, and serve your community with modern technology</p>
+			<h1><i class="fas fa-rocket"></i> Your City's Infrastructure<br>Made Transparent & Accessible</h1>
+			<p class="subtitle">Track projects in your community, stay informed about development initiatives, and provide feedback to make your city better</p>
 			<div class="hero-buttons">
 				<a href="/user-dashboard/user-login.php" class="btn-primary-custom btn-citizen">
-					<i class="fas fa-user-circle"></i> Citizen Access
+					<i class="fas fa-sign-in-alt"></i> Access Citizen Portal
 				</a>
-				<a href="/admin/index.php" class="btn-primary-custom btn-employee">
-					<i class="fas fa-briefcase"></i> Employee Access
+				<a href="#features" class="btn-primary-custom btn-secondary">
+					<i class="fas fa-info-circle"></i> Learn More
 				</a>
 			</div>
 		</div>
@@ -718,9 +776,9 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 	<!-- CTA Section -->
 	<section class="cta">
 		<div class="container">
-			<h2>Ready to Get Started?</h2>
-			<p>Join thousands of communities managing infrastructure efficiently</p>
-			<a href="/admin/index.php" class="btn-cta">
+			<h2>Ready to Stay Informed About Your Community?</h2>
+			<p>Access the citizen portal to track projects, view progress, and share your feedback</p>
+			<a href="/user-dashboard/user-login.php" class="btn-cta">
 				<i class="fas fa-arrow-right"></i> Access Portal Now
 			</a>
 		</div>
@@ -740,10 +798,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 					<div class="footer-section">
 						<h5>Quick Links</h5>
 						<ul>
-							<li><a href="/admin/index.php">Employee Login</a></li>
 							<li><a href="/user-dashboard/user-login.php">Citizen Login</a></li>
 							<li><a href="#features">Features</a></li>
 							<li><a href="#about">About</a></li>
+							<li><a href="#contact">Contact</a></li>
 						</ul>
 					</div>
 				</div>

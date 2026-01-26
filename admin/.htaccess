@@ -1,0 +1,36 @@
+# Restrict direct access to admin directory
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Redirect direct access attempts to error page
+    RewriteRule ^index\.php$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Hide the admin directory from directory listings
+    Options -Indexes
+</IfModule>
+
+# Prevent access from unauthorized sources
+<IfModule mod_authz_core.c>
+    # Allow only legitimate requests
+    SetEnvIF Request_URI "\.php$" ALLOW=1
+</IfModule>
+
+# Secure the admin area
+<FilesMatch "\.php$">
+    <IfModule mod_headers.c>
+        Header always set X-Frame-Options "DENY"
+        Header always set X-Content-Type-Options "nosniff"
+    </IfModule>
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes
+
+# Hide file extensions in admin area
+<IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^([^\.]+)$ $1.php [NC,L]
+</IfModule>
