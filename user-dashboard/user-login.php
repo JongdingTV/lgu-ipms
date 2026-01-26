@@ -232,6 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
     }
+    // End of elseif (isset($_POST['login_submit']))
 
     $db->close();
 }
