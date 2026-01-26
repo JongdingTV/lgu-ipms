@@ -146,7 +146,7 @@ body::before {
 <header class="nav">
     <div class="nav-logo">🏛️ Local Government Unit Portal</div>
     <div class="nav-links">
-        <a href="ipms.infragovservices.com">Home</a>
+        <a href="/public/index.php">Home</a>
     </div>
 </header>
 
