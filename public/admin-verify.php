@@ -57,6 +57,9 @@ $debug_info[] = "SESSION temp_employee_id: " . (isset($_SESSION['temp_employee_i
 $debug_info[] = "SESSION admin_verification_code: " . (isset($_SESSION['admin_verification_code']) ? 'SET' : 'NOT SET');
 $debug_info[] = "REQUEST METHOD: " . $_SERVER['REQUEST_METHOD'];
 $debug_info[] = "POST verify_credentials: " . (isset($_POST['verify_credentials']) ? 'YES' : 'NO');
+$debug_info[] = "POST request_code: " . (isset($_POST['request_code']) ? 'YES' : 'NO');
+$debug_info[] = "POST verify_code: " . (isset($_POST['verify_code']) ? 'YES' : 'NO');
+$debug_info[] = "ALL SESSION VARS: " . json_encode($_SESSION);
 
 if (isset($_SESSION['temp_employee_id'])) {
     // User has passed Step 1, check if they've requested code
@@ -89,9 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_credentials']))
     $employee_id = trim($_POST['employee_id'] ?? '');
     $password = trim($_POST['password'] ?? '');
     
+    $debug_info[] = "STEP 1 FORM HANDLER - ID: $employee_id";
+    
     if (empty($employee_id) || empty($password)) {
         $error = 'Please enter both Employee ID and password.';
         $step = 1;
+        $debug_info[] = "STEP 1 ERROR: Empty ID or password";
     } else {
         // Query the employees table for this employee
         $stmt = $db->prepare("SELECT id, email, first_name, last_name, password FROM employees WHERE id = ? OR email = ?");
@@ -101,11 +107,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_credentials']))
             if (!$stmt->execute()) {
                 $error = 'Database query error: ' . $stmt->error;
                 $step = 1;
+                $debug_info[] = "STEP 1 ERROR: " . $stmt->error;
             } else {
                 $result = $stmt->get_result();
+                $debug_info[] = "STEP 1: DB returned " . $result->num_rows . " rows";
                 
                 if ($result->num_rows > 0) {
                     $employee = $result->fetch_assoc();
+                    $debug_info[] = "STEP 1: Found employee ID " . $employee['id'];
                     
                     // Verify password
                     if (password_verify($password, $employee['password'])) {
@@ -115,21 +124,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_credentials']))
                         $_SESSION['temp_employee_name'] = $employee['first_name'] . ' ' . $employee['last_name'];
                         $_SESSION['temp_verification_time'] = time();
                         
+                        // FORCE SESSION SAVE
+                        session_write_close();
+                        session_start();
+                        
+                        $debug_info[] = "STEP 1: PASSWORD VERIFIED!";
+                        $debug_info[] = "STEP 1: Set temp_employee_id = " . $_SESSION['temp_employee_id'];
+                        
                         $step = 2;
                         $success = 'Credentials verified. Please request verification code.';
                     } else {
                         $error = 'Invalid password. Please try again.';
                         $step = 1;
+                        $debug_info[] = "STEP 1 ERROR: Invalid password";
                     }
                 } else {
                     $error = 'Employee not found. Please check your Employee ID.';
                     $step = 1;
+                    $debug_info[] = "STEP 1 ERROR: Employee not found";
                 }
                 $stmt->close();
             }
         } else {
             $error = 'Database error: ' . $db->error;
             $step = 1;
+            $debug_info[] = "STEP 1 ERROR: " . $db->error;
         }
     }
 }
