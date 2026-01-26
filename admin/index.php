@@ -145,9 +145,6 @@ body::before {
 
 <header class="nav">
     <div class="nav-logo"><img src="/logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
-    <div class="nav-links">
-        <a href="/public/index.php">Home</a>
-    </div>
 </header>
 
 <div class="wrapper">
