@@ -22,42 +22,12 @@
     Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self';"
 </IfModule>
 
-# Prevent access to sensitive files and directories
-<FilesMatch "\.php$|\.sql$|\.json$|\.env|config|\.git|\.htaccess">
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
-    <IfModule !mod_authz_core.c>
-        Order allow,deny
-        Deny from all
-    </IfModule>
-</FilesMatch>
-
-# Only allow specific public directories
-<Directory "/admin">
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
-</Directory>
-
-<Directory "/api">
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
-</Directory>
-
-<Directory "/app">
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
-</Directory>
-
 # Allow direct access to physical files and directories
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
     # Block access to sensitive directories
-    RewriteRule ^(config|includes|database|storage|vendor) - [F]
+    RewriteRule ^(config|includes|database|storage|vendor)(/|$) - [F]
     RewriteRule ^\.env$ - [F]
     RewriteRule ^\.git - [F]
     
@@ -66,10 +36,18 @@
     RewriteCond %{REQUEST_FILENAME} !-d
 </IfModule>
 
-# Ensure PHP files are executable only in public areas
-<FilesMatch "\.php$">
-    Allow from all
-</FilesMatch>
+# Allow public and admin PHP files
+<Directory "/var/www/html/lgu-ipms/public">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+</Directory>
+
+<Directory "/var/www/html/lgu-ipms/admin">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+</Directory>
 
 # Hide server information
 <IfModule mod_headers.c>
