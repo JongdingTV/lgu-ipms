@@ -50,17 +50,8 @@ function sanitize_input($input, $type = 'text') {
 $error = '';
 $success = '';
 $step = 1; // Default to Step 1
-$debug_info = [];
 
 // Determine current step based on session state
-$debug_info[] = "SESSION temp_employee_id: " . (isset($_SESSION['temp_employee_id']) ? $_SESSION['temp_employee_id'] : 'NOT SET');
-$debug_info[] = "SESSION admin_verification_code: " . (isset($_SESSION['admin_verification_code']) ? 'SET' : 'NOT SET');
-$debug_info[] = "REQUEST METHOD: " . $_SERVER['REQUEST_METHOD'];
-$debug_info[] = "POST verify_credentials: " . (isset($_POST['verify_credentials']) ? 'YES' : 'NO');
-$debug_info[] = "POST request_code: " . (isset($_POST['request_code']) ? 'YES' : 'NO');
-$debug_info[] = "POST verify_code: " . (isset($_POST['verify_code']) ? 'YES' : 'NO');
-$debug_info[] = "ALL SESSION VARS: " . json_encode($_SESSION);
-
 if (isset($_SESSION['temp_employee_id'])) {
     // User has passed Step 1, check if they've requested code
     if (isset($_SESSION['admin_verification_code'])) {
@@ -71,8 +62,6 @@ if (isset($_SESSION['temp_employee_id'])) {
 } else {
     $step = 1; // Default - not yet verified
 }
-
-$debug_info[] = "Determined step: " . $step;
 
 // Handle restart button
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['restart'])) {
@@ -92,12 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_credentials']))
     $employee_id = trim($_POST['employee_id'] ?? '');
     $password = trim($_POST['password'] ?? '');
     
-    $debug_info[] = "STEP 1 FORM HANDLER - ID: $employee_id";
-    
     if (empty($employee_id) || empty($password)) {
         $error = 'Please enter both Employee ID and password.';
         $step = 1;
-        $debug_info[] = "STEP 1 ERROR: Empty ID or password";
     } else {
         // Query the employees table for this employee
         $stmt = $db->prepare("SELECT id, email, first_name, last_name, password FROM employees WHERE id = ? OR email = ?");
@@ -107,54 +93,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_credentials']))
             if (!$stmt->execute()) {
                 $error = 'Database query error: ' . $stmt->error;
                 $step = 1;
-                $debug_info[] = "STEP 1 ERROR: " . $stmt->error;
             } else {
                 $result = $stmt->get_result();
-                $debug_info[] = "STEP 1: DB returned " . $result->num_rows . " rows";
                 
                 if ($result->num_rows > 0) {
                     $employee = $result->fetch_assoc();
-                    $debug_info[] = "STEP 1: Found employee ID " . $employee['id'];
-                    $debug_info[] = "STEP 1: Employee email: " . $employee['email'];
-                    $debug_info[] = "STEP 1: DB password hash: " . substr($employee['password'], 0, 20) . "...";
-                    $debug_info[] = "STEP 1: Entered password: '$password'";
                     
                     // Verify password
-                    $password_match = password_verify($password, $employee['password']);
-                    $debug_info[] = "STEP 1: password_verify result: " . ($password_match ? 'TRUE' : 'FALSE');
-                    
-                    if ($password_match) {
+                    if (password_verify($password, $employee['password'])) {
                         // Credentials verified! Store temporarily and move to step 2
                         $_SESSION['temp_employee_id'] = $employee['id'];
                         $_SESSION['temp_employee_email'] = $employee['email'];
                         $_SESSION['temp_employee_name'] = $employee['first_name'] . ' ' . $employee['last_name'];
                         $_SESSION['temp_verification_time'] = time();
                         
-                        // FORCE SESSION SAVE
-                        session_write_close();
-                        session_start();
-                        
-                        $debug_info[] = "STEP 1: PASSWORD VERIFIED!";
-                        $debug_info[] = "STEP 1: Set temp_employee_id = " . $_SESSION['temp_employee_id'];
-                        
                         $step = 2;
                         $success = 'Credentials verified. Please request verification code.';
                     } else {
                         $error = 'Invalid password. Please try again.';
                         $step = 1;
-                        $debug_info[] = "STEP 1 ERROR: Invalid password";
                     }
                 } else {
                     $error = 'Employee not found. Please check your Employee ID.';
                     $step = 1;
-                    $debug_info[] = "STEP 1 ERROR: Employee not found";
                 }
                 $stmt->close();
             }
         } else {
             $error = 'Database error: ' . $db->error;
             $step = 1;
-            $debug_info[] = "STEP 1 ERROR: " . $db->error;
         }
     }
 }
@@ -183,31 +150,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_code'])) {
 
 // STEP 3: Verify code
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
-    $debug_info[] = "STEP 3 FORM HANDLER TRIGGERED";
-    
     $entered_code = trim($_POST['code'] ?? '');
-    $debug_info[] = "STEP 3: Entered code: '$entered_code'";
-    $debug_info[] = "STEP 3: Session code: '" . ($_SESSION['admin_verification_code'] ?? 'NOT SET') . "'";
     
     // Check if all previous steps were completed
     if (!isset($_SESSION['admin_verification_code']) || !isset($_SESSION['temp_employee_id'])) {
         $error = 'Session expired. Please start over.';
         $step = 1;
-        $debug_info[] = "STEP 3 ERROR: Session expired";
     } else {
         // Check if code is expired (10 minutes)
         $elapsed = time() - $_SESSION['admin_verification_time'];
-        $debug_info[] = "STEP 3: Time elapsed: $elapsed seconds";
         
         if ($elapsed > 600) {
             $error = 'Verification code expired. Please request a new one.';
             unset($_SESSION['admin_verification_code']);
             $step = 2;
-            $debug_info[] = "STEP 3 ERROR: Code expired";
         } else {
             // Check attempts (max 5 attempts)
             $_SESSION['admin_verification_attempts'] = ($_SESSION['admin_verification_attempts'] ?? 0) + 1;
-            $debug_info[] = "STEP 3: Attempt #" . $_SESSION['admin_verification_attempts'];
             
             if ($_SESSION['admin_verification_attempts'] > 5) {
                 $error = 'Too many failed attempts. Please start over.';
@@ -215,9 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
                 unset($_SESSION['temp_employee_id']);
                 unset($_SESSION['temp_employee_email']);
                 $step = 1;
-                $debug_info[] = "STEP 3 ERROR: Too many attempts";
             } elseif ($entered_code === $_SESSION['admin_verification_code']) {
-                $debug_info[] = "STEP 3: CODE MATCH! Access granted!";
                 // All verifications passed! Grant admin access
                 $_SESSION['admin_verified'] = true;
                 $_SESSION['admin_verified_time'] = time();
@@ -230,16 +187,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
                 unset($_SESSION['admin_verification_code']);
                 unset($_SESSION['admin_verification_time']);
                 
-                $debug_info[] = "STEP 3: Redirecting to /admin/manage-employees.php";
-                
                 // Redirect to manage employees page
                 header('Location: /admin/manage-employees.php');
                 exit;
             } else {
                 $error = 'Invalid verification code. Please try again. (' . (5 - $_SESSION['admin_verification_attempts']) . ' attempts remaining)';
                 $step = 3;
-                $debug_info[] = "STEP 3 ERROR: Code mismatch";
-                $debug_info[] = "STEP 3: Expected: '" . $_SESSION['admin_verification_code'] . "' Got: '$entered_code'";
             }
         }
     }
@@ -473,12 +426,6 @@ $db->close();
             </div>
             <h1>Admin Access</h1>
             <p>Secure Verification Required</p>
-        </div>
-
-        <!-- DEBUG INFO -->
-        <div style="background: #ffffcc; border: 1px solid #cccc00; padding: 10px; margin-bottom: 15px; font-size: 12px; font-family: monospace;">
-            <strong>DEBUG:</strong><br>
-            <?php foreach ($debug_info as $info) { echo $info . "<br>"; } ?>
         </div>
 
         <?php if ($error): ?>
