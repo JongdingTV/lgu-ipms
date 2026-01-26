@@ -243,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LGU | Login</title>
-<link rel="icon" type="image/png" href="logocityhall.png">
+<link rel="icon" type="image/png" href="/assets/logocityhall.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -256,9 +256,8 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-
-    /* NEW — background image + blur */
-    background: url("cityhall.jpeg") center/cover no-repeat fixed;
+    /* NEW  background image + blur */
+    background: url("/assets/cityhall.jpeg") center/cover no-repeat fixed;
     position: relative;
     padding-top: 80px;
 }
@@ -322,7 +321,7 @@ body::before {
 <div class="wrapper">
     <div class="card">
 
-        <img src="logocityhall.png" class="icon-top">
+        <img src="/assets/logocityhall.png" class="icon-top">
 
         <h2 class="title">LGU Login</h2>
 
