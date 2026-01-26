@@ -1,13 +1,6 @@
 <?php
-// Define root path for all includes
-define('ROOT_PATH', dirname(__DIR__));
-define('APP_PATH', ROOT_PATH . '/app');
-define('INCLUDES_PATH', ROOT_PATH . '/includes');
-define('CONFIG_PATH', ROOT_PATH . '/config');
-define('ASSETS_URL', '/assets');
-
 // Load configuration
-require_once CONFIG_PATH . '/app.php';
+require_once dirname(__DIR__) . '/config/app.php';
 require_once INCLUDES_PATH . '/helpers.php';
 
 // Set security headers
