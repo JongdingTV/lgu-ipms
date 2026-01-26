@@ -1,7 +1,7 @@
 <?php
 session_start();
-require 'database.php';
-require 'config-path.php';
+require __DIR__ . '/database.php';
+require __DIR__ . '/config-path.php';
 ?>
 <!doctype html>
 <html>

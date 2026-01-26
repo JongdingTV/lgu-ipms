@@ -1,7 +1,7 @@
 <?php
 // Include security functions
-require 'session-auth.php';
-require 'database.php';
+require __DIR__ . '/session-auth.php';
+require __DIR__ . '/database.php';
 
 // Log the logout event
 log_security_event('USER_LOGOUT', 'User successfully logged out');
