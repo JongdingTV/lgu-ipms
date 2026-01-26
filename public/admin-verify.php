@@ -183,22 +183,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_code'])) {
 
 // STEP 3: Verify code
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
+    $debug_info[] = "STEP 3 FORM HANDLER TRIGGERED";
+    
     $entered_code = trim($_POST['code'] ?? '');
+    $debug_info[] = "STEP 3: Entered code: '$entered_code'";
+    $debug_info[] = "STEP 3: Session code: '" . ($_SESSION['admin_verification_code'] ?? 'NOT SET') . "'";
     
     // Check if all previous steps were completed
     if (!isset($_SESSION['admin_verification_code']) || !isset($_SESSION['temp_employee_id'])) {
         $error = 'Session expired. Please start over.';
         $step = 1;
+        $debug_info[] = "STEP 3 ERROR: Session expired";
     } else {
         // Check if code is expired (10 minutes)
         $elapsed = time() - $_SESSION['admin_verification_time'];
+        $debug_info[] = "STEP 3: Time elapsed: $elapsed seconds";
+        
         if ($elapsed > 600) {
             $error = 'Verification code expired. Please request a new one.';
             unset($_SESSION['admin_verification_code']);
             $step = 2;
+            $debug_info[] = "STEP 3 ERROR: Code expired";
         } else {
             // Check attempts (max 5 attempts)
             $_SESSION['admin_verification_attempts'] = ($_SESSION['admin_verification_attempts'] ?? 0) + 1;
+            $debug_info[] = "STEP 3: Attempt #" . $_SESSION['admin_verification_attempts'];
             
             if ($_SESSION['admin_verification_attempts'] > 5) {
                 $error = 'Too many failed attempts. Please start over.';
@@ -206,7 +215,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
                 unset($_SESSION['temp_employee_id']);
                 unset($_SESSION['temp_employee_email']);
                 $step = 1;
+                $debug_info[] = "STEP 3 ERROR: Too many attempts";
             } elseif ($entered_code === $_SESSION['admin_verification_code']) {
+                $debug_info[] = "STEP 3: CODE MATCH! Access granted!";
                 // All verifications passed! Grant admin access
                 $_SESSION['admin_verified'] = true;
                 $_SESSION['admin_verified_time'] = time();
@@ -219,12 +230,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
                 unset($_SESSION['admin_verification_code']);
                 unset($_SESSION['admin_verification_time']);
                 
+                $debug_info[] = "STEP 3: Redirecting to /admin/manage-employees.php";
+                
                 // Redirect to manage employees page
                 header('Location: /admin/manage-employees.php');
                 exit;
             } else {
                 $error = 'Invalid verification code. Please try again. (' . (5 - $_SESSION['admin_verification_attempts']) . ' attempts remaining)';
                 $step = 3;
+                $debug_info[] = "STEP 3 ERROR: Code mismatch";
+                $debug_info[] = "STEP 3: Expected: '" . $_SESSION['admin_verification_code'] . "' Got: '$entered_code'";
             }
         }
     }
@@ -554,7 +569,7 @@ $db->close();
                 <br><small>Verification code sent to <?php echo substr(htmlspecialchars($_SESSION['temp_employee_email'] ?? ''), 0, 3); ?>***</small>
             </div>
 
-            <form method="POST">
+            <form method="POST" id="codeForm">
                 <div class="form-group">
                     <label for="code">
                         <i class="fas fa-key"></i> Verification Code (8 digits)
@@ -576,7 +591,7 @@ $db->close();
                     Code expires in: <strong>10 minutes</strong>
                 </div>
 
-                <button type="submit" name="verify_code" class="submit-btn">
+                <button type="submit" name="verify_code" value="1" class="submit-btn">
                     <i class="fas fa-check"></i> Verify & Access Admin
                 </button>
 
@@ -586,11 +601,14 @@ $db->close();
             </form>
 
             <script>
-                // Auto-submit when 8 digits entered
-                document.getElementById('code')?.addEventListener('input', function() {
+                // Auto-format and auto-submit code input
+                document.getElementById('code')?.addEventListener('input', function(e) {
                     this.value = this.value.replace(/[^0-9]/g, '');
                     if (this.value.length === 8) {
-                        this.form.submit();
+                        // Auto-submit after 8 digits
+                        setTimeout(() => {
+                            document.getElementById('codeForm').submit();
+                        }, 500);
                     }
                 });
             </script>
@@ -605,14 +623,5 @@ $db->close();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Auto-format code input
-        document.getElementById('code')?.addEventListener('input', function() {
-            this.value = this.value.replace(/[^0-9]/g, '');
-            if (this.value.length === 6) {
-                this.form.submit();
-            }
-        });
-    </script>
 </body>
 </html>
