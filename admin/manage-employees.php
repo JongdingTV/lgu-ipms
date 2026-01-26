@@ -4,21 +4,17 @@
  * Add, edit, and manage employee accounts for admin access
  */
 
-require_once dirname(__DIR__) . '/database.php';
+session_start();
 require_once dirname(__DIR__) . '/session-auth.php';
 
 // Check if user is logged in and is admin
-session_start();
 if (!isset($_SESSION['employee_id'])) {
     header('Location: /public/admin-verify.php');
     exit;
 }
 
 // DATABASE CONNECTION
-$db = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
-if ($db->connect_error) {
-    die('Database connection failed: ' . $db->connect_error);
-}
+require_once dirname(__DIR__) . '/database.php';
 
 $message = '';
 $error = '';
@@ -27,7 +23,7 @@ $action = $_GET['action'] ?? 'list';
 // HANDLE FORM SUBMISSIONS
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['add_employee'])) {
-        $emp_id = trim($_POST['emp_id'] ?? '');
+        $emp_id = !empty($_POST['emp_id']) ? (int)trim($_POST['emp_id']) : '';
         $first_name = trim($_POST['first_name'] ?? '');
         $last_name = trim($_POST['last_name'] ?? '');
         $email = trim($_POST['email'] ?? '');
@@ -36,35 +32,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         // Validation
         if (empty($emp_id) || empty($first_name) || empty($last_name) || empty($email) || empty($password)) {
-            $error = 'All fields are required.';
+            $error = 'All fields are required. Please fill in every field.';
+        } elseif ($emp_id <= 0) {
+            $error = 'Employee ID must be a positive number.';
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error = 'Invalid email format.';
+            $error = 'Invalid email format. Example: john@lgu.gov.ph';
         } elseif (strlen($password) < 6) {
             $error = 'Password must be at least 6 characters.';
         } else {
-            // Check if employee ID already exists
-            $stmt = $db->prepare("SELECT id FROM employees WHERE id = ?");
-            $stmt->bind_param('i', $emp_id);
-            $stmt->execute();
-            if ($stmt->get_result()->num_rows > 0) {
-                $error = 'Employee ID already exists.';
+            // Check if database connection exists
+            if (!isset($db) || $db->connect_error) {
+                $error = 'Database connection failed. Please try again later.';
             } else {
-                // Hash password with bcrypt
-                $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-                
-                // Insert employee
-                $stmt = $db->prepare("INSERT INTO employees (id, first_name, last_name, email, password, role) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param('isssss', $emp_id, $first_name, $last_name, $email, $hashed_password, $role);
-                
-                if ($stmt->execute()) {
-                    $message = "✅ Employee '$first_name $last_name' added successfully!";
-                    // Clear form
-                    $_POST = [];
+                // Check if employee ID already exists
+                $stmt = $db->prepare("SELECT id FROM employees WHERE id = ?");
+                if (!$stmt) {
+                    $error = 'Database error: ' . $db->error;
                 } else {
-                    $error = 'Error adding employee: ' . $stmt->error;
+                    $stmt->bind_param('i', $emp_id);
+                    $stmt->execute();
+                    if ($stmt->get_result()->num_rows > 0) {
+                        $error = 'Employee ID ' . $emp_id . ' already exists. Please use a different ID.';
+                    } else {
+                        // Hash password with bcrypt
+                        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+                        
+                        // Insert employee
+                        $stmt = $db->prepare("INSERT INTO employees (id, first_name, last_name, email, password, role) VALUES (?, ?, ?, ?, ?, ?)");
+                        if (!$stmt) {
+                            $error = 'Database error: ' . $db->error;
+                        } else {
+                            $stmt->bind_param('isssss', $emp_id, $first_name, $last_name, $email, $hashed_password, $role);
+                            
+                            if ($stmt->execute()) {
+                                $message = "✅ Employee '$first_name $last_name' (ID: $emp_id) added successfully!";
+                                // Clear form
+                                $_POST = [];
+                            } else {
+                                $error = 'Error adding employee: ' . $stmt->error;
+                            }
+                        }
+                    }
+                    $stmt->close();
                 }
             }
-            $stmt->close();
         }
     } elseif (isset($_POST['delete_employee'])) {
         $emp_id = (int)$_POST['emp_id'];
@@ -90,7 +101,7 @@ if ($result) {
     }
 }
 
-$db->close();
+// Note: Don't close $db here as it's reused from database.php
 ?>
 
 <!DOCTYPE html>
