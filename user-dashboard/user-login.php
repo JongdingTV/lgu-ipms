@@ -260,81 +260,190 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         min-height: calc(100vh - 120px);
         padding: 0;
     }
-    .wrapper .card {
-        width: 400px;
-        max-width: 95vw;
-        padding: 36px 38px 36px 38px;
-        display: flex;
-        flex-direction: column;
-        margin: 0 auto;
-        background: rgba(255,255,255,0.97);
-        border-radius: 18px;
-        box-shadow: 0 8px 32px rgba(37,99,235,0.13);
-        position: relative;
-        z-index: 1;
-    }
-    .wrapper .card .icon-top {
-        width: 54px;
-        margin: 0 auto 12px auto;
-        display: block;
-    }
-    .wrapper .card .title {
-        font-size: 1.7rem;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 10px;
-        color: #1e3a8a;
-    }
-    .wrapper .card .subtitle {
-        font-size: 1.08rem;
-        text-align: center;
-        margin-bottom: 20px;
-        color: #64748b;
-    }
-    .wrapper .card form {
-        margin-top: 0;
-    }
-    .wrapper .card .input-box {
-        margin-bottom: 18px;
-    }
-    .wrapper .card .btn-primary {
-        width: 100%;
-        margin-top: 12px;
-        font-size: 1.08rem;
-        padding: 13px 0;
-        border-radius: 8px;
-    }
-    .wrapper .card .btn-secondary {
-        width: 100%;
-        margin-top: 10px;
-        font-size: 1.08rem;
-        padding: 11px 0;
-        border-radius: 8px;
-    }
-    .wrapper .card .small-text {
-        margin-top: 20px;
-        font-size: 1rem;
-        text-align: center;
-        color: #6b7280;
-    }
-}
-
-body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    /* NEW  background image + blur */
-    background: url("/assets/cityhall.jpeg") center/cover no-repeat fixed;
-    position: relative;
-    padding-top: 80px;
-}
-
-/* NEW — Blur overlay */
-body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
+        <link rel="icon" type="image/png" href="/assets/logocityhall.png">
+        <link rel="stylesheet" href="/assets/style.css">
+        <style>
+        @media (min-width: 701px) {
+            body {
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                background: linear-gradient(145deg, #6e84b7, #40598f);
+                overflow: hidden;
+            }
+            body::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                backdrop-filter: blur(6px);
+                background: rgba(0, 0, 0, 0.35);
+                z-index: 0;
+            }
+            .nav {
+                width: 100%;
+                padding: 18px 60px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.15);
+                backdrop-filter: blur(18px);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+                box-shadow: 0 4px 25px rgba(0,0,0,0.25);
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 100;
+            }
+            .nav-links a {
+                margin-left: 25px;
+                text-decoration: none;
+                cursor: pointer;
+                color: #fff;
+                opacity: .8;
+                transition: .2s;
+            }
+            .nav-logo {
+                text-decoration: none;
+                cursor: pointer;
+                color: #fff;
+                opacity: .8;
+                transition: .2s;
+            }
+            .nav-links a:hover,
+            .nav-links .active {
+                opacity: 1;
+                text-decoration: none;
+                font-weight: 600;
+            }
+            .wrapper {
+                width: 100%;
+                height: calc(100vh - 80px);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding-bottom: 0;
+            }
+            .card {
+                width: 350px;
+                background: rgba(255, 255, 255, 0.795);
+                padding: 28px 32px;
+                border-radius: 18px;
+                backdrop-filter: blur(15px);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+                text-align: center;
+            }
+            .icon-top {
+                width: 60px;
+                margin-bottom: 10px;
+            }
+            .title {
+                font-size: 26px;
+                margin-bottom: 6px;
+                color: #000000;
+            }
+            .subtitle {
+                margin-bottom: 18px;
+                color: #000000;
+            }
+            .input-box {
+                position: relative;
+                text-align: left;
+                margin-bottom: 14px;
+                color: #000000;
+            }
+            .input-box label {
+                font-size: 13px;
+                margin-bottom: 5px;
+                display: block;
+            }
+            .input-box input {
+                width: 100%;
+                padding: 10px 38px 10px 12px;
+                border-radius: 10px;
+                border: none;
+                background: rgba(255,255,255,0.7);
+                outline: none;
+            }
+            .icon {
+                position: absolute;
+                right: 12px;
+                top: 45px;
+                transform: translateY(-50%);
+                font-size: 18px;
+                opacity: 0.6;
+            }
+            .btn-primary {
+                width: 100%;
+                padding: 12px;
+                background: linear-gradient(135deg, #6384d2, #285ccd);
+                border: none;
+                border-radius: 12px;
+                color: #fff;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                margin-top: 10px;
+                transition: 0.25s ease;
+            }
+            .btn-primary:hover {
+                background: linear-gradient(135deg, #4d76d6, #1651d0);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 15px rgba(43, 91, 222, 0.45);
+            }
+            .small-text {
+                margin-top: 15px;
+                font-size: 13px;
+                color: #000000cc;
+            }
+            .link {
+                color: #2864ef;
+                text-decoration: none;
+                font-weight: 500;
+                transition: 0.2s;
+            }
+            .link:hover {
+                color: #004ef6;
+                text-decoration: underline;
+            }
+            .footer {
+                width: 100%;
+                padding: 18px 45px;
+                background: rgba(255, 255, 255, 0.15);
+                backdrop-filter: blur(18px);
+                border-top: 1px solid rgba(255, 255, 255, 0.25);
+                box-shadow: 0 -4px 25px rgba(0,0,0,0.25);
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                z-index: 100;
+                animation: fadeUp 0.4s ease-out;
+            }
+            .footer-links {
+                position: absolute;
+                left: 60px;
+            }
+            .footer-links a {
+                margin-right: 25px;
+                text-decoration: none;
+                cursor: pointer;
+                color: #fff;
+                opacity: .8;
+                transition: .2s;
+            }
+            .footer-links a:hover {
+                opacity: 1;
+                text-decoration: none;
+                font-weight: 600;
+            }
+            .footer-logo {
+                text-align: center;
+                font-weight: 500;
+                color: #fff;
+            }
+        }
     width: 100vw;
     height: 100vh;
     backdrop-filter: blur(6px); /* actual blur */
