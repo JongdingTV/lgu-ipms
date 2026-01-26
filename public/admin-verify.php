@@ -25,7 +25,19 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
 $error = '';
 $success = '';
-$step = 1; // Step 1: Employee ID + Password, Step 2: Code verification, Step 3: Confirmation
+$step = 1; // Default to Step 1
+
+// Determine current step based on session state
+if (isset($_SESSION['temp_employee_id'])) {
+    // User has passed Step 1, check if they've requested code
+    if (isset($_SESSION['admin_verification_code'])) {
+        $step = 3; // Code has been sent, user needs to enter it
+    } else {
+        $step = 2; // Credentials verified, waiting for code request
+    }
+} else {
+    $step = 1; // Default - not yet verified
+}
 
 // DATABASE CONNECTION
 $db = new mysqli('localhost', 'ipms_root', 'G3P+JANpr2GK6fax', 'ipms_lgu');
@@ -56,32 +68,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_credentials']))
     } else {
         // Query the employees table for this employee
         $stmt = $db->prepare("SELECT id, email, first_name, last_name, password FROM employees WHERE id = ? OR email = ?");
-        $stmt->bind_param('ss', $employee_id, $employee_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            $employee = $result->fetch_assoc();
+        if ($stmt) {
+            $stmt->bind_param('ss', $employee_id, $employee_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
             
-            // Verify password
-            if (password_verify($password, $employee['password'])) {
-                // Credentials verified! Store temporarily and move to step 2
-                $_SESSION['temp_employee_id'] = $employee['id'];
-                $_SESSION['temp_employee_email'] = $employee['email'];
-                $_SESSION['temp_employee_name'] = $employee['first_name'] . ' ' . $employee['last_name'];
-                $_SESSION['temp_verification_time'] = time();
+            if ($result->num_rows > 0) {
+                $employee = $result->fetch_assoc();
                 
-                $step = 2;
-                $success = 'Credentials verified. Please request verification code.';
+                // Verify password
+                if (password_verify($password, $employee['password'])) {
+                    // Credentials verified! Store temporarily and move to step 2
+                    $_SESSION['temp_employee_id'] = $employee['id'];
+                    $_SESSION['temp_employee_email'] = $employee['email'];
+                    $_SESSION['temp_employee_name'] = $employee['first_name'] . ' ' . $employee['last_name'];
+                    $_SESSION['temp_verification_time'] = time();
+                    
+                    $step = 2;
+                    $success = 'Credentials verified. Please request verification code.';
+                } else {
+                    $error = 'Invalid password. Please try again.';
+                    $step = 1;
+                }
             } else {
-                $error = 'Invalid password. Please try again.';
+                $error = 'Employee not found. Please check your Employee ID.';
                 $step = 1;
             }
+            $stmt->close();
         } else {
-            $error = 'Employee not found. Please check your Employee ID.';
+            $error = 'Database error: ' . $db->error;
             $step = 1;
         }
-        $stmt->close();
     }
 }
 
@@ -145,8 +162,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_code'])) {
                 unset($_SESSION['admin_verification_code']);
                 unset($_SESSION['admin_verification_time']);
                 
-                // Redirect to admin login
-                header('Location: /admin/index.php');
+                // Redirect to manage employees page (or admin login if they want full access)
+                header('Location: /admin/manage-employees.php');
                 exit;
             } else {
                 $error = 'Invalid verification code. Please try again. (' . (5 - $_SESSION['admin_verification_attempts']) . ' attempts remaining)';
