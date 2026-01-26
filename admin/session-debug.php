@@ -89,7 +89,7 @@ session_start();
                 <h3>Navigation Links</h3>
             </div>
             <div class="card-body">
-                <a href="/public/admin-verify.php" class="btn btn-primary">Go to 2FA Verification</a>
+                <a href="/public/admin-login.php" class="btn btn-primary">Go to Admin Login</a>
                 <a href="/admin/manage-employees.php" class="btn btn-success">Go to Manage Employees</a>
                 <a href="/admin/index.php" class="btn btn-info">Go to Admin Dashboard</a>
             </div>

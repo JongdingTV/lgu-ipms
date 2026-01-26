@@ -19,7 +19,7 @@ if (!isset($_SESSION['employee_id'])) {
         // Admin login form will be shown below
     } else {
         // User has not verified - redirect to verification page
-        header('Location: /public/admin-verify.php');
+        header('Location: /public/admin-login.php');
         exit;
     }
 }
