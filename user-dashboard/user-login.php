@@ -230,6 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 log_security_event('FAILED_LOGIN', 'Login attempt with non-existent email: ' . $email);
                 $showOtpForm = false;
             }
+        }
     }
 
     $db->close();
