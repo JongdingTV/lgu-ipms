@@ -251,6 +251,74 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
+/* Desktop login card layout fix */
+@media (min-width: 701px) {
+    .wrapper {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 20px;
+        min-height: calc(100vh - 160px);
+    }
+    .wrapper .card {
+        width: 400px;
+        max-width: 95%;
+        padding: 32px 36px 32px 36px;
+        display: flex;
+        flex-direction: column;
+        margin: 0 auto;
+        background: rgba(255,255,255,0.92);
+        border-radius: 18px;
+        box-shadow: 0 8px 32px rgba(37,99,235,0.10);
+        position: relative;
+        z-index: 1;
+    }
+    .wrapper .card .icon-top {
+        width: 48px;
+        margin: 0 auto 10px auto;
+        display: block;
+    }
+    .wrapper .card .title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 8px;
+        color: #1e3a8a;
+    }
+    .wrapper .card .subtitle {
+        font-size: 1rem;
+        text-align: center;
+        margin-bottom: 18px;
+        color: #64748b;
+    }
+    .wrapper .card form {
+        margin-top: 0;
+    }
+    .wrapper .card .input-box {
+        margin-bottom: 16px;
+    }
+    .wrapper .card .btn-primary {
+        width: 100%;
+        margin-top: 10px;
+        font-size: 1rem;
+        padding: 12px 0;
+        border-radius: 8px;
+    }
+    .wrapper .card .btn-secondary {
+        width: 100%;
+        margin-top: 8px;
+        font-size: 1rem;
+        padding: 10px 0;
+        border-radius: 8px;
+    }
+    .wrapper .card .small-text {
+        margin-top: 18px;
+        font-size: 0.95rem;
+        text-align: center;
+        color: #6b7280;
+    }
+}
 
 body {
     min-height: 100vh;
