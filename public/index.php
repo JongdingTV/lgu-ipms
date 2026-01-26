@@ -523,7 +523,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 	<!-- Hero Section -->
 	<section class="hero">
 		<div class="hero-content">
-			<h1><i class="fas fa-rocket"></i> Infrastructure Made Simple</h1>
+			<h1><i class="fas fa-rocket"></i> Welcome to IPMS</h1>
 			<p class="subtitle">Manage projects, track progress, and serve your community with modern technology</p>
 			<div class="hero-buttons">
 				<a href="/user-dashboard/user-login.php" class="btn-primary-custom btn-citizen">
