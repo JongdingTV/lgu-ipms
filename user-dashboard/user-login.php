@@ -41,6 +41,18 @@ require_once dirname(__DIR__) . '/config/email.php';
 <link rel="stylesheet" href="/admin/style - Copy.css">
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
+<style>
+    body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+
+    /* NEW — background image + blur */
+    background: url("/cityhall.jpeg") center/cover no-repeat fixed;
+    position: relative;
+    padding-top: 80px;
+}
+</style>
 </head>
 <body class="login-page">
 <header class="nav">
