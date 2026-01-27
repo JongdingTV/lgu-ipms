@@ -250,64 +250,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <link rel="stylesheet" href="/assets/style.css">
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
-<style>
-
-body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-
-    /* NEW — background image + blur */
-    background: url("cityhall.jpeg") center/cover no-repeat fixed;
-    position: relative;
-    padding-top: 80px;
-}
-
-/* NEW — Blur overlay */
-body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
-    backdrop-filter: blur(6px); /* actual blur */
-    background: rgba(0, 0, 0, 0.35); /* dark overlay */
-    z-index: 0; /* keeps blur behind content */
-}
-
-/* Make content appear ABOVE blur */
-.nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    z-index: 100;
-}
-
-.wrapper, .footer {
-    position: relative;
-    z-index: 1;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-</style>
 </head>
 
 <body>
