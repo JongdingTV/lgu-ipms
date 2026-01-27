@@ -2920,7 +2920,7 @@ body.login-page {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background: url("../assets/cityhall.jpeg") center/cover no-repeat fixed;
+    background: url("../cityhall.jpeg") center/cover no-repeat fixed;
     position: relative;
     padding: 0;
     margin: 0;
@@ -3372,7 +3372,7 @@ body.signup-page {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background: url("../assets/cityhall.jpeg") center/cover no-repeat fixed;
+    background: url("../cityhall.jpeg") center/cover no-repeat fixed;
     position: relative;
     padding: 0;
     margin: 0;
