@@ -62,8 +62,21 @@ require_once dirname(__DIR__) . '/config/email.php';
         margin: 0 !important;
     }
     body.login-page {
-        background: linear-gradient(145deg, #6e84b7, #40598f) !important;
-        min-height: 100vh;
+        min-height: 100vh !important;
+        background: url('/cityhall.jpeg') center/cover no-repeat fixed !important;
+        background-attachment: fixed !important;
+        position: relative !important;
+    }
+    body.login-page::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 0;
+        pointer-events: none;
     }
     body.login-page .wrapper {
         width: 100vw !important;
@@ -195,7 +208,7 @@ require_once dirname(__DIR__) . '/config/email.php';
 <header class="nav">
     <div class="nav-logo">🏛️ Local Government Unit Portal</div>
     <div class="nav-links">
-        <a href="">Home</a>
+        <a href="../public/index.php">Home</a>
     </div>
 </header>
 <div class="wrapper">

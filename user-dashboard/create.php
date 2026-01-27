@@ -570,12 +570,13 @@ body::before {
 <header class="nav">
     <div class="nav-logo">🏛️ Local Government Unit Portal</div>
     <div class="nav-links">
-        <a href="dashboard/dashboard.php">Home</a>
+        <a href="../public/index.php">Home</a>
     </div>
 </header>
 
 <div class="wrapper">
     <div class="card">
+        <button type="button" onclick="window.history.back()" class="btn-secondary" style="position:absolute;left:24px;top:24px;z-index:2;">← Back</button>
         <div class="card-header">
             <img src="/assets/logocityhall.png" class="icon-top">
             <h2 class="title">Create Account</h2>
