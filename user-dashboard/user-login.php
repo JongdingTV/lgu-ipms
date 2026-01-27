@@ -61,10 +61,6 @@ require_once dirname(__DIR__) . '/config/email.php';
         padding: 0 !important;
         margin: 0 !important;
     }
-    body.login-page {
-        background: linear-gradient(145deg, #6e84b7, #40598f) !important;
-        min-height: 100vh;
-    }
     body.login-page .wrapper {
         width: 100vw !important;
         min-height: calc(100vh - 80px) !important;
@@ -73,115 +69,80 @@ require_once dirname(__DIR__) . '/config/email.php';
         align-items: center !important;
         padding-bottom: 0 !important;
         margin: 0 !important;
-        background: none !important;
     }
     body.login-page .card {
-        width: 340px !important;
-        background: rgba(255,255,255,0.92) !important;
-        padding: 24px 28px 22px 28px !important;
+        width: 350px !important;
+        background: rgba(255,255,255,0.95) !important;
+        padding: 28px 32px !important;
         border-radius: 18px !important;
         box-shadow: 0 8px 25px rgba(0,0,0,0.18) !important;
         text-align: center !important;
-        margin: 0 !important;
-        border: 1.5px solid #e3e8f0 !important;
+        margin: 40px 0 !important;
     }
     body.login-page .icon-top {
-        width: 54px !important;
+        width: 60px !important;
         margin-bottom: 10px !important;
-        border-radius: 10px !important;
-        box-shadow: 0 2px 8px rgba(30,58,138,0.08) !important;
     }
     body.login-page .title {
-        font-size: 24px !important;
+        font-size: 26px !important;
         font-weight: 600 !important;
-        margin-bottom: 14px !important;
+        margin-bottom: 18px !important;
         color: #1e3a8a !important;
-        letter-spacing: -0.5px !important;
     }
     body.login-page .subtitle {
         color: #40598f !important;
-        font-size: 1.05em !important;
-        margin-bottom: 16px !important;
+        font-size: 1.1em !important;
+        margin-bottom: 18px !important;
     }
     body.login-page .input-box {
-        margin-bottom: 14px !important;
+        margin-bottom: 18px !important;
         text-align: left !important;
     }
     body.login-page .input-box label {
         font-weight: 500 !important;
         color: #1e3a8a !important;
-        margin-bottom: 4px !important;
+        margin-bottom: 6px !important;
         display: block !important;
-        font-size: 0.97em !important;
     }
     body.login-page .input-box input[type="email"],
     body.login-page .input-box input[type="password"],
     body.login-page .input-box input[type="text"] {
         width: 100% !important;
-        padding: 10px 12px !important;
-        border: 1px solid #cbd5e1 !important;
+        padding: 12px !important;
+        border: 1px solid #d1d5db !important;
         border-radius: 8px !important;
         font-size: 1em !important;
         background: #f8f9fa !important;
-        margin-top: 2px !important;
-        transition: border-color 0.2s;
-    }
-    body.login-page .input-box input[type="email"]:focus,
-    body.login-page .input-box input[type="password"]:focus,
-    body.login-page .input-box input[type="text"]:focus {
-        border-color: #2563eb !important;
-        box-shadow: 0 0 0 2px rgba(37,99,235,0.08) !important;
-        outline: none !important;
+        margin-top: 4px !important;
     }
     body.login-page .btn-primary, body.login-page .btn-secondary {
         width: 100% !important;
         margin-top: 10px !important;
-        padding: 12px 0 !important;
+        padding: 14px 0 !important;
         border-radius: 10px !important;
         font-weight: 700 !important;
-        font-size: 1.05em !important;
-        box-shadow: 0 8px 20px rgba(37,99,235,0.10) !important;
-        border: none !important;
-        transition: background 0.15s, color 0.15s;
+        font-size: 1.08em !important;
+        box-shadow: 0 8px 20px rgba(37,99,235,0.12) !important;
     }
     body.login-page .btn-primary {
         background: linear-gradient(90deg, #1e3a8a, #2563eb) !important;
         color: #fff !important;
-    }
-    body.login-page .btn-primary:hover {
-        background: linear-gradient(90deg, #2563eb, #1e3a8a) !important;
-        color: #fff !important;
+        border: none !important;
     }
     body.login-page .btn-secondary {
         background: #e8f0ff !important;
         color: #2563eb !important;
         border: 1px solid #2563eb !important;
     }
-    body.login-page .btn-secondary:hover {
-        background: #dbeafe !important;
-        color: #1e3a8a !important;
-    }
     body.login-page .footer {
-        margin-top: 32px !important;
-        padding: 18px 0 !important;
+        margin-top: 40px !important;
+        padding: 20px 0 !important;
         background: none !important;
         color: #999 !important;
         font-size: 0.95em !important;
         text-align: center !important;
         border: none !important;
         box-shadow: none !important;
-    }
-    body.login-page .small-text, body.login-page .footer-links a {
-        color: #64748b !important;
-        font-size: 0.97em !important;
-    }
-    body.login-page .footer-links a {
-        margin: 0 8px !important;
-        text-decoration: none !important;
-        transition: color 0.15s;
-    }
-    body.login-page .footer-links a:hover {
-        color: #2563eb !important;
     }
 </style>
 <?php echo get_app_config_script(); ?>
