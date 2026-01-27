@@ -44,7 +44,7 @@ require_once dirname(__DIR__) . '/config/email.php';
 </head>
 <body class="login-page">
 <header class="nav">
-    <div class="nav-logo"><img src="/logocityhall.png" alt="LGU Logo" style="height: 40px; margin-right: 10px;"> Local Government Unit Portal</div>
+    <div class="nav-logo"><img src="/assets/logocityhall.png" alt="LGU Logo" style="height: 40px; margin-right: 10px;"> Local Government Unit Portal</div>
     <div class="nav-links">
         <a href="">Home</a>
     </div>
