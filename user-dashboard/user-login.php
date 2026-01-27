@@ -38,13 +38,13 @@ require_once dirname(__DIR__) . '/config/email.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/admin/style - Copy.css">
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body class="login-page">
 <header class="nav">
-    <div class="nav-logo"><img src="/assets/logocityhall.png" alt="LGU Logo" style="height: 40px; margin-right: 10px;"> Local Government Unit Portal</div>
+    <div class="nav-logo"><img src="/logocityhall.png" alt="LGU Logo" style="height: 40px; margin-right: 10px;"> Local Government Unit Portal</div>
     <div class="nav-links">
         <a href="">Home</a>
     </div>
