@@ -88,36 +88,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/admin/style - Copy.css">
+<link rel="stylesheet" href="/assets/style.css">
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
-body {
-    min-height: 100vh;
+body.signup-page {
     display: flex;
     flex-direction: column;
-    padding-top: 80px;
-    padding-bottom: 80px;
-    /* background image + blur */
+    min-height: 100vh;
     background: url("/assets/cityhall.jpeg") center/cover no-repeat fixed;
     position: relative;
+    padding: 0;
+    margin: 0;
 }
 
-/* Blur overlay */
-body::before {
+body.signup-page::before {
     content: "";
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    backdrop-filter: blur(6px);
     background: rgba(0, 0, 0, 0.35);
     z-index: 0;
+    pointer-events: none;
 }
 
-/* Ensure content is above the blur */
-.nav { 
+body.signup-page .nav { 
     position: fixed;
     top: 0;
     left: 0;
@@ -126,7 +123,7 @@ body::before {
     z-index: 100;
 }
 
-.wrapper, .footer { 
+body.signup-page .wrapper, body.signup-page .footer { 
     position: relative;
     z-index: 1;
 }
@@ -564,11 +561,10 @@ body::before {
     color: #666;
     margin-bottom: 12px;
 }
-</style>
 </head>
-<body>
+<body class="signup-page">
 <header class="nav">
-    <div class="nav-logo">🏛️ Local Government Unit Portal</div>
+    <div class="nav-logo"><img src="/assets/logocityhall.png" alt="LGU Logo" style="height: 40px; margin-right: 10px;"> Local Government Unit Portal</div>
     <div class="nav-links">
         <a href="dashboard/dashboard.php">Home</a>
     </div>
