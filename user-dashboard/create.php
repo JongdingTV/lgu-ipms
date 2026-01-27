@@ -92,12 +92,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
-<body class="signup-page">
+<body style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
+<!-- Blur overlay -->
+<style>
+body::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    backdrop-filter: blur(6px);
+    background: rgba(0,0,0,0.35);
+    z-index: 0;
+}
+.nav, .wrapper, .footer { position: relative; z-index: 1; }
+.nav { position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 100; }
+</style>
 <header class="nav">
     <div class="nav-logo"><img src="/assets/logocityhall.png" alt="LGU Logo" style="height: 40px; margin-right: 10px;"> Local Government Unit Portal</div>
-    <div class="nav-links">
-        <a href="user-dashboard.php">Dashboard</a>
-    </div>
 </header>
 
 <div class="wrapper">

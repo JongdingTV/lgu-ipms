@@ -38,24 +38,31 @@ require_once dirname(__DIR__) . '/config/email.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/admin/style - Copy.css">
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
-<body class="login-page">
+<body style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
+<!-- Blur overlay -->
+<style>
+body::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    backdrop-filter: blur(6px);
+    background: rgba(0,0,0,0.35);
+    z-index: 0;
+}
+.nav, .wrapper, .footer { position: relative; z-index: 1; }
+.nav { position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 100; }
+</style>
 <header class="nav">
     <div class="nav-logo"><img src="/assets/logocityhall.png" alt="LGU Logo" style="height: 40px; margin-right: 10px;"> Local Government Unit Portal</div>
-    <div class="nav-links">
-        <a href="">Home</a>
-    </div>
 </header>
 <div class="wrapper">
     <div class="card">
-
         <img src="/assets/logocityhall.png" class="icon-top">
-
-        <h2 class="title">LGU Login</h2>
-
+        <h2 class="title">Citizen Login</h2>
         <?php if ($showOtpForm && isset($_SESSION['pending_user'])): ?>
             <p class="subtitle">We sent a one-time verification code to your email. Enter it below to continue.</p>
 
