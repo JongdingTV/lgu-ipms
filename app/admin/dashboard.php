@@ -1,18 +1,14 @@
 <?php
-// Define root path for all includes
-define('ROOT_PATH', dirname(dirname(dirname(__FILE__))));
-define('INCLUDES_PATH', ROOT_PATH . '/includes');
-define('CONFIG_PATH', ROOT_PATH . '/config');
-define('ASSETS_URL', '/assets');
-
-// Load configuration and auth
-require_once CONFIG_PATH . '/app.php';
+require_once dirname(dirname(__DIR__)) . '/config/app.php';
 require_once INCLUDES_PATH . '/helpers.php';
 require_once INCLUDES_PATH . '/auth.php';
 require_once INCLUDES_PATH . '/database.php';
 
-// Require authentication - employee/admin only
-require_auth('employee', '/app/auth/login.php?type=employee');
+check_auth();
+if (!has_role('employee') && !has_role('admin')) {
+	header('HTTP/1.0 403 Forbidden');
+	die('Access denied. Required role: employee or admin');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -195,7 +191,7 @@ require_auth('employee', '/app/auth/login.php?type=employee');
 			<div class="ms-auto">
 				<div class="user-menu">
 					<div class="user-info">
-						<p class="name"><?php echo htmlspecialchars(get_current_user_name()); ?></p>
+						<p class="name"><?php echo htmlspecialchars(get_user_name()); ?></p>
 						<p class="role">Administrator</p>
 					</div>
 					<a href="/app/auth/logout.php" class="btn btn-sm btn-outline-light">
