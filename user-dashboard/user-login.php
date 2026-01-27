@@ -10,11 +10,31 @@ set_no_cache_headers();
 // Secret used to sign "remember this device" tokens (10‑day trust)
 define('REMEMBER_DEVICE_SECRET', 'change_this_to_a_random_secret_key');
 
+
 // Use PHPMailer (copied from the external LGU portal into this app's own vendor folder)
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+require_once dirname(__DIR__) . '/vendor/PHPMailer/PHPMailer.php';
+require_once dirname(__DIR__) . '/vendor/PHPMailer/SMTP.php';
+require_once dirname(__DIR__) . '/vendor/PHPMailer/Exception.php';
+
 // ...existing code...
 
                         // ...existing code...
-
+                        $mail = new PHPMailer(true);
+                        // Configure PHPMailer (example, adjust as needed)
+                        $mail->isSMTP();
+                        $mail->Host = 'smtp.gmail.com';
+                        $mail->SMTPAuth = true;
+                        $mail->Username = 'lguportalph@gmail.com';
+                        $mail->Password = 'zsozvbpsggclkcno';
+                        $mail->SMTPSecure = 'tls';
+                        $mail->Port = 587;
+                        $mail->setFrom('lguportalph@gmail.com', 'LGU Portal');
+                        $mail->addAddress($email); // $email should be set to the recipient's email
+                        $mail->isHTML(true);
+                        $mail->Subject = 'Verify Your Identity: LGU Citizen Portal OTP Code';
+                        $mail->Body = '<p>Dear citizen,</p><p>Your one-time verification code for the LGU Citizen Portal is:</p><p style="font-size:24px;font-weight:bold;letter-spacing:4px;">' . $otp . '</p><p>This code is valid for <strong>10 minutes</strong> and can only be used once.</p><p>If you did not request this, you can safely ignore this email.</p>';
                         $mail->send();
                         $showOtpForm = true;
         // End of elseif (isset($_POST['login_submit']))
