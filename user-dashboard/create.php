@@ -96,27 +96,23 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    /* background image + blur */
     background: url("/assets/cityhall.jpeg") center/cover no-repeat fixed;
     position: relative;
-}
-
-/* Blur overlay */
-body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    backdrop-filter: blur(6px);
-    background: rgba(0, 0, 0, 0.35);
-    z-index: 0;
-}
-body {
     padding-top: 56px;
     padding-bottom: 56px;
     overflow-x: hidden !important;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 0;
+    pointer-events: none;
 }
 
 /* Ensure content is above the blur */
@@ -139,19 +135,24 @@ body {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
     padding: 40px 20px;
-    overflow: visible;
+    overflow-x: hidden !important;
+    min-height: calc(100vh - 56px);
 }
 
 /* Card layout (auto height; page scroll instead of inner scroll) */
 .wrapper .card {
-    width: 620px;
-    max-width: 95%;
+    width: 420px;
+    max-width: 98vw;
     padding: 28px 36px 28px 36px;
     display: flex;
     flex-direction: column;
     margin: 0 auto;
+    background: rgba(255,255,255,0.97);
+    border-radius: 18px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.18);
+    border: 1.5px solid #e3e8f0;
 }
 
 /* Card header (logo, title, subtitle) */
@@ -588,7 +589,6 @@ body {
 
 <div class="wrapper">
     <div class="card">
-        <button type="button" onclick="window.history.back()" class="btn-secondary" style="position:absolute;left:24px;top:24px;z-index:2;">← Back</button>
         <div class="card-header">
             <img src="/assets/logocityhall.png" class="icon-top">
             <h2 class="title">Create Account</h2>
