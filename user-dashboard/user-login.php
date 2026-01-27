@@ -16,37 +16,6 @@ define('REMEMBER_DEVICE_SECRET', 'change_this_to_a_random_secret_key');
 require_once dirname(__DIR__) . '/config/email.php';
 
 // ...existing code...
-// Handle login logic
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
-    if ($db->connect_error) {
-        $error = 'Database connection failed: ' . $db->connect_error;
-    } else {
-        $email = trim($_POST['email'] ?? '');
-        $password = trim($_POST['password'] ?? '');
-        if (empty($email) || empty($password)) {
-            $error = 'Please enter both email and password.';
-        } else {
-            $stmt = $db->prepare("SELECT id, password, first_name FROM users WHERE email = ?");
-            $stmt->bind_param('s', $email);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            if ($result && $result->num_rows > 0) {
-                $user = $result->fetch_assoc();
-                if (password_verify($password, $user['password'])) {
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['user_name'] = $user['first_name'];
-                    header('Location: user-dashboard.php');
-                    exit;
-                } else {
-                    $error = 'Incorrect password.';
-                }
-            } else {
-                $error = 'User not found.';
-            }
-            $stmt->close();
-        }
-    }
-}
 
                         // ...existing code...
                         // Use the same mailer as admin side
