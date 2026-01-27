@@ -34,7 +34,7 @@ require_once dirname(__DIR__) . '/config/email.php';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LGU | Login</title>
-<link rel="icon" type="image/png" href="/assets/logocityhall.png">
+<link rel="icon" type="image/png" href="/logocityhall.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -46,22 +46,51 @@ require_once dirname(__DIR__) . '/config/email.php';
 <!-- Blur overlay -->
 <style>
 body::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    backdrop-filter: blur(6px);
-    background: rgba(0,0,0,0.35);
-    z-index: 0;
+        content: "";
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        backdrop-filter: blur(6px);
+        background: rgba(0,0,0,0.35);
+        z-index: 0;
 }
 .nav, .wrapper, .footer { position: relative; z-index: 1; }
-.nav { position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 100; }
+.nav { position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 64px; background: rgba(30,58,95,0.85); }
+.nav-logo { display: flex; align-items: center; gap: 10px; }
+.nav-logo img { height: 40px; width: auto; object-fit: contain; }
+.nav-links { margin-left: auto; }
+.nav-links a { color: #fff; text-decoration: none; font-weight: 500; margin-left: 24px; font-size: 1.08em; transition: color 0.2s; }
+.nav-links a:hover { color: #f39c12; }
+.footer { position: fixed !important; bottom: 0; left: 0; right: 0; width: 100%; background: rgba(30,58,95,0.85); color: #fff; z-index: 100; padding: 16px 0 8px 0; display: flex; flex-direction: column; align-items: center; }
+.footer-links { margin-bottom: 6px; }
+.footer-links a { color: #fff; margin: 0 10px; text-decoration: none; font-size: 0.98em; }
+.footer-links a:hover { color: #f39c12; }
+.footer-logo { font-size: 0.95em; opacity: 0.85; }
+@media (max-width: 600px) {
+    .nav { padding: 0 10px; height: 56px; }
+    .nav-logo img { height: 32px; }
+    .nav-links a { margin-left: 12px; font-size: 0.98em; }
+    .footer { padding: 10px 0 4px 0; font-size: 0.95em; }
+}
+html, body { height: 100%; margin: 0; }
+body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
+.wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
 </style>
 <header class="nav">
-    <div class="nav-logo"><img src="/assets/logocityhall.png" alt="LGU Logo" style="height: 40px; margin-right: 10px;"> Local Government Unit Portal</div>
+</header>
+<header class="nav">
+    <div class="nav-logo">
+        <img src="/assets/logocityhall.png" alt="LGU Logo"> 
+        <span>Local Government Unit Portal</span>
+    </div>
+    <div class="nav-links">
+        <a href="/public/index.php">Home</a>
+    </div>
 </header>
 <div class="wrapper">
     <div class="card">
-        <img src="/assets/logocityhall.png" class="icon-top">
+        <div style="display:flex;justify-content:center;margin-bottom:10px;">
+            <img src="/assets/logocityhall.png" class="icon-top" alt="LGU Logo" style="height:56px;width:auto;object-fit:contain;">
+        </div>
         <h2 class="title">Citizen Login</h2>
         <?php if ($showOtpForm && isset($_SESSION['pending_user'])): ?>
             <p class="subtitle">We sent a one-time verification code to your email. Enter it below to continue.</p>
