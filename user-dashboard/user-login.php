@@ -11,31 +11,19 @@ set_no_cache_headers();
 define('REMEMBER_DEVICE_SECRET', 'change_this_to_a_random_secret_key');
 
 
-// Use PHPMailer (copied from the external LGU portal into this app's own vendor folder)
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-require_once dirname(__DIR__) . '/vendor/PHPMailer/PHPMailer.php';
-require_once dirname(__DIR__) . '/vendor/PHPMailer/SMTP.php';
-require_once dirname(__DIR__) . '/vendor/PHPMailer/Exception.php';
+
+// Use the same mailer as admin side
+require_once dirname(__DIR__) . '/config/email.php';
 
 // ...existing code...
 
                         // ...existing code...
-                        $mail = new PHPMailer(true);
-                        // Configure PHPMailer (example, adjust as needed)
-                        $mail->isSMTP();
-                        $mail->Host = 'smtp.gmail.com';
-                        $mail->SMTPAuth = true;
-                        $mail->Username = 'lguportalph@gmail.com';
-                        $mail->Password = 'zsozvbpsggclkcno';
-                        $mail->SMTPSecure = 'tls';
-                        $mail->Port = 587;
-                        $mail->setFrom('lguportalph@gmail.com', 'LGU Portal');
-                        $mail->addAddress($email); // $email should be set to the recipient's email
-                        $mail->isHTML(true);
-                        $mail->Subject = 'Verify Your Identity: LGU Citizen Portal OTP Code';
-                        $mail->Body = '<p>Dear citizen,</p><p>Your one-time verification code for the LGU Citizen Portal is:</p><p style="font-size:24px;font-weight:bold;letter-spacing:4px;">' . $otp . '</p><p>This code is valid for <strong>10 minutes</strong> and can only be used once.</p><p>If you did not request this, you can safely ignore this email.</p>';
-                        $mail->send();
+                        // Use the same mailer as admin side
+                        $recipientEmail = isset($_SESSION['pending_user']['email']) ? $_SESSION['pending_user']['email'] : (isset($email) ? $email : null);
+                        $recipientName = isset($_SESSION['pending_user']['first_name']) ? $_SESSION['pending_user']['first_name'] : '';
+                        if ($recipientEmail && $otp) {
+                            send_verification_code($recipientEmail, $otp, $recipientName);
+                        }
                         $showOtpForm = true;
         // End of elseif (isset($_POST['login_submit']))
         $db->close();
