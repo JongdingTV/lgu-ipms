@@ -85,13 +85,11 @@ require_once dirname(__DIR__) . '/config/email.php';
                 <div class="input-box">
                     <label>Email Address</label>
                     <input type="email" name="email" id="loginEmail" placeholder="name@lgu.gov.ph" required autocomplete="email">
-                    <span class="icon">📧</span>
                 </div>
 
                 <div class="input-box">
                     <label>Password</label>
                     <input type="password" name="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
-                    <span class="icon">🔒</span>
                 </div>
 
                 <button class="btn-primary" type="submit" name="login_submit">Sign In</button>
