@@ -96,8 +96,6 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    padding-top: 80px;
-    padding-bottom: 80px;
     /* background image + blur */
     background: url("/assets/cityhall.jpeg") center/cover no-repeat fixed;
     position: relative;
@@ -114,6 +112,11 @@ body::before {
     backdrop-filter: blur(6px);
     background: rgba(0, 0, 0, 0.35);
     z-index: 0;
+}
+body {
+    padding-top: 56px;
+    padding-bottom: 56px;
+    overflow-x: hidden !important;
 }
 
 /* Ensure content is above the blur */
@@ -156,6 +159,9 @@ body::before {
     flex-shrink: 0;
     text-align: center;
     margin-bottom: 12px;
+     .wrapper {
+        overflow-x: hidden !important;
+    }
 }
 
 .card-header .icon-top {
@@ -359,6 +365,12 @@ body::before {
     border-radius: 6px;
     border: 1px solid rgba(0, 0, 0, 0.15);
     background: rgba(255, 255, 255, 0.9);
+}
+ .wrapper .card form input, 
+ .wrapper .card form select { 
+    border: 1px solid #e3e8f0;
+    background: #fff;
+    box-shadow: none;
 }
 
 .wrapper .card form label { 

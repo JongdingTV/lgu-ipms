@@ -44,28 +44,52 @@ require_once dirname(__DIR__) . '/config/email.php';
     body.login-page .nav {
         position: static !important;
         width: 100% !important;
-        height: auto !important;
+        height: 56px !important;
+        min-height: 0 !important;
         flex-direction: row !important;
         justify-content: space-between !important;
         align-items: center !important;
-        background: rgba(255,255,255,0.15) !important;
+        background: rgba(255,255,255,0.13) !important;
         border-right: none !important;
-        border-bottom: 1px solid rgba(255,255,255,0.25) !important;
-        box-shadow: 0 4px 25px rgba(0,0,0,0.10) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.18) !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.07) !important;
         z-index: 10 !important;
-        padding: 18px 60px !important;
+        padding: 0 32px !important;
+        overflow: hidden !important;
+    }
+    body.login-page .nav-logo {
+        font-size: 1.15rem !important;
+        font-weight: 600 !important;
+        color: #1e3a8a !important;
+        letter-spacing: 0.5px !important;
+        padding: 0 !important;
     }
     body.login-page .nav-links {
         flex-direction: row !important;
         gap: 18px !important;
         padding: 0 !important;
         margin: 0 !important;
+        margin-left: auto !important;
+    }
+    body.login-page .nav-links a {
+        color: #1e3a8a !important;
+        font-weight: 500 !important;
+        text-decoration: none !important;
+        font-size: 1rem !important;
+        padding: 8px 18px !important;
+        border-radius: 8px !important;
+        transition: background 0.15s;
+    }
+    body.login-page .nav-links a:hover {
+        background: #e8f0ff !important;
+        color: #2563eb !important;
     }
     body.login-page {
         min-height: 100vh !important;
         background: url('/cityhall.jpeg') center/cover no-repeat fixed !important;
         background-attachment: fixed !important;
         position: relative !important;
+        overflow-x: hidden !important;
     }
     body.login-page::before {
         content: "";
@@ -80,17 +104,18 @@ require_once dirname(__DIR__) . '/config/email.php';
     }
     body.login-page .wrapper {
         width: 100vw !important;
-        min-height: calc(100vh - 80px) !important;
+        min-height: calc(100vh - 56px) !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
         padding-bottom: 0 !important;
         margin: 0 !important;
         background: none !important;
+        overflow-x: hidden !important;
     }
     body.login-page .card {
         width: 340px !important;
-        background: rgba(255,255,255,0.92) !important;
+        background: rgba(255,255,255,0.97) !important;
         padding: 24px 28px 22px 28px !important;
         border-radius: 18px !important;
         box-shadow: 0 8px 25px rgba(0,0,0,0.18) !important;
@@ -132,19 +157,20 @@ require_once dirname(__DIR__) . '/config/email.php';
     body.login-page .input-box input[type="text"] {
         width: 100% !important;
         padding: 10px 12px !important;
-        border: 1px solid #cbd5e1 !important;
+        border: 1px solid #e3e8f0 !important;
         border-radius: 8px !important;
         font-size: 1em !important;
-        background: #f8f9fa !important;
+        background: #fff !important;
         margin-top: 2px !important;
         transition: border-color 0.2s;
+        box-shadow: none !important;
     }
     body.login-page .input-box input[type="email"]:focus,
     body.login-page .input-box input[type="password"]:focus,
     body.login-page .input-box input[type="text"]:focus {
         border-color: #2563eb !important;
-        box-shadow: 0 0 0 2px rgba(37,99,235,0.08) !important;
         outline: none !important;
+        box-shadow: none !important;
     }
     body.login-page .btn-primary, body.login-page .btn-secondary {
         width: 100% !important;
