@@ -8,11 +8,13 @@
 }
 
 body {
-    background: linear-gradient(145deg, #6e84b7, #40598f);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    /* reserve space at top for fixed header so content isn't covered */
+
+    /* NEW — background image + blur */
+    background: url("/cityhall.jpeg") center/cover no-repeat fixed;
+    position: relative;
     padding-top: 80px;
 }
 
