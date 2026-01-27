@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LGU | Create Account</title>
-<link rel="icon" type="image/png" href="logocityhall.png">
+<link rel="icon" type="image/png" href="/assets/logocityhall.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -98,9 +98,8 @@ body {
     flex-direction: column;
     padding-top: 80px;
     padding-bottom: 80px;
-
     /* background image + blur */
-    background: url("cityhall.jpeg") center/cover no-repeat fixed;
+    background: url("/assets/cityhall.jpeg") center/cover no-repeat fixed;
     position: relative;
 }
 
@@ -578,7 +577,7 @@ body::before {
 <div class="wrapper">
     <div class="card">
         <div class="card-header">
-            <img src="logocityhall.png" class="icon-top">
+            <img src="/assets/logocityhall.png" class="icon-top">
             <h2 class="title">Create Account</h2>
             <p class="subtitle">Register to access the LGU Portal</p>
         </div>
