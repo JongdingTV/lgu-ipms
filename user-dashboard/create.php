@@ -135,10 +135,10 @@ body::before {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
     padding: 40px 20px;
-    min-height: calc(100vh - 56px);
     overflow-x: hidden !important;
+    min-height: calc(100vh - 56px);
 }
 
 /* Card layout (auto height; page scroll instead of inner scroll) */
