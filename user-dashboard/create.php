@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
-<body style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
+<body class="signup-page" style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
 <!-- Blur overlay -->
 <style>
 body::before {
