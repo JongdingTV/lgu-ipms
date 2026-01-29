@@ -4,8 +4,28 @@
  * Test if email sending is working properly
  */
 
-require_once dirname(__DIR__) . '/config/email.php';
-require_once dirname(__DIR__) . '/database.php';
+// Determine the correct path based on hosting structure
+$base_path = dirname(__FILE__);
+$config_path = realpath($base_path . '/../config/email.php');
+
+if (!file_exists($config_path)) {
+    $config_path = realpath($base_path . '/config/email.php');
+}
+
+if (file_exists($config_path)) {
+    require_once $config_path;
+} else {
+    die('Error: Could not find email.php configuration file. Searched in: ' . htmlspecialchars($config_path));
+}
+
+// Try to load database
+$db_path = realpath($base_path . '/../database.php');
+if (!file_exists($db_path)) {
+    $db_path = realpath($base_path . '/database.php');
+}
+if (file_exists($db_path)) {
+    require_once $db_path;
+}
 
 $test_email = isset($_POST['test_email']) ? trim($_POST['test_email']) : '';
 $result = '';
