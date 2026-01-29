@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LGU | Create Account</title>
-<link rel="icon" type="image/png" href="/assets/logocityhall.png">
+<link rel="icon" type="image/png" href="/logocityhall.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -110,66 +110,13 @@ body.signup-page::before {
     z-index: 0;
     pointer-events: none;
 }
-.wrapper {
-    min-height: calc(100vh - 160px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1 0 auto;
-    padding: 0;
-    margin: 0;
-    position: relative;
-    z-index: 1;
-}
-.card {
-    max-width: 520px;
-    width: 100%;
-    margin: 0 auto;
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 8px 32px rgba(30,58,138,0.10);
-    padding: 0 0 32px 0;
-    position: relative;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-}
-.card-header {
-    text-align: center;
-    padding: 32px 32px 0 32px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-}
-.card .icon-top {
-    display: block;
-    margin: 0 auto 10px auto;
-    height: 56px;
-    width: auto;
-    object-fit: contain;
-}
-.footer, .footer a, .footer-logo, .footer-links a {
-    color: #1e293b !important;
-    text-align: left;
-}
-.nav, .nav-logo, .nav-links, .footer-links {
-    color: #1e293b !important;
-}
-.form-content {
-    padding: 0 32px;
-    min-height: 340px;
-    margin-bottom: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-}
-@media (max-width: 700px) {
-    .card { max-width: 99vw; padding: 0 0 18px 0; }
-    .form-content { padding: 0 8vw; min-height: 0; }
-    .card .icon-top { height: 40px; }
-}
+.nav, .wrapper, .footer { position: relative; z-index: 1; }
+.nav { width:100%;position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(30,58,95,0.04); }
+.nav-logo { display:flex;align-items:center;gap:10px; }
+.nav-logo img { height:40px;width:auto;object-fit:contain; }
+.nav-links { display:flex;align-items:center;gap:24px;margin-left:32px; }
+.nav-links a { color:#1e293b;text-decoration:none;font-weight:500;font-size:1.08em;transition:color 0.2s; }
+.nav-links a:hover { color:#f39c12; }
 .footer {
     position: fixed !important;
     bottom: 0; left: 0; right: 0;
@@ -185,6 +132,14 @@ body.signup-page::before {
     box-shadow: 0 -2px 12px rgba(30,58,95,0.04);
     font-size: 0.93em;
 }
+.footer-logo {
+    color: #0a4d8c; /* Change font color for copyright */
+    font-size: 0.91em;
+    opacity: 0.8;
+    text-align: center;
+    width: 100%;
+    max-width: 1200px;
+}
 .footer-links {
     margin-bottom: 2px;
     display: flex;
@@ -198,32 +153,47 @@ body.signup-page::before {
     font-size: 0.93em;
     opacity: 0.9;
 }
-.footer-links a:hover { color: #f39c12; }
-.footer-logo {
-    font-size: 0.91em;
-    opacity: 0.8;
-    text-align: center;
-    width: 100%;
-    max-width: 1200px;
+.footer-links a:hover {
+    color: #f39c12;
+    transition: none;
 }
+.card .icon-top {
+    display: block;
+    margin: 0 auto 10px auto;
+    height: 56px;
+    width: auto;
+    object-fit: contain;
+}
+@media (max-width: 600px) {
+    .nav { padding: 0 10px; height: 56px; }
+    .nav-logo img { height: 32px; }
+    .nav-links a { font-size: 0.98em; }
+    .footer { font-size: 0.91em; padding: 8px 0 2px 0; }
+    .footer-links { gap: 10px; }
+    .footer-logo { font-size: 0.89em; }
+    .card .icon-top { height: 40px; }
+}
+html, body { height: 100%; margin: 0; }
+body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
+.wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
 </style>
 </head>
 <body class="signup-page" style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
 <!-- Removed problematic blur overlay -->
 
-<header class="nav" style="width:100%;position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(30,58,95,0.04);">
-    <div class="nav-logo" style="display:flex;align-items:center;gap:10px;">
-        <img src="/assets/logocityhall.png" alt="LGU Logo" style="height:40px;width:auto;object-fit:contain;">
+<header class="nav">
+    <div class="nav-logo">
+        <img src="/logocityhall.png" alt="LGU Logo">
         <span style="color:#1e293b;font-weight:600;font-size:1.15em;">Local Government Unit Portal</span>
     </div>
-    <nav class="nav-links" style="display:flex;align-items:center;gap:24px;margin-left:32px;">
-        <a href="/public/index.php" style="color:#1e293b;text-decoration:none;font-weight:500;font-size:1.08em;transition:color 0.2s;">Home</a>
+    <nav class="nav-links">
+        <a href="/public/index.php">Home</a>
     </nav>
 </header>
 
 <div class="wrapper">
     <div class="card">
-        <img src="/assets/logocityhall.png" class="icon-top" alt="LGU Logo">
+        <img src="/logocityhall.png" class="icon-top" alt="LGU City Hall Logo" style="margin-bottom: 10px;">
         <div class="card-header">
             <h2 class="title">Create Account</h2>
             <p class="subtitle">Register to access the LGU Portal</p>
