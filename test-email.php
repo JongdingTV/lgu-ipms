@@ -30,9 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !empty($test_email)) {
     } else {
         // Test email sending
         try {
-            require_once dirname(__DIR__) . '/vendor/PHPMailer/PHPMailer.php';
-            require_once dirname(__DIR__) . '/vendor/PHPMailer/SMTP.php';
-            require_once dirname(__DIR__) . '/vendor/PHPMailer/Exception.php';
+            require_once __DIR__ . '/vendor/PHPMailer/PHPMailer.php';
+            require_once __DIR__ . '/vendor/PHPMailer/SMTP.php';
+            require_once __DIR__ . '/vendor/PHPMailer/Exception.php';
             
             $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
             
