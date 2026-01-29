@@ -1,3 +1,185 @@
+/* --- CREATE ACCOUNT STEP FORM FIXES --- */
+.wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 80vh;
+    padding: 40px 0 60px 0;
+    position: relative;
+    z-index: 1;
+}
+.card {
+    max-width: 520px;
+    width: 100%;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.97);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(30,58,138,0.10);
+    padding: 0 0 32px 0;
+    position: relative;
+    z-index: 2;
+}
+.card-header {
+    text-align: center;
+    padding: 32px 32px 0 32px;
+}
+.card-header .icon-top {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 10px;
+}
+.title { font-size: 2rem; font-weight: 700; color: #1e3a8a; margin-bottom: 4px; }
+.subtitle { color: #64748b; font-size: 1.1em; margin-bottom: 0; }
+
+.progress-container {
+    margin: 0 32px 24px 32px;
+    padding-top: 18px;
+}
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 8px;
+}
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+.progress-step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #1e3a8a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1em;
+    margin-bottom: 4px;
+    border: 2px solid #e5e7eb;
+    transition: background 0.2s, border 0.2s, color 0.2s;
+}
+.progress-step.active .progress-step-circle {
+    background: #2563eb;
+    color: #fff;
+    border: 2px solid #2563eb;
+}
+.progress-step.completed .progress-step-circle {
+    background: #7be495;
+    color: #fff;
+    border: 2px solid #7be495;
+}
+.progress-step-label {
+    font-size: 0.92em;
+    color: #64748b;
+    text-align: center;
+    font-weight: 500;
+    min-width: 60px;
+}
+.progress-bar-container {
+    width: 100%;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    margin-top: 2px;
+    position: relative;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%);
+    border-radius: 4px;
+    transition: width 0.3s;
+}
+
+.form-content {
+    padding: 0 32px;
+    min-height: 340px;
+    margin-bottom: 0;
+}
+.form-step {
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    animation: fadeInStep 0.3s;
+}
+.form-step.active {
+    display: flex;
+}
+@keyframes fadeInStep {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+}
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 0;
+}
+.input-box.full-width { grid-column: 1 / -1; }
+.input-box { margin-bottom: 18px; }
+.input-box label { font-weight: 500; color: #1e3a8a; margin-bottom: 6px; display: block; }
+.input-box input, .input-box select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1em; background: #f8f9fa; transition: border-color 0.2s; }
+.input-box input:focus, .input-box select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08); }
+
+/* Navigation Buttons */
+.form-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 24px 32px 0 32px;
+}
+.btn-primary, .btn-secondary {
+    padding: 12px 32px;
+    border-radius: 8px;
+    font-size: 1.08em;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+.btn-primary {
+    background: linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(37,99,235,0.10);
+}
+.btn-primary:disabled { background: #bcd0f7; color: #fff; cursor: not-allowed; }
+.btn-secondary {
+    background: #e5e7eb;
+    color: #1e3a8a;
+    font-weight: 600;
+}
+.btn-secondary:disabled { background: #f3f4f6; color: #bcd0f7; cursor: not-allowed; }
+
+/* Error message styling */
+#regMessage {
+    background: #fee;
+    color: #c00;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin: 12px 0 0 0;
+    font-size: 1em;
+    font-weight: 500;
+    display: none;
+}
+
+/* Responsive fixes for step form */
+@media (max-width: 700px) {
+    .wrapper { padding: 10px 0 30px 0; }
+    .card { max-width: 99vw; padding: 0 0 18px 0; }
+    .card-header { padding: 18px 8vw 0 8vw; }
+    .progress-container { margin: 0 8vw 18px 8vw; }
+    .form-content { padding: 0 8vw; min-height: 0; }
+    .form-grid { grid-template-columns: 1fr; gap: 0; }
+    .form-navigation { margin: 18px 8vw 0 8vw; flex-direction: column; gap: 10px; }
+}
 /* Modern Feedback Form Styles */
 .modern-feedback-form {
     background: #fff;
