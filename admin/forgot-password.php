@@ -195,8 +195,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step1_request'])) {
                             if ($insert_stmt->execute()) {
                                 error_log('Token stored for: ' . $email);
                                 
+                                // DEBUG: Log what we're about to do
+                                error_log('About to call send_reset_email with: email=' . $email . ', name=' . $employee['first_name']);
+                                
                                 // Send email with reset link
-                                if (send_reset_email($email, $employee['first_name'] . ' ' . $employee['last_name'], $reset_token)) {
+                                $email_result = send_reset_email($email, $employee['first_name'] . ' ' . $employee['last_name'], $reset_token);
+                                error_log('Email result returned: ' . ($email_result ? 'TRUE' : 'FALSE'));
+                                
+                                if ($email_result) {
                                     error_log('Email sent successfully to: ' . $email);
                                     $success = "Password reset instructions have been sent to your email. Please check your inbox and follow the link.";
                                     
