@@ -122,7 +122,7 @@ body.signup-page::before {
     z-index: 1;
 }
 .card {
-    max-width: 410px;
+    max-width: 520px;
     width: 100%;
     margin: 0 auto;
     background: #fff;
@@ -143,6 +143,13 @@ body.signup-page::before {
     align-items: center;
     gap: 8px;
 }
+.card .icon-top {
+    display: block;
+    margin: 0 auto 10px auto;
+    height: 56px;
+    width: auto;
+    object-fit: contain;
+}
 .footer, .footer a, .footer-logo, .footer-links a {
     color: #1e293b !important;
     text-align: left;
@@ -151,7 +158,7 @@ body.signup-page::before {
     color: #1e293b !important;
 }
 .form-content {
-    padding: 0 24px;
+    padding: 0 32px;
     min-height: 340px;
     margin-bottom: 0;
     display: flex;
@@ -161,6 +168,43 @@ body.signup-page::before {
 @media (max-width: 700px) {
     .card { max-width: 99vw; padding: 0 0 18px 0; }
     .form-content { padding: 0 8vw; min-height: 0; }
+    .card .icon-top { height: 40px; }
+}
+.footer {
+    position: fixed !important;
+    bottom: 0; left: 0; right: 0;
+    width: 100%;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    color: #1e293b;
+    z-index: 100;
+    padding: 10px 0 4px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 -2px 12px rgba(30,58,95,0.04);
+    font-size: 0.93em;
+}
+.footer-links {
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    justify-content: center;
+}
+.footer-links a {
+    color: #1e293b;
+    text-decoration: none;
+    font-size: 0.93em;
+    opacity: 0.9;
+}
+.footer-links a:hover { color: #f39c12; }
+.footer-logo {
+    font-size: 0.91em;
+    opacity: 0.8;
+    text-align: center;
+    width: 100%;
+    max-width: 1200px;
 }
 </style>
 </head>
@@ -179,8 +223,8 @@ body.signup-page::before {
 
 <div class="wrapper">
     <div class="card">
+        <img src="/assets/logocityhall.png" class="icon-top" alt="LGU Logo">
         <div class="card-header">
-            <img src="/assets/logocityhall.png" class="icon-top">
             <h2 class="title">Create Account</h2>
             <p class="subtitle">Register to access the LGU Portal</p>
         </div>
@@ -400,13 +444,13 @@ body.signup-page::before {
 </div>
 
 
-<footer class="footer" style="position:fixed !important;bottom:0;left:0;right:0;width:100%;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);color:#1e293b;z-index:100;padding:16px 0 8px 0;display:flex;flex-direction:column;align-items:center;box-shadow:0 -2px 12px rgba(30,58,95,0.04);">
-    <div class="footer-links" style="margin-bottom:6px;display:flex;align-items:center;gap:18px;">
-        <a href="#" style="color:#1e293b;text-decoration:none;font-size:0.98em;">Privacy Policy</a>
-        <a href="#" style="color:#1e293b;text-decoration:none;font-size:0.98em;">About</a>
-        <a href="#" style="color:#1e293b;text-decoration:none;font-size:0.98em;">Help</a>
+<footer class="footer">
+    <div class="footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">About</a>
+        <a href="#">Help</a>
     </div>
-    <div class="footer-logo" style="font-size:0.95em;opacity:0.85;text-align:left;width:100%;max-width:1200px;">© 2025 LGU Citizen Portal · All Rights Reserved</div>
+    <div class="footer-logo">© 2025 LGU Citizen Portal · All Rights Reserved</div>
 </footer>
 
 <script>

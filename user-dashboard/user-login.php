@@ -69,16 +69,57 @@ body.user-login-page::before {
 .nav-links { display:flex;align-items:center;gap:24px;margin-left:32px; }
 .nav-links a { color:#1e293b;text-decoration:none;font-weight:500;font-size:1.08em;transition:color 0.2s; }
 .nav-links a:hover { color:#f39c12; }
-.footer { position:fixed !important;bottom:0;left:0;right:0;width:100%;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);color:#1e293b;z-index:100;padding:16px 0 8px 0;display:flex;flex-direction:column;align-items:center;box-shadow:0 -2px 12px rgba(30,58,95,0.04); }
-.footer-links { margin-bottom:6px;display:flex;align-items:center;gap:18px; }
-.footer-links a { color:#1e293b;text-decoration:none;font-size:0.98em; }
-.footer-links a:hover { color:#f39c12; }
-.footer-logo { font-size:0.95em;opacity:0.85;text-align:left;width:100%;max-width:1200px; }
+.footer {
+    position: fixed !important;
+    bottom: 0; left: 0; right: 0;
+    width: 100%;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    color: #1e293b;
+    z-index: 100;
+    padding: 10px 0 4px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 -2px 12px rgba(30,58,95,0.04);
+    font-size: 0.93em;
+}
+.footer-links {
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    justify-content: center;
+}
+.footer-links a {
+    color: #1e293b;
+    text-decoration: none;
+    font-size: 0.93em;
+    opacity: 0.9;
+}
+.footer-links a:hover { color: #f39c12; }
+.footer-logo {
+    font-size: 0.91em;
+    opacity: 0.8;
+    text-align: center;
+    width: 100%;
+    max-width: 1200px;
+}
+.card .icon-top {
+    display: block;
+    margin: 0 auto 10px auto;
+    height: 56px;
+    width: auto;
+    object-fit: contain;
+}
 @media (max-width: 600px) {
     .nav { padding: 0 10px; height: 56px; }
     .nav-logo img { height: 32px; }
     .nav-links a { font-size: 0.98em; }
-    .footer { padding: 10px 0 4px 0; font-size: 0.95em; }
+    .footer { font-size: 0.91em; padding: 8px 0 2px 0; }
+    .footer-links { gap: 10px; }
+    .footer-logo { font-size: 0.89em; }
+    .card .icon-top { height: 40px; }
 }
 html, body { height: 100%; margin: 0; }
 body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
@@ -95,9 +136,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
 </header>
 <div class="wrapper">
     <div class="card">
-        <div style="display:flex;justify-content:center;margin-bottom:10px;">
-            <img src="/assets/logocityhall.png" class="icon-top" alt="LGU Logo" style="height:56px;width:auto;object-fit:contain;">
-        </div>
+        <img src="/assets/logocityhall.png" class="icon-top" alt="LGU Logo">
         <h2 class="title">Citizen Login</h2>
         <?php if ($showOtpForm && isset($_SESSION['pending_user'])): ?>
             <p class="subtitle">We sent a one-time verification code to your email. Enter it below to continue.</p>
