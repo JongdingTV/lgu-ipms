@@ -42,26 +42,42 @@ require_once dirname(__DIR__) . '/config/email.php';
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
-<body style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
+<body class="user-login-page">
 <!-- Blur overlay -->
 <style>
-body::before { display:none; }
+body.user-login-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: url('/cityhall.jpeg') center/cover no-repeat fixed;
+    position: relative;
+    padding-top: 80px;
+}
+body.user-login-page::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: inherit;
+    filter: blur(10px) brightness(0.95);
+    z-index: 0;
+    pointer-events: none;
+}
 .nav, .wrapper, .footer { position: relative; z-index: 1; }
 .nav { width:100%;position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(30,58,95,0.04); }
 .nav-logo { display:flex;align-items:center;gap:10px; }
 .nav-logo img { height:40px;width:auto;object-fit:contain; }
-.nav-links { margin-left:auto; }
-.nav-links a { color:#1e293b;text-decoration:none;font-weight:500;margin-left:24px;font-size:1.08em;transition:color 0.2s; }
+.nav-links { display:flex;align-items:center;gap:24px;margin-left:32px; }
+.nav-links a { color:#1e293b;text-decoration:none;font-weight:500;font-size:1.08em;transition:color 0.2s; }
 .nav-links a:hover { color:#f39c12; }
 .footer { position:fixed !important;bottom:0;left:0;right:0;width:100%;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);color:#1e293b;z-index:100;padding:16px 0 8px 0;display:flex;flex-direction:column;align-items:center;box-shadow:0 -2px 12px rgba(30,58,95,0.04); }
-.footer-links { margin-bottom:6px; }
-.footer-links a { color:#1e293b;margin:0 10px;text-decoration:none;font-size:0.98em; }
+.footer-links { margin-bottom:6px;display:flex;align-items:center;gap:18px; }
+.footer-links a { color:#1e293b;text-decoration:none;font-size:0.98em; }
 .footer-links a:hover { color:#f39c12; }
-.footer-logo { font-size:0.95em;opacity:0.85; }
+.footer-logo { font-size:0.95em;opacity:0.85;text-align:left;width:100%;max-width:1200px; }
 @media (max-width: 600px) {
     .nav { padding: 0 10px; height: 56px; }
     .nav-logo img { height: 32px; }
-    .nav-links a { margin-left: 12px; font-size: 0.98em; }
+    .nav-links a { font-size: 0.98em; }
     .footer { padding: 10px 0 4px 0; font-size: 0.95em; }
 }
 html, body { height: 100%; margin: 0; }
@@ -69,15 +85,13 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
 .wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
 </style>
 <header class="nav">
-</header>
-<header class="nav">
     <div class="nav-logo">
-        <img src="/assets/logocityhall.png" alt="LGU Logo"> 
-        <span>Local Government Unit Portal</span>
+        <img src="/assets/logocityhall.png" alt="LGU Logo">
+        <span style="color:#1e293b;font-weight:600;font-size:1.15em;">Local Government Unit Portal</span>
     </div>
-    <div class="nav-links">
+    <nav class="nav-links">
         <a href="/public/index.php">Home</a>
-    </div>
+    </nav>
 </header>
 <div class="wrapper">
     <div class="card">
@@ -139,17 +153,12 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
 </div>
 
 <footer class="footer">
-
     <div class="footer-links">
         <a href="#">Privacy Policy</a>
         <a href="#">About</a>
         <a href="#">Help</a>
     </div>
-
-    <div class="footer-logo">
-        © 2025 LGU Citizen Portal · All Rights Reserved
-    </div>
-
+    <div class="footer-logo">© 2025 LGU Citizen Portal · All Rights Reserved</div>
 </footer>
 
 <?php if ($showOtpForm && isset($_SESSION['pending_user'], $_SESSION['otp_time'])): ?>

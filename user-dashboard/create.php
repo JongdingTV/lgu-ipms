@@ -92,6 +92,77 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
+<style>
+body.signup-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: url('/cityhall.jpeg') center/cover no-repeat fixed;
+    position: relative;
+    padding-top: 80px;
+}
+body.signup-page::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: inherit;
+    filter: blur(10px) brightness(0.95);
+    z-index: 0;
+    pointer-events: none;
+}
+.wrapper {
+    min-height: calc(100vh - 160px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 0 auto;
+    padding: 0;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+}
+.card {
+    max-width: 410px;
+    width: 100%;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(30,58,138,0.10);
+    padding: 0 0 32px 0;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+.card-header {
+    text-align: center;
+    padding: 32px 32px 0 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.footer, .footer a, .footer-logo, .footer-links a {
+    color: #1e293b !important;
+    text-align: left;
+}
+.nav, .nav-logo, .nav-links, .footer-links {
+    color: #1e293b !important;
+}
+.form-content {
+    padding: 0 24px;
+    min-height: 340px;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+@media (max-width: 700px) {
+    .card { max-width: 99vw; padding: 0 0 18px 0; }
+    .form-content { padding: 0 8vw; min-height: 0; }
+}
+</style>
 </head>
 <body class="signup-page" style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
 <!-- Removed problematic blur overlay -->
@@ -101,9 +172,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <img src="/assets/logocityhall.png" alt="LGU Logo" style="height:40px;width:auto;object-fit:contain;">
         <span style="color:#1e293b;font-weight:600;font-size:1.15em;">Local Government Unit Portal</span>
     </div>
-    <div class="nav-links">
-        <a href="/public/index.php" style="color:#1e293b;text-decoration:none;font-weight:500;margin-left:24px;font-size:1.08em;transition:color 0.2s;">Home</a>
-    </div>
+    <nav class="nav-links" style="display:flex;align-items:center;gap:24px;margin-left:32px;">
+        <a href="/public/index.php" style="color:#1e293b;text-decoration:none;font-weight:500;font-size:1.08em;transition:color 0.2s;">Home</a>
+    </nav>
 </header>
 
 <div class="wrapper">
@@ -330,12 +401,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
 <footer class="footer" style="position:fixed !important;bottom:0;left:0;right:0;width:100%;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);color:#1e293b;z-index:100;padding:16px 0 8px 0;display:flex;flex-direction:column;align-items:center;box-shadow:0 -2px 12px rgba(30,58,95,0.04);">
-    <div class="footer-links" style="margin-bottom:6px;">
-        <a href="#" style="color:#1e293b;margin:0 10px;text-decoration:none;font-size:0.98em;">Privacy Policy</a>
-        <a href="#" style="color:#1e293b;margin:0 10px;text-decoration:none;font-size:0.98em;">About</a>
-        <a href="#" style="color:#1e293b;margin:0 10px;text-decoration:none;font-size:0.98em;">Help</a>
+    <div class="footer-links" style="margin-bottom:6px;display:flex;align-items:center;gap:18px;">
+        <a href="#" style="color:#1e293b;text-decoration:none;font-size:0.98em;">Privacy Policy</a>
+        <a href="#" style="color:#1e293b;text-decoration:none;font-size:0.98em;">About</a>
+        <a href="#" style="color:#1e293b;text-decoration:none;font-size:0.98em;">Help</a>
     </div>
-    <div class="footer-logo" style="font-size:0.95em;opacity:0.85;">© 2025 LGU Citizen Portal · All Rights Reserved</div>
+    <div class="footer-logo" style="font-size:0.95em;opacity:0.85;text-align:left;width:100%;max-width:1200px;">© 2025 LGU Citizen Portal · All Rights Reserved</div>
 </footer>
 
 <script>
