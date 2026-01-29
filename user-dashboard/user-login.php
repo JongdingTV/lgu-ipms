@@ -84,6 +84,14 @@ body.user-login-page::before {
     box-shadow: 0 -2px 12px rgba(30,58,95,0.04);
     font-size: 0.93em;
 }
+.footer-logo {
+    color: #0a4d8c; /* Change font color for copyright */
+    font-size: 0.91em;
+    opacity: 0.8;
+    text-align: center;
+    width: 100%;
+    max-width: 1200px;
+}
 .footer-links {
     margin-bottom: 2px;
     display: flex;
@@ -136,8 +144,10 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
 </header>
 <div class="wrapper">
     <div class="card">
-        <img src="/assets/logocityhall.png" class="icon-top" alt="LGU Logo">
-        <h2 class="title">Citizen Login</h2>
+        <img src="/assets/logocityhall.png" class="icon-top" alt="LGU Logo" style="margin-bottom: 10px;">
+        <h2 class="title" style="display: flex; align-items: center; gap: 10px; justify-content: center;">
+            <img src="/assets/logocityhall.png" alt="LGU Logo" style="height:32px;width:auto;object-fit:contain;vertical-align:middle;"> Citizen Login
+        </h2>
         <?php if ($showOtpForm && isset($_SESSION['pending_user'])): ?>
             <p class="subtitle">We sent a one-time verification code to your email. Enter it below to continue.</p>
 
