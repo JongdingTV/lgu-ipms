@@ -12,9 +12,10 @@ set_no_cache_headers();
 
 // Check if user is accessing admin page without verification or login
 if (!isset($_SESSION['employee_id'])) {
-    // User not logged in - redirect to login
-    header('Location: /index.php');
-    exit;
+    // User not logged in - will show login form below
+    $show_login_form = true;
+} else {
+    $show_login_form = false;
 }
 
 // If already logged in, proceed normally
@@ -174,6 +175,7 @@ body::before {
         </div>
         <?php endif; ?>
 
+        <?php if ($show_login_form): ?>
         <form method="post">
 
             <div class="input-box">
@@ -197,6 +199,9 @@ body::before {
             <?php endif; ?>
 
         </form>
+        <?php else: ?>
+            <p>Redirecting to dashboard...</p>
+        <?php endif; ?>
     </div>
 </div>
 
