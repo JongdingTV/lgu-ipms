@@ -144,10 +144,8 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
 </header>
 <div class="wrapper">
     <div class="card">
-        <img src="/assets/logocityhall.png" class="icon-top" alt="LGU Logo" style="margin-bottom: 10px;">
-        <h2 class="title" style="display: flex; align-items: center; gap: 10px; justify-content: center;">
-            <img src="/assets/logocityhall.png" alt="LGU Logo" style="height:32px;width:auto;object-fit:contain;vertical-align:middle;"> Citizen Login
-        </h2>
+        <img src="../assets/logocityhall.png" class="icon-top" alt="LGU City Hall Logo" style="margin-bottom: 10px;">
+        <h2 class="title" style="text-align:center;">Citizen Login</h2>
         <?php if ($showOtpForm && isset($_SESSION['pending_user'])): ?>
             <p class="subtitle">We sent a one-time verification code to your email. Enter it below to continue.</p>
 
