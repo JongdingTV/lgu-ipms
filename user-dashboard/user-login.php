@@ -105,7 +105,10 @@ body.user-login-page::before {
     font-size: 0.93em;
     opacity: 0.9;
 }
-.footer-links a:hover { color: #f39c12; }
+.footer-links a:hover {
+    color: #f39c12;
+    transition: none;
+}
 .footer-logo {
     font-size: 0.91em;
     opacity: 0.8;
@@ -135,7 +138,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
 </style>
 <header class="nav">
     <div class="nav-logo">
-        <img src="/lgu-ipms/logocityhall.png" alt="LGU Logo">
+        <img src="/logocityhall.png" alt="LGU Logo">
         <span style="color:#1e293b;font-weight:600;font-size:1.15em;">Local Government Unit Portal</span>
     </div>
     <nav class="nav-links">
