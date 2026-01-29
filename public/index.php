@@ -609,7 +609,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 				<a href="/user-dashboard/user-login.php" class="btn-primary-custom btn-citizen">
 					<i class="fas fa-user-circle"></i> Citizen Access
 				</a>
-				<a href="/public/admin-login.php" class="btn-primary-custom btn-employee">
+				<a href="/admin/index.php" class="btn-primary-custom btn-employee">
 					<i class="fas fa-briefcase"></i> Employee Access
 				</a>
 			</div>
