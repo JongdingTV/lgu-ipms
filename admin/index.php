@@ -11,17 +11,10 @@ require dirname(__DIR__) . '/config-path.php';
 set_no_cache_headers();
 
 // Check if user is accessing admin page without verification or login
-// If not logged in AND not verified, redirect to verification
 if (!isset($_SESSION['employee_id'])) {
-    // User not logged in - check if they're in the verification process
-    if (isset($_SESSION['admin_verified']) && isset($_SESSION['verified_employee_id'])) {
-        // User has passed verification - they can proceed to login
-        // Admin login form will be shown below
-    } else {
-        // User has not verified - redirect to verification page
-        header('Location: /public/admin-login.php');
-        exit;
-    }
+    // User not logged in - redirect to login
+    header('Location: /index.php');
+    exit;
 }
 
 // If already logged in, proceed normally

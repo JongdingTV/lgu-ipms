@@ -9,9 +9,9 @@ session_start();
 // DATABASE CONNECTION
 require_once dirname(__DIR__) . '/database.php';
 
-// Check if user is logged in or at least verified through 2FA
-if (!isset($_SESSION['employee_id']) && !isset($_SESSION['admin_verified'])) {
-    header('Location: /public/admin-login.php');
+// Check if user is logged in
+if (!isset($_SESSION['employee_id'])) {
+    header('Location: /index.php');
     exit;
 }
 
