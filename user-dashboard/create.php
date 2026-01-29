@@ -95,8 +95,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body class="signup-page" style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
 <!-- Removed problematic blur overlay -->
-<header class="nav">
-    <div class="nav-logo"><img src="/assets/logocityhall.png" alt="LGU Logo" style="height: 40px; margin-right: 10px;"> Local Government Unit Portal</div>
+
+<header class="nav" style="width:100%;position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(30,58,95,0.04);">
+    <div class="nav-logo" style="display:flex;align-items:center;gap:10px;">
+        <img src="/assets/logocityhall.png" alt="LGU Logo" style="height:40px;width:auto;object-fit:contain;">
+        <span style="color:#1e293b;font-weight:600;font-size:1.15em;">Local Government Unit Portal</span>
+    </div>
+    <div class="nav-links">
+        <a href="/public/index.php" style="color:#1e293b;text-decoration:none;font-weight:500;margin-left:24px;font-size:1.08em;transition:color 0.2s;">Home</a>
+    </div>
 </header>
 
 <div class="wrapper">
@@ -321,13 +328,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 </div>
 
-<footer class="footer">
-    <div class="footer-links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">About</a>
-        <a href="#">Help</a>
+
+<footer class="footer" style="position:fixed !important;bottom:0;left:0;right:0;width:100%;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);color:#1e293b;z-index:100;padding:16px 0 8px 0;display:flex;flex-direction:column;align-items:center;box-shadow:0 -2px 12px rgba(30,58,95,0.04);">
+    <div class="footer-links" style="margin-bottom:6px;">
+        <a href="#" style="color:#1e293b;margin:0 10px;text-decoration:none;font-size:0.98em;">Privacy Policy</a>
+        <a href="#" style="color:#1e293b;margin:0 10px;text-decoration:none;font-size:0.98em;">About</a>
+        <a href="#" style="color:#1e293b;margin:0 10px;text-decoration:none;font-size:0.98em;">Help</a>
     </div>
-    <div class="footer-logo">© 2025 LGU Citizen Portal · All Rights Reserved</div>
+    <div class="footer-logo" style="font-size:0.95em;opacity:0.85;">© 2025 LGU Citizen Portal · All Rights Reserved</div>
 </footer>
 
 <script>
