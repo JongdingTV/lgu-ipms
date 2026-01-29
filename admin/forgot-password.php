@@ -117,6 +117,9 @@ function send_reset_email($email, $employee_name, $reset_token) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step1_request'])) {
     $email = isset($_POST['email']) ? trim($_POST['email']) : '';
     
+    // Debug: Log the request
+    error_log('Forgot password request for: ' . $email);
+    
     // Rate limiting check (max 3 requests per 15 minutes)
     $rate_limit_key = 'reset_' . $email;
     $rate_limit_file = sys_get_temp_dir() . '/' . md5($rate_limit_key) . '.txt';
@@ -145,6 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step1_request'])) {
         // Check if email exists in database
         if (!isset($db) || $db->connect_error) {
             $error = 'Database connection error. Please try again later.';
+            error_log('DB Connection Error: ' . $db->connect_error);
         } else {
             $stmt = $db->prepare("SELECT id, first_name, last_name FROM employees WHERE email = ?");
             if ($stmt) {
@@ -154,39 +158,55 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step1_request'])) {
                 
                 if ($result->num_rows > 0) {
                     $employee = $result->fetch_assoc();
+                    error_log('Employee found: ' . $employee['first_name']);
                     
                     // Generate a secure reset token
                     $reset_token = bin2hex(random_bytes(32));
                     $token_hash = hash('sha256', $reset_token);
                     $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
                     
-                    // Store reset token in database
-                    $insert_stmt = $db->prepare("INSERT INTO password_resets (email, token_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token_hash = ?, expires_at = ?");
-                    if ($insert_stmt) {
-                        $insert_stmt->bind_param('sssss', $email, $token_hash, $expires, $token_hash, $expires);
-                        if ($insert_stmt->execute()) {
-                            // Send email with reset link
-                            if (send_reset_email($email, $employee['first_name'] . ' ' . $employee['last_name'], $reset_token)) {
-                                $success = "Password reset instructions have been sent to your email. Please check your inbox and follow the link.";
+                    // Check if password_resets table exists
+                    $table_check = $db->query("SHOW TABLES LIKE 'password_resets'");
+                    if ($table_check->num_rows == 0) {
+                        error_log('ERROR: password_resets table does not exist!');
+                        $error = 'System configuration error. Please contact support.';
+                    } else {
+                        // Store reset token in database
+                        $insert_stmt = $db->prepare("INSERT INTO password_resets (email, token_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token_hash = ?, expires_at = ?");
+                        if ($insert_stmt) {
+                            $insert_stmt->bind_param('sssss', $email, $token_hash, $expires, $token_hash, $expires);
+                            if ($insert_stmt->execute()) {
+                                error_log('Token stored for: ' . $email);
                                 
-                                // Update rate limit counter
-                                file_put_contents($rate_limit_file, (intval(file_get_contents($rate_limit_file)) + 1));
+                                // Send email with reset link
+                                if (send_reset_email($email, $employee['first_name'] . ' ' . $employee['last_name'], $reset_token)) {
+                                    error_log('Email sent successfully to: ' . $email);
+                                    $success = "Password reset instructions have been sent to your email. Please check your inbox and follow the link.";
+                                    
+                                    // Update rate limit counter
+                                    file_put_contents($rate_limit_file, (intval(file_get_contents($rate_limit_file)) + 1));
+                                } else {
+                                    error_log('Failed to send email to: ' . $email);
+                                    $error = 'Failed to send email. Please try again later.';
+                                }
                             } else {
-                                $error = 'Failed to send email. Please try again later.';
+                                error_log('Failed to store token: ' . $insert_stmt->error);
+                                $error = 'Database error. Please try again later.';
                             }
+                            $insert_stmt->close();
                         } else {
+                            error_log('Failed to prepare insert statement: ' . $db->error);
                             $error = 'Database error. Please try again later.';
                         }
-                        $insert_stmt->close();
-                    } else {
-                        $error = 'Database error. Please try again later.';
                     }
                 } else {
+                    error_log('Employee not found: ' . $email);
                     // For security, don't reveal if email exists or not
                     $success = "If an account exists with that email, you will receive password reset instructions.";
                 }
                 $stmt->close();
             } else {
+                error_log('Failed to prepare select statement: ' . $db->error);
                 $error = 'Database error. Please try again later.';
             }
         }
