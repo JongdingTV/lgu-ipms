@@ -4,25 +4,18 @@
  * Test if email sending is working properly
  */
 
-// Determine the correct path based on hosting structure
-$base_path = dirname(__FILE__);
-$config_path = realpath($base_path . '/../config/email.php');
+// Correct paths for public_html structure
+$base_path = __DIR__;
+$config_path = $base_path . '/config/email.php';
 
 if (!file_exists($config_path)) {
-    $config_path = realpath($base_path . '/config/email.php');
+    die('Error: Could not find email.php configuration file at: ' . htmlspecialchars($config_path));
 }
 
-if (file_exists($config_path)) {
-    require_once $config_path;
-} else {
-    die('Error: Could not find email.php configuration file. Searched in: ' . htmlspecialchars($config_path));
-}
+require_once $config_path;
 
 // Try to load database
-$db_path = realpath($base_path . '/../database.php');
-if (!file_exists($db_path)) {
-    $db_path = realpath($base_path . '/database.php');
-}
+$db_path = $base_path . '/database.php';
 if (file_exists($db_path)) {
     require_once $db_path;
 }
@@ -44,8 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !empty($test_email)) {
             $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
             
             // Enable debug output for testing
-            $mail->SMTPDebug = 2;
-            ob_start();
+            $mail->SMTPDebug = 4;  // More detailed output
+            $debug_log = [];
+            
+            // Create a custom debug callback
+            $mail->Debugoutput = function($str, $level) use (&$debug_log) {
+                $debug_log[] = htmlspecialchars($str);
+            };
             
             // Server settings
             $mail->isSMTP();
@@ -71,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !empty($test_email)) {
                 $error = '❌ Failed to send email: ' . $mail->ErrorInfo;
             }
             
-            $debug_output = ob_get_clean();
+            $debug_output = implode('<br>', $debug_log);
             
         } catch (Exception $e) {
             $error = '❌ Email Error: ' . $e->getMessage();
