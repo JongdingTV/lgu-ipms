@@ -86,7 +86,15 @@ $db->close();
         <div class="nav-user">
             <img src="person.png" alt="User Icon" class="user-icon">
             <span class="nav-username">Welcome <?php echo isset($_SESSION['employee_name']) ? $_SESSION['employee_name'] : 'Admin'; ?></span>
-            <a href="../logout.php" class="nav-logout">Logout</a>
+            <div style="display: flex; gap: 10px;">
+                <a href="../change-password.php" class="nav-logout" style="background: #3498db; margin: 0;" title="Change Password">
+                    <i class="fas fa-key" style="margin-right: 4px;"></i> Change Password
+                </a>
+                <a href="../audit-logs.php" class="nav-logout" style="background: #27ae60; margin: 0;" title="View Security Logs">
+                    <i class="fas fa-shield-alt" style="margin-right: 4px;"></i> Security
+                </a>
+                <a href="../logout.php" class="nav-logout">Logout</a>
+            </div>
         </div>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar">

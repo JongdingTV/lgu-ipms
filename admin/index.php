@@ -10,6 +10,44 @@ require dirname(__DIR__) . '/config-path.php';
 // Add no-cache headers to prevent cached login page from being shown after logout
 set_no_cache_headers();
 
+// Get client IP
+function get_client_ip() {
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        return $_SERVER['HTTP_CLIENT_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    } else {
+        return $_SERVER['REMOTE_ADDR'];
+    }
+}
+
+$client_ip = get_client_ip();
+$user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+// Session timeout (30 minutes)
+$session_timeout = 1800;
+if (isset($_SESSION['employee_id'])) {
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $session_timeout) {
+        // Log timeout
+        if (isset($db) && !$db->connect_error) {
+            $emp_id = $_SESSION['employee_id'];
+            $session_id = session_id();
+            $stmt = $db->prepare("UPDATE session_logs SET status = 'expired' WHERE employee_id = ? AND session_id = ? AND status = 'active'");
+            if ($stmt) {
+                $stmt->bind_param('is', $emp_id, $session_id);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+        session_destroy();
+        session_start();
+        $show_login_form = true;
+        $error = 'Your session has expired. Please log in again.';
+    } else {
+        $_SESSION['last_activity'] = time();
+    }
+}
+
 // Check if user is accessing admin page without verification or login
 if (!isset($_SESSION['employee_id'])) {
     // User not logged in - will show login form below
@@ -32,34 +70,144 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $password = isset($_POST['password']) ? trim($_POST['password']) : '';
         
         if (!empty($email) && !empty($password)) {
-            $stmt = $db->prepare("SELECT id, password, first_name, last_name FROM employees WHERE email = ?");
-            if ($stmt) {
-                $stmt->bind_param('s', $email);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                if ($result->num_rows > 0) {
-                    $employee = $result->fetch_assoc();
-                    $isAdmin = ($email === 'admin@lgu.gov.ph');
-                    $valid = false;
-                    if ($isAdmin) {
-                        // Allow plain password for admin test account
-                        $valid = ($password === 'admin123' || password_verify($password, $employee['password']));
-                    } else {
-                        $valid = password_verify($password, $employee['password']);
+            // Check if account is locked
+            $lock_stmt = $db->prepare("SELECT locked_until FROM locked_accounts WHERE email = ? AND locked_until > NOW()");
+            if ($lock_stmt) {
+                $lock_stmt->bind_param('s', $email);
+                $lock_stmt->execute();
+                $lock_result = $lock_stmt->get_result();
+                
+                if ($lock_result->num_rows > 0) {
+                    $lock_data = $lock_result->fetch_assoc();
+                    $time_remaining = strtotime($lock_data['locked_until']) - time();
+                    $minutes = ceil($time_remaining / 60);
+                    
+                    $error = "Account locked due to too many failed login attempts. Try again in $minutes minute" . ($minutes > 1 ? 's' : '') . ".";
+                    
+                    // Log failed attempt
+                    $log_stmt = $db->prepare("INSERT INTO login_logs (email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, 'locked', 'Account locked')");
+                    if ($log_stmt) {
+                        $log_stmt->bind_param('sss', $email, $client_ip, $user_agent);
+                        $log_stmt->execute();
+                        $log_stmt->close();
                     }
-                    if ($valid) {
-                        $_SESSION['employee_id'] = $employee['id'];
-                        $_SESSION['employee_name'] = $isAdmin ? 'Admin' : ($employee['first_name'] . ' ' . $employee['last_name']);
-                        $_SESSION['user_type'] = 'employee';
-                        header('Location: /admin/dashboard/dashboard.php');
-                        exit;
-                    } else {
-                        $error = 'Invalid email or password.';
-                    }
+                    
+                    $lock_stmt->close();
                 } else {
-                    $error = 'Invalid email or password.';
+                    // Account not locked, proceed with login
+                    $lock_stmt->close();
+                    
+                    $stmt = $db->prepare("SELECT id, password, first_name, last_name FROM employees WHERE email = ?");
+                    if ($stmt) {
+                        $stmt->bind_param('s', $email);
+                        $stmt->execute();
+                        $result = $stmt->get_result();
+                        
+                        if ($result->num_rows > 0) {
+                            $employee = $result->fetch_assoc();
+                            $isAdmin = ($email === 'admin@lgu.gov.ph');
+                            $valid = false;
+                            
+                            if ($isAdmin) {
+                                // Allow plain password for admin test account
+                                $valid = ($password === 'admin123' || password_verify($password, $employee['password']));
+                            } else {
+                                $valid = password_verify($password, $employee['password']);
+                            }
+                            
+                            if ($valid) {
+                                // Reset failed login attempts
+                                $reset_stmt = $db->prepare("DELETE FROM login_attempts WHERE email = ? AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+                                if ($reset_stmt) {
+                                    $reset_stmt->bind_param('s', $email);
+                                    $reset_stmt->execute();
+                                    $reset_stmt->close();
+                                }
+                                
+                                // Log successful login
+                                $log_stmt = $db->prepare("INSERT INTO login_logs (employee_id, email, ip_address, user_agent, status) VALUES (?, ?, ?, ?, 'success')");
+                                if ($log_stmt) {
+                                    $log_stmt->bind_param('isss', $employee['id'], $email, $client_ip, $user_agent);
+                                    $log_stmt->execute();
+                                    $log_stmt->close();
+                                }
+                                
+                                // Log session
+                                $session_id = session_id();
+                                $session_stmt = $db->prepare("INSERT INTO session_logs (employee_id, session_id, ip_address, user_agent, last_activity) VALUES (?, ?, ?, ?, NOW())");
+                                if ($session_stmt) {
+                                    $session_stmt->bind_param('isss', $employee['id'], $session_id, $client_ip, $user_agent);
+                                    $session_stmt->execute();
+                                    $session_stmt->close();
+                                }
+                                
+                                $_SESSION['employee_id'] = $employee['id'];
+                                $_SESSION['employee_name'] = $isAdmin ? 'Admin' : ($employee['first_name'] . ' ' . $employee['last_name']);
+                                $_SESSION['user_type'] = 'employee';
+                                $_SESSION['last_activity'] = time();
+                                $_SESSION['login_time'] = time();
+                                
+                                header('Location: /admin/dashboard/dashboard.php');
+                                exit;
+                            } else {
+                                // Failed login - track attempt
+                                $error = 'Invalid email or password.';
+                                
+                                // Log failed attempt
+                                $log_stmt = $db->prepare("INSERT INTO login_logs (email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, 'failed', 'Invalid credentials')");
+                                if ($log_stmt) {
+                                    $log_stmt->bind_param('sss', $email, $client_ip, $user_agent);
+                                    $log_stmt->execute();
+                                    $log_stmt->close();
+                                }
+                                
+                                // Track failed attempt
+                                $attempt_stmt = $db->prepare("INSERT INTO login_attempts (email, ip_address, success) VALUES (?, ?, FALSE)");
+                                if ($attempt_stmt) {
+                                    $attempt_stmt->bind_param('ss', $email, $client_ip);
+                                    $attempt_stmt->execute();
+                                    $attempt_stmt->close();
+                                }
+                                
+                                // Check failed attempts in last 30 minutes
+                                $check_stmt = $db->prepare("SELECT COUNT(*) as count FROM login_attempts WHERE email = ? AND success = FALSE AND attempt_time > DATE_SUB(NOW(), INTERVAL 30 MINUTE)");
+                                if ($check_stmt) {
+                                    $check_stmt->bind_param('s', $email);
+                                    $check_stmt->execute();
+                                    $check_result = $check_stmt->get_result();
+                                    $count_data = $check_result->fetch_assoc();
+                                    
+                                    // Lock account after 5 failed attempts
+                                    if ($count_data['count'] >= 5) {
+                                        $locked_until = date('Y-m-d H:i:s', strtotime('+30 minutes'));
+                                        $lock_insert = $db->prepare("INSERT INTO locked_accounts (email, locked_until, reason) VALUES (?, ?, 'Too many failed login attempts') ON DUPLICATE KEY UPDATE locked_until = ?");
+                                        if ($lock_insert) {
+                                            $lock_insert->bind_param('sss', $email, $locked_until, $locked_until);
+                                            $lock_insert->execute();
+                                            $lock_insert->close();
+                                        }
+                                        $error = "Account has been locked for 30 minutes due to too many failed attempts. Please try again later.";
+                                    }
+                                    
+                                    $check_stmt->close();
+                                }
+                            }
+                        } else {
+                            $error = 'Invalid email or password.';
+                            
+                            // Log failed attempt
+                            $log_stmt = $db->prepare("INSERT INTO login_logs (email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, 'failed', 'User not found')");
+                            if ($log_stmt) {
+                                $log_stmt->bind_param('sss', $email, $client_ip, $user_agent);
+                                $log_stmt->execute();
+                                $log_stmt->close();
+                            }
+                        }
+                        $stmt->close();
+                    } else {
+                        $error = 'Database error. Please try again later.';
+                    }
                 }
-                $stmt->close();
             } else {
                 $error = 'Database error. Please try again later.';
             }
