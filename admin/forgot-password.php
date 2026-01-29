@@ -6,29 +6,142 @@ session_start();
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
 
-// Load email configuration if available
-$email_config = null;
-if (file_exists(dirname(__DIR__) . '/config/email.php')) {
-    require_once dirname(__DIR__) . '/config/email.php';
-}
+// Load email configuration
+require_once dirname(__DIR__) . '/config/email.php';
 
 $error = '';
 $success = '';
 $step = 1;
 
 // Check if we have a reset token in the URL
-if (isset($_GET['token'])) {
+if (isset($_GET['token']) && !empty($_GET['token'])) {
     $step = 2;
     $reset_token = trim($_GET['token']);
+}
+
+/**
+ * Send password reset email
+ */
+function send_reset_email($email, $employee_name, $reset_token) {
+    try {
+        // Load PHPMailer
+        require_once dirname(__DIR__) . '/vendor/PHPMailer/PHPMailer.php';
+        require_once dirname(__DIR__) . '/vendor/PHPMailer/SMTP.php';
+        require_once dirname(__DIR__) . '/vendor/PHPMailer/Exception.php';
+        
+        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+        
+        // Server settings
+        $mail->SMTPDebug = 0;
+        $mail->isSMTP();
+        $mail->Host = MAIL_HOST;
+        $mail->SMTPAuth = true;
+        $mail->Username = MAIL_USERNAME;
+        $mail->Password = MAIL_PASSWORD;
+        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = MAIL_PORT;
+        
+        // Email content
+        $mail->setFrom(MAIL_FROM_EMAIL, MAIL_FROM_NAME);
+        $mail->addAddress($email, $employee_name);
+        $mail->isHTML(true);
+        $mail->Subject = 'Password Reset Request - LGU IPMS';
+        
+        // Build reset link
+        $reset_link = 'https://' . $_SERVER['HTTP_HOST'] . '/admin/forgot-password.php?token=' . urlencode($reset_token);
+        
+        // Email body
+        $body = "
+        <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+                    .container { max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                    .header { text-align: center; margin-bottom: 30px; }
+                    .header h1 { color: #1e3a5f; margin: 0; }
+                    .button-box { text-align: center; margin: 30px 0; }
+                    .reset-btn { background: #f39c12; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; }
+                    .warning { color: #c3423f; font-size: 14px; margin-top: 15px; background: #ffe5e5; padding: 10px; border-radius: 4px; }
+                    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; border-top: 1px solid #e0e0e0; padding-top: 15px; }
+                    .link-text { color: #3498db; word-break: break-all; }
+                </style>
+            </head>
+            <body>
+                <div class=\"container\">
+                    <div class=\"header\">
+                        <h1>🔐 Password Reset Request</h1>
+                    </div>
+                    
+                    <p>Hello " . htmlspecialchars($employee_name) . ",</p>
+                    
+                    <p>You requested to reset your password for the LGU IPMS system. Click the button below to proceed:</p>
+                    
+                    <div class=\"button-box\">
+                        <a href=\"" . htmlspecialchars($reset_link) . "\" class=\"reset-btn\">Reset Your Password</a>
+                    </div>
+                    
+                    <p>Or copy and paste this link in your browser:</p>
+                    <p class=\"link-text\">" . htmlspecialchars($reset_link) . "</p>
+                    
+                    <div class=\"warning\">
+                        <strong>⚠️ Security Notice:</strong><br>
+                        • This link expires in 1 hour<br>
+                        • Never share this link with anyone<br>
+                        • If you didn't request this, please ignore this email
+                    </div>
+                    
+                    <div class=\"footer\">
+                        <p>© " . date('Y') . " LGU IPMS System. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        ";
+        
+        $mail->Body = $body;
+        
+        // Send email
+        if ($mail->send()) {
+            return true;
+        } else {
+            error_log('Password reset email failed: ' . $mail->ErrorInfo);
+            return false;
+        }
+    } catch (Exception $e) {
+        error_log('Password reset email exception: ' . $e->getMessage());
+        return false;
+    }
 }
 
 // STEP 1: Request password reset
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step1_request'])) {
     $email = isset($_POST['email']) ? trim($_POST['email']) : '';
     
+    // Rate limiting check (max 3 requests per 15 minutes)
+    $rate_limit_key = 'reset_' . $email;
+    $rate_limit_file = sys_get_temp_dir() . '/' . md5($rate_limit_key) . '.txt';
+    
+    if (file_exists($rate_limit_file)) {
+        $file_time = filemtime($rate_limit_file);
+        $count = intval(file_get_contents($rate_limit_file));
+        
+        if ((time() - $file_time) < 900) { // 15 minutes
+            if ($count >= 3) {
+                $error = 'Too many reset requests. Please try again in 15 minutes.';
+            }
+        } else {
+            // Reset counter after 15 minutes
+            file_put_contents($rate_limit_file, '1');
+        }
+    } else {
+        file_put_contents($rate_limit_file, '1');
+    }
+    
     if (empty($email)) {
         $error = 'Please enter your email address.';
-    } else {
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Please enter a valid email address.';
+    } elseif (empty($error)) {
         // Check if email exists in database
         if (!isset($db) || $db->connect_error) {
             $error = 'Database connection error. Please try again later.';
@@ -42,18 +155,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step1_request'])) {
                 if ($result->num_rows > 0) {
                     $employee = $result->fetch_assoc();
                     
-                    // Generate a reset token
+                    // Generate a secure reset token
                     $reset_token = bin2hex(random_bytes(32));
+                    $token_hash = hash('sha256', $reset_token);
                     $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
                     
-                    // Store reset token in session (for demo purposes)
-                    $_SESSION['reset_token'] = $reset_token;
-                    $_SESSION['reset_email'] = $email;
-                    $_SESSION['reset_expires'] = $expires;
-                    
-                    // In production, you would send an email with the reset link
-                    $success = "Password reset instructions have been sent to your email. Check your inbox!";
-                    $success .= "<br><strong style='color: #f39c12;'>Demo Mode: <a href='?token=$reset_token' style='color: #f39c12;'>Click here to reset password</a></strong>";
+                    // Store reset token in database
+                    $insert_stmt = $db->prepare("INSERT INTO password_resets (email, token_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token_hash = ?, expires_at = ?");
+                    if ($insert_stmt) {
+                        $insert_stmt->bind_param('sssss', $email, $token_hash, $expires, $token_hash, $expires);
+                        if ($insert_stmt->execute()) {
+                            // Send email with reset link
+                            if (send_reset_email($email, $employee['first_name'] . ' ' . $employee['last_name'], $reset_token)) {
+                                $success = "Password reset instructions have been sent to your email. Please check your inbox and follow the link.";
+                                
+                                // Update rate limit counter
+                                file_put_contents($rate_limit_file, (intval(file_get_contents($rate_limit_file)) + 1));
+                            } else {
+                                $error = 'Failed to send email. Please try again later.';
+                            }
+                        } else {
+                            $error = 'Database error. Please try again later.';
+                        }
+                        $insert_stmt->close();
+                    } else {
+                        $error = 'Database error. Please try again later.';
+                    }
                 } else {
                     // For security, don't reveal if email exists or not
                     $success = "If an account exists with that email, you will receive password reset instructions.";
@@ -75,46 +202,65 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step2_reset'])) {
         $error = 'Please enter both password fields.';
     } elseif ($new_password !== $confirm_password) {
         $error = 'Passwords do not match.';
-    } elseif (strlen($new_password) < 6) {
-        $error = 'Password must be at least 6 characters long.';
+    } elseif (strlen($new_password) < 8) {
+        $error = 'Password must be at least 8 characters long.';
+    } elseif (!preg_match('/[A-Z]/', $new_password)) {
+        $error = 'Password must contain at least one uppercase letter.';
+    } elseif (!preg_match('/[0-9]/', $new_password)) {
+        $error = 'Password must contain at least one number.';
+    } elseif (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $new_password)) {
+        $error = 'Password must contain at least one special character (!@#$%^&*etc).';
     } else {
-        // Verify token and email
-        if (!isset($_SESSION['reset_token']) || $_SESSION['reset_token'] !== $reset_token) {
-            $error = 'Invalid or expired reset token.';
+        // Verify token
+        if (empty($reset_token)) {
+            $error = 'Invalid or missing reset token.';
         } else {
-            // Check if token has expired
-            if (strtotime($_SESSION['reset_expires']) < time()) {
-                $error = 'Reset token has expired. Please request a new one.';
-                unset($_SESSION['reset_token']);
-                unset($_SESSION['reset_email']);
-                unset($_SESSION['reset_expires']);
-                $step = 1;
+            // Check if token is valid and not expired
+            if (!isset($db) || $db->connect_error) {
+                $error = 'Database connection error. Please try again later.';
             } else {
-                // Update password in database
-                if (!isset($db) || $db->connect_error) {
-                    $error = 'Database connection error. Please try again later.';
-                } else {
-                    $email = $_SESSION['reset_email'];
-                    $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                $token_hash = hash('sha256', $reset_token);
+                $check_stmt = $db->prepare("SELECT email FROM password_resets WHERE token_hash = ? AND expires_at > NOW()");
+                if ($check_stmt) {
+                    $check_stmt->bind_param('s', $token_hash);
+                    $check_stmt->execute();
+                    $result = $check_stmt->get_result();
                     
-                    $stmt = $db->prepare("UPDATE employees SET password = ? WHERE email = ?");
-                    if ($stmt) {
-                        $stmt->bind_param('ss', $hashed_password, $email);
-                        if ($stmt->execute()) {
-                            $success = 'Password has been reset successfully! Redirecting to login...';
-                            // Clear session
-                            unset($_SESSION['reset_token']);
-                            unset($_SESSION['reset_email']);
-                            unset($_SESSION['reset_expires']);
-                            // Redirect after 2 seconds
-                            echo '<meta http-equiv="refresh" content="2;url=/admin/index.php">';
+                    if ($result->num_rows > 0) {
+                        $reset_record = $result->fetch_assoc();
+                        $email = $reset_record['email'];
+                        
+                        // Update password in database
+                        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                        
+                        $update_stmt = $db->prepare("UPDATE employees SET password = ? WHERE email = ?");
+                        if ($update_stmt) {
+                            $update_stmt->bind_param('ss', $hashed_password, $email);
+                            if ($update_stmt->execute()) {
+                                // Delete used reset token
+                                $delete_stmt = $db->prepare("DELETE FROM password_resets WHERE email = ?");
+                                if ($delete_stmt) {
+                                    $delete_stmt->bind_param('s', $email);
+                                    $delete_stmt->execute();
+                                    $delete_stmt->close();
+                                }
+                                
+                                $success = 'Password has been reset successfully! Redirecting to login...';
+                                echo '<meta http-equiv="refresh" content="2;url=/admin/index.php">';
+                            } else {
+                                $error = 'Failed to update password. Please try again.';
+                            }
+                            $update_stmt->close();
                         } else {
-                            $error = 'Failed to update password. Please try again.';
+                            $error = 'Database error. Please try again later.';
                         }
-                        $stmt->close();
                     } else {
-                        $error = 'Database error. Please try again later.';
+                        $error = 'Invalid or expired reset link. Please request a new one.';
+                        $step = 1;
                     }
+                    $check_stmt->close();
+                } else {
+                    $error = 'Database error. Please try again later.';
                 }
             }
         }
@@ -252,6 +398,16 @@ body::before {
                 <label>Confirm Password</label>
                 <input type="password" name="confirm_password" placeholder="••••••••" required>
                 <span class="icon">🔒</span>
+            </div>
+
+            <div style="background: #f0f8ff; border: 1px solid #d0e8ff; color: #1e3a5f; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem;">
+                <strong>Password Requirements:</strong>
+                <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                    <li>At least 8 characters long</li>
+                    <li>At least one uppercase letter (A-Z)</li>
+                    <li>At least one number (0-9)</li>
+                    <li>At least one special character (!@#$%^&*)</li>
+                </ul>
             </div>
 
             <button class="btn-primary" type="submit" name="step2_reset">Reset Password</button>
