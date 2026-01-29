@@ -24,15 +24,20 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
  */
 function send_reset_email($email, $employee_name, $reset_token) {
     try {
+        error_log('=== SEND_RESET_EMAIL CALLED ===');
+        error_log('Email: ' . $email);
+        
         // Load PHPMailer
         require_once dirname(__DIR__) . '/vendor/PHPMailer/PHPMailer.php';
         require_once dirname(__DIR__) . '/vendor/PHPMailer/SMTP.php';
         require_once dirname(__DIR__) . '/vendor/PHPMailer/Exception.php';
         
+        error_log('PHPMailer loaded');
+        
         $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
         
         // Server settings
-        $mail->SMTPDebug = 0;
+        $mail->SMTPDebug = 2;
         $mail->isSMTP();
         $mail->Host = MAIL_HOST;
         $mail->SMTPAuth = true;
@@ -40,6 +45,9 @@ function send_reset_email($email, $employee_name, $reset_token) {
         $mail->Password = MAIL_PASSWORD;
         $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = MAIL_PORT;
+        $mail->Timeout = 10;
+        
+        error_log('SMTP configured: ' . MAIL_HOST . ':' . MAIL_PORT);
         
         // Email content
         $mail->setFrom(MAIL_FROM_EMAIL, MAIL_FROM_NAME);
@@ -99,12 +107,14 @@ function send_reset_email($email, $employee_name, $reset_token) {
         ";
         
         $mail->Body = $body;
+        error_log('Email body set');
         
         // Send email
         if ($mail->send()) {
+            error_log('Email sent successfully to: ' . $email);
             return true;
         } else {
-            error_log('Password reset email failed: ' . $mail->ErrorInfo);
+            error_log('Email send failed: ' . $mail->ErrorInfo);
             return false;
         }
     } catch (Exception $e) {
