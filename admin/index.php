@@ -192,6 +192,10 @@ body::before {
 
             <button class="btn-primary" type="submit">Sign In</button>
 
+            <div style="text-align: center; margin-top: 12px;">
+                <a href="/admin/forgot-password.php" style="color: #3498db; text-decoration: none; font-size: 0.9rem;">Forgot Password?</a>
+            </div>
+
             <!-- Removed 'For citizens, click here' button as requested -->
 
             <?php if (isset($error)): ?>
@@ -214,7 +218,7 @@ body::before {
     </div>
 
     <div class="footer-logo">
-        © 2025 LGU Citizen Portal · All Rights Reserved
+        © 2026 LGU Citizen Portal · All Rights Reserved
     </div>
 
 </footer>
