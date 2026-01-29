@@ -89,11 +89,115 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 </style>
 </head>
 
+<body class="user-login-page">
+<!-- Blur overlay and header/footer copied from user-login.php for consistency -->
+<header class="nav">
+    <div class="nav-logo">
+        <img src="/logocityhall.png" alt="LGU Logo">
+        <span style="color:#1e293b;font-weight:600;font-size:1.15em;">Local Government Unit Portal</span>
+    </div>
+    <nav class="nav-links">
+        <a href="/public/index.php">Home</a>
+    </nav>
+</header>
+
+<div class="wrapper">
+    <div class="card">
+        <img src="/logocityhall.png" class="icon-top" alt="LGU City Hall Logo" style="margin-bottom: 10px;">
+        <div class="card-header">
+            <h2 class="title">Create Account</h2>
+            <p class="subtitle">Register to access the LGU Portal</p>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-container">
+            <div class="progress-steps">
+                <div class="progress-step active" data-step="1">
+                    <div class="progress-step-circle">1</div>
+                    <div class="progress-step-label">Basic Info</div>
+                </div>
+                <div class="progress-step" data-step="2">
+                    <div class="progress-step-circle">2</div>
+                    <div class="progress-step-label">Contact</div>
+                </div>
+                <div class="progress-step" data-step="3">
+                    <div class="progress-step-circle">3</div>
+                    <div class="progress-step-label">Personal</div>
+                </div>
+                <div class="progress-step" data-step="4">
+                    <div class="progress-step-circle">4</div>
+                    <div class="progress-step-label">ID</div>
+                </div>
+                <div class="progress-step" data-step="5">
+                    <div class="progress-step-circle">5</div>
+                    <div class="progress-step-label">Security</div>
+                </div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBar" style="width: 20%"></div>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" id="registerForm" novalidate>
+            <div class="form-content">
+                <!-- Step 1: Basic Information -->
+                <div class="form-step active" data-step="1">
+                    <h3 class="step-title">Basic Information</h3>
+                    <p class="step-subtitle">Let's start with your name</p>
+                    
+                    <div class="form-grid">
+                        <div class="input-box">
+                            <label for="firstName">First Name *</label>
+                            <input id="firstName" name="firstName" type="text" required aria-required="true" placeholder="First name" />
+                        </div>
+
+                        <div class="input-box">
+                            <label for="middleName">Middle Name</label>
+                            <input id="middleName" name="middleName" type="text" placeholder="Middle name" />
+                        </div>
+
+                        <div class="input-box">
+                            <label for="lastName">Last Name *</label>
+                            <input id="lastName" name="lastName" type="text" required aria-required="true" placeholder="Last name" />
+                        </div>
+
+                        <div class="input-box">
+                            <label for="suffix">Suffix <small style="font-weight:normal;">(optional)</small></label>
+                            <select id="suffix" name="suffix" aria-label="Name suffix">
+                                <option value="">None</option>
+                                <option value="jr">Jr.</option>
+                                <option value="sr">Sr.</option>
+                                <option value="ii">II</option>
+                                <option value="iii">III</option>
+                                <option value="iv">IV</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Contact Information -->
+                <div class="form-step" data-step="2">
+                    <h3 class="step-title">Contact Information</h3>
+                    <p class="step-subtitle">How can we reach you?</p>
+                    
+                    <div class="input-box">
+                        <label for="email">Email Address *</label>
+                        <input id="email" name="email" type="email" required aria-required="true" placeholder="you@example.com" />
+                    </div>
+
+                    <div class="input-box">
+                        <label for="mobile">Mobile Number *</label>
+                        <input id="mobile" name="mobile" type="tel" inputmode="tel" pattern="\+?[0-9\s-]{7,15}" required aria-required="true" placeholder="+63 9XX XXX XXXX" />
+                    </div>
+                </div>
+
+                <!-- Step 3: Personal Details -->
                 <div class="form-step" data-step="3">
                     <h3 class="step-title">Personal Details</h3>
                     <p class="step-subtitle">Tell us more about yourself</p>
