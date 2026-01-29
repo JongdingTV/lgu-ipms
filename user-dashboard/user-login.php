@@ -135,7 +135,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
 </style>
 <header class="nav">
     <div class="nav-logo">
-        <img src="/assets/logocityhall.png" alt="LGU Logo">
+        <img src="/lgu-ipms/logocityhall.png" alt="LGU Logo">
         <span style="color:#1e293b;font-weight:600;font-size:1.15em;">Local Government Unit Portal</span>
     </div>
     <nav class="nav-links">
