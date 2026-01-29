@@ -106,19 +106,26 @@ function send_reset_email($email, $employee_name, $reset_token) {
         </html>
         ";
         
-        $mail->Body = $body;
-        error_log('Email body set');
-        
         // Send email
-        if ($mail->send()) {
-            error_log('Email sent successfully to: ' . $email);
-            return true;
-        } else {
-            error_log('Email send failed: ' . $mail->ErrorInfo);
+        ob_start();
+        try {
+            if ($mail->send()) {
+                ob_end_clean();
+                error_log('✅ Email sent successfully to: ' . $email);
+                return true;
+            } else {
+                $error_info = $mail->ErrorInfo;
+                ob_end_clean();
+                error_log('❌ Email send failed: ' . $error_info);
+                return false;
+            }
+        } catch (Exception $e) {
+            ob_end_clean();
+            error_log('❌ PHPMailer Exception: ' . $e->getMessage());
             return false;
         }
     } catch (Exception $e) {
-        error_log('Password reset email exception: ' . $e->getMessage());
+        error_log('❌ Password reset email exception: ' . $e->getMessage());
         return false;
     }
 }
