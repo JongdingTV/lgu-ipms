@@ -127,9 +127,14 @@ body.user-login-page::before {
     .nav { padding: 0 10px; height: 56px; }
     .nav-logo img { height: 32px; }
     .nav-links a { font-size: 0.98em; }
-    .footer { font-size: 0.91em; padding: 8px 0 2px 0; }
-    .footer-links { gap: 10px; }
-    .footer-logo { font-size: 0.89em; }
+    .footer {
+        font-size: 0.91em;
+        padding: 8px 0 2px 0;
+        flex-direction: column !important;
+        align-items: center !important;
+    }
+    .footer-links { gap: 10px; flex-direction: row; justify-content: center; }
+    .footer-logo { font-size: 0.89em; margin-top: 2px; }
     .card .icon-top { height: 40px; }
 }
 html, body { height: 100%; margin: 0; }

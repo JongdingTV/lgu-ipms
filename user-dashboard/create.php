@@ -93,6 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
+*, *::before, *::after {
+    box-sizing: border-box;
+}
 body.signup-page {
     min-height: 100vh;
     display: flex;
@@ -111,7 +114,7 @@ body.signup-page::before {
     pointer-events: none;
 }
 .nav, .wrapper, .footer { position: relative; z-index: 1; }
-.nav { width:100%;position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(30,58,95,0.04); }
+.nav { width:100%;position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(30,58,95,0.04);overflow-x:visible; }
 .nav-logo { display:flex;align-items:center;gap:10px; }
 .nav-logo img { height:40px;width:auto;object-fit:contain; }
 .nav-links { display:flex;align-items:center;gap:24px;margin-left:32px; }
@@ -157,6 +160,13 @@ body.signup-page::before {
     color: #f39c12;
     transition: none;
 }
+.footer-logo {
+    font-size: 0.91em;
+    opacity: 0.8;
+    text-align: center;
+    width: 100%;
+    max-width: 1200px;
+}
 .card .icon-top {
     display: block;
     margin: 0 auto 10px auto;
@@ -168,14 +178,23 @@ body.signup-page::before {
     .nav { padding: 0 10px; height: 56px; }
     .nav-logo img { height: 32px; }
     .nav-links a { font-size: 0.98em; }
-    .footer { font-size: 0.91em; padding: 8px 0 2px 0; }
-    .footer-links { gap: 10px; }
-    .footer-logo { font-size: 0.89em; }
+    .footer {
+        font-size: 0.91em;
+        padding: 8px 0 2px 0;
+        flex-direction: column !important;
+        align-items: center !important;
+    }
+    .footer-links { gap: 10px; flex-direction: row; justify-content: center; }
+    .footer-logo { font-size: 0.89em; margin-top: 2px; }
     .card .icon-top { height: 40px; }
 }
 html, body { height: 100%; margin: 0; }
 body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
 .wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
+html, body { height: 100%; margin: 0; overflow-x: hidden; }
+body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
+.wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
+</style>
 </style>
 </head>
 <body class="signup-page" style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
