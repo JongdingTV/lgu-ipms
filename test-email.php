@@ -52,7 +52,7 @@ try {
     
     // Email details
     $mail->setFrom(MAIL_FROM_EMAIL, MAIL_FROM_NAME);
-    $mail->addAddress('test@example.com', 'Test User'); // Change this to a real email
+    $mail->addAddress('caviterawen5@gmail.com', 'Test User'); // Change this to a real email
     $mail->isHTML(true);
     $mail->Subject = 'Email Configuration Test - LGU IPMS';
     $mail->Body = '<h1>Test Email</h1><p>If you received this, email is working correctly!</p>';
