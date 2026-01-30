@@ -45,7 +45,14 @@ function send_reset_email($email, $employee_name, $reset_token) {
         $mail->Password = MAIL_PASSWORD;
         $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = MAIL_PORT;
-        $mail->Timeout = 10;
+        $mail->Timeout = 30;
+        $mail->SMTPOptions = array(
+            'ssl' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            )
+        );
         
         error_log('SMTP configured: ' . MAIL_HOST . ':' . MAIL_PORT);
         

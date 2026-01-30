@@ -9,8 +9,8 @@ define('MAIL_HOST', 'smtp.gmail.com');           // SMTP server
 define('MAIL_PORT', 587);                         // SMTP port (587 for TLS)
 define('MAIL_USERNAME', 'ipms.systemlgu@gmail.com'); // Your email address
 define('MAIL_PASSWORD', 'cmym dhjr alby dbgq');    // Gmail App Password (NOT your regular password)
-define('MAIL_FROM_EMAIL', 'noreply@lgu.gov.ph');
-define('MAIL_FROM_NAME', 'LGU IPMS Admin');
+define('MAIL_FROM_EMAIL', 'ipms.systemlgu@gmail.com'); // Must match Gmail account
+define('MAIL_FROM_NAME', 'LGU IPMS System');
 
 /**
  * Send verification code via email
@@ -37,6 +37,14 @@ function send_verification_code($recipient_email, $code, $recipient_name = '') {
         $mail->Password = MAIL_PASSWORD;                // SMTP password
         $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS; // TLS encryption
         $mail->Port = MAIL_PORT;                        // SMTP port
+        $mail->Timeout = 30;                            // Increased timeout
+        $mail->SMTPOptions = array(
+            'ssl' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            )
+        );
         
         // Email content
         $mail->setFrom(MAIL_FROM_EMAIL, MAIL_FROM_NAME);
