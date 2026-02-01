@@ -41,6 +41,52 @@ require_once dirname(__DIR__) . '/config/email.php';
 <link rel="stylesheet" href="/admin/style - Copy.css">
 <?php echo get_app_config_script(); ?>
 <script src="/security-no-back.js?v=<?php echo time(); ?>"></script>
+<style>
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: url('/cityhall.jpeg') center/cover no-repeat fixed;
+    position: relative;
+    padding-top: 80px;
+}
+body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(6px);
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 0;
+}
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 100;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(255,255,255,0.25);
+    box-shadow: 0 4px 25px rgba(0,0,0,0.15);
+}
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 1.15em;
+    color: #1e293b;
+}
+.nav-logo img {
+    height: 45px;
+    width: auto;
+    object-fit: contain;
+}
+</style>
 </head>
 <body>
 <header class="nav">
