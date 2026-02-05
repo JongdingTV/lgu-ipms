@@ -54,6 +54,30 @@ $db->close();
         .nav-submenu-item.active { background: #eff6ff; color: #1e40af; border-left-color: #3b82f6; font-weight: 600; }
         .submenu-icon { font-size: 1.1rem; flex-shrink: 0; }
         .nav-submenu-item span:last-child { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Budget eye button styling */
+        .budget-eye-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            transition: all 0.2s ease;
+            opacity: 0.7;
+        }
+        
+        .budget-eye-btn:hover {
+            color: #333;
+            opacity: 1;
+        }
+        
+        .budget-eye-btn.revealing {
+            color: #3b82f6;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -142,11 +166,19 @@ $db->close();
                     <span class="metric-status">On schedule</span>
                 </div>
             </div>
-            <div class="metric-card card">
+            <div class="metric-card card" id="budgetCard" data-budget="<?php echo number_format($totalBudget, 2); ?>">
                 <img src="budget.png" alt="Total Budget" class="metric-icon">
                 <div class="metric-content">
                     <h3>Total Budget</h3>
-                    <p class="metric-value">₱<?php echo number_format($totalBudget, 2); ?></p>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <p class="metric-value" id="budgetValue">●●●●●●●●</p>
+                        <button id="budgetVisibilityToggle" class="budget-eye-btn" title="Hold to reveal budget">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
                     <span class="metric-status">Allocated funds</span>
                 </div>
             </div>
@@ -255,6 +287,58 @@ $db->close();
     </footer>
 
     <script>
+        // Budget visibility toggle - click and hold to reveal
+        const budgetCard = document.getElementById('budgetCard');
+        const budgetValue = document.getElementById('budgetValue');
+        const budgetBtn = document.getElementById('budgetVisibilityToggle');
+        let budgetRevealTimer;
+        let isRevealing = false;
+
+        if (budgetBtn && budgetValue && budgetCard) {
+            // Mouse/Touch down - start hiding
+            budgetBtn.addEventListener('mousedown', startReveal);
+            budgetBtn.addEventListener('touchstart', startReveal);
+            
+            // Mouse/Touch up - hide again
+            document.addEventListener('mouseup', endReveal);
+            document.addEventListener('touchend', endReveal);
+            
+            // Leave button - hide immediately
+            budgetBtn.addEventListener('mouseleave', endReveal);
+            
+            // Cancel reveal when touching elsewhere
+            document.addEventListener('touchmove', cancelReveal);
+        }
+
+        function startReveal(e) {
+            e.preventDefault();
+            clearTimeout(budgetRevealTimer);
+            
+            budgetRevealTimer = setTimeout(() => {
+                if (!isRevealing) {
+                    isRevealing = true;
+                    const actualBudget = budgetCard.getAttribute('data-budget');
+                    budgetValue.textContent = '₱' + actualBudget;
+                    budgetBtn.classList.add('revealing');
+                }
+            }, 300); // Reveal after 300ms hold
+        }
+
+        function endReveal(e) {
+            clearTimeout(budgetRevealTimer);
+            if (isRevealing) {
+                isRevealing = false;
+                budgetValue.textContent = '●●●●●●●●';
+                budgetBtn.classList.remove('revealing');
+            }
+        }
+
+        function cancelReveal(e) {
+            if (!e.target.closest('#budgetCard')) {
+                endReveal();
+            }
+        }
+
         // Dropdown toggle handlers - run immediately
         const projectRegToggle = document.getElementById('projectRegToggle');
         const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
