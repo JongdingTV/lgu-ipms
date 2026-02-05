@@ -146,9 +146,9 @@ $db->close();
                 <img src="budget.png" alt="Total Budget" class="metric-icon">
                 <div class="metric-content">
                     <h3>Total Budget</h3>
-                    <div style="display: flex; align-items: center; gap: 10px; position: relative; z-index: 100;">
-                        <p class="metric-value" id="budgetValue" style="margin-bottom: 0;">●●●●●●●●</p>
-                        <span id="budgetVisibilityToggle" style="background: none; border: none; cursor: pointer; padding: 6px 8px; display: flex; align-items: center; justify-content: center; color: #666; transition: all 0.2s ease; opacity: 0.7; pointer-events: auto; z-index: 101; position: relative; width: 32px; height: 32px; line-height: 1; flex-shrink: 0;" title="Hold to reveal budget">
+                    <div style="display: flex; align-items: center; gap: 8px; position: relative; z-index: 100; min-height: 32px;">
+                        <p class="metric-value" id="budgetValue" style="margin-bottom: 0; font-size: 1.4em; flex-wrap: wrap; word-wrap: break-word; white-space: normal; line-height: 1.3;">●●●●●●●●</p>
+                        <span id="budgetVisibilityToggle" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; color: #666; transition: all 0.2s ease; opacity: 0.7; pointer-events: auto; z-index: 101; position: relative; flex-shrink: 0;" title="Hold to reveal budget">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events: none;">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
