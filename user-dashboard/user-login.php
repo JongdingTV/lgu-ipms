@@ -185,7 +185,7 @@ body::before {
         <a href="#">About</a>
         <a href="#">Help</a>
     </div>
-    <div class="footer-logo">© 2026 LGU Citizen Portal · All Rights Reserved</div>
+    <div class="footer-logo">© 2025 LGU Citizen Portal · All Rights Reserved</div>
 </footer>
 
 <?php if ($showOtpForm && isset($_SESSION['pending_user'], $_SESSION['otp_time'])): ?>
