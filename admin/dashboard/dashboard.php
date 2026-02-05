@@ -57,26 +57,38 @@ $db->close();
         
         /* Budget eye button styling */
         .budget-eye-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            transition: all 0.2s ease;
-            opacity: 0.7;
+            background: none !important;
+            border: none !important;
+            cursor: pointer !important;
+            padding: 6px 8px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: #666 !important;
+            transition: all 0.2s ease !important;
+            opacity: 0.7 !important;
+            pointer-events: auto !important;
+            z-index: 10 !important;
+            width: auto !important;
+            height: auto !important;
         }
         
         .budget-eye-btn:hover {
-            color: #333;
-            opacity: 1;
+            color: #333 !important;
+            opacity: 1 !important;
+        }
+        
+        .budget-eye-btn:active {
+            transform: scale(0.95);
         }
         
         .budget-eye-btn.revealing {
-            color: #3b82f6;
-            opacity: 1;
+            color: #3b82f6 !important;
+            opacity: 1 !important;
+        }
+        
+        .budget-eye-btn svg {
+            pointer-events: none;
         }
     </style>
 </head>
@@ -287,94 +299,104 @@ $db->close();
     </footer>
 
     <script>
-        // Budget visibility toggle - click and hold to reveal
-        const budgetCard = document.getElementById('budgetCard');
-        const budgetValue = document.getElementById('budgetValue');
-        const budgetBtn = document.getElementById('budgetVisibilityToggle');
-        let budgetRevealTimer;
-        let isRevealing = false;
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Budget visibility toggle - click and hold to reveal
+            const budgetCard = document.getElementById('budgetCard');
+            const budgetValue = document.getElementById('budgetValue');
+            const budgetBtn = document.getElementById('budgetVisibilityToggle');
+            let budgetRevealTimer;
+            let isRevealing = false;
 
-        if (budgetBtn && budgetValue && budgetCard) {
-            // Mouse/Touch down - start hiding
-            budgetBtn.addEventListener('mousedown', startReveal);
-            budgetBtn.addEventListener('touchstart', startReveal);
-            
-            // Mouse/Touch up - hide again
-            document.addEventListener('mouseup', endReveal);
-            document.addEventListener('touchend', endReveal);
-            
-            // Leave button - hide immediately
-            budgetBtn.addEventListener('mouseleave', endReveal);
-            
-            // Cancel reveal when touching elsewhere
-            document.addEventListener('touchmove', cancelReveal);
-        }
-
-        function startReveal(e) {
-            e.preventDefault();
-            clearTimeout(budgetRevealTimer);
-            
-            budgetRevealTimer = setTimeout(() => {
-                if (!isRevealing) {
-                    isRevealing = true;
-                    const actualBudget = budgetCard.getAttribute('data-budget');
-                    budgetValue.textContent = '₱' + actualBudget;
-                    budgetBtn.classList.add('revealing');
+            if (budgetBtn && budgetValue && budgetCard) {
+                console.log('Budget button found, attaching listeners');
+                
+                // Mouse/Touch down - start reveal
+                budgetBtn.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('mousedown triggered');
+                    startReveal();
+                });
+                
+                budgetBtn.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('touchstart triggered');
+                    startReveal();
+                });
+                
+                // Mouse/Touch up - hide again
+                document.addEventListener('mouseup', endReveal);
+                document.addEventListener('touchend', endReveal);
+                
+                // Leave button - hide immediately
+                budgetBtn.addEventListener('mouseleave', endReveal);
+                
+                function startReveal() {
+                    clearTimeout(budgetRevealTimer);
+                    
+                    budgetRevealTimer = setTimeout(() => {
+                        if (!isRevealing) {
+                            isRevealing = true;
+                            const actualBudget = budgetCard.getAttribute('data-budget');
+                            console.log('Revealing budget:', actualBudget);
+                            budgetValue.textContent = '₱' + actualBudget;
+                            budgetBtn.classList.add('revealing');
+                        }
+                    }, 300);
                 }
-            }, 300); // Reveal after 300ms hold
-        }
 
-        function endReveal(e) {
-            clearTimeout(budgetRevealTimer);
-            if (isRevealing) {
-                isRevealing = false;
-                budgetValue.textContent = '●●●●●●●●';
-                budgetBtn.classList.remove('revealing');
+                function endReveal() {
+                    clearTimeout(budgetRevealTimer);
+                    if (isRevealing) {
+                        console.log('Hiding budget');
+                        isRevealing = false;
+                        budgetValue.textContent = '●●●●●●●●';
+                        budgetBtn.classList.remove('revealing');
+                    }
+                }
+            } else {
+                console.log('Budget elements not found');
             }
-        }
 
-        function cancelReveal(e) {
-            if (!e.target.closest('#budgetCard')) {
-                endReveal();
+            // Dropdown toggle handlers
+            const projectRegToggle = document.getElementById('projectRegToggle');
+            const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
+            const contractorsToggle = document.getElementById('contractorsToggle');
+            const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
+            
+            if (projectRegToggle && projectRegGroup) {
+                projectRegToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    projectRegGroup.classList.toggle('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
+                });
             }
-        }
-
-        // Dropdown toggle handlers - run immediately
-        const projectRegToggle = document.getElementById('projectRegToggle');
-        const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
-        const contractorsToggle = document.getElementById('contractorsToggle');
-        const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
-        
-        if (projectRegToggle && projectRegGroup) {
-            projectRegToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                projectRegGroup.classList.toggle('open');
-                if (contractorsGroup) contractorsGroup.classList.remove('open');
+            
+            if (contractorsToggle && contractorsGroup) {
+                contractorsToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    contractorsGroup.classList.toggle('open');
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                });
+            }
+            
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.nav-item-group')) {
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
+                }
             });
-        }
-        
-        if (contractorsToggle && contractorsGroup) {
-            contractorsToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                contractorsGroup.classList.toggle('open');
-                if (projectRegGroup) projectRegGroup.classList.remove('open');
-            });
-        }
-        
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.nav-item-group')) {
-                if (projectRegGroup) projectRegGroup.classList.remove('open');
-                if (contractorsGroup) contractorsGroup.classList.remove('open');
-            }
-        });
-        
-        document.querySelectorAll('.nav-submenu-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (projectRegGroup) projectRegGroup.classList.remove('open');
-                if (contractorsGroup) contractorsGroup.classList.remove('open');
+            
+            document.querySelectorAll('.nav-submenu-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
+                });
             });
         });
     </script>
