@@ -1047,8 +1047,15 @@ button[type="submit"]:hover {
     .sidebar-nav,
     .nav {
         width: 100%;
-        height: auto;
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
         transform: translateX(-100%);
+    }
+
+    .nav-links {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
     }
 
     .main-content {
