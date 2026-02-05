@@ -88,30 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/style.css">
 <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
+<!-- Removed <link rel="stylesheet" href="/assets/style.css"> -->
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
 *, *::before, *::after {
     box-sizing: border-box;
-}
-body.signup-page {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: url('/cityhall.jpeg') center/cover no-repeat fixed;
-    position: relative;
-    padding-top: 80px;
-}
-body.signup-page::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: inherit;
-    filter: blur(10px) brightness(0.95);
-    z-index: 0;
-    pointer-events: none;
 }
 .nav, .wrapper, .footer { position: relative; z-index: 1; }
 .nav { width:100%;position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(30,58,95,0.04);overflow-x:visible; }
@@ -181,14 +164,7 @@ body.signup-page::before {
     .footer {
         font-size: 0.91em;
         padding: 8px 0 2px 0;
-        flex-direction: column !important;
-        align-items: center !important;
-    }
-    .footer-links { gap: 10px; flex-direction: row; justify-content: center; }
-    .footer-logo { font-size: 0.89em; margin-top: 2px; }
-    .card .icon-top { height: 40px; }
-}
-html, body { height: 100%; margin: 0; }
+    <!-- Removed embedded <style> block -->
 body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
 .wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
 html, body { height: 100%; margin: 0; overflow-x: hidden; }
@@ -198,6 +174,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
 </style>
 </head>
 <body class="signup-page" style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
+<body>
 <!-- Removed problematic blur overlay -->
 
 <header class="nav">
