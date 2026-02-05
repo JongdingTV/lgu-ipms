@@ -210,160 +210,122 @@ body::before {
                                 <option value="jr">Jr.</option>
                                 <option value="sr">Sr.</option>
                                 <option value="ii">II</option>
-                                <option value="iii">III</option>
-                                <option value="iv">IV</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 2: Contact Information -->
-                <div class="form-step" data-step="2">
-                    <h3 class="step-title">Contact Information</h3>
-                    <p class="step-subtitle">How can we reach you?</p>
-                    
-                    <div class="input-box">
-                        <label for="email">Email Address *</label>
-                        <input id="email" name="email" type="email" required aria-required="true" placeholder="you@example.com" />
-                    </div>
-
-                    <div class="input-box">
-                        <label for="mobile">Mobile Number *</label>
-                        <input id="mobile" name="mobile" type="tel" inputmode="tel" pattern="\+?[0-9\s-]{7,15}" required aria-required="true" placeholder="+63 9XX XXX XXXX" />
-                    </div>
-                </div>
-
-                <!-- Step 3: Personal Details -->
-                <div class="form-step" data-step="3">
-                    <h3 class="step-title">Personal Details</h3>
-                    <p class="step-subtitle">Tell us more about yourself</p>
-                    
-                    <div class="form-grid">
-                        <div class="input-box">
-                            <label for="birthdate">Birthdate</label>
-                            <input id="birthdate" name="birthdate" type="date" />
-                        </div>
-
-                        <div class="input-box">
-                            <label for="gender">Gender *</label>
-                            <select id="gender" name="gender" required aria-required="true" aria-label="Gender">
-                                <option value="">Select</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
-                                <option value="prefer_not">Prefer not to say</option>
-                            </select>
-                        </div>
-
-                        <div class="input-box full-width">
-                            <label for="civilStatus">Civil Status *</label>
-                            <select id="civilStatus" name="civilStatus" required aria-required="true">
-                                <option value="">Select</option>
-                                <option value="single">Single</option>
-                                <option value="married">Married</option>
-                                <option value="widowed">Widowed</option>
-                                <option value="separated">Separated</option>
-                            </select>
-                        </div>
-
-                        <div class="input-box full-width">
-                            <label for="address">Address / Barangay *</label>
-                            <input id="address" name="address" type="text" required aria-required="true" placeholder="Street, Barangay, City" />
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 4: Identification -->
-                <div class="form-step" data-step="4">
-                    <h3 class="step-title">Identification</h3>
-                    <p class="step-subtitle">Verify your identity (optional)</p>
-                    
-                    <div class="form-grid">
-                        <div class="input-box">
-                            <label for="idType">ID Type <small style="font-weight:normal;">(optional)</small></label>
-                            <select id="idType" name="idType" aria-label="ID Type">
-                                <option value="">Select ID Type</option>
-                                <option value="nbi">NBI Clearance</option>
-                                <option value="passport">Passport</option>
-                                <option value="drivinglicense">Driver's License</option>
-                                <option value="sss">SSS</option>
-                                <option value="tin">TIN</option>
-                                <option value="barangayid">Barangay ID</option>
-                                <option value="seniorid">Senior Citizen ID</option>
-                                <option value="pwdid">PWD ID</option>
-                            </select>
-                        </div>
-
-                        <div class="input-box">
-                            <label for="idNumber">ID Number <small style="font-weight:normal;">(optional)</small></label>
-                            <input id="idNumber" name="idNumber" type="text" placeholder="e.g., 12345678" />
-                        </div>
-
-                        <div class="input-box full-width">
-                            <label style="display: block; margin-bottom: 8px;">Upload ID Copy <small style="font-weight:normal;">(optional, JPG/PNG, max 5MB)</small></label>
-                            <div class="file-upload-wrapper">
-                                <input type="file" id="idUpload" name="idUpload" class="file-upload-input" accept=".jpg,.jpeg,.png" />
-                                <label for="idUpload" class="file-upload-label">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    <span id="uploadText">Click to upload or drag & drop</span>
-                                </label>
-                                <div class="file-name-display" id="fileDisplay">
-                                    <span class="check-icon">✓</span><span id="fileName"></span>
+                                <div class="form-content">
+                                    <!-- Step 1: Basic Information -->
+                                    <div class="form-step active" data-step="1">
+                                        <div class="input-box">
+                                            <label for="firstName">First Name *</label>
+                                            <input id="firstName" name="firstName" type="text" required aria-required="true" placeholder="First name" />
+                                        </div>
+                                        <div class="input-box">
+                                            <label for="middleName">Middle Name</label>
+                                            <input id="middleName" name="middleName" type="text" placeholder="Middle name" />
+                                        </div>
+                                        <div class="input-box">
+                                            <label for="lastName">Last Name *</label>
+                                            <input id="lastName" name="lastName" type="text" required aria-required="true" placeholder="Last name" />
+                                        </div>
+                                        <div class="input-box">
+                                            <label for="suffix">Suffix <small style="font-weight:normal;">(optional)</small></label>
+                                            <select id="suffix" name="suffix" aria-label="Name suffix">
+                                                <option value="">None</option>
+                                                <option value="jr">Jr.</option>
+                                                <option value="sr">Sr.</option>
+                                                <option value="ii">II</option>
+                                                <option value="iii">III</option>
+                                                <option value="iv">IV</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <!-- Step 2: Contact Information -->
+                                    <div class="form-step" data-step="2">
+                                        <div class="input-box">
+                                            <label for="email">Email Address *</label>
+                                            <input id="email" name="email" type="email" required aria-required="true" placeholder="you@example.com" />
+                                        </div>
+                                        <div class="input-box">
+                                            <label for="mobile">Mobile Number *</label>
+                                            <input id="mobile" name="mobile" type="tel" inputmode="tel" pattern="\+?[0-9\s-]{7,15}" required aria-required="true" placeholder="+63 9XX XXX XXXX" />
+                                        </div>
+                                    </div>
+                                    <!-- Step 3: Personal Details -->
+                                    <div class="form-step" data-step="3">
+                                        <div class="input-box">
+                                            <label for="birthdate">Birthdate</label>
+                                            <input id="birthdate" name="birthdate" type="date" />
+                                        </div>
+                                        <div class="input-box">
+                                            <label for="gender">Gender *</label>
+                                            <select id="gender" name="gender" required aria-required="true" aria-label="Gender">
+                                                <option value="">Select</option>
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                                <option value="prefer_not">Prefer not to say</option>
+                                            </select>
+                                        </div>
+                                        <div class="input-box">
+                                            <label for="civilStatus">Civil Status *</label>
+                                            <select id="civilStatus" name="civilStatus" required aria-required="true">
+                                                <option value="">Select</option>
+                                                <option value="single">Single</option>
+                                                <option value="married">Married</option>
+                                                <option value="widowed">Widowed</option>
+                                                <option value="separated">Separated</option>
+                                            </select>
+                                        </div>
+                                        <div class="input-box">
+                                            <label for="address">Address / Barangay *</label>
+                                            <input id="address" name="address" type="text" required aria-required="true" placeholder="Street, Barangay, City" />
+                                        </div>
+                                    </div>
+                                    <!-- Step 4: Identification -->
+                                    <div class="form-step" data-step="4">
+                                        <div class="input-box">
+                                            <label for="idType">ID Type <small style="font-weight:normal;">(optional)</small></label>
+                                            <select id="idType" name="idType" aria-label="ID Type">
+                                                <option value="">Select ID Type</option>
+                                                <option value="nbi">NBI Clearance</option>
+                                                <option value="passport">Passport</option>
+                                                <option value="drivinglicense">Driver's License</option>
+                                                <option value="sss">SSS</option>
+                                                <option value="tin">TIN</option>
+                                                <option value="barangayid">Barangay ID</option>
+                                                <option value="seniorid">Senior Citizen ID</option>
+                                                <option value="pwdid">PWD ID</option>
+                                            </select>
+                                        </div>
+                                        <div class="input-box">
+                                            <label for="idNumber">ID Number</label>
+                                            <input id="idNumber" name="idNumber" type="text" placeholder="ID number" />
+                                        </div>
+                                        <div class="input-box">
+                                            <label for="idUpload">Upload ID (optional)</label>
+                                            <input id="idUpload" name="idUpload" type="file" accept="image/*,application/pdf" />
+                                        </div>
+                                    </div>
+                                    <!-- Step 5: Security -->
+                                    <div class="form-step" data-step="5">
+                                        <div class="input-box">
+                                            <label for="password">Password *</label>
+                                            <input id="password" name="password" type="password" required aria-required="true" placeholder="••••••••" />
+                                        </div>
+                                        <div class="input-box">
+                                            <label for="confirmPassword">Confirm Password *</label>
+                                            <input id="confirmPassword" name="confirmPassword" type="password" required aria-required="true" placeholder="••••••••" />
+                                        </div>
+                                        <div class="input-box" style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+                                            <input type="checkbox" id="privacyAgree" name="privacyAgree" style="width:auto;">
+                                            <label for="privacyAgree" style="margin:0;">I agree to the <a href="#" class="link">Privacy Notice</a></label>
+                                        </div>
+                                    </div>
+                                    <div id="formMsg" style="display:none;margin-bottom:10px;"></div>
+                                    <div style="display:flex;justify-content:space-between;gap:10px;margin-top:18px;">
+                                        <button type="button" class="btn-primary" id="prevBtn" style="width:40%;background:#e0e7ef;color:#285ccd;">Previous</button>
+                                        <button type="button" class="btn-primary" id="nextBtn" style="width:60%;">Next</button>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 5: Account Security -->
-                <div class="form-step" data-step="5">
-                    <h3 class="step-title">Account Security</h3>
-                    <p class="step-subtitle">Create a strong password</p>
-                    
-                    <div class="input-box">
-                        <label for="password">Password *</label>
-                        <input id="password" name="password" type="password" required aria-required="true" aria-describedby="pwdHelp pwdStrength" placeholder="Create a strong password" autocomplete="new-password" />
-                        <div id="pwdHelp" style="font-size:12px;color:#666;margin-top:8px;">Requirements: 8–12 characters, uppercase, lowercase, number, special character</div>
-                        <meter id="pwdStrength" min="0" max="4" low="2" high="3" optimum="4" value="0" style="width:100%;margin-top:8px; display:none;"></meter>
-                        <div class="pwd-bar" aria-hidden="true"><div class="pwd-fill" id="pwdFill"></div></div>
-                    </div>
-
-                    <div class="input-box">
-                        <label for="confirmPassword">Confirm Password *</label>
-                        <input id="confirmPassword" name="confirmPassword" type="password" required aria-required="true" placeholder="Re-enter your password" autocomplete="new-password" />
-                    </div>
-
-                    <div style="margin-top: 20px; text-align: center;">
-                        <label style="font-size:13px; display: block;">
-                            <input id="privacyAgree" type="checkbox" required aria-required="true" style="margin-right:6px;" />
-                            <span>I agree to the <a href="#" style="color:#2864ef;">Privacy Notice</a> and data usage policy</span>
-                        </label>
-                        <div style="font-size:12px; color:#666; margin-top:4px;">(Data Privacy Act of 2012)</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Navigation Buttons -->
-            <div class="form-navigation">
-                <button type="button" class="btn-secondary" id="prevBtn" disabled>Previous</button>
-                <div id="regMessage" role="status" aria-live="polite" style="flex: 1; padding: 0 12px; font-size: 13px; display: none;"></div>
-                <button type="button" class="btn-primary" id="nextBtn">Next</button>
-            </div>
-        </form>
-
-        <?php if (!empty($errors)): ?>
-        <div style="color:#b00; margin-top:12px;">
-            <?php foreach ($errors as $error): ?>
-            <div><?php echo $error; ?></div>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-
-        <p class="small-text">Already have an account? <a href="login.php">Sign in here</a></p>
-    </div>
-</div>
+                            </form>
 
 
 <footer class="footer">
