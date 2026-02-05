@@ -15,7 +15,37 @@ define('REMEMBER_DEVICE_SECRET', 'change_this_to_a_random_secret_key');
 // Use the same mailer as admin side
 require_once dirname(__DIR__) . '/config/email.php';
 
-// ...existing code...
+// Handle login form submission
+if (isset($_POST['login_submit'])) {
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $error = '';
+    if ($email && $password) {
+        $stmt = $db->prepare('SELECT id, password FROM users WHERE email = ? LIMIT 1');
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $stmt->store_result();
+        if ($stmt->num_rows === 1) {
+            $stmt->bind_result($user_id, $hashed_password);
+            $stmt->fetch();
+            if (password_verify($password, $hashed_password)) {
+                // Set session and redirect
+                $_SESSION['user_id'] = $user_id;
+                // Use domain-relative absolute URL for dashboard redirect
+                $dashboardUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . "/user-dashboard/user-dashboard.php";
+                header('Location: ' . $dashboardUrl);
+                exit();
+            } else {
+                $error = 'Invalid email or password.';
+            }
+        } else {
+            $error = 'Invalid email or password.';
+        }
+        $stmt->close();
+    } else {
+        $error = 'Please enter both email and password.';
+    }
+}
 
                         // ...existing code...
                         // Use the same mailer as admin side
