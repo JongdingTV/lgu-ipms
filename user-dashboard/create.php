@@ -93,107 +93,73 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
-*, *::before, *::after {
-    box-sizing: border-box;
-}
-body.signup-page {
+body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: url('/cityhall.jpeg') center/cover no-repeat fixed;
+
+    /* NEW — background image + blur */
+    background: url("/cityhall.jpeg") center/cover no-repeat fixed;
     position: relative;
     padding-top: 80px;
 }
-body.signup-page::before {
+
+/* NEW — Blur overlay */
+body::before {
     content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: inherit;
-    filter: blur(10px) brightness(0.95);
-    z-index: 0;
-    pointer-events: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    backdrop-filter: blur(6px); /* actual blur */
+    background: rgba(0, 0, 0, 0.35); /* dark overlay */
+    z-index: 0; /* keeps blur behind content */
 }
-.nav, .wrapper, .footer { position: relative; z-index: 1; }
-.nav { width:100%;position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(30,58,95,0.04);overflow-x:visible; }
-.nav-logo { display:flex;align-items:center;gap:10px; }
-.nav-logo img { height:40px;width:auto;object-fit:contain; }
-.nav-links { display:flex;align-items:center;gap:24px;margin-left:32px; }
-.nav-links a { color:#1e293b;text-decoration:none;font-weight:500;font-size:1.08em;transition:color 0.2s; }
-.nav-links a:hover { color:#f39c12; }
+
+/* Make content appear ABOVE blur */
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 100;
+}
+
+.wrapper, .footer {
+    position: relative;
+    z-index: 1;
+}
+
 .footer {
     position: fixed !important;
-    bottom: 0; left: 0; right: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     width: 100%;
-    background: rgba(255,255,255,0.85);
-    backdrop-filter: blur(8px);
-    color: #1e293b;
-    z-index: 100;
-    padding: 10px 0 4px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-shadow: 0 -2px 12px rgba(30,58,95,0.04);
-    font-size: 0.93em;
 }
-.footer-logo {
-    color: #0a4d8c; /* Change font color for copyright */
-    font-size: 0.91em;
-    opacity: 0.8;
-    text-align: center;
+
+.footer {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
     width: 100%;
-    max-width: 1200px;
 }
-.footer-links {
-    margin-bottom: 2px;
+
+.nav-logo {
     display: flex;
     align-items: center;
-    gap: 18px;
-    justify-content: center;
+    gap: 10px;
 }
-.footer-links a {
-    color: #1e293b;
-    text-decoration: none;
-    font-size: 0.93em;
-    opacity: 0.9;
-}
-.footer-links a:hover {
-    color: #f39c12;
-    transition: none;
-}
-.footer-logo {
-    font-size: 0.91em;
-    opacity: 0.8;
-    text-align: center;
-    width: 100%;
-    max-width: 1200px;
-}
-.card .icon-top {
-    display: block;
-    margin: 0 auto 10px auto;
-    height: 56px;
+
+.nav-logo img {
+    height: 45px;
     width: auto;
     object-fit: contain;
 }
-@media (max-width: 600px) {
-    .nav { padding: 0 10px; height: 56px; }
-    .nav-logo img { height: 32px; }
-    .nav-links a { font-size: 0.98em; }
-    .footer {
-        font-size: 0.91em;
-        padding: 8px 0 2px 0;
-        flex-direction: column !important;
-        align-items: center !important;
-    }
-    .footer-links { gap: 10px; flex-direction: row; justify-content: center; }
-    .footer-logo { font-size: 0.89em; margin-top: 2px; }
-    .card .icon-top { height: 40px; }
-}
-html, body { height: 100%; margin: 0; }
-body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
-.wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
-html, body { height: 100%; margin: 0; overflow-x: hidden; }
-body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
-.wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
 </style>
 </style>
 </head>
