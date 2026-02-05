@@ -60,45 +60,78 @@ $db->close();
     <header class="nav" id="navbar">
         <div class="nav-logo">
             <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
-            <span class="logo-text">IPMS</span>
+            <div class="logo-text-wrapper">
+                <span class="logo-text">IPMS</span>
+                <span class="logo-subtitle">Admin Dashboard</span>
+            </div>
+        </div>
+        <div class="nav-search-container">
+            <input type="text" id="navSearch" class="nav-search-input" placeholder="Quick search...">
+            <svg class="nav-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
         </div>
         <div class="nav-links">
-            <a href="dashboard.php" class="active"><img src="dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+            <a href="dashboard.php" class="active" data-section="dashboard"><img src="dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
             <div class="nav-item-group">
-                <a href="../project-registration/project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../project-registration/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">▼</span></a>
+                <a href="../project-registration/project_registration.php" class="nav-main-item" id="projectRegToggle" data-section="projects"><img src="../project-registration/list.png" class="nav-icon">Projects<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
                     <a href="../project-registration/project_registration.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>New Project</span></a>
-                    <a href="../project-registration/registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Projects</span></a>
+                    <a href="../project-registration/registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
                 </div>
             </div>
-            <a href="../progress-monitoring/progress_monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon">Progress Monitoring</a>
-            <a href="../budget-resources/budget_resources.php"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
-            <a href="../task-milestone/tasks_milestones.php"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
+            <a href="../progress-monitoring/progress_monitoring.php" data-section="monitoring"><img src="../progress-monitoring/monitoring.png" class="nav-icon">Monitoring</a>
+            <a href="../budget-resources/budget_resources.php" data-section="budget"><img src="../budget-resources/budget.png" class="nav-icon">Budget</a>
+            <a href="../task-milestone/tasks_milestones.php" data-section="tasks"><img src="../task-milestone/production.png" class="nav-icon">Tasks</a>
             <div class="nav-item-group">
-                <a href="../contractors/contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../contractors/contractors.png" class="nav-icon">Contractors<span class="dropdown-arrow">▼</span></a>
+                <a href="../contractors/contractors.php" class="nav-main-item" id="contractorsToggle" data-section="contractors"><img src="../contractors/contractors.png" class="nav-icon">Contractors<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
                     <a href="../contractors/contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Contractor</span></a>
-                    <a href="../contractors/registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Contractors</span></a>
+                    <a href="../contractors/registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
                 </div>
             </div>
-            <a href="../project-prioritization/project-prioritization.php"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
+            <a href="../project-prioritization/project-prioritization.php" data-section="priorities"><img src="../project-prioritization/prioritization.png" class="nav-icon">Priorities</a>
         </div>
+        <div class="nav-divider"></div>
         <div class="nav-user">
-            <img src="person.png" alt="User Icon" class="user-icon">
-            <span class="nav-username">Welcome <?php echo isset($_SESSION['employee_name']) ? $_SESSION['employee_name'] : 'Admin'; ?></span>
-            <div style="display: flex; gap: 10px;">
-                <a href="../change-password.php" class="nav-logout" style="background: #3498db; margin: 0;" title="Change Password">
-                    <i class="fas fa-key" style="margin-right: 4px;"></i> Change Password
+            <div class="user-avatar">
+                <img src="person.png" alt="User Icon" class="user-icon">
+            </div>
+            <div class="user-info">
+                <span class="nav-username"><?php echo isset($_SESSION['employee_name']) ? $_SESSION['employee_name'] : 'Admin'; ?></span>
+                <span class="user-role">Administrator</span>
+            </div>
+            <div class="nav-quick-actions">
+                <a href="../change-password.php" class="nav-quick-btn" title="Change Password" aria-label="Change Password">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1v6m0 6v6"></path>
+                        <path d="M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24"></path>
+                        <path d="M1 12h6m6 0h6"></path>
+                        <path d="M4.22 19.78l4.24-4.24m5.08-5.08l4.24-4.24"></path>
+                    </svg>
                 </a>
-                <a href="../audit-logs.php" class="nav-logout" style="background: #27ae60; margin: 0;" title="View Security Logs">
-                    <i class="fas fa-shield-alt" style="margin-right: 4px;"></i> Security
+                <a href="../audit-logs.php" class="nav-quick-btn" title="Security Logs" aria-label="Security Logs">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
                 </a>
-                <a href="../logout.php" class="nav-logout">Logout</a>
+                <a href="../logout.php" class="nav-quick-btn logout" title="Logout" aria-label="Logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </a>
             </div>
         </div>
         <div class="lgu-arrow-back">
-            <a href="#" id="toggleSidebar">
-                <img src="lgu-arrow-back.png" alt="Toggle sidebar">
+            <a href="#" id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle sidebar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
             </a>
         </div>
     </header>
@@ -264,6 +297,41 @@ $db->close();
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // ============================================
+            // NAVBAR SEARCH FUNCTIONALITY
+            // ============================================
+            const navSearch = document.getElementById('navSearch');
+            const navLinks = document.querySelector('.nav-links');
+            
+            if (navSearch && navLinks) {
+                navSearch.addEventListener('input', function(e) {
+                    const query = e.target.value.toLowerCase();
+                    const links = navLinks.querySelectorAll('a');
+                    
+                    links.forEach(link => {
+                        const text = link.textContent.toLowerCase();
+                        const parent = link.closest('.nav-item-group') || link.parentElement;
+                        
+                        if (text.includes(query)) {
+                            parent.style.display = '';
+                            if (link.classList.contains('nav-main-item')) {
+                                link.closest('.nav-item-group').querySelector('.nav-submenu').style.display = 'block';
+                            }
+                        } else if (query && !text.includes(query)) {
+                            parent.style.display = 'none';
+                        } else if (!query) {
+                            parent.style.display = '';
+                            if (link.classList.contains('nav-main-item')) {
+                                link.closest('.nav-item-group').querySelector('.nav-submenu').style.display = 'none';
+                            }
+                        }
+                    });
+                });
+            }
+
+            // ============================================
+            // BUDGET VISIBILITY TOGGLE
+            // ============================================
             const budgetCard = document.getElementById('budgetCard');
             const budgetValue = document.getElementById('budgetValue');
             const budgetBtn = document.getElementById('budgetVisibilityToggle');
@@ -332,7 +400,9 @@ $db->close();
                 }
             }
 
-            // Dropdown handlers
+            // ============================================
+            // DROPDOWN NAVIGATION
+            // ============================================
             const projectRegToggle = document.getElementById('projectRegToggle');
             const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
             const contractorsToggle = document.getElementById('contractorsToggle');
