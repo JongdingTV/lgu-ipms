@@ -1051,11 +1051,58 @@ button[type="submit"]:hover {
         max-height: 100vh;
         overflow: hidden;
         transform: translateX(-100%);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .nav-logo {
+        padding: 10px 15px 10px 15px;
+        margin-bottom: 5px;
+    }
+
+    .logo-img {
+        width: 60px;
+        height: 60px;
+    }
+
+    .logo-text {
+        font-size: 0.9rem;
     }
 
     .nav-links {
-        max-height: calc(100vh - 200px);
+        max-height: calc(100vh - 280px);
         overflow-y: auto;
+        padding: 0 10px;
+        flex: 1;
+    }
+
+    .nav-user {
+        padding: 12px 10px;
+        gap: 6px;
+    }
+
+    .user-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .nav-username {
+        font-size: 0.8rem;
+        margin-bottom: 6px;
+    }
+
+    .nav-logout {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+
+    .lgu-arrow-back {
+        margin-top: 8px;
+    }
+
+    .lgu-arrow-back a {
+        width: 32px;
+        height: 32px;
     }
 
     .main-content {
