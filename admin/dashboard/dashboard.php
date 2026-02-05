@@ -142,11 +142,19 @@ $db->close();
                     <span class="metric-status">On schedule</span>
                 </div>
             </div>
-            <div class="metric-card card">
+            <div class="metric-card card" id="budgetCard" data-budget="<?php echo number_format($totalBudget, 2); ?>">
                 <img src="budget.png" alt="Total Budget" class="metric-icon">
                 <div class="metric-content">
                     <h3>Total Budget</h3>
-                    <p class="metric-value">₱<?php echo number_format($totalBudget, 2); ?></p>
+                    <div style="display: flex; align-items: center; gap: 8px; position: relative; z-index: 100; min-height: 32px;">
+                        <p class="metric-value" id="budgetValue" style="margin-bottom: 0; font-size: 1.4em; flex-wrap: wrap; word-wrap: break-word; white-space: normal; line-height: 1.3;">●●●●●●●●</p>
+                        <span id="budgetVisibilityToggle" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; color: #666; transition: all 0.2s ease; opacity: 0.7; pointer-events: auto; z-index: 101; position: relative; flex-shrink: 0;" title="Hold to reveal budget">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events: none;">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </span>
+                    </div>
                     <span class="metric-status">Allocated funds</span>
                 </div>
             </div>
@@ -255,42 +263,112 @@ $db->close();
     </footer>
 
     <script>
-        // Dropdown toggle handlers - run immediately
-        const projectRegToggle = document.getElementById('projectRegToggle');
-        const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
-        const contractorsToggle = document.getElementById('contractorsToggle');
-        const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
-        
-        if (projectRegToggle && projectRegGroup) {
-            projectRegToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                projectRegGroup.classList.toggle('open');
-                if (contractorsGroup) contractorsGroup.classList.remove('open');
-            });
-        }
-        
-        if (contractorsToggle && contractorsGroup) {
-            contractorsToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                contractorsGroup.classList.toggle('open');
-                if (projectRegGroup) projectRegGroup.classList.remove('open');
-            });
-        }
-        
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.nav-item-group')) {
-                if (projectRegGroup) projectRegGroup.classList.remove('open');
-                if (contractorsGroup) contractorsGroup.classList.remove('open');
+        document.addEventListener('DOMContentLoaded', function() {
+            const budgetCard = document.getElementById('budgetCard');
+            const budgetValue = document.getElementById('budgetValue');
+            const budgetBtn = document.getElementById('budgetVisibilityToggle');
+            let budgetRevealTimer;
+            let isRevealing = false;
+
+            if (budgetBtn && budgetValue && budgetCard) {
+                // Add hover styles
+                budgetBtn.addEventListener('mouseenter', function() {
+                    this.style.color = '#333';
+                    this.style.opacity = '1';
+                });
+                
+                budgetBtn.addEventListener('mouseleave', function() {
+                    if (!isRevealing) {
+                        this.style.color = '#666';
+                        this.style.opacity = '0.7';
+                    }
+                });
+                
+                // Mouse down - start timer
+                budgetBtn.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startReveal();
+                });
+                
+                // Touch start
+                budgetBtn.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startReveal();
+                });
+                
+                // Mouse up - end reveal
+                document.addEventListener('mouseup', function() {
+                    endReveal();
+                });
+                
+                // Touch end
+                document.addEventListener('touchend', function() {
+                    endReveal();
+                });
+                
+                function startReveal() {
+                    clearTimeout(budgetRevealTimer);
+                    budgetRevealTimer = setTimeout(() => {
+                        if (!isRevealing) {
+                            isRevealing = true;
+                            const actualBudget = budgetCard.getAttribute('data-budget');
+                            budgetValue.textContent = '₱' + actualBudget;
+                            budgetBtn.style.color = '#3b82f6';
+                            budgetBtn.style.opacity = '1';
+                        }
+                    }, 300);
+                }
+
+                function endReveal() {
+                    clearTimeout(budgetRevealTimer);
+                    if (isRevealing) {
+                        isRevealing = false;
+                        budgetValue.textContent = '●●●●●●●●';
+                        budgetBtn.style.color = '#666';
+                        budgetBtn.style.opacity = '0.7';
+                    }
+                }
             }
-        });
-        
-        document.querySelectorAll('.nav-submenu-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (projectRegGroup) projectRegGroup.classList.remove('open');
-                if (contractorsGroup) contractorsGroup.classList.remove('open');
+
+            // Dropdown handlers
+            const projectRegToggle = document.getElementById('projectRegToggle');
+            const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
+            const contractorsToggle = document.getElementById('contractorsToggle');
+            const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
+            
+            if (projectRegToggle && projectRegGroup) {
+                projectRegToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    projectRegGroup.classList.toggle('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
+                });
+            }
+            
+            if (contractorsToggle && contractorsGroup) {
+                contractorsToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    contractorsGroup.classList.toggle('open');
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                });
+            }
+            
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.nav-item-group')) {
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
+                }
+            });
+            
+            document.querySelectorAll('.nav-submenu-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
+                });
             });
         });
     </script>
