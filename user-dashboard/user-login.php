@@ -181,15 +181,19 @@ body::before {
             <p class="subtitle">Secure access to community maintenance services.</p>
 
             <form method="post">
-
-                <div class="input-box">
-                    <label>Email Address</label>
-                    <input type="email" name="email" id="loginEmail" placeholder="name@lgu.gov.ph" required autocomplete="email">
+                <div class="input-box" style="position:relative;">
+                    <label for="loginEmail"><i class="fas fa-envelope" style="margin-right:6px;color:#888;"></i>Email Address</label>
+                    <input type="email" name="email" id="loginEmail" placeholder="name@lgu.gov.ph" required autocomplete="email" style="padding-left:32px;">
+                    <i class="fas fa-envelope" style="position:absolute;left:8px;top:38px;color:#888;font-size:1.1em;"></i>
                 </div>
 
-                <div class="input-box">
-                    <label>Password</label>
-                    <input type="password" name="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+                <div class="input-box" style="position:relative;">
+                    <label for="loginPassword"><i class="fas fa-lock" style="margin-right:6px;color:#888;"></i>Password</label>
+                    <input type="password" name="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" style="padding-left:32px;">
+                    <i class="fas fa-lock" style="position:absolute;left:8px;top:38px;color:#888;font-size:1.1em;"></i>
+                    <span id="togglePassword" style="position:absolute;right:8px;top:38px;cursor:pointer;color:#888;font-size:1.1em;">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </span>
                 </div>
 
                 <button class="btn-primary" type="submit" name="login_submit">Sign In</button>
@@ -199,13 +203,35 @@ body::before {
                 </p>
             </form>
         <?php endif; ?>
-
         <?php if (isset($error)): ?>
         <div style="margin-top:12px;color:#b00;"><?php echo $error; ?></div>
         <?php endif; ?>
         <?php if (isset($_GET['success'])): ?>
         <div style="margin-top:12px;color:#0b0;">Account created successfully. Please log in.</div>
         <?php endif; ?>
+        <!-- FontAwesome for icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <script>
+        // Password visibility toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            var toggle = document.getElementById('togglePassword');
+            var passwordInput = document.getElementById('loginPassword');
+            var eyeIcon = document.getElementById('eyeIcon');
+            if (toggle && passwordInput && eyeIcon) {
+                toggle.addEventListener('click', function() {
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        eyeIcon.classList.remove('fa-eye');
+                        eyeIcon.classList.add('fa-eye-slash');
+                    } else {
+                        passwordInput.type = 'password';
+                        eyeIcon.classList.remove('fa-eye-slash');
+                        eyeIcon.classList.add('fa-eye');
+                    }
+                });
+            }
+        });
+        </script>
     </div>
 </div>
 
