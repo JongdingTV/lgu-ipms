@@ -347,7 +347,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
                             <div class="file-upload-wrapper">
                                 <input type="file" id="idUpload" name="idUpload" class="file-upload-input" accept=".jpg,.jpeg,.png" />
                                 <label for="idUpload" class="file-upload-label">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="height:28px;width:28px;vertical-align:middle;margin-right:8px;">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                                     </svg>
                                     <span id="uploadText">Click to upload or drag & drop</span>
@@ -409,7 +409,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
                 <div id="successMessage" style="color:#155724;background:#d4edda;border:1px solid #c3e6cb;padding:18px 16px;margin:18px 0 0 0;border-radius:6px;text-align:center;font-size:1.1em;">
                     <strong>Account created successfully!</strong><br>
                     Redirecting to login in <span id="countdown">10</span> seconds...<br>
-                    <a href="login.php" style="color:#2864ef;text-decoration:underline;">Click here if not redirected</a>
+                    <a href="user-login.php" style="color:#2864ef;text-decoration:underline;">Click here if not redirected</a>
                 </div>
                 <script>
                 // Remove any localStorage data related to registration (precaution)
@@ -423,7 +423,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
                     if (countdownEl) countdownEl.textContent = seconds;
                     if (seconds <= 0) {
                         clearInterval(interval);
-                        window.location.href = 'login.php';
+                        window.location.href = 'user-login.php';
                     }
                 }, 1000);
                 </script>
@@ -468,10 +468,21 @@ function setPwdFill(score){
     const pct = Math.round((score / 4) * 100);
     if(pwdFill){
         pwdFill.style.width = pct + '%';
+        pwdFill.style.transition = 'width 0.3s, background 0.3s';
         if(score <= 1) pwdFill.style.background = 'linear-gradient(90deg,#ff4d4f,#ff7a59)';
         else if(score === 2) pwdFill.style.background = 'linear-gradient(90deg,#ffb86b,#ffd54a)';
         else if(score === 3) pwdFill.style.background = 'linear-gradient(90deg,#cddc39,#8bc34a)';
         else pwdFill.style.background = 'linear-gradient(90deg,#7be495,#4caf50)';
+    }
+    if(meter){
+        meter.style.display = 'block';
+        meter.value = score;
+    }
+    // Animate bar shake if weak
+    const bar = document.querySelector('.pwd-bar');
+    if(bar && score <= 1){
+        bar.classList.add('shake');
+        setTimeout(()=>bar.classList.remove('shake'),420);
     }
 }
 
@@ -483,7 +494,6 @@ if(pwdInput){
         if(/[A-Z]/.test(val)) score++;
         if(/[0-9]/.test(val)) score++;
         if(/[^A-Za-z0-9]/.test(val)) score++;
-        if(meter) meter.value = score;
         setPwdFill(score);
     });
 }

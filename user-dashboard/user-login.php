@@ -31,9 +31,15 @@ if (isset($_POST['login_submit'])) {
             if (password_verify($password, $hashed_password)) {
                 // Set session and redirect
                 $_SESSION['user_id'] = $user_id;
-                // Use domain-relative absolute URL for dashboard redirect
-                $dashboardUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . "/user-dashboard/user-dashboard.php";
-                header('Location: ' . $dashboardUrl);
+                // Optionally set user_name for dashboard
+                $user_stmt = $db->prepare('SELECT first_name, last_name FROM users WHERE id = ? LIMIT 1');
+                $user_stmt->bind_param('i', $user_id);
+                $user_stmt->execute();
+                $user_stmt->bind_result($first_name, $last_name);
+                $user_stmt->fetch();
+                $_SESSION['user_name'] = $first_name . ' ' . $last_name;
+                $user_stmt->close();
+                header('Location: user-dashboard.php');
                 exit();
             } else {
                 $error = 'Invalid email or password.';
