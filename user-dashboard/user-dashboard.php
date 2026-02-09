@@ -241,6 +241,7 @@ $db->close();
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
+    <!-- Remove duplicate logout modal -->
     <div id="logoutModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
         <div style="background:#fff;border-radius:16px;padding:24px 28px;max-width:360px;width:90%;box-shadow:0 10px 30px rgba(15,23,42,0.35);text-align:center;">
             <h2 style="margin-bottom:10px;font-size:1.1rem;color:#111827;">Confirm Logout</h2>
