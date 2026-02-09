@@ -31,7 +31,6 @@ if (isset($_POST['login_submit'])) {
             if (password_verify($password, $hashed_password)) {
                 // Set session and redirect
                 $_SESSION['user_id'] = $user_id;
-                // Optionally set user_name for dashboard
                 $user_stmt = $db->prepare('SELECT first_name, last_name FROM users WHERE id = ? LIMIT 1');
                 $user_stmt->bind_param('i', $user_id);
                 $user_stmt->execute();
@@ -39,7 +38,8 @@ if (isset($_POST['login_submit'])) {
                 $user_stmt->fetch();
                 $_SESSION['user_name'] = $first_name . ' ' . $last_name;
                 $user_stmt->close();
-                header('Location: user-dashboard/user-dashboard.php');
+                // Use absolute path for redirect like employee side
+                header('Location: /user-dashboard/user-dashboard.php');
                 exit();
             } else {
                 $error = 'Invalid email or password.';
