@@ -38,6 +38,7 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
         <div class="nav-user">
             <?php
             $profile_img = '';
+            $user_email = isset($user['email']) ? $user['email'] : '';
             $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
             $initials = '';
             if ($user_name) {
@@ -46,32 +47,32 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
                     if ($p) $initials .= strtoupper($p[0]);
                 }
             }
-            ?>
-            <?php if ($profile_img): ?>
-                <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon">
-            <?php else: ?>
-                <?php
-                // Generate a random color based on user name (Google-style)
-                function stringToColor($str) {
-                    $colors = [
-                        '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-                        '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
-                        '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#607D8B'
-                    ];
-                    $hash = 0;
-                    for ($i = 0; $i < strlen($str); $i++) {
-                        $hash = ord($str[$i]) + (($hash << 5) - $hash);
-                    }
-                    $index = abs($hash) % count($colors);
-                    return $colors[$index];
+            function stringToColor($str) {
+                $colors = [
+                    '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
+                    '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
+                    '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#607D8B'
+                ];
+                $hash = 0;
+                for ($i = 0; $i < strlen($str); $i++) {
+                    $hash = ord($str[$i]) + (($hash << 5) - $hash);
                 }
-                $bgcolor = stringToColor($user_name);
-                ?>
-                <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                    <?php echo $initials; ?>
-                </div>
-            <?php endif; ?>
-            <span class="nav-username">Welcome, <?php echo htmlspecialchars($user_name); ?></span>
+                $index = abs($hash) % count($colors);
+                return $colors[$index];
+            }
+            $bgcolor = stringToColor($user_name);
+            ?>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:110px;">
+                <?php if ($profile_img): ?>
+                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon">
+                <?php else: ?>
+                    <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                        <?php echo $initials; ?>
+                    </div>
+                <?php endif; ?>
+                <div style="font-weight:600;font-size:1.05em;line-height:1.2;margin-top:2px;"> <?php echo htmlspecialchars($user_name); ?> </div>
+                <div style="font-size:0.97em;color:#64748b;line-height:1.1;"> <?php echo htmlspecialchars($user_email); ?> </div>
+            </div>
             <a href="#" class="nav-logout logout-btn" id="logoutLink" style="background:#ef4444;color:#fff;padding:6px 16px;border-radius:6px;font-weight:500;margin-left:12px;">Logout</a>
         </div>
         <div class="lgu-arrow-back">
