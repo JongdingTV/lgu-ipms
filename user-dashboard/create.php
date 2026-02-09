@@ -469,20 +469,36 @@ function setPwdFill(score){
     if(pwdFill){
         pwdFill.style.width = pct + '%';
         pwdFill.style.transition = 'width 0.3s, background 0.3s';
-        if(score <= 1) pwdFill.style.background = 'linear-gradient(90deg,#ff4d4f,#ff7a59)';
-        else if(score === 2) pwdFill.style.background = 'linear-gradient(90deg,#ffb86b,#ffd54a)';
-        else if(score === 3) pwdFill.style.background = 'linear-gradient(90deg,#cddc39,#8bc34a)';
-        else pwdFill.style.background = 'linear-gradient(90deg,#7be495,#4caf50)';
+        if(score <= 1) {
+            pwdFill.style.background = 'linear-gradient(90deg,#ff4d4f,#ff7a59)';
+            pwdFill.style.boxShadow = '0 0 8px 2px #ff4d4f55';
+            pwdFill.style.borderRadius = '8px';
+        } else if(score === 2) {
+            pwdFill.style.background = 'linear-gradient(90deg,#ffb86b,#ffd54a)';
+            pwdFill.style.boxShadow = '0 0 8px 2px #ffd54a55';
+            pwdFill.style.borderRadius = '8px';
+        } else if(score === 3) {
+            pwdFill.style.background = 'linear-gradient(90deg,#cddc39,#8bc34a)';
+            pwdFill.style.boxShadow = '0 0 8px 2px #8bc34a55';
+            pwdFill.style.borderRadius = '8px';
+        } else {
+            pwdFill.style.background = 'linear-gradient(90deg,#7be495,#4caf50)';
+            pwdFill.style.boxShadow = '0 0 16px 4px #4caf5099, 0 0 8px 2px #7be49599';
+            pwdFill.style.borderRadius = '8px';
+        }
     }
     if(meter){
         meter.style.display = 'block';
         meter.value = score;
     }
-    // Animate bar shake if weak
+    // Animate bar shake if weak, pulse if strong
     const bar = document.querySelector('.pwd-bar');
     if(bar && score <= 1){
         bar.classList.add('shake');
         setTimeout(()=>bar.classList.remove('shake'),420);
+    } else if(bar && score === 4) {
+        bar.classList.add('pulse');
+        setTimeout(()=>bar.classList.remove('pulse'),600);
     }
 }
 
@@ -721,23 +737,24 @@ function validateStep(step) {
     if(step === 4) {
         // File validation
         const idUploadFile = document.getElementById('idUpload').files[0] || null;
-        
-        if(idUploadFile && idUploadFile.size > 5 * 1024 * 1024){
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> ID file must be less than 5MB.';
-            msgEl.style.display = 'block';
-            markInvalid(uploadLabel);
-            return false;
-        }
-        
-        if(idUploadFile && !['image/jpeg', 'image/png'].includes(idUploadFile.type)){
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> ID file must be JPG or PNG.';
-            msgEl.style.display = 'block';
-            markInvalid(uploadLabel);
-            return false;
+        // Only check if a file is selected
+        if(idUploadFile) {
+            if(idUploadFile.size > 5 * 1024 * 1024){
+                msgEl.style.backgroundColor = '#fee'; 
+                msgEl.style.color = '#c00';
+                msgEl.innerHTML = '<strong>⚠️</strong> ID file must be less than 5MB.';
+                msgEl.style.display = 'block';
+                markInvalid(uploadLabel);
+                return false;
+            }
+            if(!['image/jpeg', 'image/png'].includes(idUploadFile.type)){
+                msgEl.style.backgroundColor = '#fee'; 
+                msgEl.style.color = '#c00';
+                msgEl.innerHTML = '<strong>⚠️</strong> ID file must be JPG or PNG.';
+                msgEl.style.display = 'block';
+                markInvalid(uploadLabel);
+                return false;
+            }
         }
     }
     
@@ -852,5 +869,21 @@ function handleSubmit(e) {
 // Initialize
 showStep(currentStep);
 </script>
+<style>
+/* Add this to your CSS (or in a <style> block): */
+.pwd-bar.shake { animation: shake 0.42s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-8px); }
+  40%, 60% { transform: translateX(8px); }
+}
+.pwd-bar.pulse { animation: pulse 0.6s cubic-bezier(.4,0,.6,1) both; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 #4caf5099; }
+  70% { box-shadow: 0 0 16px 8px #4caf5099; }
+  100% { box-shadow: 0 0 0 0 #4caf5099; }
+}
+</style>
 </body>
 </html>

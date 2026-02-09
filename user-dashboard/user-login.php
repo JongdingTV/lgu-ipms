@@ -39,7 +39,7 @@ if (isset($_POST['login_submit'])) {
                 $user_stmt->fetch();
                 $_SESSION['user_name'] = $first_name . ' ' . $last_name;
                 $user_stmt->close();
-                header('Location: user-dashboard.php');
+                header('Location: user-dashboard/user-dashboard.php');
                 exit();
             } else {
                 $error = 'Invalid email or password.';
