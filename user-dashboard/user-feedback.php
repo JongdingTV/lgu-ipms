@@ -180,16 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
-    <div id="logoutModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-        <div style="background:#fff;border-radius:16px;padding:24px 28px;max-width:360px;width:90%;box-shadow:0 10px 30px rgba(15,23,42,0.35);text-align:center;">
-            <h2 style="margin-bottom:10px;font-size:1.1rem;color:#111827;">Confirm Logout</h2>
-            <p style="font-size:0.9rem;color:#4b5563;margin-bottom:18px;">Are you sure you want to log out of your citizen account?</p>
-            <div style="display:flex;justify-content:center;gap:12px;">
-                <button id="cancelLogout" style="padding:8px 16px;border-radius:999px;border:1px solid #d1d5db;background:#fff;color:#374151;font-size:0.9rem;cursor:pointer;">Cancel</button>
-                <button id="confirmLogout" style="padding:8px 16px;border-radius:999px;border:none;background:#ef4444;color:#fff;font-size:0.9rem;cursor:pointer;">Logout</button>
-            </div>
-        </div>
-    </div>
+
 
     <script src="../shared-data.js"></script>
     <script src="user-feedback.js"></script>
