@@ -68,8 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt = $db->prepare("INSERT INTO users (first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param('ssssssssssssss', $first_name, $middle_name, $last_name, $suffix, $email, $mobile, $birthdate, $gender, $civil_status, $address, $id_type, $id_number, $id_upload, $hashed_password);
         if ($stmt->execute()) {
-            header('Location: login.php?success=1');
-            exit;
+            $account_created = true;
         } else {
             $errors[] = 'Registration failed.';
         }
@@ -397,13 +396,38 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
             </div>
         </form>
 
-        <?php if (!empty($errors)): ?>
-        <div style="color:#b00; margin-top:12px;">
-            <?php foreach ($errors as $error): ?>
-            <div><?php echo $error; ?></div>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
+
+                <?php if (!empty($errors)): ?>
+                <div style="color:#b00; margin-top:12px;">
+                    <?php foreach ($errors as $error): ?>
+                    <div><?php echo $error; ?></div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if (isset($account_created) && $account_created): ?>
+                <div id="successMessage" style="color:#155724;background:#d4edda;border:1px solid #c3e6cb;padding:18px 16px;margin:18px 0 0 0;border-radius:6px;text-align:center;font-size:1.1em;">
+                    <strong>Account created successfully!</strong><br>
+                    Redirecting to login in <span id="countdown">10</span> seconds...<br>
+                    <a href="login.php" style="color:#2864ef;text-decoration:underline;">Click here if not redirected</a>
+                </div>
+                <script>
+                // Remove any localStorage data related to registration (precaution)
+                try {
+                    localStorage.clear();
+                } catch(e){}
+                let seconds = 10;
+                const countdownEl = document.getElementById('countdown');
+                const interval = setInterval(function() {
+                    seconds--;
+                    if (countdownEl) countdownEl.textContent = seconds;
+                    if (seconds <= 0) {
+                        clearInterval(interval);
+                        window.location.href = 'login.php';
+                    }
+                }, 1000);
+                </script>
+                <?php endif; ?>
 
         <p class="small-text">Already have an account? <a href="login.php">Sign in here</a></p>
     </div>
