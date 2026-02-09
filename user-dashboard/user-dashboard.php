@@ -45,15 +45,49 @@ $db->close();
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
-            <a href="user-dashboard.php" class="active"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-dashboard.php" class="active"><img src="../admin/dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+            <a href="user-progress-monitoring.php"><img src="../admin/dashboard/sandclock.png" class="nav-icon"> Progress Monitoring</a>
             <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
             <a href="user-settings.php"><img src="settings.png" class="nav-icon"> Settings</a>
         </div>
         <div class="nav-user">
-            <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
+            <?php
+            $profile_img = '';
+            $initials = '';
+            if (isset($_SESSION['user_name'])) {
+                $names = explode(' ', $_SESSION['user_name']);
+                $initials = strtoupper(substr($names[0],0,1));
+                if (count($names) > 1) $initials .= strtoupper(substr($names[count($names)-1],0,1));
+            }
+            ?>
+            <div class="user-avatar">
+                <?php if ($profile_img): ?>
+                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon">
+                <?php else: ?>
+                    <?php
+                    // Generate a random color based on user name (Google-style)
+                    function stringToColor($str) {
+                        $colors = [
+                            '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
+                            '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
+                            '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#607D8B'
+                        ];
+                        $hash = 0;
+                        for ($i = 0; $i < strlen($str); $i++) {
+                            $hash = ord($str[$i]) + (($hash << 5) - $hash);
+                        }
+                        $index = abs($hash) % count($colors);
+                        return $colors[$index];
+                    }
+                    $bgcolor = stringToColor($user_name);
+                    ?>
+                    <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                        <?php echo $initials; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
             <span class="nav-username">Welcome, <?php echo htmlspecialchars($user_name); ?></span>
-            <a href="#" class="nav-logout" id="logoutLink">Logout</a>
+            <a href="#" class="nav-logout logout-btn" id="logoutLink" style="background:#ef4444;color:#fff;padding:6px 16px;border-radius:6px;font-weight:500;margin-left:12px;">Logout</a>
         </div>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar">
@@ -79,7 +113,7 @@ $db->close();
         <div class="metrics-container modern-metrics">
             <div class="metric-card accent-blue">
                 <div class="metric-icon-bg">
-                    <img src="../dashboard/chart.png" alt="Total Projects" class="metric-icon">
+                    <img src="../admin/dashboard/chart.png" alt="Total Projects" class="metric-icon">
                 </div>
                 <div class="metric-content">
                     <h3>Projects in Your Area</h3>
@@ -89,7 +123,7 @@ $db->close();
             </div>
             <div class="metric-card accent-yellow">
                 <div class="metric-icon-bg">
-                    <img src="../dashboard/sandclock.png" alt="In Progress" class="metric-icon">
+                    <img src="../admin/dashboard/sandclock.png" alt="In Progress" class="metric-icon">
                 </div>
                 <div class="metric-content">
                     <h3>In Progress</h3>
@@ -99,7 +133,7 @@ $db->close();
             </div>
             <div class="metric-card accent-green">
                 <div class="metric-icon-bg">
-                    <img src="../dashboard/check.png" alt="Completed" class="metric-icon">
+                    <img src="../admin/dashboard/check.png" alt="Completed" class="metric-icon">
                 </div>
                 <div class="metric-content">
                     <h3>Completed</h3>
@@ -109,7 +143,7 @@ $db->close();
             </div>
             <div class="metric-card accent-purple">
                 <div class="metric-icon-bg">
-                    <img src="../dashboard/budget.png" alt="Total Budget" class="metric-icon">
+                    <img src="../admin/dashboard/budget.png" alt="Total Budget" class="metric-icon">
                 </div>
                 <div class="metric-content">
                     <h3>Allocated Budget</h3>
