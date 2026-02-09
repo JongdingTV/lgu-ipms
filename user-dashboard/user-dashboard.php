@@ -4,8 +4,6 @@ require dirname(__DIR__) . '/session-auth.php';
 
 // Protect page
 set_no_cache_headers();
-check_auth();
-check_suspicious_activity();
 
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
