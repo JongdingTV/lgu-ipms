@@ -60,10 +60,7 @@ $db->close();
     <header class="nav" id="navbar">
         <div class="nav-logo">
             <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
-            <div class="logo-text-wrapper">
-                <span class="logo-text">IPMS</span>
-                <span class="logo-subtitle">Admin Dashboard</span>
-            </div>
+            <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
             <a href="dashboard.php" class="active" data-section="dashboard"><img src="dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
