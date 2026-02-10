@@ -24,7 +24,7 @@ define('SESSION_TIMEOUT', 30 * 60); // 30 minutes in seconds
  */
 function check_auth() {
     // Check if session has a user_id (for citizen)
-    if (!isset($_SESSION['user_id'])) {
+    if (!isset($_SESSION['employee_id'])) {
         header('Location: ' . get_login_url());
         exit();
     }
