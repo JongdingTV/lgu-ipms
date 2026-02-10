@@ -19,11 +19,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Toggle the sidebar-hidden class on body
         const isSidebarHidden = document.body.classList.toggle('sidebar-hidden');
         
-        // The .toggle-btn and .navbar-menu-icon visibility is now controlled purely by CSS
-        // No need to manually add/remove .show class
+        // Also toggle .show class on floating button and navbar icon as backup
+        if (showSidebarBtn) {
+            showSidebarBtn.classList.toggle('show', isSidebarHidden);
+        }
+        if (navbarMenuIcon) {
+            navbarMenuIcon.classList.toggle('show', isSidebarHidden);
+        }
     }
 
-    // Attach event listeners for both toggle buttons
+    // Attach event listeners for all toggle buttons
     if (toggleSidebar) {
         toggleSidebar.addEventListener('click', toggleSidebarVisibility);
     }
