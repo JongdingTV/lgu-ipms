@@ -257,7 +257,6 @@ $db->close();
         </div>
 
         <!-- Quick Stats -->
-        <div class="feedback-review" style="margin:40px auto 0;max-width:900px;">
         <div class="feedback-review recent-projects">
             <h3>Your Feedback Review</h3>
             <table class="projects-table">
