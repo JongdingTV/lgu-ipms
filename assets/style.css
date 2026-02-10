@@ -407,123 +407,58 @@ body.sidebar-hidden .nav {
 
 .toggle-btn {
     position: fixed;
-    bottom: 40px;
-    left: -120px;
+    bottom: 30px;
+    right: 30px;
     z-index: 999;
+    width: 64px;
+    height: 64px;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 
 .toggle-btn.show,
 body.sidebar-hidden .toggle-btn {
-    left: 30px;
     opacity: 1;
     visibility: visible;
-    pointer-events: all;
+    pointer-events: auto;
 }
 
 .toggle-btn a {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 60px;
-    height: 60px;
+    width: 100%;
+    height: 100%;
     background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
     border: none;
-    border-radius: 14px;
+    border-radius: 50%;
     box-shadow: 0 8px 24px rgba(30, 58, 95, 0.4);
-    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+    transition: all 0.3s ease;
     text-decoration: none;
-    position: relative;
-    overflow: hidden;
     cursor: pointer;
 }
 
-.toggle-btn a::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(45deg, rgba(255,255,255,0.25), transparent);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.toggle-btn a:hover::before {
-    opacity: 1;
-}
-
 .toggle-btn a:hover {
-    transform: translateY(-6px) scale(1.08);
-    box-shadow: 0 12px 32px rgba(30, 58, 95, 0.5);
+    transform: translateY(-8px) scale(1.12);
+    box-shadow: 0 12px 36px rgba(30, 58, 95, 0.6);
 }
 
 .toggle-btn a:active {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 6px 16px rgba(30, 58, 95, 0.3);
+    transform: translateY(-2px) scale(1.05);
 }
 
 .toggle-btn svg {
     width: 28px;
     height: 28px;
-    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
-    position: relative;
-    z-index: 1;
     color: #ffffff;
-    stroke-width: 2.5;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    stroke-width: 2;
 }
 
-.toggle-btn a:hover svg {
-    transform: rotate(-90deg) scale(1.15);
-}
-
-/* Navbar menu icon - shows when sidebar is hidden */
+/* Navbar menu icon - hidden, using floating button instead */
 .navbar-menu-icon {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    padding: 0;
-    margin-right: 8px;
-    order: -1;
-    flex-shrink: 0;
-}
-
-.navbar-menu-icon.show,
-body.sidebar-hidden .navbar-menu-icon {
-    display: flex;
-}
-
-.navbar-menu-icon:hover {
-    background: rgba(30, 58, 95, 0.1);
-    transform: scale(1.05);
-}
-
-.navbar-menu-icon:active {
-    transform: scale(0.95);
-}
-
-.navbar-menu-icon svg {
-    width: 20px;
-    height: 20px;
-    stroke: #374151;
-    transition: stroke 0.3s ease;
-}
-
-.navbar-menu-icon:hover svg,
-body.sidebar-hidden .navbar-menu-icon svg {
-    stroke: #1e3a5f;
+    display: none !important;
 }
 
 /* Section styling */
