@@ -65,7 +65,7 @@ function get_login_url() {
     
     if ($user_type === 'employee' || strpos($request_uri, '/admin') !== false) {
         // Admin/Employee login
-        return $protocol . $host . '/public/admin-login.php';
+        return $protocol . $host . '/admin/index.php';
     } else {
         // Citizen/User login
         return $protocol . $host . '/user-dashboard/user-login.php';
