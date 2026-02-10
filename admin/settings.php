@@ -400,5 +400,6 @@ if (isset($db) && !$db->connect_error) {
     </script>
 
     <script src="/shared-data.js"></script>
+    <script src="/shared-toggle.js"></script>
 </body>
 </html>

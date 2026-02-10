@@ -26,8 +26,6 @@ const toggleBtn1 = document.getElementById('toggleSidebar');
 const toggleBtn2 = document.getElementById('toggleSidebarShow');
 if (toggleBtn1) toggleBtn1.addEventListener('click', (e) => { e.preventDefault(); sidebarToggle(); });
 if (toggleBtn2) toggleBtn2.addEventListener('click', (e) => { e.preventDefault(); sidebarToggle(); });
-
-// Demo fallback data (used when IPMS_DATA is not available)
 const demoProjects = [];
 
 /* Dashboard real-time data integration */

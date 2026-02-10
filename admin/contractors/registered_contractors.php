@@ -342,9 +342,12 @@ $db->close();
         </div>
     </header>
 
+    <!-- Toggle button to show sidebar -->
     <div class="toggle-btn" id="showSidebarBtn">
-        <a href="#" id="toggleSidebarShow">
-            <img src="../dashboard/lgu-arrow-right.png" alt="Show sidebar">
+        <a href="#" id="toggleSidebarShow" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
         </a>
     </div>
 
@@ -998,5 +1001,7 @@ $db->close();
             </div>
         </div>
     </div>
+    <script src="../shared-data.js?v=1"></script>
+    <script src="../shared-toggle.js"></script>
 </body>
 </html>
