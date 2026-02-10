@@ -478,6 +478,52 @@ body.sidebar-hidden .toggle-btn {
     transform: rotate(-90deg) scale(1.15);
 }
 
+/* Navbar menu icon - shows when sidebar is hidden */
+.navbar-menu-icon {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+    padding: 0;
+    margin-right: 8px;
+    order: -1;
+}
+
+body.sidebar-hidden .navbar-menu-icon {
+    display: flex;
+}
+
+.navbar-menu-icon:hover {
+    background: #f3f4f6;
+    transform: scale(1.05);
+}
+
+.navbar-menu-icon:active {
+    transform: scale(0.95);
+}
+
+.navbar-menu-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: #374151;
+    transition: all 0.3s ease;
+}
+
+body.sidebar-hidden .navbar-menu-icon svg {
+    stroke: #1e3a5f;
+}
+
+.navbar-menu-icon:hover svg {
+    stroke: #1e3a5f;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
 /* Section styling */
 section {
     position: relative;

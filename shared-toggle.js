@@ -6,6 +6,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const toggleSidebar = document.getElementById('toggleSidebar');
     const toggleSidebarShow = document.getElementById('toggleSidebarShow');
+    const navbarMenuIcon = document.getElementById('navbarMenuIcon');
     const showSidebarBtn = document.getElementById('showSidebarBtn');
     const navbar = document.getElementById('navbar');
 
@@ -18,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Toggle the sidebar-hidden class on body
         const isSidebarHidden = document.body.classList.toggle('sidebar-hidden');
         
-        // The .toggle-btn visibility is now controlled purely by CSS
+        // The .toggle-btn and .navbar-menu-icon visibility is now controlled purely by CSS
         // No need to manually add/remove .show class
     }
 
@@ -29,6 +30,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (toggleSidebarShow) {
         toggleSidebarShow.addEventListener('click', toggleSidebarVisibility);
+    }
+
+    if (navbarMenuIcon) {
+        navbarMenuIcon.addEventListener('click', toggleSidebarVisibility);
     }
 
     // Close dropdowns when clicking elsewhere
