@@ -13,17 +13,19 @@ if (is_authenticated() && isset($_SESSION['user_type']) && $_SESSION['user_type'
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+    $email = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
-    $result = authenticate_employee($username, $password);
+    $result = authenticate_employee($email, $password);
     if ($result['success']) {
-        $_SESSION['user_id'] = $result['user_id'];
+        $_SESSION['employee_id'] = $result['user_id'];
+        $_SESSION['employee_name'] = $result['user_name'] ?? '';
         $_SESSION['user_type'] = 'employee';
-        $_SESSION['email'] = $result['email'];
-        header('Location: /admin/index.php');
+        $_SESSION['last_activity'] = time();
+        $_SESSION['login_time'] = time();
+        header('Location: /admin/dashboard/dashboard.php');
         exit();
     } else {
-        $error = $result['message'];
+        $error = $result['error'] ?? 'Invalid credentials';
     }
 }
 ?>

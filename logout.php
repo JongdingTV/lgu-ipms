@@ -8,12 +8,15 @@ log_security_event('USER_LOGOUT', 'User successfully logged out');
 
 // Destroy session using our secure function
 destroy_session();
-
-// Add no-cache headers to ensure page isn't cached
 set_no_cache_headers();
 
-// Redirect to login page
-header('Location: user-dashboard/user-login.php?logout=1');
-exit;
+// Redirect based on session type
+if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'employee') {
+	header('Location: /public/admin-login.php?logout=1');
+	exit;
+} else {
+	header('Location: /user-dashboard/user-login.php?logout=1');
+	exit;
+}
 
 
