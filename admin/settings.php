@@ -333,25 +333,21 @@ if (isset($db) && !$db->connect_error) {
             // ============================================
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
-                // Handle clicks on the button and any child elements
-                const handleLogoutClick = function(e) {
-                    if (e.target.id === 'logoutBtn' || e.target.closest('#logoutBtn')) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        showConfirmation({
-                            title: 'Logout Confirmation',
-                            message: 'Are you sure you want to logout?',
-                            icon: '👋',
-                            confirmText: 'Logout',
-                            cancelText: 'Cancel',
-                            onConfirm: () => {
-                                window.location.href = './logout.php';
-                            }
-                        });
-                    }
+                logoutBtn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showConfirmation({
+                        title: 'Logout Confirmation',
+                        message: 'Are you sure you want to logout?',
+                        icon: '👋',
+                        confirmText: 'Logout',
+                        cancelText: 'Cancel',
+                        onConfirm: () => {
+                            window.location.href = './logout.php';
+                        }
+                    });
+                    return false;
                 };
-                logoutBtn.addEventListener('click', handleLogoutClick);
-                document.addEventListener('click', handleLogoutClick);
             }
 
             // ============================================

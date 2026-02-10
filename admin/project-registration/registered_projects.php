@@ -341,8 +341,9 @@ $db->close();
         document.addEventListener('DOMContentLoaded', function() {
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
-                logoutBtn.addEventListener('click', function(e) {
+                logoutBtn.onclick = function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
                     showConfirmation({
                         title: 'Logout Confirmation',
                         message: 'Are you sure you want to logout?',
@@ -353,7 +354,8 @@ $db->close();
                             window.location.href = '../logout.php';
                         }
                     });
-                });
+                    return false;
+                };
             }
         });
 
