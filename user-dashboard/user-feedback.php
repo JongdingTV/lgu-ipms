@@ -17,7 +17,15 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
         echo json_encode(['success' => false, 'message' => 'Not logged in']);
         exit;
     }
-    $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
+    // Get user info from database
+    $user_id = $_SESSION['user_id'];
+    $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+    $stmt->close();
+    $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         if ($db->connect_error) {
             echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
@@ -48,7 +56,15 @@ $msg = '';
 set_no_cache_headers();
 check_auth();
 check_suspicious_activity();
-$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
+// Get user info from database
+$user_id = $_SESSION['user_id'];
+$stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->bind_param('i', $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+$stmt->close();
+$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
     if ($db->connect_error) {
@@ -69,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         $stmt->close();
     }
 }
+$db->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">

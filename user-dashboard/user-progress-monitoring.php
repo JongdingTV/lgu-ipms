@@ -7,8 +7,23 @@ set_no_cache_headers();
 check_auth();
 check_suspicious_activity();
 
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/config-path.php';
+if ($db->connect_error) {
+    die('Database connection failed: ' . $db->connect_error);
+}
+
+// Get user info from database
+$user_id = $_SESSION['user_id'];
+$stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->bind_param('i', $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+$stmt->close();
+
 // Get user name from session
-$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
+$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
 ?>
 <!doctype html>
 <html>
