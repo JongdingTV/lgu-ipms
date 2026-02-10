@@ -1,22 +1,21 @@
 // User Settings JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Sidebar toggle functionality (shared)
-    const sidebar = document.getElementById('sidebar');
-    const toggleSidebarBtn = document.getElementById('sidebarToggle');
-    const showSidebarBtn = document.getElementById('showSidebarBtn');
+    // Sidebar toggle functionality
+    const toggleSidebar = document.getElementById('toggleSidebar');
     const toggleSidebarShow = document.getElementById('toggleSidebarShow');
+    const navbar = document.getElementById('navbar');
     const body = document.body;
+    const toggleBtn = document.getElementById('showSidebarBtn');
 
-    function toggleSidebarVisibility(e) {
-        if (e) e.preventDefault();
-        sidebar.classList.toggle('active');
+    function toggleSidebarVisibility() {
+        navbar.classList.toggle('hidden');
         body.classList.toggle('sidebar-hidden');
-        if (showSidebarBtn) showSidebarBtn.classList.toggle('show');
+        toggleBtn.classList.toggle('show');
     }
 
-    if (toggleSidebarBtn) {
-        toggleSidebarBtn.addEventListener('click', toggleSidebarVisibility);
+    if (toggleSidebar) {
+        toggleSidebar.addEventListener('click', toggleSidebarVisibility);
     }
     if (toggleSidebarShow) {
         toggleSidebarShow.addEventListener('click', toggleSidebarVisibility);
