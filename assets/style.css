@@ -1,4 +1,22 @@
 /* ============================================
+   LOGOUT BUTTON
+   ============================================ */
+#logoutBtn {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+#logoutBtn svg {
+    pointer-events: none;
+    cursor: pointer;
+}
+
+#logoutBtn span {
+    pointer-events: none;
+    cursor: pointer;
+}
+
+/* ============================================
    GLOBAL STYLES & RESET
    ============================================ */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
