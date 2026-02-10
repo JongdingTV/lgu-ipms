@@ -290,9 +290,16 @@ $db->close();
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    if (confirm('Are you sure you want to logout?')) {
-                        window.location.href = '../logout.php';
-                    }
+                    showConfirmation({
+                        title: 'Logout Confirmation',
+                        message: 'Are you sure you want to logout?',
+                        icon: '👋',
+                        confirmText: 'Logout',
+                        cancelText: 'Cancel',
+                        onConfirm: () => {
+                            window.location.href = '../logout.php';
+                        }
+                    });
                 });
             }
 
