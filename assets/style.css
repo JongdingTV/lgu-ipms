@@ -50,15 +50,19 @@ body::before {
     height: 100vh;
     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
     border-right: 1px solid #e2e8f0;
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     padding: 0;
     z-index: 1000;
     overflow: hidden;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     will-change: transform;
+}
+
+body.sidebar-hidden .nav {
+    transform: translateX(-100%);
 }
 
 .sidebar-nav.hidden,
@@ -82,6 +86,11 @@ body::before {
     padding: 16px 20px;
     border-bottom: 1px solid #e2e8f0;
     flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(30, 58, 95, 0.02) 0%, rgba(44, 82, 130, 0.02) 100%);
+}
+
+.nav-logo:hover {
+    background: linear-gradient(135deg, rgba(30, 58, 95, 0.06) 0%, rgba(44, 82, 130, 0.06) 100%);
 }
 
 .logo-img {
@@ -89,11 +98,13 @@ body::before {
     height: 40px;
     object-fit: contain;
     border-radius: 8px;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    box-shadow: 0 2px 8px rgba(30, 58, 95, 0.1);
 }
 
 .nav-logo:hover .logo-img {
-    transform: scale(1.05);
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(30, 58, 95, 0.2);
 }
 
 .logo-text-wrapper {
@@ -107,12 +118,25 @@ body::before {
     font-size: 1rem;
     font-weight: 700;
     line-height: 1;
+    letter-spacing: 0.3px;
+    transition: color 0.3s ease;
+}
+
+.nav-logo:hover .logo-text {
+    color: #1e3a5f;
 }
 
 .logo-subtitle {
-    color: #64748b;
+    color: #94a3b8;
     font-size: 0.7rem;
     font-weight: 500;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+    text-transform: uppercase;
+}
+
+.nav-logo:hover .logo-subtitle {
+    color: #64748b;
 }
 
 /* Search */
@@ -155,7 +179,7 @@ body::before {
     gap: 6px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 8px 12px;
+    padding: 12px 12px;
     margin: 0;
     flex: 1;
 }
@@ -171,6 +195,7 @@ body::before {
 .nav-links::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 2px;
+    transition: background 0.2s ease;
 }
 
 .nav-links::-webkit-scrollbar-thumb:hover {
@@ -181,29 +206,46 @@ body::before {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 14px;
+    padding: 11px 14px;
     text-decoration: none;
     cursor: pointer;
     color: #475569;
-    transition: all 0.2s ease;
-    border-radius: 6px;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-radius: 8px;
     font-size: 0.9em;
     font-weight: 500;
     white-space: nowrap;
     position: relative;
+    overflow: hidden;
+}
+
+.nav-links a::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(55, 98, 200, 0.1) 0%, rgba(55, 98, 200, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 .nav-links a:hover {
     background: #f0f4ff;
-    color: #3762c8;
-    padding-left: 16px;
+    color: #1e3a5f;
+    padding-left: 18px;
+    box-shadow: inset 1px 0 0 #3762c8;
+}
+
+.nav-links a:hover::before {
+    opacity: 1;
 }
 
 .nav-links a.active {
-    background: linear-gradient(135deg, #3762c8 0%, #2a4b99 100%);
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
     color: #ffffff;
     font-weight: 600;
-    box-shadow: 0 4px 12px rgba(55, 98, 200, 0.3);
+    box-shadow: 0 4px 16px rgba(30, 58, 95, 0.3);
+    transform: translateX(2px);
 }
 
 .nav-links a.active::before {
@@ -226,9 +268,10 @@ body::before {
 
 .nav-divider {
     height: 1px;
-    background: #e2e8f0;
-    margin: 8px 0;
+    background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
+    margin: 12px 0;
     flex-shrink: 0;
+    transition: background 0.3s ease;
 }
 
 .nav-user {
@@ -324,25 +367,39 @@ body::before {
     justify-content: center;
     width: 44px;
     height: 44px;
-    background: #1e3a5f;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
     border: none;
     border-radius: 10px;
-    transition: all 0.25s ease;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     cursor: pointer;
     color: #ffffff;
-    box-shadow: 0 2px 8px rgba(30, 58, 95, 0.2);
+    box-shadow: 0 4px 12px rgba(30, 58, 95, 0.2);
     position: relative;
     overflow: hidden;
 }
 
+.sidebar-toggle-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
 .sidebar-toggle-btn:hover {
-    background: #2c5282;
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3);
+    background: linear-gradient(135deg, #2c5282 0%, #3d6aa6 100%);
+    transform: scale(1.12);
+    box-shadow: 0 6px 16px rgba(30, 58, 95, 0.35);
+}
+
+.sidebar-toggle-btn:hover::before {
+    opacity: 1;
 }
 
 .sidebar-toggle-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.98);
+    box-shadow: 0 2px 6px rgba(30, 58, 95, 0.2);
 }
 
 /* ============================================
@@ -356,6 +413,7 @@ body::before {
     min-height: 100vh;
     width: calc(100% - 250px);
     overflow-y: auto;
+    transition: margin-left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 body.sidebar-hidden .main-content {
