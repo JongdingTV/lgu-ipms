@@ -442,7 +442,13 @@ body::before {
     white-space: nowrap;
 }
 .nav-links a:hover { background: #e8f0ff; color: #3762c8; transform: translateX(4px); }
-.nav-links a.active { background: #3762c8; color: #ffffff; font-weight: 600; transform: translateX(4px); }
+.nav-links a.active {
+    background: #3762c8;
+    color: #ffffff;
+    font-weight: 600;
+    transform: translateX(4px);
+    box-shadow: 0 0 8px #2a4b9933;
+}
 .nav-icon {
     width: 20px;
     height: 20px;

@@ -78,19 +78,6 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'User';
             </div>
             <a href="#" class="nav-logout logout-btn" id="logoutLink" style="background:#ef4444;color:#fff;padding:6px 16px;border-radius:6px;font-weight:500;margin-left:12px;">Logout</a>
         </div>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var logoutLink = document.getElementById('logoutLink');
-            if (logoutLink) {
-                logoutLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (confirm('You will be logged out. Are you sure?')) {
-                        window.location.href = '../logout.php';
-                    }
-                });
-            }
-        });
-        </script>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar">
                 <img src="../dashboard/lgu-arrow-back.png" alt="Toggle sidebar">
