@@ -73,7 +73,7 @@ $db->close();
         <div class="nav-links">
             <a href="dashboard.php" class="active" data-section="dashboard"><img src="dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
             <div class="nav-item-group">
-                <a href="../project-registration/project_registration.php" class="nav-main-item" id="projectRegToggle" data-section="projects"><img src="../project-registration/list.png" class="nav-icon">Projects<span class="dropdown-arrow">▼</span></a>
+                <a href="../project-registration/project_registration.php" class="nav-main-item" id="projectRegToggle" data-section="projects"><img src="../project-registration/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
                     <a href="../project-registration/project_registration.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>New Project</span></a>
                     <a href="../project-registration/registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
