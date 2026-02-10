@@ -37,6 +37,7 @@ $db->close();
     <link rel="stylesheet" href="user-dashboard.css">
     <?php echo get_app_config_script(); ?>
     <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
+    <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -45,8 +46,8 @@ $db->close();
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
-            <a href="user-dashboard.php" class="active"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="../progress-monitoring/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-dashboard.php" class="active"><img src="../admin/dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+            <a href="user-progress-monitoring.php"><img src="../admin/dashboard/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
             <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
             <a href="user-settings.php"><img src="settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </div>
@@ -92,6 +93,20 @@ $db->close();
             </div>
             <a href="#" class="nav-logout logout-btn" id="logoutLink" style="background:#ef4444;color:#fff;padding:6px 16px;border-radius:6px;font-weight:500;margin-left:12px;">Logout</a>
         </div>
+        <script>
+        // Setup logout confirmation for user dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            var logoutLink = document.getElementById('logoutLink');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (confirm('You will be logged out. Are you sure?')) {
+                        window.location.href = '../logout.php';
+                    }
+                });
+            }
+        });
+        </script>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar">
                 <img src="../dashboard/lgu-arrow-back.png" alt="Toggle sidebar">

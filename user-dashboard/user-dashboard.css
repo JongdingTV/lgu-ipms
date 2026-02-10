@@ -409,8 +409,23 @@ body::before {
     padding: 0 15px;
     margin: 0;
     flex: 1;
-    scrollbar-width: auto !important;
-    scrollbar-color: auto !important;
+    background: transparent;
+    scrollbar-width: thin;
+    scrollbar-color: #3762c8 #e8f0ff;
+}
+/* Custom scrollbar for sidebar */
+.nav-links::-webkit-scrollbar {
+    width: 8px;
+    background: #e8f0ff;
+    border-radius: 8px;
+}
+.nav-links::-webkit-scrollbar-thumb {
+    background: #3762c8;
+    border-radius: 8px;
+}
+.nav-links::-webkit-scrollbar-thumb:hover {
+    background: #2a4b99;
+}
 }
 .nav-links a { 
     display: flex;
