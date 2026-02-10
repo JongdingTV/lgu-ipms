@@ -11,24 +11,7 @@ function debounce(func, wait) {
     };
 }
 
-// Optimize event listeners
-const sidebarToggle = () => {
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-};
-
-const toggleBtn1 = document.getElementById('toggleSidebar');
-const toggleBtn2 = document.getElementById('toggleSidebarShow');
-if (toggleBtn1) toggleBtn1.addEventListener('click', (e) => { e.preventDefault(); sidebarToggle(); });
-if (toggleBtn2) toggleBtn2.addEventListener('click', (e) => { e.preventDefault(); sidebarToggle(); });
-const demoProjects = [];
-
-/* Dashboard real-time data integration */
+// Demo fallback data (used when IPMS_DATA is not available)
 function loadDashboardData() {
     // Check if shared data service is available
     if (typeof IPMS_DATA === 'undefined') {
