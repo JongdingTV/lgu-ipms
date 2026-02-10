@@ -15,18 +15,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
         }
         
-        const isHidden = document.body.classList.toggle('sidebar-hidden');
+        // Toggle the sidebar-hidden class on body
+        const isSidebarHidden = document.body.classList.toggle('sidebar-hidden');
         
-        if (showSidebarBtn) {
-            if (isHidden) {
-                showSidebarBtn.classList.add('show');
-            } else {
-                showSidebarBtn.classList.remove('show');
-            }
-        }
+        // The .toggle-btn visibility is now controlled purely by CSS
+        // No need to manually add/remove .show class
     }
 
-    // Attach event listeners
+    // Attach event listeners for both toggle buttons
     if (toggleSidebar) {
         toggleSidebar.addEventListener('click', toggleSidebarVisibility);
     }
