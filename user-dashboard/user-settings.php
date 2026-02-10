@@ -77,72 +77,7 @@ $db->close();
     <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
-    <header class="nav" id="navbar">
-        <div class="nav-logo">
-            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
-            <span class="logo-text">IPMS</span>
-        </div>
-        <div class="nav-links">
-            <a href="user-dashboard.php"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon"> Progress Monitoring</a>
-            <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php" class="active"><img src="settings.png" class="nav-icon"> Settings</a>
-        </div>
-        <div class="nav-user">
-            <?php
-            $profile_img = '';
-            $user_email = isset($user['email']) ? $user['email'] : '';
-            $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : (isset($user['first_name']) ? $user['first_name'] . ' ' . $user['last_name'] : 'User');
-            $initials = '';
-            if ($user_name) {
-                $parts = explode(' ', $user_name);
-                foreach ($parts as $p) {
-                    if ($p) $initials .= strtoupper($p[0]);
-                }
-            }
-            if (!function_exists('stringToColor')) {
-                function stringToColor($str) {
-                    $colors = [
-                        '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-                        '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
-                        '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#607D8B'
-                    ];
-                    $hash = 0;
-                    for ($i = 0; $i < strlen($str); $i++) {
-                        $hash = ord($str[$i]) + (($hash << 5) - $hash);
-                    }
-                    $index = abs($hash) % count($colors);
-                    return $colors[$index];
-                }
-            }
-            $bgcolor = stringToColor($user_name);
-            ?>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:110px;">
-                <?php if ($profile_img): ?>
-                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon">
-                <?php else: ?>
-                    <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                        <?php echo $initials; ?>
-                    </div>
-                <?php endif; ?>
-                <div style="font-weight:600;font-size:1.05em;line-height:1.2;margin-top:2px;"> <?php echo htmlspecialchars($user_name); ?> </div>
-                <div style="font-size:0.97em;color:#64748b;line-height:1.1;"> <?php echo htmlspecialchars($user_email); ?> </div>
-            </div>
-            <a href="#" class="nav-logout logout-btn" id="logoutLink" style="background:#ef4444;color:#fff;padding:6px 16px;border-radius:6px;font-weight:500;margin-left:12px;">Logout</a>
-        </div>
-        <div class="lgu-arrow-back">
-            <a href="#" id="toggleSidebar">
-                <img src="../dashboard/lgu-arrow-back.png" alt="Toggle sidebar">
-            </a>
-        </div>
-    </header>
-
-    <!-- Toggle button to show sidebar -->
-    <div class="toggle-btn" id="showSidebarBtn">
-        <a href="#" id="toggleSidebarShow">
-            <img src="../dashboard/lgu-arrow-right.png" alt="Show sidebar">
-        </a>
-    </div>
+    <?php include 'user-sidebar.php'; ?>
 
     <section class="main-content">
         <div class="dash-header">
