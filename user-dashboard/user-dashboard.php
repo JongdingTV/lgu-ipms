@@ -40,15 +40,18 @@ $db->close();
     <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
-    <header class="nav" id="navbar">
-        <!-- Navbar menu icon - shows when sidebar is hidden -->
-        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
+    <!-- Sidebar toggle button at top left, outside but beside sidebar -->
+    <div class="sidebar-toggle-container" style="position:fixed;top:20px;left:260px;z-index:1100;display:flex;align-items:center;">
+        <button id="sidebarToggleBtn" class="sidebar-toggle-btn" title="Toggle sidebar" style="background:#1e3a8a;color:#fff;border:none;padding:8px 12px;border-radius:8px;display:flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,0.12);">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
+            <span id="sidebarToggleText">Close Sidebar</span>
         </button>
+    </div>
+    <header class="nav" id="navbar">
         <div class="nav-logo">
             <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
@@ -106,24 +109,10 @@ $db->close();
             window.setupLogoutConfirmation && window.setupLogoutConfirmation();
         });
         </script>
-        <a href="#" id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle sidebar">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-        </a>
+        <!-- Removed sidebar toggle button from inside sidebar -->
     </header>
 
-    <!-- Toggle button to show sidebar -->
-    <!-- Toggle button to show sidebar -->
-    <div class="toggle-btn" id="showSidebarBtn">
-        <a href="#" id="toggleSidebarShow" title="Show sidebar">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-        </a>
-    </div>
+    <!-- Removed duplicate toggle button -->
 
     <section class="main-content">
         <div class="dash-header">
