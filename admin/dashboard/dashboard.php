@@ -63,7 +63,7 @@ $db->close();
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
-            <a href="dashboard.php" class="active" data-section="dashboard"><img src="dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
+            <a href="dashboard.php" class="active" data-section="dashboard"><img src="dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
             <div class="nav-item-group">
                 <a href="../project-registration/project_registration.php" class="nav-main-item" id="projectRegToggle" data-section="projects"><img src="../project-registration/list.png" class="nav-icon">Projects<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
@@ -71,9 +71,9 @@ $db->close();
                     <a href="../project-registration/registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
                 </div>
             </div>
-            <a href="../progress-monitoring/progress_monitoring.php" data-section="monitoring"><img src="../progress-monitoring/monitoring.png" class="nav-icon">Monitoring</a>
-            <a href="../budget-resources/budget_resources.php" data-section="budget"><img src="../budget-resources/budget.png" class="nav-icon">Budget</a>
-            <a href="../task-milestone/tasks_milestones.php" data-section="tasks"><img src="../task-milestone/production.png" class="nav-icon">Tasks</a>
+            <a href="../progress-monitoring/progress_monitoring.php" data-section="monitoring"><img src="../progress-monitoring/monitoring.png" class="nav-icon">Progress Monitoring</a>
+            <a href="../budget-resources/budget_resources.php" data-section="budget"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
+            <a href="../task-milestone/tasks_milestones.php" data-section="tasks"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
                 <a href="../contractors/contractors.php" class="nav-main-item" id="contractorsToggle" data-section="contractors"><img src="../contractors/contractors.png" class="nav-icon">Contractors<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
@@ -81,7 +81,7 @@ $db->close();
                     <a href="../contractors/registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
                 </div>
             </div>
-            <a href="../project-prioritization/project-prioritization.php" data-section="priorities"><img src="../project-prioritization/prioritization.png" class="nav-icon">Priorities</a>
+            <a href="../project-prioritization/project-prioritization.php" data-section="priorities"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
             <div class="nav-item-group">
                 <a href="../settings.php" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="userSubmenu">
