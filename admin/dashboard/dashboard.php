@@ -54,15 +54,6 @@ $db->close();
         .nav-submenu-item.active { background: #eff6ff; color: #1e40af; border-left-color: #3b82f6; font-weight: 600; }
         .submenu-icon { font-size: 1.1rem; flex-shrink: 0; }
         .nav-submenu-item span:last-child { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-        /* Admin Icon Dropdown */
-        .nav-user { cursor: pointer; position: relative; }
-        .user-menu-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); min-width: 200px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; overflow: hidden; }
-        .nav-user.open .user-menu-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
-        .user-menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #374151; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; border-bottom: 1px solid #f3f4f6; }
-        .user-menu-item:last-child { border-bottom: none; }
-        .user-menu-item:hover { background: #f3f4f6; color: #1f2937; padding-left: 18px; }
-        .user-menu-item.logout { color: #dc2626; }
-        .user-menu-item.logout:hover { background: #fee2e2; }
     </style>
 </head>
 <body>
@@ -94,64 +85,16 @@ $db->close();
                 </div>
             </div>
             <a href="../project-prioritization/project-prioritization.php" data-section="priorities"><img src="../project-prioritization/prioritization.png" class="nav-icon">Priorities</a>
+            <div class="nav-item-group">
+                <a href="#" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
+                <div class="nav-submenu" id="userSubmenu">
+                    <a href="../change-password.php" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
+                    <a href="../audit-logs.php" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
+                    <a href="../logout.php" class="nav-submenu-item" style="color: #dc2626;"><span class="submenu-icon">🚪</span><span>Logout</span></a>
+                </div>
+            </div>
         </div>
         <div class="nav-divider"></div>
-        <div class="nav-user" id="userMenuToggle">
-            <div class="user-avatar">
-                <img src="person.png" alt="User Icon" class="user-icon">
-            </div>
-            <div class="user-info">
-                <span class="nav-username"><?php echo isset($_SESSION['employee_name']) ? $_SESSION['employee_name'] : 'Admin'; ?></span>
-                <span class="user-role">Administrator</span>
-            </div>
-            <div class="user-menu-dropdown">
-                <a href="../change-password.php" class="user-menu-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 1v6m0 6v6"></path>
-                        <path d="M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24"></path>
-                        <path d="M1 12h6m6 0h6"></path>
-                        <path d="M4.22 19.78l4.24-4.24m5.08-5.08l4.24-4.24"></path>
-                    </svg>
-                    <span>Change Password</span>
-                </a>
-                <a href="../audit-logs.php" class="user-menu-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                    </svg>
-                    <span>Security Logs</span>
-                </a>
-                <a href="../logout.php" class="user-menu-item logout">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                    <span>Logout</span>
-                </a>
-            </div>
-            <div class="nav-quick-actions">
-                <a href="../change-password.php" class="nav-quick-btn" title="Change Password" aria-label="Change Password">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 1v6m0 6v6"></path>
-                        <path d="M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24"></path>
-                        <path d="M1 12h6m6 0h6"></path>
-                        <path d="M4.22 19.78l4.24-4.24m5.08-5.08l4.24-4.24"></path>
-                    </svg>
-                </a>
-                <a href="../audit-logs.php" class="nav-quick-btn" title="Security Logs" aria-label="Security Logs">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                    </svg>
-                </a>
-                <a href="../logout.php" class="nav-quick-btn logout" title="Logout" aria-label="Logout">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                </a>
-            </div>
-        </div>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle sidebar">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -434,6 +377,8 @@ $db->close();
             const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
             const contractorsToggle = document.getElementById('contractorsToggle');
             const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
+            const userMenuToggle = document.getElementById('userMenuToggle');
+            const userMenuGroup = userMenuToggle ? userMenuToggle.closest('.nav-item-group') : null;
             
             if (projectRegToggle && projectRegGroup) {
                 projectRegToggle.addEventListener('click', function(e) {
@@ -441,6 +386,7 @@ $db->close();
                     e.stopPropagation();
                     projectRegGroup.classList.toggle('open');
                     if (contractorsGroup) contractorsGroup.classList.remove('open');
+                    if (userMenuGroup) userMenuGroup.classList.remove('open');
                 });
             }
             
@@ -450,6 +396,17 @@ $db->close();
                     e.stopPropagation();
                     contractorsGroup.classList.toggle('open');
                     if (projectRegGroup) projectRegGroup.classList.remove('open');
+                    if (userMenuGroup) userMenuGroup.classList.remove('open');
+                });
+            }
+
+            if (userMenuToggle && userMenuGroup) {
+                userMenuToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    userMenuGroup.classList.toggle('open');
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
                 });
             }
             
@@ -457,6 +414,7 @@ $db->close();
                 if (!e.target.closest('.nav-item-group')) {
                     if (projectRegGroup) projectRegGroup.classList.remove('open');
                     if (contractorsGroup) contractorsGroup.classList.remove('open');
+                    if (userMenuGroup) userMenuGroup.classList.remove('open');
                 }
             });
             
@@ -465,31 +423,7 @@ $db->close();
                     e.stopPropagation();
                     if (projectRegGroup) projectRegGroup.classList.remove('open');
                     if (contractorsGroup) contractorsGroup.classList.remove('open');
-                });
-            });
-
-            // ============================================
-            // USER MENU TOGGLE
-            // ============================================
-            const userMenuToggle = document.getElementById('userMenuToggle');
-            if (userMenuToggle) {
-                userMenuToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    userMenuToggle.classList.toggle('open');
-                });
-            }
-
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('#userMenuToggle')) {
-                    if (userMenuToggle) userMenuToggle.classList.remove('open');
-                }
-            });
-
-            document.querySelectorAll('.user-menu-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (userMenuToggle) userMenuToggle.classList.remove('open');
+                    if (userMenuGroup) userMenuGroup.classList.remove('open');
                 });
             });
         });
