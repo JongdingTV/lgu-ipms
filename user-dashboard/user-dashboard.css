@@ -994,11 +994,11 @@ body.sidebar-hidden .nav {
 
 /* Recent Projects */
 .recent-projects {
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 16px;
-    padding: 25px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    margin-bottom: 30px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(250,252,255,0.99));
+    border-radius: 14px;
+    padding: 18px 16px 20px 16px;
+    box-shadow: 0 10px 30px rgba(12,18,34,0.04);
+    margin-bottom: 28px;
     transition: all 0.3s ease;
     position: relative;
     z-index: 1;
@@ -1011,8 +1011,9 @@ body.sidebar-hidden .nav {
 
 .recent-projects h3 {
     color: #1e3a8a;
-    margin-bottom: 15px;
-    font-size: 1.1em;
+    margin-bottom: 12px;
+    font-size: 1.08em;
+    font-weight: 600;
 }
 
 .projects-table {
@@ -1303,33 +1304,36 @@ html,body{overflow-x:hidden}
 }
 .pm-controls {
     display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 14px;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 .pm-left{flex:1}
 .pm-left input[type="search"]{
-  width:100%;
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid rgba(16,24,40,0.06);
-  background:#fff;
-  font-size:.95rem;
+    width:100%;
+    padding:8px 12px;
+    border-radius:8px;
+    border:1px solid rgba(16,24,40,0.08);
+    background:#fff;
+    font-size:.97rem;
+    box-shadow: 0 1px 2px rgba(16,24,40,0.03);
 }
 .pm-right {
     display: flex;
     gap: 8px;
-    align-items: center;
+    align-items: flex-end;
 }
 .pm-right select, .pm-right button {
-    padding: 8px 12px;
+    padding: 7px 12px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border-radius: 7px;
     background: #ffffff;
     color: #374151;
-    font-size: 0.9rem;
+    font-size: 0.97em;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(.4,1,.7,1);
+    margin-bottom: 0;
 }
 .pm-right button {
     background: linear-gradient(90deg, #2563eb, #1e3a8a);
