@@ -873,7 +873,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 		<div class="container">
 			<h2>Ready to Get Started?</h2>
 			<p>Join thousands of communities managing infrastructure efficiently</p>
-			<a href="/admin/index.php" class="btn-cta">
+			<a href="/user-dashboard/user-login.php" class="btn-cta">
 				<i class="fas fa-arrow-right"></i> Access Portal Now
 			</a>
 		</div>
