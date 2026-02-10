@@ -578,7 +578,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 	<nav class="navbar navbar-expand-lg sticky-top">
 		<div class="container-fluid">
 			<a class="navbar-brand" href="/">
-				<i class="fas fa-building"></i>
+				<img src="/logocityhall.png" alt="City Hall Logo" style="height: 40px; margin-right: 8px;">
 				LGU IPMS
 			</a>
 			<button class="navbar-toggler bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
