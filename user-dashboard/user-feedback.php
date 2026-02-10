@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         </div>
         <div class="nav-links">
             <a href="user-dashboard.php"><img src="../admin/dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="../admin/dashboard/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-progress-monitoring.php" class="active"><img src="../admin/progress-monitoring/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
             <a href="user-feedback.php" class="active"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
             <a href="user-settings.php"><img src="settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </div>
@@ -138,15 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         </div>
         <script>
         document.addEventListener('DOMContentLoaded', function() {
-            var logoutLink = document.getElementById('logoutLink');
-            if (logoutLink) {
-                logoutLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (confirm('You will be logged out. Are you sure?')) {
-                        window.location.href = '../logout.php';
-                    }
-                });
-            }
+            window.setupLogoutConfirmation && window.setupLogoutConfirmation();
         });
         </script>
         <div class="lgu-arrow-back">
