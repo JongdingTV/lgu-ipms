@@ -186,7 +186,7 @@ if (isset($db) && !$db->connect_error) {
         <div style="padding: 10px 16px; margin-top: auto;">
             <a href="#" id="logoutBtn" style="display: flex; align-items: center; gap: 8px; color: #dc2626; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; padding: 10px 16px; border-radius: 6px;" 
                onmouseover="this.style.background='#fee2e2'; this.style.paddingLeft='18px';" 
-               onmouseout="this.style.background='none'; this.style.paddingLeft='16px';"
+               onmouseout="this.style.background='none'; this.style.paddingLeft='16px';">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                     <polyline points="16 17 21 12 16 7"></polyline>
@@ -326,6 +326,7 @@ if (isset($db) && !$db->connect_error) {
     </footer>
 
     <script>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             // ============================================
             // LOGOUT CONFIRMATION
@@ -350,7 +351,6 @@ if (isset($db) && !$db->connect_error) {
             // ============================================
             // DROPDOWN NAVIGATION
             // ============================================
-            const projectRegToggle = document.getElementById('projectRegToggle');
             const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
             const contractorsToggle = document.getElementById('contractorsToggle');
             const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
