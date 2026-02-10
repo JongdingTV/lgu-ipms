@@ -144,42 +144,39 @@ if (isset($db) && !$db->connect_error) {
     <header class="nav" id="navbar">
         <div class="nav-logo">
             <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
-            <div class="logo-text-wrapper">
-                <span class="logo-text">IPMS</span>
-                <span class="logo-subtitle">Admin Dashboard</span>
-            </div>
+            <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
-            <a href="/admin/dashboard/dashboard.php" data-section="dashboard"><img src="/admin/dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
+            <a href="./dashboard/dashboard.php" data-section="dashboard"><img src="./dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard</a>
             <div class="nav-item-group">
-                <a href="/admin/project-registration/project_registration.php" class="nav-main-item" id="projectRegToggle" data-section="projects"><img src="/admin/project-registration/list.png" class="nav-icon">Projects<span class="dropdown-arrow">▼</span></a>
+                <a href="./project-registration/project_registration.php" class="nav-main-item" id="projectRegToggle" data-section="projects"><img src="./project-registration/list.png" class="nav-icon">Projects<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
-                    <a href="/admin/project-registration/project_registration.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>New Project</span></a>
-                    <a href="/admin/project-registration/registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
+                    <a href="./project-registration/project_registration.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>New Project</span></a>
+                    <a href="./project-registration/registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
                 </div>
             </div>
-            <a href="/admin/progress-monitoring/progress_monitoring.php" data-section="monitoring"><img src="/admin/progress-monitoring/monitoring.png" class="nav-icon">Monitoring</a>
-            <a href="/admin/budget-resources/budget_resources.php" data-section="budget"><img src="/admin/budget-resources/budget.png" class="nav-icon">Budget</a>
-            <a href="/admin/task-milestone/tasks_milestones.php" data-section="tasks"><img src="/admin/task-milestone/production.png" class="nav-icon">Tasks</a>
+            <a href="./progress-monitoring/progress_monitoring.php" data-section="monitoring"><img src="./progress-monitoring/monitoring.png" class="nav-icon">Monitoring</a>
+            <a href="./budget-resources/budget_resources.php" data-section="budget"><img src="./budget-resources/budget.png" class="nav-icon">Budget</a>
+            <a href="./task-milestone/tasks_milestones.php" data-section="tasks"><img src="./task-milestone/production.png" class="nav-icon">Tasks</a>
             <div class="nav-item-group">
-                <a href="/admin/contractors/contractors.php" class="nav-main-item" id="contractorsToggle" data-section="contractors"><img src="/admin/contractors/contractors.png" class="nav-icon">Contractors<span class="dropdown-arrow">▼</span></a>
+                <a href="./contractors/contractors.php" class="nav-main-item" id="contractorsToggle" data-section="contractors"><img src="./contractors/contractors.png" class="nav-icon">Contractors<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="/admin/contractors/contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Contractor</span></a>
-                    <a href="/admin/contractors/registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
+                    <a href="./contractors/contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Contractor</span></a>
+                    <a href="./contractors/registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
                 </div>
             </div>
-            <a href="/admin/project-prioritization/project-prioritization.php" data-section="priorities"><img src="/admin/project-prioritization/prioritization.png" class="nav-icon">Priorities</a>
+            <a href="./project-prioritization/project-prioritization.php" data-section="priorities"><img src="./project-prioritization/prioritization.png" class="nav-icon">Priorities</a>
             <div class="nav-item-group">
-                <a href="/admin/settings.php" class="nav-main-item active" id="userMenuToggle" data-section="user"><img src="/admin/dashboard/person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
+                <a href="./settings.php" class="nav-main-item active" id="userMenuToggle" data-section="user"><img src="./dashboard/person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="userSubmenu">
-                    <a href="/admin/settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
-                    <a href="/admin/settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
+                    <a href="./settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
+                    <a href="./settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
                 </div>
             </div>
         </div>
         <div class="nav-divider"></div>
         <div style="padding: 10px 16px; margin-top: auto;">
-            <a href="/admin/logout.php" style="display: flex; align-items: center; gap: 8px; color: #dc2626; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; padding: 10px 16px; border-radius: 6px;" 
+            <a href="./logout.php" style="display: flex; align-items: center; gap: 8px; color: #dc2626; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; padding: 10px 16px; border-radius: 6px;" 
                onmouseover="this.style.background='#fee2e2'; this.style.paddingLeft='18px';" 
                onmouseout="this.style.background='none'; this.style.paddingLeft='16px';">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
