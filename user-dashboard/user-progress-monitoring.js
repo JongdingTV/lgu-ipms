@@ -1,26 +1,23 @@
-document.getElementById('toggleSidebar').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
+// Sidebar toggle functionality (shared)
+const sidebar = document.getElementById('sidebar');
+const toggleSidebarBtn = document.getElementById('sidebarToggle');
+const showSidebarBtn = document.getElementById('showSidebarBtn');
+const toggleSidebarShow = document.getElementById('toggleSidebarShow');
+const body = document.body;
 
-document.getElementById('toggleSidebarShow').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
-    
-    navbar.classList.toggle('hidden');
-    body.classList.toggle('sidebar-hidden');
-    toggleBtn.classList.toggle('show');
-});
+function toggleSidebarVisibility(e) {
+  if (e) e.preventDefault();
+  sidebar.classList.toggle('active');
+  body.classList.toggle('sidebar-hidden');
+  if (showSidebarBtn) showSidebarBtn.classList.toggle('show');
+}
+
+if (toggleSidebarBtn) {
+  toggleSidebarBtn.addEventListener('click', toggleSidebarVisibility);
+}
+if (toggleSidebarShow) {
+  toggleSidebarShow.addEventListener('click', toggleSidebarVisibility);
+}
 
 /* Progress monitoring logic - fetches from database */
 const projectsKey = 'projects';

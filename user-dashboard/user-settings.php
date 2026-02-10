@@ -65,30 +65,9 @@ $db->close();
 <html lang="en">
 <head>
     <link rel="stylesheet" href="/assets/style.css">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - User Dashboard</title>
-    <link rel="icon" type="image/png" href="../logocityhall.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="user-dashboard.css">
-    <?php echo get_app_config_script(); ?>
-    <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
-</head>
-<body>
-    <header class="nav" id="navbar">
-        <div class="nav-logo">
-            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
-            <span class="logo-text">IPMS</span>
-        </div>
-        <div class="nav-links">
-            <a href="user-dashboard.php"><img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon"> Progress Monitoring</a>
-            <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php" class="active"><img src="settings.png" class="nav-icon"> Settings</a>
-        </div>
-        <div class="nav-user">
+    <link rel="stylesheet" href="/assets/css/sidebar.css">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
             <?php
             $profile_img = '';
             $user_email = isset($user['email']) ? $user['email'] : '';
@@ -117,20 +96,35 @@ $db->close();
             }
             $bgcolor = stringToColor($user_name);
             ?>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:110px;">
-                <?php if ($profile_img): ?>
-                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon">
-                <?php else: ?>
-                    <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                        <?php echo $initials; ?>
-                    </div>
-                <?php endif; ?>
-                <div style="font-weight:600;font-size:1.05em;line-height:1.2;margin-top:2px;"> <?php echo htmlspecialchars($user_name); ?> </div>
-                <div style="font-size:0.97em;color:#64748b;line-height:1.1;"> <?php echo htmlspecialchars($user_email); ?> </div>
-            </div>
-            <a href="#" class="nav-logout logout-btn" id="logoutLink" style="background:#ef4444;color:#fff;padding:6px 16px;border-radius:6px;font-weight:500;margin-left:12px;">Logout</a>
+            <?php if ($profile_img): ?>
+                <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon">
+            <?php else: ?>
+                <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    <?php echo $initials; ?>
+                </div>
+            <?php endif; ?>
+            <div class="user-name"><?php echo htmlspecialchars($user_name); ?></div>
+            <div class="user-email"><?php echo htmlspecialchars($user_email); ?></div>
         </div>
-        <div class="lgu-arrow-back">
+        <ul class="sidebar-menu">
+            <li><a href="user-dashboard.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'user-dashboard.php') ? 'active' : ''; ?>">
+                <img src="../dashboard/dashboard.png" alt="Dashboard Icon" class="icon"> Dashboard Overview</a></li>
+            <li><a href="user-progress-monitoring.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'user-progress-monitoring.php') ? 'active' : ''; ?>">
+                <img src="../progress-monitoring/monitoring.png" alt="Progress Monitoring" class="icon"> Progress Monitoring</a></li>
+            <li><a href="user-feedback.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'user-feedback.php') ? 'active' : ''; ?>">
+                <img src="feedback.png" alt="Feedback Icon" class="icon"> Feedback</a></li>
+            <li><a href="user-settings.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'user-settings.php') ? 'active' : ''; ?>">
+                <img src="settings.png" alt="Settings Icon" class="icon"> Settings</a></li>
+        </ul>
+        <button class="sidebar-toggle-btn" id="sidebarToggle" aria-label="Toggle sidebar">
+            <img src="../dashboard/lgu-arrow-back.png" alt="Toggle sidebar">
+        </button>
+    </aside>
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow">
+            <img src="../dashboard/lgu-arrow-right.png" alt="Show sidebar">
+        </a>
+    </div>
             <a href="#" id="toggleSidebar">
                 <img src="../dashboard/lgu-arrow-back.png" alt="Toggle sidebar">
             </a>

@@ -22,21 +22,22 @@ document.addEventListener('DOMContentLoaded', renderUserFeedbackTable);
 // User Dashboard JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Sidebar toggle functionality
-    const toggleSidebar = document.getElementById('toggleSidebar');
+    // Sidebar toggle functionality (shared)
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebarBtn = document.getElementById('sidebarToggle');
+    const showSidebarBtn = document.getElementById('showSidebarBtn');
     const toggleSidebarShow = document.getElementById('toggleSidebarShow');
-    const navbar = document.getElementById('navbar');
     const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
 
-    function toggleSidebarVisibility() {
-        navbar.classList.toggle('hidden');
+    function toggleSidebarVisibility(e) {
+        if (e) e.preventDefault();
+        sidebar.classList.toggle('active');
         body.classList.toggle('sidebar-hidden');
-        toggleBtn.classList.toggle('show');
+        if (showSidebarBtn) showSidebarBtn.classList.toggle('show');
     }
 
-    if (toggleSidebar) {
-        toggleSidebar.addEventListener('click', toggleSidebarVisibility);
+    if (toggleSidebarBtn) {
+        toggleSidebarBtn.addEventListener('click', toggleSidebarVisibility);
     }
     if (toggleSidebarShow) {
         toggleSidebarShow.addEventListener('click', toggleSidebarVisibility);
