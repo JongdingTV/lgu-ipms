@@ -374,7 +374,7 @@ body::before {
     flex-direction: column;
     justify-content: space-between;
     padding: 20px 0;
-    z-index: 1000;
+    z-index: 2002;
     overflow-y: auto;
     overflow-x: hidden;
     transition: transform 0.3s ease;
@@ -412,21 +412,30 @@ body::before {
     background: transparent;
     scrollbar-width: thin;
     scrollbar-color: #3762c8 #e8f0ff;
+    position: relative;
+    z-index: 2003;
 }
 /* Custom scrollbar for sidebar */
-.nav-links::-webkit-scrollbar {
-    width: 8px;
+.main-content::-webkit-scrollbar,
+.recent-projects::-webkit-scrollbar,
+.feedback-review::-webkit-scrollbar {
+    width: 10px;
     background: #e8f0ff;
-    border-radius: 8px;
+    z-index: 2005 !important;
 }
-.nav-links::-webkit-scrollbar-thumb {
+.main-content::-webkit-scrollbar-thumb,
+.recent-projects::-webkit-scrollbar-thumb,
+.feedback-review::-webkit-scrollbar-thumb {
     background: #3762c8;
     border-radius: 8px;
+    z-index: 2006 !important;
 }
-.nav-links::-webkit-scrollbar-thumb:hover {
+.main-content::-webkit-scrollbar-thumb:hover,
+.recent-projects::-webkit-scrollbar-thumb:hover,
+.feedback-review::-webkit-scrollbar-thumb:hover {
     background: #2a4b99;
 }
-}
+
 .nav-links a { 
     display: flex;
     align-items: center;
@@ -578,19 +587,7 @@ body.sidebar-hidden .nav {
 }
 
 /* Feedback Review Section */
-.feedback-review {
-    margin: 40px auto 0;
-    max-width: 900px;
-    position: relative;
-    z-index: 1;
-}
 
-.feedback-review h3 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #2563eb;
-    margin-bottom: 18px;
-}
 
 /* SUMMARY STATS */
 .summary-section { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.05); }
