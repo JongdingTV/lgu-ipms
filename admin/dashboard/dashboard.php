@@ -86,10 +86,10 @@ $db->close();
             </div>
             <a href="../project-prioritization/project-prioritization.php" data-section="priorities"><img src="../project-prioritization/prioritization.png" class="nav-icon">Priorities</a>
             <div class="nav-item-group">
-                <a href="#" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
+                <a href="../settings.php" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="userSubmenu">
-                    <a href="../change-password.php" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
-                    <a href="../audit-logs.php" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
+                    <a href="../settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
+                    <a href="../settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
                     <a href="../logout.php" class="nav-submenu-item" style="color: #dc2626;"><span class="submenu-icon">🚪</span><span>Logout</span></a>
                 </div>
             </div>
