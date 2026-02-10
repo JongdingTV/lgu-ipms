@@ -258,8 +258,9 @@ $db->close();
 
         <!-- Quick Stats -->
         <div class="feedback-review" style="margin:40px auto 0;max-width:900px;">
-            <h3 style="font-size:1.2rem;font-weight:600;color:#2563eb;margin-bottom:18px;">Your Feedback Review</h3>
-            <table class="projects-table" style="width:100%;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.07);overflow:hidden;">
+        <div class="feedback-review recent-projects">
+            <h3>Your Feedback Review</h3>
+            <table class="projects-table">
                 <thead style="background:#f1f5f9;">
                     <tr>
                         <th style="padding:12px 8px;font-weight:600;color:#1e3a8a;">Control No.</th>
