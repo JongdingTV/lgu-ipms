@@ -314,11 +314,26 @@ $db->close();
             </div>
             
             <a href="../project-prioritization/project-prioritization.php"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
+            <div class="nav-item-group">
+                <a href="../settings.php" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="../dashboard/person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
+                <div class="nav-submenu" id="userSubmenu">
+                    <a href="../settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
+                    <a href="../settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
+                </div>
+            </div>
         </div>
-        <div class="nav-user">
-            <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
-            <span class="nav-username">Welcome <?php echo isset($_SESSION['employee_name']) ? $_SESSION['employee_name'] : 'Admin'; ?></span>
-            <a href="../index.php" class="nav-logout">Logout</a>
+        <div class="nav-divider"></div>
+        <div style="padding: 10px 16px; margin-top: auto;">
+            <a href="../logout.php" style="display: flex; align-items: center; gap: 8px; color: #dc2626; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; padding: 10px 16px; border-radius: 6px;" 
+               onmouseover="this.style.background='#fee2e2'; this.style.paddingLeft='18px';" 
+               onmouseout="this.style.background='none'; this.style.paddingLeft='16px';">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
+            </a>
         </div>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar">
