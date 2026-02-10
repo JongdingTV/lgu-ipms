@@ -62,7 +62,32 @@ body::before {
 }
 
 body.sidebar-hidden .nav {
-    transform: translateX(-100%);
+    width: 100px;
+    justify-content: flex-start;
+    padding: 0;
+}
+
+body.sidebar-hidden .nav-logo {
+    padding: 16px 12px;
+    justify-content: center;
+    border-bottom: none;
+}
+
+body.sidebar-hidden .logo-text,
+body.sidebar-hidden .logo-subtitle {
+    display: none;
+}
+
+body.sidebar-hidden .nav-links,
+body.sidebar-hidden .nav-search-container,
+body.sidebar-hidden .nav-divider,
+body.sidebar-hidden .nav-user,
+body.sidebar-hidden .lgu-arrow-back {
+    display: none;
+}
+
+body.sidebar-hidden .sidebar-toggle-btn {
+    display: none;
 }
 
 .sidebar-nav.hidden,
@@ -417,12 +442,13 @@ body.sidebar-hidden .nav {
 }
 
 body.sidebar-hidden .main-content {
-    margin-left: 0;
-    width: 100%;
+    margin-left: 100px;
+    width: calc(100% - 100px);
 }
 
 body.sidebar-hidden .nav {
-    transform: translateX(-100%);
+    width: 100px;
+}
 }
 
 .page-title {
@@ -464,7 +490,23 @@ body.sidebar-hidden .nav {
 }
 
 .toggle-btn {
-    display: none !important;
+    position: fixed;
+    top: 16px;
+    left: 12px;
+    z-index: 999;
+    width: 64px;
+    height: 64px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+body.sidebar-hidden .toggle-btn,
+.toggle-btn.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .toggle-btn a {
