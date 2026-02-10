@@ -136,6 +136,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
             </div>
             <a href="#" class="nav-logout logout-btn" id="logoutLink" style="background:#ef4444;color:#fff;padding:6px 16px;border-radius:6px;font-weight:500;margin-left:12px;">Logout</a>
         </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.setupLogoutConfirmation && window.setupLogoutConfirmation();
+        });
+        </script>
         <div class="lgu-arrow-back">
             <a href="#" id="toggleSidebar">
                 <img src="../dashboard/lgu-arrow-back.png" alt="Toggle sidebar">
