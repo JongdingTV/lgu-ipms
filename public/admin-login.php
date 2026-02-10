@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $result['user_id'];
         $_SESSION['user_type'] = 'employee';
         $_SESSION['email'] = $result['email'];
-        header('Location: /admin/index.php');
+        header('Location: /admin/dashboard/dashboard.php');
         exit();
     } else {
         $error = $result['message'];
