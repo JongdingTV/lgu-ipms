@@ -51,7 +51,7 @@ $db->close();
 <body>
     <header class="nav" id="navbar">
         <!-- Sidebar toggle button at the far top left -->
-        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar" style="position:fixed;top:16px;left:16px;z-index:1201;background:#fff;border-radius:50%;box-shadow:0 2px 8px rgba(30,58,138,0.08);padding:8px 10px;display:flex;align-items:center;justify-content:center;">
+        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
