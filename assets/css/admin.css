@@ -4768,6 +4768,33 @@ body {
     color: #fff;
 }
 
+/* Admin login page: disable blur overlay and provide home button */
+body.admin-login-page::before {
+    display: none !important;
+    backdrop-filter: none !important;
+    background: transparent !important;
+}
+
+body.admin-login-page .home-btn {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: #1e3a5f;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+    z-index: 120;
+}
+
+body.admin-login-page .home-btn:hover {
+    background: #2c5282;
+}
+
 
 
 

@@ -232,10 +232,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="stylesheet" href="../assets/css/admin.css">
 </head>
 
-<body>
+<body class="admin-login-page">
 
 <header class="nav">
     <div class="nav-logo"><img src="../logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
+    <a href="../public/index.php" class="home-btn" aria-label="Go to Home">Home</a>
 </header>
 
 <div class="wrapper">
