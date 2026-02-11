@@ -7,7 +7,7 @@
 session_start();
 
 // DATABASE CONNECTION
-require_once __DIR__ . '/database.php';
+require_once dirname(__DIR__) . '/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['employee_id'])) {
@@ -362,6 +362,7 @@ if ($result) {
 <script src="../assets/js/admin.js"></script>
 </body>
 </html>
+
 
 
 

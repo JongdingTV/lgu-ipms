@@ -3,9 +3,9 @@
 session_start();
 
 // Include configuration and database files first
-require __DIR__ . '/database.php';
-require __DIR__ . '/session-auth.php';
-require __DIR__ . '/config-path.php';
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/session-auth.php';
+require dirname(__DIR__) . '/config-path.php';
 
 // Add no-cache headers to prevent cached login page from being shown after logout
 set_no_cache_headers();
@@ -304,6 +304,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <script src="../assets/js/admin.js"></script>
 </body>
 </html>
+
 
 
 

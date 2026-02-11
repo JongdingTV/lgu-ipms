@@ -3,11 +3,11 @@
 session_start();
 
 // Include configuration and database files first
-require __DIR__ . '/database.php';
-require __DIR__ . '/config-path.php';
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/config-path.php';
 
 // Load email configuration
-require_once __DIR__ . '/config/email.php';
+require_once dirname(__DIR__) . '/config/email.php';
 
 $error = '';
 $success = '';
@@ -28,9 +28,9 @@ function send_reset_email($email, $employee_name, $reset_token) {
         error_log('Email: ' . $email);
         
         // Load PHPMailer
-        require_once __DIR__ . '/vendor/PHPMailer/PHPMailer.php';
-        require_once __DIR__ . '/vendor/PHPMailer/SMTP.php';
-        require_once __DIR__ . '/vendor/PHPMailer/Exception.php';
+        require_once dirname(__DIR__) . '/vendor/PHPMailer/PHPMailer.php';
+        require_once dirname(__DIR__) . '/vendor/PHPMailer/SMTP.php';
+        require_once dirname(__DIR__) . '/vendor/PHPMailer/Exception.php';
         
         error_log('PHPMailer loaded');
         
@@ -418,6 +418,7 @@ if (isset($db)) {
     <script src="../assets/js/admin.js"></script>
 </body>
 </html>
+
 
 
 

@@ -1,7 +1,7 @@
 <?php
 // Admin logout - redirects to admin login page
-require __DIR__ . '/session-auth.php';
-require __DIR__ . '/database.php';
+require dirname(__DIR__) . '/session-auth.php';
+require dirname(__DIR__) . '/database.php';
 
 // Log the logout event
 log_security_event('ADMIN_LOGOUT', 'Admin user successfully logged out');
@@ -20,6 +20,7 @@ set_no_cache_headers();
 header('Location: /admin/index.php?logout=1');
 exit;
 ?>
+
 
 
 

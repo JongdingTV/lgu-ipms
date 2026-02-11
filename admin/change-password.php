@@ -3,8 +3,8 @@
 session_start();
 
 // Include configuration and database files first
-require __DIR__ . '/database.php';
-require __DIR__ . '/config-path.php';
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/config-path.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['employee_id'])) {
@@ -220,6 +220,7 @@ if (isset($db)) {
     <script src="../assets/js/admin.js"></script>
 </body>
 </html>
+
 
 
 
