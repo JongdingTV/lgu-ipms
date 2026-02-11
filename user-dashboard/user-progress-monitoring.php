@@ -31,13 +31,13 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Progress Monitoring - User View</title>
-    <link rel="icon" type="image/png" href="../logocityhall.png">
+    <link rel="icon" type="image/png" href="/logocityhall.png">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/style.css">
     <link rel="stylesheet" href="user-dashboard.css">
-    <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
+    <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -50,7 +50,7 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
             </svg>
         </button>
         <div class="nav-logo">
-            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
@@ -186,8 +186,8 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
 
 
 
-    <script src="../shared-data.js"></script>
-    <script src="../shared-toggle.js"></script>
+    <script src="/assets/js/shared/shared-data.js"></script>
+    <script src="/assets/js/shared/shared-toggle.js"></script>
     <script src="user-progress-monitoring.js"></script>
     <script>
     (function() {
@@ -197,3 +197,6 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
     </script>
 </body>
 </html>
+
+
+

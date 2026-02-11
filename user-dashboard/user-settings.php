@@ -68,13 +68,13 @@ $db->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - User Dashboard</title>
-    <link rel="icon" type="image/png" href="../logocityhall.png">
+    <link rel="icon" type="image/png" href="/logocityhall.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="user-dashboard.css">
     <?php echo get_app_config_script(); ?>
-    <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
+    <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -87,7 +87,7 @@ $db->close();
             </svg>
         </button>
         <div class="nav-logo">
-            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
@@ -279,8 +279,8 @@ $db->close();
 
 
 
-    <script src="../shared-data.js"></script>
-    <script src="../shared-toggle.js"></script>
+    <script src="/assets/js/shared/shared-data.js"></script>
+    <script src="/assets/js/shared/shared-toggle.js"></script>
     <script src="user-settings.js"></script>
     <script>
     (function() {
@@ -290,3 +290,6 @@ $db->close();
     </script>
 </body>
 </html>
+
+
+

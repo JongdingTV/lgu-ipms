@@ -70,13 +70,13 @@ if (isset($_POST['login_submit'])) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LGU | Login</title>
-<link rel="icon" type="image/png" href="/assets/logocityhall.png">
+<link rel="icon" type="image/png" href="/logocityhall.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/admin/style - Copy.css">
+<link rel="stylesheet" href="/assets/css/shared/admin-auth.css">
 <?php echo get_app_config_script(); ?>
-<script src="security-no-back.js?v=<?php echo time(); ?>"></script>
+<script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body class="user-login-page">
 <!-- Blur overlay -->
@@ -258,3 +258,4 @@ body::before {
 
 </body>
 </html>
+

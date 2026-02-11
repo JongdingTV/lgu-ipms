@@ -27,7 +27,7 @@ $asset_url = '/assets';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-    <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
+    <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
     <style>
         * {
             margin: 0;
@@ -351,3 +351,6 @@ $asset_url = '/assets';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+
+

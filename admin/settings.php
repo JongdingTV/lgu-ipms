@@ -115,7 +115,7 @@ if (isset($db) && !$db->connect_error) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <?php echo get_app_config_script(); ?>
-    <script src="/security-no-back.js?v=<?php echo time(); ?>"></script>
+    <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
     <style>
         .nav-item-group { position: relative; display: inline-block; }
         .nav-main-item { display: flex !important; align-items: center; gap: 8px; padding: 10px 16px !important; color: #374151; text-decoration: none; font-weight: 500; font-size: 0.95rem; transition: all 0.2s ease; border-radius: 6px; cursor: pointer; white-space: nowrap; }
@@ -429,7 +429,9 @@ if (isset($db) && !$db->connect_error) {
         }
     </script>
 
-    <script src="/shared-data.js"></script>
-    <script src="/shared-toggle.js"></script>
+    <script src="/assets/js/shared/shared-data.js"></script>
+    <script src="/assets/js/shared/shared-toggle.js"></script>
 </body>
 </html>
+
+

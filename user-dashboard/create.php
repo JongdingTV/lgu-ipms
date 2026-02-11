@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
 <!-- Removed <link rel="stylesheet" href="/assets/style.css"> -->
 <?php echo get_app_config_script(); ?>
-<script src="security-no-back.js?v=<?php echo time(); ?>"></script>
+<script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
 *, *::before, *::after {
     box-sizing: border-box;
@@ -887,3 +887,4 @@ showStep(currentStep);
 </style>
 </body>
 </html>
+

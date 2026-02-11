@@ -161,12 +161,12 @@ $db->close();
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Registered Contractors - LGU IPMS</title>
-    <link rel="icon" type="image/png" href="../logocityhall.png">
+    <link rel="icon" type="image/png" href="/logocityhall.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <?php echo get_app_config_script(); ?>
-    <script src="../security-no-back.js?v=<?php echo time(); ?>"></script>
+    <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
     <style>
         /* Dropdown Navigation Styling */
         .nav-item-group {
@@ -434,7 +434,7 @@ $db->close();
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
 
-    <script src="../shared-data.js?v=1"></script>
+    <script src="/assets/js/shared/shared-data.js?v=1"></script>
     <script>
         // ============================================
         // LOGOUT CONFIRMATION
@@ -1035,7 +1035,9 @@ $db->close();
             </div>
         </div>
     </div>
-    <script src="../shared-data.js?v=1"></script>
-    <script src="../shared-toggle.js"></script>
+    <script src="/assets/js/shared/shared-toggle.js"></script>
 </body>
 </html>
+
+
+

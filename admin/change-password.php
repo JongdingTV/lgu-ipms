@@ -138,7 +138,7 @@ if (isset($db)) {
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/admin/style%20-%20Copy.css">
 <?php echo get_app_config_script(); ?>
-<script src="/security-no-back.js?v=<?php echo time(); ?>"></script>
+<script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
 
 body {
@@ -276,3 +276,5 @@ body::before {
 
 </body>
 </html>
+
+
