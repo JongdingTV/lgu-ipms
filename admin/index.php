@@ -352,7 +352,7 @@ body::before {
 
         </form>
         <?php else: ?>
-            <p>Redirecting to dashboard...</p>
+            <?php header('Location: /admin/dashboard/dashboard.php'); exit; ?>
         <?php endif; ?>
     </div>
 </div>

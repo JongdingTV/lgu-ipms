@@ -578,7 +578,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 	<nav class="navbar navbar-expand-lg sticky-top">
 		<div class="container-fluid">
 			<a class="navbar-brand" href="/">
-				<i class="fas fa-building"></i>
+				<img src="/logocityhall.png" alt="City Hall Logo" style="height: 40px; margin-right: 8px;">
 				LGU IPMS
 			</a>
 			<button class="navbar-toggler bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -593,7 +593,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 						<a class="nav-link" href="#about"><i class="fas fa-info-circle"></i> About</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="/admin/index.php"><i class="fas fa-sign-in-alt"></i> Login</a>
+						<a class="nav-link" href="/user-dashboard/user-login.php"><i class="fas fa-sign-in-alt"></i> Login</a>
 					</li>
 				</ul>
 			</div>
@@ -603,7 +603,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 	<!-- Hero Section -->
 	<section class="hero">
 		<div class="hero-content">
-			<h1><i class="fas fa-rocket"></i> Welcome to IPMS</h1>
+			<h1><img src="/logocityhall.png" alt="City Hall Logo" style="height: 60px; margin-right: 10px; vertical-align: middle;"> Welcome to IPMS</h1>
 			<p class="subtitle">Manage projects, track progress, and serve your community with modern technology</p>
 			<div class="hero-buttons">
 				<a href="/user-dashboard/user-login.php" class="btn-primary-custom btn-citizen">
@@ -873,7 +873,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 		<div class="container">
 			<h2>Ready to Get Started?</h2>
 			<p>Join thousands of communities managing infrastructure efficiently</p>
-			<a href="/admin/index.php" class="btn-cta">
+			<a href="/user-dashboard/user-login.php" class="btn-cta">
 				<i class="fas fa-arrow-right"></i> Access Portal Now
 			</a>
 		</div>

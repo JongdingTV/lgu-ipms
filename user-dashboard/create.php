@@ -68,8 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt = $db->prepare("INSERT INTO users (first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param('ssssssssssssss', $first_name, $middle_name, $last_name, $suffix, $email, $mobile, $birthdate, $gender, $civil_status, $address, $id_type, $id_number, $id_upload, $hashed_password);
         if ($stmt->execute()) {
-            header('Location: login.php?success=1');
-            exit;
+            $account_created = true;
         } else {
             $errors[] = 'Registration failed.';
         }
@@ -88,30 +87,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/style.css">
 <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
+<!-- Removed <link rel="stylesheet" href="/assets/style.css"> -->
 <?php echo get_app_config_script(); ?>
 <script src="security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
 *, *::before, *::after {
     box-sizing: border-box;
-}
-body.signup-page {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: url('/cityhall.jpeg') center/cover no-repeat fixed;
-    position: relative;
-    padding-top: 80px;
-}
-body.signup-page::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: inherit;
-    filter: blur(10px) brightness(0.95);
-    z-index: 0;
-    pointer-events: none;
 }
 .nav, .wrapper, .footer { position: relative; z-index: 1; }
 .nav { width:100%;position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(30,58,95,0.04);overflow-x:visible; }
@@ -181,14 +163,7 @@ body.signup-page::before {
     .footer {
         font-size: 0.91em;
         padding: 8px 0 2px 0;
-        flex-direction: column !important;
-        align-items: center !important;
-    }
-    .footer-links { gap: 10px; flex-direction: row; justify-content: center; }
-    .footer-logo { font-size: 0.89em; margin-top: 2px; }
-    .card .icon-top { height: 40px; }
-}
-html, body { height: 100%; margin: 0; }
+    <!-- Removed embedded <style> block -->
 body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
 .wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
 html, body { height: 100%; margin: 0; overflow-x: hidden; }
@@ -198,6 +173,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
 </style>
 </head>
 <body class="signup-page" style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
+<body>
 <!-- Removed problematic blur overlay -->
 
 <header class="nav">
@@ -371,7 +347,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
                             <div class="file-upload-wrapper">
                                 <input type="file" id="idUpload" name="idUpload" class="file-upload-input" accept=".jpg,.jpeg,.png" />
                                 <label for="idUpload" class="file-upload-label">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="height:28px;width:28px;vertical-align:middle;margin-right:8px;">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                                     </svg>
                                     <span id="uploadText">Click to upload or drag & drop</span>
@@ -420,13 +396,38 @@ body { min-height: 100vh; display: flex; flex-direction: column; justify-content
             </div>
         </form>
 
-        <?php if (!empty($errors)): ?>
-        <div style="color:#b00; margin-top:12px;">
-            <?php foreach ($errors as $error): ?>
-            <div><?php echo $error; ?></div>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
+
+                <?php if (!empty($errors)): ?>
+                <div style="color:#b00; margin-top:12px;">
+                    <?php foreach ($errors as $error): ?>
+                    <div><?php echo $error; ?></div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if (isset($account_created) && $account_created): ?>
+                <div id="successMessage" style="color:#155724;background:#d4edda;border:1px solid #c3e6cb;padding:18px 16px;margin:18px 0 0 0;border-radius:6px;text-align:center;font-size:1.1em;">
+                    <strong>Account created successfully!</strong><br>
+                    Redirecting to login in <span id="countdown">10</span> seconds...<br>
+                    <a href="user-login.php" style="color:#2864ef;text-decoration:underline;">Click here if not redirected</a>
+                </div>
+                <script>
+                // Remove any localStorage data related to registration (precaution)
+                try {
+                    localStorage.clear();
+                } catch(e){}
+                let seconds = 10;
+                const countdownEl = document.getElementById('countdown');
+                const interval = setInterval(function() {
+                    seconds--;
+                    if (countdownEl) countdownEl.textContent = seconds;
+                    if (seconds <= 0) {
+                        clearInterval(interval);
+                        window.location.href = 'user-login.php';
+                    }
+                }, 1000);
+                </script>
+                <?php endif; ?>
 
         <p class="small-text">Already have an account? <a href="login.php">Sign in here</a></p>
     </div>
@@ -467,10 +468,37 @@ function setPwdFill(score){
     const pct = Math.round((score / 4) * 100);
     if(pwdFill){
         pwdFill.style.width = pct + '%';
-        if(score <= 1) pwdFill.style.background = 'linear-gradient(90deg,#ff4d4f,#ff7a59)';
-        else if(score === 2) pwdFill.style.background = 'linear-gradient(90deg,#ffb86b,#ffd54a)';
-        else if(score === 3) pwdFill.style.background = 'linear-gradient(90deg,#cddc39,#8bc34a)';
-        else pwdFill.style.background = 'linear-gradient(90deg,#7be495,#4caf50)';
+        pwdFill.style.transition = 'width 0.3s, background 0.3s';
+        if(score <= 1) {
+            pwdFill.style.background = 'linear-gradient(90deg,#ff4d4f,#ff7a59)';
+            pwdFill.style.boxShadow = '0 0 8px 2px #ff4d4f55';
+            pwdFill.style.borderRadius = '8px';
+        } else if(score === 2) {
+            pwdFill.style.background = 'linear-gradient(90deg,#ffb86b,#ffd54a)';
+            pwdFill.style.boxShadow = '0 0 8px 2px #ffd54a55';
+            pwdFill.style.borderRadius = '8px';
+        } else if(score === 3) {
+            pwdFill.style.background = 'linear-gradient(90deg,#cddc39,#8bc34a)';
+            pwdFill.style.boxShadow = '0 0 8px 2px #8bc34a55';
+            pwdFill.style.borderRadius = '8px';
+        } else {
+            pwdFill.style.background = 'linear-gradient(90deg,#7be495,#4caf50)';
+            pwdFill.style.boxShadow = '0 0 16px 4px #4caf5099, 0 0 8px 2px #7be49599';
+            pwdFill.style.borderRadius = '8px';
+        }
+    }
+    if(meter){
+        meter.style.display = 'block';
+        meter.value = score;
+    }
+    // Animate bar shake if weak, pulse if strong
+    const bar = document.querySelector('.pwd-bar');
+    if(bar && score <= 1){
+        bar.classList.add('shake');
+        setTimeout(()=>bar.classList.remove('shake'),420);
+    } else if(bar && score === 4) {
+        bar.classList.add('pulse');
+        setTimeout(()=>bar.classList.remove('pulse'),600);
     }
 }
 
@@ -482,7 +510,6 @@ if(pwdInput){
         if(/[A-Z]/.test(val)) score++;
         if(/[0-9]/.test(val)) score++;
         if(/[^A-Za-z0-9]/.test(val)) score++;
-        if(meter) meter.value = score;
         setPwdFill(score);
     });
 }
@@ -710,23 +737,24 @@ function validateStep(step) {
     if(step === 4) {
         // File validation
         const idUploadFile = document.getElementById('idUpload').files[0] || null;
-        
-        if(idUploadFile && idUploadFile.size > 5 * 1024 * 1024){
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> ID file must be less than 5MB.';
-            msgEl.style.display = 'block';
-            markInvalid(uploadLabel);
-            return false;
-        }
-        
-        if(idUploadFile && !['image/jpeg', 'image/png'].includes(idUploadFile.type)){
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> ID file must be JPG or PNG.';
-            msgEl.style.display = 'block';
-            markInvalid(uploadLabel);
-            return false;
+        // Only check if a file is selected
+        if(idUploadFile) {
+            if(idUploadFile.size > 5 * 1024 * 1024){
+                msgEl.style.backgroundColor = '#fee'; 
+                msgEl.style.color = '#c00';
+                msgEl.innerHTML = '<strong>⚠️</strong> ID file must be less than 5MB.';
+                msgEl.style.display = 'block';
+                markInvalid(uploadLabel);
+                return false;
+            }
+            if(!['image/jpeg', 'image/png'].includes(idUploadFile.type)){
+                msgEl.style.backgroundColor = '#fee'; 
+                msgEl.style.color = '#c00';
+                msgEl.innerHTML = '<strong>⚠️</strong> ID file must be JPG or PNG.';
+                msgEl.style.display = 'block';
+                markInvalid(uploadLabel);
+                return false;
+            }
         }
     }
     
@@ -841,5 +869,21 @@ function handleSubmit(e) {
 // Initialize
 showStep(currentStep);
 </script>
+<style>
+/* Add this to your CSS (or in a <style> block): */
+.pwd-bar.shake { animation: shake 0.42s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-8px); }
+  40%, 60% { transform: translateX(8px); }
+}
+.pwd-bar.pulse { animation: pulse 0.6s cubic-bezier(.4,0,.6,1) both; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 #4caf5099; }
+  70% { box-shadow: 0 0 16px 8px #4caf5099; }
+  100% { box-shadow: 0 0 0 0 #4caf5099; }
+}
+</style>
 </body>
 </html>

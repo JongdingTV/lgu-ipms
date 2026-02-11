@@ -23,26 +23,20 @@ define('SESSION_TIMEOUT', 30 * 60); // 30 minutes in seconds
  * Validates session, checks timeout, and verifies user exists
  */
 function check_auth() {
-    // Check if session has an employee_id
-    if (!isset($_SESSION['employee_id'])) {
-        // Not authenticated - redirect to login
+    // Check if session has a user_id (for citizen) or employee_id (for admin/employee)
+    if (!isset($_SESSION['user_id']) && !isset($_SESSION['employee_id'])) {
         header('Location: ' . get_login_url());
         exit();
     }
-    
-    // Check session timeout
+    // Session timeout
     if (isset($_SESSION['last_activity'])) {
         $idle_time = time() - $_SESSION['last_activity'];
-        
         if ($idle_time > SESSION_TIMEOUT) {
-            // Session expired
             destroy_session();
             header('Location: ' . get_login_url() . '?expired=1');
             exit();
         }
     }
-    
-    // Update last activity timestamp
     $_SESSION['last_activity'] = time();
 }
 
@@ -71,7 +65,7 @@ function get_login_url() {
     
     if ($user_type === 'employee' || strpos($request_uri, '/admin') !== false) {
         // Admin/Employee login
-        return $protocol . $host . '/public/admin-login.php';
+        return $protocol . $host . '/admin/index.php';
     } else {
         // Citizen/User login
         return $protocol . $host . '/user-dashboard/user-login.php';

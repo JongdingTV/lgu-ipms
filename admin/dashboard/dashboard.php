@@ -58,55 +58,74 @@ $db->close();
 </head>
 <body>
     <header class="nav" id="navbar">
+        <!-- Navbar menu icon - shows when sidebar is hidden -->
+        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
         <div class="nav-logo">
             <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
-            <a href="dashboard.php" class="active"><img src="dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+            <a href="dashboard.php" class="active" data-section="dashboard"><img src="dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
             <div class="nav-item-group">
-                <a href="../project-registration/project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../project-registration/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">▼</span></a>
+                <a href="../project-registration/project_registration.php" class="nav-main-item" id="projectRegToggle" data-section="projects"><img src="../project-registration/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
                     <a href="../project-registration/project_registration.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>New Project</span></a>
-                    <a href="../project-registration/registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Projects</span></a>
+                    <a href="../project-registration/registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
                 </div>
             </div>
-            <a href="../progress-monitoring/progress_monitoring.php"><img src="../progress-monitoring/monitoring.png" class="nav-icon">Progress Monitoring</a>
-            <a href="../budget-resources/budget_resources.php"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
-            <a href="../task-milestone/tasks_milestones.php"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
+            <a href="../progress-monitoring/progress_monitoring.php" data-section="monitoring"><img src="../progress-monitoring/monitoring.png" class="nav-icon">Progress Monitoring</a>
+            <a href="../budget-resources/budget_resources.php" data-section="budget"><img src="../budget-resources/budget.png" class="nav-icon">Budget & Resources</a>
+            <a href="../task-milestone/tasks_milestones.php" data-section="tasks"><img src="../task-milestone/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
-                <a href="../contractors/contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../contractors/contractors.png" class="nav-icon">Contractors<span class="dropdown-arrow">▼</span></a>
+                <a href="../contractors/contractors.php" class="nav-main-item" id="contractorsToggle" data-section="contractors"><img src="../contractors/contractors.png" class="nav-icon">Contractors<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
                     <a href="../contractors/contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Contractor</span></a>
-                    <a href="../contractors/registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Contractors</span></a>
+                    <a href="../contractors/registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
                 </div>
             </div>
-            <a href="../project-prioritization/project-prioritization.php"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
-        </div>
-        <div class="nav-user">
-            <img src="person.png" alt="User Icon" class="user-icon">
-            <span class="nav-username">Welcome <?php echo isset($_SESSION['employee_name']) ? $_SESSION['employee_name'] : 'Admin'; ?></span>
-            <div style="display: flex; gap: 10px;">
-                <a href="../change-password.php" class="nav-logout" style="background: #3498db; margin: 0;" title="Change Password">
-                    <i class="fas fa-key" style="margin-right: 4px;"></i> Change Password
-                </a>
-                <a href="../audit-logs.php" class="nav-logout" style="background: #27ae60; margin: 0;" title="View Security Logs">
-                    <i class="fas fa-shield-alt" style="margin-right: 4px;"></i> Security
-                </a>
-                <a href="../logout.php" class="nav-logout">Logout</a>
+            <a href="../project-prioritization/project-prioritization.php" data-section="priorities"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
+            <div class="nav-item-group">
+                <a href="../settings.php" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
+                <div class="nav-submenu" id="userSubmenu">
+                    <a href="../settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
+                    <a href="../settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
+                </div>
             </div>
         </div>
-        <div class="lgu-arrow-back">
-            <a href="#" id="toggleSidebar">
-                <img src="lgu-arrow-back.png" alt="Toggle sidebar">
+        <div class="nav-divider"></div>
+        <div style="padding: 10px 16px; margin-top: auto;">
+            <a href="#" id="logoutBtn" style="display: flex; align-items: center; gap: 8px; color: #dc2626; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; padding: 10px 16px; border-radius: 6px; cursor: pointer; pointer-events: auto;" 
+               onmouseover="this.style.background='#fee2e2'; this.style.paddingLeft='18px';" 
+               onmouseout="this.style.background='none'; this.style.paddingLeft='16px';">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
             </a>
         </div>
+        <a href="#" id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </a>
     </header>
 
     <!-- Toggle button to show sidebar -->
     <div class="toggle-btn" id="showSidebarBtn">
-        <a href="#" id="toggleSidebarShow">
-            <img src="lgu-arrow-right.png" alt="Show sidebar">
+        <a href="#" id="toggleSidebarShow" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
         </a>
     </div>
 
@@ -142,11 +161,19 @@ $db->close();
                     <span class="metric-status">On schedule</span>
                 </div>
             </div>
-            <div class="metric-card card">
+            <div class="metric-card card" id="budgetCard" data-budget="<?php echo number_format($totalBudget, 2); ?>">
                 <img src="budget.png" alt="Total Budget" class="metric-icon">
                 <div class="metric-content">
                     <h3>Total Budget</h3>
-                    <p class="metric-value">₱<?php echo number_format($totalBudget, 2); ?></p>
+                    <div style="display: flex; align-items: center; gap: 8px; position: relative; z-index: 100; min-height: 32px;">
+                        <p class="metric-value" id="budgetValue" style="margin-bottom: 0; font-size: 1.4em; flex-wrap: wrap; word-wrap: break-word; white-space: normal; line-height: 1.3;">●●●●●●●●</p>
+                        <span id="budgetVisibilityToggle" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; color: #666; transition: all 0.2s ease; opacity: 0.7; pointer-events: auto; z-index: 101; position: relative; flex-shrink: 0;" title="Hold to reveal budget">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events: none;">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </span>
+                    </div>
                     <span class="metric-status">Allocated funds</span>
                 </div>
             </div>
@@ -255,47 +282,193 @@ $db->close();
     </footer>
 
     <script>
-        // Dropdown toggle handlers - run immediately
-        const projectRegToggle = document.getElementById('projectRegToggle');
-        const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
-        const contractorsToggle = document.getElementById('contractorsToggle');
-        const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
-        
-        if (projectRegToggle && projectRegGroup) {
-            projectRegToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                projectRegGroup.classList.toggle('open');
-                if (contractorsGroup) contractorsGroup.classList.remove('open');
-            });
-        }
-        
-        if (contractorsToggle && contractorsGroup) {
-            contractorsToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                contractorsGroup.classList.toggle('open');
-                if (projectRegGroup) projectRegGroup.classList.remove('open');
-            });
-        }
-        
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.nav-item-group')) {
-                if (projectRegGroup) projectRegGroup.classList.remove('open');
-                if (contractorsGroup) contractorsGroup.classList.remove('open');
+        document.addEventListener('DOMContentLoaded', function() {
+            // ============================================
+            // LOGOUT CONFIRMATION
+            // ============================================
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showConfirmation({
+                        title: 'Logout Confirmation',
+                        message: 'Are you sure you want to logout?',
+                        icon: '👋',
+                        confirmText: 'Logout',
+                        cancelText: 'Cancel',
+                        onConfirm: () => {
+                            window.location.href = '../logout.php';
+                        }
+                    });
+                    return false;
+                };
             }
-        });
-        
-        document.querySelectorAll('.nav-submenu-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (projectRegGroup) projectRegGroup.classList.remove('open');
-                if (contractorsGroup) contractorsGroup.classList.remove('open');
+
+            // ============================================
+            // NAVBAR SEARCH FUNCTIONALITY
+            // ============================================
+            const navSearch = document.getElementById('navSearch');
+            const navLinks = document.querySelector('.nav-links');
+            
+            if (navSearch && navLinks) {
+                navSearch.addEventListener('input', function(e) {
+                    const query = e.target.value.toLowerCase();
+                    const links = navLinks.querySelectorAll('a');
+                    
+                    links.forEach(link => {
+                        const text = link.textContent.toLowerCase();
+                        const parent = link.closest('.nav-item-group') || link.parentElement;
+                        
+                        if (text.includes(query)) {
+                            parent.style.display = '';
+                            if (link.classList.contains('nav-main-item')) {
+                                link.closest('.nav-item-group').querySelector('.nav-submenu').style.display = 'block';
+                            }
+                        } else if (query && !text.includes(query)) {
+                            parent.style.display = 'none';
+                        } else if (!query) {
+                            parent.style.display = '';
+                            if (link.classList.contains('nav-main-item')) {
+                                link.closest('.nav-item-group').querySelector('.nav-submenu').style.display = 'none';
+                            }
+                        }
+                    });
+                });
+            }
+
+            // ============================================
+            // BUDGET VISIBILITY TOGGLE
+            // ============================================
+            const budgetCard = document.getElementById('budgetCard');
+            const budgetValue = document.getElementById('budgetValue');
+            const budgetBtn = document.getElementById('budgetVisibilityToggle');
+            let budgetRevealTimer;
+            let isRevealing = false;
+
+            if (budgetBtn && budgetValue && budgetCard) {
+                // Add hover styles
+                budgetBtn.addEventListener('mouseenter', function() {
+                    this.style.color = '#333';
+                    this.style.opacity = '1';
+                });
+                
+                budgetBtn.addEventListener('mouseleave', function() {
+                    if (!isRevealing) {
+                        this.style.color = '#666';
+                        this.style.opacity = '0.7';
+                    }
+                });
+                
+                // Mouse down - start timer
+                budgetBtn.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startReveal();
+                });
+                
+                // Touch start
+                budgetBtn.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startReveal();
+                });
+                
+                // Mouse up - end reveal
+                document.addEventListener('mouseup', function() {
+                    endReveal();
+                });
+                
+                // Touch end
+                document.addEventListener('touchend', function() {
+                    endReveal();
+                });
+                
+                function startReveal() {
+                    clearTimeout(budgetRevealTimer);
+                    budgetRevealTimer = setTimeout(() => {
+                        if (!isRevealing) {
+                            isRevealing = true;
+                            const actualBudget = budgetCard.getAttribute('data-budget');
+                            budgetValue.textContent = '₱' + actualBudget;
+                            budgetBtn.style.color = '#3b82f6';
+                            budgetBtn.style.opacity = '1';
+                        }
+                    }, 300);
+                }
+
+                function endReveal() {
+                    clearTimeout(budgetRevealTimer);
+                    if (isRevealing) {
+                        isRevealing = false;
+                        budgetValue.textContent = '●●●●●●●●';
+                        budgetBtn.style.color = '#666';
+                        budgetBtn.style.opacity = '0.7';
+                    }
+                }
+            }
+
+            // ============================================
+            // DROPDOWN NAVIGATION
+            // ============================================
+            const projectRegToggle = document.getElementById('projectRegToggle');
+            const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
+            const contractorsToggle = document.getElementById('contractorsToggle');
+            const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
+            const userMenuToggle = document.getElementById('userMenuToggle');
+            const userMenuGroup = userMenuToggle ? userMenuToggle.closest('.nav-item-group') : null;
+            
+            if (projectRegToggle && projectRegGroup) {
+                projectRegToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    projectRegGroup.classList.toggle('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
+                    if (userMenuGroup) userMenuGroup.classList.remove('open');
+                });
+            }
+            
+            if (contractorsToggle && contractorsGroup) {
+                contractorsToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    contractorsGroup.classList.toggle('open');
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                    if (userMenuGroup) userMenuGroup.classList.remove('open');
+                });
+            }
+
+            if (userMenuToggle && userMenuGroup) {
+                userMenuToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    userMenuGroup.classList.toggle('open');
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
+                });
+            }
+            
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.nav-item-group')) {
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
+                    if (userMenuGroup) userMenuGroup.classList.remove('open');
+                }
+            });
+            
+            document.querySelectorAll('.nav-submenu-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (projectRegGroup) projectRegGroup.classList.remove('open');
+                    if (contractorsGroup) contractorsGroup.classList.remove('open');
+                    if (userMenuGroup) userMenuGroup.classList.remove('open');
+                });
             });
         });
     </script>
 
     <script src="../../shared-data.js"></script>
+    <script src="../../shared-toggle.js"></script>
     <script src="dashboard.js"></script>
 </body>
 </html>

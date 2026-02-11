@@ -104,6 +104,14 @@ $db->close();
 </head>
 <body>
     <header class="nav" id="navbar">
+        <!-- Navbar menu icon - shows when sidebar is hidden -->
+        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
         <div class="nav-logo">
             <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
@@ -128,22 +136,42 @@ $db->close();
                 </div>
             </div>
             <a href="../project-prioritization/project-prioritization.php"><img src="../project-prioritization/prioritization.png" class="nav-icon">Project Prioritization</a>
+            <div class="nav-item-group">
+                <a href="../settings.php" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="../dashboard/person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
+                <div class="nav-submenu" id="userSubmenu">
+                    <a href="../settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
+                    <a href="../settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
+                </div>
+            </div>
         </div>
-        <div class="nav-user">
-            <img src="../dashboard/person.png" alt="User Icon" class="user-icon">
-            <span class="nav-username">Welcome <?php echo isset($_SESSION['employee_name']) ? $_SESSION['employee_name'] : 'Admin'; ?></span>
-            <a href="../index.php" class="nav-logout">Logout</a>
-        </div>
-        <div class="lgu-arrow-back">
-            <a href="#" id="toggleSidebar">
-                <img src="../dashboard/lgu-arrow-back.png" alt="Toggle sidebar">
+        <div class="nav-divider"></div>
+        <div style="padding: 10px 16px; margin-top: auto;">
+            <a href="#" id="logoutBtn" style="display: flex; align-items: center; gap: 8px; color: #dc2626; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; padding: 10px 16px; border-radius: 6px; cursor: pointer; pointer-events: auto;" 
+               onmouseover="this.style.background='#fee2e2'; this.style.paddingLeft='18px';" 
+               onmouseout="this.style.background='none'; this.style.paddingLeft='16px';">>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
             </a>
         </div>
+        <a href="#" id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </a>
     </header>
 
+    <!-- Toggle button to show sidebar -->
     <div class="toggle-btn" id="showSidebarBtn">
-        <a href="#" id="toggleSidebarShow">
-            <img src="../dashboard/lgu-arrow-right.png" alt="Show sidebar">
+        <a href="#" id="toggleSidebarShow" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
         </a>
     </div>
 
@@ -273,6 +301,30 @@ $db->close();
     </footer>
 
     <script>
+        // ============================================
+        // LOGOUT CONFIRMATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showConfirmation({
+                        title: 'Logout Confirmation',
+                        message: 'Are you sure you want to logout?',
+                        icon: '👋',
+                        confirmText: 'Logout',
+                        cancelText: 'Cancel',
+                        onConfirm: () => {
+                            window.location.href = '../logout.php';
+                        }
+                    });
+                    return false;
+                };
+            }
+        });
+
         // Dropdown toggle handlers - run immediately
         const projectRegToggle = document.getElementById('projectRegToggle');
         const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
@@ -314,6 +366,7 @@ $db->close();
     </script>
 
     <script src="../shared-data.js?v=<?php echo time(); ?>"></script>
+    <script src="../shared-toggle.js"></script>
     <script src="progress-monitoring.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

@@ -1,3 +1,20 @@
+/* Force sidebar toggle button to top left */
+.navbar-menu-icon {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 3001 !important;
+    background: #fff;
+    border-radius: 0 0 8px 0;
+    box-shadow: 0 2px 8px rgba(30,58,138,0.08);
+    padding: 8px 12px 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    margin: 0;
+}
 /* --- CREATE ACCOUNT STEP FORM FIXES --- */
 .wrapper {
     display: flex;
@@ -333,7 +350,7 @@
     .modern-feedback-form .form-row { flex-direction: column; gap: 0; }
 }
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600,700&display=swap');
-html { overflow-y: scroll; }
+html { overflow-y: auto !important; }
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
 body { 
     height: 100vh;
@@ -374,7 +391,7 @@ body::before {
     flex-direction: column;
     justify-content: space-between;
     padding: 20px 0;
-    z-index: 1000;
+    z-index: 2002;
     overflow-y: auto;
     overflow-x: hidden;
     transition: transform 0.3s ease;
@@ -409,7 +426,33 @@ body::before {
     padding: 0 15px;
     margin: 0;
     flex: 1;
+    background: transparent;
+    scrollbar-width: thin;
+    scrollbar-color: #3762c8 #e8f0ff;
+    position: relative;
+    z-index: 2003;
 }
+/* Custom scrollbar for sidebar */
+.main-content::-webkit-scrollbar,
+.recent-projects::-webkit-scrollbar,
+.feedback-review::-webkit-scrollbar {
+    width: 10px;
+    background: #e8f0ff;
+    z-index: 2005 !important;
+}
+.main-content::-webkit-scrollbar-thumb,
+.recent-projects::-webkit-scrollbar-thumb,
+.feedback-review::-webkit-scrollbar-thumb {
+    background: #3762c8;
+    border-radius: 8px;
+    z-index: 2006 !important;
+}
+.main-content::-webkit-scrollbar-thumb:hover,
+.recent-projects::-webkit-scrollbar-thumb:hover,
+.feedback-review::-webkit-scrollbar-thumb:hover {
+    background: #2a4b99;
+}
+
 .nav-links a { 
     display: flex;
     align-items: center;
@@ -425,7 +468,13 @@ body::before {
     white-space: nowrap;
 }
 .nav-links a:hover { background: #e8f0ff; color: #3762c8; transform: translateX(4px); }
-.nav-links a.active { background: #3762c8; color: #ffffff; font-weight: 600; transform: translateX(4px); }
+.nav-links a.active {
+    background: #3762c8;
+    color: #ffffff;
+    font-weight: 600;
+    transform: translateX(4px);
+    box-shadow: 0 0 8px #2a4b9933;
+}
 .nav-icon {
     width: 20px;
     height: 20px;
@@ -555,19 +604,7 @@ body.sidebar-hidden .nav {
 }
 
 /* Feedback Review Section */
-.feedback-review {
-    margin: 40px auto 0;
-    max-width: 900px;
-    position: relative;
-    z-index: 1;
-}
 
-.feedback-review h3 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #2563eb;
-    margin-bottom: 18px;
-}
 
 /* SUMMARY STATS */
 .summary-section { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.05); }
@@ -623,23 +660,7 @@ body.sidebar-hidden .nav {
 }
 
 /* Custom scrollbar for nav-links only */
-.nav-links::-webkit-scrollbar {
-    width: 4px;
-}
-
-.nav-links::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 2px;
-}
-
-.nav-links::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-}
-
-.nav-links::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
+/* Remove custom nav-links scrollbar, use default */
 
 /* Removed duplicate nav-links styles - using the ones above that match admin */
 
@@ -977,24 +998,24 @@ body.sidebar-hidden .nav {
 
 .progress-bar {
     width: 100%;
-    height: 20px;
+    height: 8px;
     background: #e5e7eb;
-    border-radius: 10px;
+    border-radius: 4px;
     overflow: hidden;
 }
 
 .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
 }
 
 /* Recent Projects */
 .recent-projects {
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 16px;
-    padding: 25px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    margin-bottom: 30px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(250,252,255,0.99));
+    border-radius: 14px;
+    padding: 18px 16px 20px 16px;
+    box-shadow: 0 10px 30px rgba(12,18,34,0.04);
+    margin-bottom: 28px;
     transition: all 0.3s ease;
     position: relative;
     z-index: 1;
@@ -1007,8 +1028,9 @@ body.sidebar-hidden .nav {
 
 .recent-projects h3 {
     color: #1e3a8a;
-    margin-bottom: 15px;
-    font-size: 1.1em;
+    margin-bottom: 12px;
+    font-size: 1.08em;
+    font-weight: 600;
 }
 
 .projects-table {
@@ -1299,33 +1321,36 @@ html,body{overflow-x:hidden}
 }
 .pm-controls {
     display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 14px;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 .pm-left{flex:1}
 .pm-left input[type="search"]{
-  width:100%;
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid rgba(16,24,40,0.06);
-  background:#fff;
-  font-size:.95rem;
+    width:100%;
+    padding:8px 12px;
+    border-radius:8px;
+    border:1px solid rgba(16,24,40,0.08);
+    background:#fff;
+    font-size:.97rem;
+    box-shadow: 0 1px 2px rgba(16,24,40,0.03);
 }
 .pm-right {
     display: flex;
     gap: 8px;
-    align-items: center;
+    align-items: flex-end;
 }
 .pm-right select, .pm-right button {
-    padding: 8px 12px;
+    padding: 7px 12px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border-radius: 7px;
     background: #ffffff;
     color: #374151;
-    font-size: 0.9rem;
+    font-size: 0.97em;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(.4,1,.7,1);
+    margin-bottom: 0;
 }
 .pm-right button {
     background: linear-gradient(90deg, #2563eb, #1e3a8a);
