@@ -49,21 +49,19 @@ function get_login_url() {
     
     // Determine if we're in a subdirectory
     $request_uri = $_SERVER['REQUEST_URI'];
-    $known_dirs = ['dashboard', 'contractors', 'project-registration', 'progress-monitoring', 
-                   'budget-resources', 'task-milestone', 'project-prioritization', 'user-dashboard'];
-    
-    $in_subdirectory = false;
-    foreach ($known_dirs as $dir) {
+    $employee_dirs = ['dashboard', 'contractors', 'project-registration', 'progress-monitoring', 
+                      'budget-resources', 'task-milestone', 'project-prioritization'];
+    $is_employee_route = false;
+    foreach ($employee_dirs as $dir) {
         if (strpos($request_uri, '/' . $dir . '/') !== false) {
-            $in_subdirectory = true;
+            $is_employee_route = true;
             break;
         }
     }
-    
     // Build login URL based on user type
     $user_type = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : '';
     
-    if ($user_type === 'employee' || strpos($request_uri, '/admin') !== false) {
+    if ($user_type === 'employee' || strpos($request_uri, '/admin') !== false || $is_employee_route) {
         // Admin/Employee login
         return $protocol . $host . '/admin/index.php';
     } else {
@@ -267,3 +265,6 @@ function check_suspicious_activity() {
     }
 }
 ?>
+
+
+

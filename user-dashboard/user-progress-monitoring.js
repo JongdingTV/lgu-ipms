@@ -27,7 +27,7 @@ const projectsKey = 'projects';
 
 async function getProjects() {
     try {
-        const response = await fetch(getApiUrl('progress-monitoring/progress_monitoring.php?action=load_projects'));
+        const response = await fetch(getApiUrl('admin/progress_monitoring.php?action=load_projects'));
         if (response.ok) {
             const projects = await response.json();
             return projects;

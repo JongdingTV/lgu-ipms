@@ -7,7 +7,7 @@ require_once __DIR__ . '/../includes/auth.php';
 session_start();
 
 if (isset($_SESSION['employee_id']) && $_SESSION['user_type'] === 'employee') {
-    header('Location: /admin/dashboard/dashboard.php');
+    header('Location: ../admin/dashboard.php');
     exit();
 }
 
@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_type'] = 'employee';
         $_SESSION['last_activity'] = time();
         $_SESSION['login_time'] = time();
-        header('Location: /admin/dashboard/dashboard.php');
+        header('Location: ../admin/dashboard.php');
         exit();
     } else {
         $error = $result['error'] ?? 'Invalid credentials';
@@ -52,3 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </body>
 </html>
+
+
+
+
+

@@ -3,8 +3,8 @@
 session_start();
 
 // Include configuration and database files first
-require dirname(__DIR__) . '/database.php';
-require dirname(__DIR__) . '/config-path.php';
+require __DIR__ . '/database.php';
+require __DIR__ . '/config-path.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['employee_id'])) {
@@ -132,94 +132,37 @@ if (isset($db)) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Change Password - LGU Employee Portal</title>
-<link rel="icon" type="image/png" href="/logocityhall.png">
+<link rel="icon" type="image/png" href="../logocityhall.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/admin/style%20-%20Copy.css">
-<?php echo get_app_config_script(); ?>
-<script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
-<style>
 
-body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: url("/cityhall.jpeg") center/cover no-repeat fixed;
-    position: relative;
-    padding-top: 80px;
-}
 
-body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    backdrop-filter: blur(6px);
-    background: rgba(0, 0, 0, 0.35);
-    z-index: 0;
-}
-
-.nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    z-index: 100;
-}
-
-.wrapper, .footer {
-    position: relative;
-    z-index: 1;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-
-.nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.nav-logo img {
-    height: 45px;
-    width: auto;
-    object-fit: contain;
-}
-</style>
+    <link rel="stylesheet" href="../assets/css/admin.css">
 </head>
 
 <body>
 
 <header class="nav">
-    <div class="nav-logo"><img src="/logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
+    <div class="nav-logo"><img src="../logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
 </header>
 
 <div class="wrapper">
     <div class="card">
 
-        <img src="/logocityhall.png" class="icon-top">
+        <img src="../logocityhall.png" class="icon-top">
 
         <h2 class="title">Change Password</h2>
         <p class="subtitle">Update your account password securely</p>
 
         <?php if (!empty($error)): ?>
-        <div style="background-color: #ffe5e5; border: 1px solid #ffcccc; color: #c3423f; padding: 12px; border-radius: 6px; margin-bottom: 20px;">
+        <div class="ac-eef834dd">
             <?php echo htmlspecialchars($error); ?>
         </div>
         <?php endif; ?>
 
         <?php if (!empty($success)): ?>
-        <div style="background-color: #e5ffe5; border: 1px solid #ccffcc; color: #27ae60; padding: 12px; border-radius: 6px; margin-bottom: 20px;">
+        <div class="ac-eee71138">
             ✅ <?php echo htmlspecialchars($success); ?>
         </div>
         <?php endif; ?>
@@ -243,9 +186,9 @@ body::before {
                 <span class="icon">🔒</span>
             </div>
 
-            <div style="background: #f0f8ff; border: 1px solid #d0e8ff; color: #1e3a5f; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem;">
+            <div class="ac-97825712">
                 <strong>Password Requirements:</strong>
-                <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                <ul class="ac-cbf6525e">
                     <li>At least 8 characters long</li>
                     <li>At least one uppercase letter (A-Z)</li>
                     <li>At least one number (0-9)</li>
@@ -255,8 +198,8 @@ body::before {
 
             <button class="btn-primary" type="submit">Change Password</button>
 
-            <div style="text-align: center; margin-top: 12px; border-top: 1px solid #e0e0e0; padding-top: 12px;">
-                <a href="/admin/dashboard/dashboard.php" style="color: #3498db; text-decoration: none; font-size: 0.9rem;">Back to Dashboard</a>
+            <div class="ac-e5cd2b77">
+                <a href="/admin/dashboard.php" class="ac-f72a71bf">Back to Dashboard</a>
             </div>
         </form>
     </div>
@@ -274,7 +217,16 @@ body::before {
     </div>
 </footer>
 
+    <script src="../assets/js/admin.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+
 
 

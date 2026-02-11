@@ -3,9 +3,9 @@
 session_start();
 
 // Include configuration and database files first
-require dirname(__DIR__) . '/database.php';
-require dirname(__DIR__) . '/session-auth.php';
-require dirname(__DIR__) . '/config-path.php';
+require __DIR__ . '/database.php';
+require __DIR__ . '/session-auth.php';
+require __DIR__ . '/config-path.php';
 
 // Add no-cache headers to prevent cached login page from being shown after logout
 set_no_cache_headers();
@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 $_SESSION['last_activity'] = time();
                                 $_SESSION['login_time'] = time();
                                 
-                                header('Location: /admin/dashboard/dashboard.php');
+                                header('Location: /admin/dashboard.php');
                                 exit;
                             } else {
                                 // Failed login - track attempt
@@ -223,102 +223,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LGU | Employee Login</title>
-<link rel="icon" type="image/png" href="/logocityhall.png">
+<link rel="icon" type="image/png" href="../logocityhall.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/shared/admin-auth.css">
-<?php echo get_app_config_script(); ?>
-<script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
-<style>
 
-body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
 
-    /* NEW — background image + blur */
-    background: url("/cityhall.jpeg") center/cover no-repeat fixed;
-    position: relative;
-    padding-top: 80px;
-}
-
-/* NEW — Blur overlay */
-body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
-    backdrop-filter: blur(6px); /* actual blur */
-    background: rgba(0, 0, 0, 0.35); /* dark overlay */
-    z-index: 0; /* keeps blur behind content */
-}
-
-/* Make content appear ABOVE blur */
-.nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    z-index: 100;
-}
-
-.wrapper, .footer {
-    position: relative;
-    z-index: 1;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-
-.nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.nav-logo img {
-    height: 45px;
-    width: auto;
-    object-fit: contain;
-}
-</style>
+    <link rel="stylesheet" href="../assets/css/admin.css">
 </head>
 
 <body>
 
 <header class="nav">
-    <div class="nav-logo"><img src="/logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
+    <div class="nav-logo"><img src="../logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
 </header>
 
 <div class="wrapper">
     <div class="card">
 
-        <img src="/logocityhall.png" class="icon-top">
+        <img src="../logocityhall.png" class="icon-top">
 
         <h2 class="title">Employee Login</h2>
         <p class="subtitle">Secure access for LGU employees.</p>
 
         <?php if (isset($_SESSION['admin_verified'])): ?>
-        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 12px; border-radius: 6px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 1.2em;">✅</span>
+        <div class="ac-0b2b14a3">
+            <span class="ac-99b23121">✅</span>
             <span><strong>Verified!</strong> You've passed 2FA verification. Now enter your credentials.</span>
         </div>
         <?php endif; ?>
@@ -340,19 +270,19 @@ body::before {
 
             <button class="btn-primary" type="submit">Sign In</button>
 
-            <div style="text-align: center; margin-top: 12px;">
-                <a href="/admin/forgot-password.php" style="color: #3498db; text-decoration: none; font-size: 0.9rem;">Forgot Password?</a>
+            <div class="ac-4d4de932">
+                <a href="/admin/forgot-password.php" class="ac-f72a71bf">Forgot Password?</a>
             </div>
 
             <!-- Removed 'For citizens, click here' button as requested -->
 
             <?php if (isset($error)): ?>
-            <div style="margin-top:12px;color:#b00;"><?php echo $error; ?></div>
+            <div class="ac-aabba7cf"><?php echo $error; ?></div>
             <?php endif; ?>
 
         </form>
         <?php else: ?>
-            <?php header('Location: /admin/dashboard/dashboard.php'); exit; ?>
+            <?php header('Location: /admin/dashboard.php'); exit; ?>
         <?php endif; ?>
     </div>
 </div>
@@ -371,7 +301,16 @@ body::before {
 
 </footer>
 
+    <script src="../assets/js/admin.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+
 
 

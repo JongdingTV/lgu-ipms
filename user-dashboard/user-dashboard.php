@@ -62,8 +62,8 @@ $db->close();
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
-            <a href="user-dashboard.php" class="active"><img src="../admin/dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="../admin/progress-monitoring/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-dashboard.php" class="active"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+            <a href="user-progress-monitoring.php"><img src="../assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
             <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
             <a href="user-settings.php"><img src="settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </div>
@@ -143,7 +143,7 @@ $db->close();
         <div class="metrics-container modern-metrics">
             <div class="metric-card accent-blue">
                 <div class="metric-icon-bg">
-                    <img src="../admin/dashboard/chart.png" alt="Total Projects" class="metric-icon">
+                    <img src="../assets/images/admin/chart.png" alt="Total Projects" class="metric-icon">
                 </div>
                 <div class="metric-content">
                     <h3>Projects in Your Area</h3>
@@ -153,7 +153,7 @@ $db->close();
             </div>
             <div class="metric-card accent-yellow">
                 <div class="metric-icon-bg">
-                    <img src="../admin/dashboard/sandclock.png" alt="In Progress" class="metric-icon">
+                    <img src="../assets/images/admin/sandclock.png" alt="In Progress" class="metric-icon">
                 </div>
                 <div class="metric-content">
                     <h3>In Progress</h3>
@@ -163,7 +163,7 @@ $db->close();
             </div>
             <div class="metric-card accent-green">
                 <div class="metric-icon-bg">
-                    <img src="../admin/dashboard/check.png" alt="Completed" class="metric-icon">
+                    <img src="../assets/images/admin/check.png" alt="Completed" class="metric-icon">
                 </div>
                 <div class="metric-content">
                     <h3>Completed</h3>
@@ -173,7 +173,7 @@ $db->close();
             </div>
             <div class="metric-card accent-purple">
                 <div class="metric-icon-bg">
-                    <img src="../admin/dashboard/budget.png" alt="Total Budget" class="metric-icon">
+                    <img src="../assets/images/admin/budget.png" alt="Total Budget" class="metric-icon">
                 </div>
                 <div class="metric-content">
                     <h3>Allocated Budget</h3>
@@ -349,6 +349,9 @@ $db->close();
     </script>
 </body>
 </html>
+
+
+
 
 
 

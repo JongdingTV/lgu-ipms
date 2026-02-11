@@ -54,8 +54,8 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
-            <a href="user-dashboard.php"><img src="../admin/dashboard/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php" class="active"><img src="../admin/progress-monitoring/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+            <a href="user-progress-monitoring.php" class="active"><img src="../assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
             <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
             <a href="user-settings.php"><img src="settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </div>
@@ -197,6 +197,9 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
     </script>
 </body>
 </html>
+
+
+
 
 
 

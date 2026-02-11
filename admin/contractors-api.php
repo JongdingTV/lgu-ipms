@@ -1,6 +1,6 @@
 <?php
 // Import security functions
-require dirname(__DIR__, 2) . '/session-auth.php';
+require dirname(__DIR__) . '/session-auth.php';
 
 // Check authentication for API requests
 check_auth();
@@ -11,8 +11,8 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
-require dirname(__DIR__, 2) . '/database.php';
-require dirname(__DIR__, 2) . '/config-path.php';
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/config-path.php';
 if ($db->connect_error) {
     die(json_encode(['error' => 'Database connection failed: ' . $db->connect_error]));
 }

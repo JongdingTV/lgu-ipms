@@ -7,7 +7,7 @@
 session_start();
 
 // DATABASE CONNECTION
-require_once dirname(__DIR__) . '/database.php';
+require_once __DIR__ . '/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['employee_id'])) {
@@ -109,285 +109,9 @@ if ($result) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Employees - Admin Portal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #1e3a5f;
-            --primary-light: #2c5282;
-            --secondary: #f39c12;
-            --success: #27ae60;
-            --danger: #e74c3c;
-            --info: #3498db;
-            --light: #ecf0f1;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #f5f7fa;
-            padding: 2rem 0;
-        }
-
-        .container {
-            max-width: 1200px;
-        }
-
-        .page-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .page-header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .page-header p {
-            font-size: 0.95rem;
-            opacity: 0.9;
-        }
-
-        .alert {
-            border-radius: 8px;
-            border: none;
-            margin-bottom: 2rem;
-            font-weight: 500;
-        }
-
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 2rem;
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, var(--secondary) 0%, #e67e22 100%);
-            color: white;
-            border: none;
-            border-radius: 10px 10px 0 0;
-            padding: 1.5rem;
-            font-weight: 600;
-        }
-
-        .card-body {
-            padding: 2rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.7rem;
-            color: var(--primary);
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 0.8rem 1rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-family: 'Poppins', sans-serif;
-            transition: all 0.3s ease;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--secondary);
-            box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1);
-        }
-
-        .btn {
-            padding: 0.8rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--secondary) 0%, #e67e22 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(243, 156, 18, 0.3);
-        }
-
-        .btn-secondary {
-            background: #95a5a6;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #7f8c8d;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-        }
-
-        .btn-danger:hover {
-            background: #c0392b;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-
-        .table-responsive {
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        table {
-            margin-bottom: 0;
-        }
-
-        thead {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            color: white;
-        }
-
-        th {
-            font-weight: 600;
-            padding: 1rem;
-            text-align: left;
-            border: none;
-        }
-
-        td {
-            padding: 1rem;
-            vertical-align: middle;
-            border-color: #e0e0e0;
-        }
-
-        tbody tr:hover {
-            background-color: #f9f9f9;
-        }
-
-        .badge {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .badge-primary {
-            background: #cfe2ff;
-            color: #084298;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #999;
-        }
-
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid #e0e0e0;
-        }
-
-        .tab-btn {
-            padding: 1rem 1.5rem;
-            background: none;
-            border: none;
-            border-bottom: 3px solid transparent;
-            color: #666;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .tab-btn.active {
-            color: var(--secondary);
-            border-bottom-color: var(--secondary);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-        }
-
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .page-header h1 {
-                font-size: 1.5rem;
-            }
-        }
-
-        .info-box {
-            background: #f0f8ff;
-            border-left: 4px solid var(--info);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
-        }
-
-        .info-box i {
-            color: var(--info);
-            margin-right: 0.5rem;
-        }
-    </style>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    
+    <link rel="stylesheet" href="../assets/css/admin.css">
 </head>
 <body>
     <div class="container">
@@ -411,10 +135,10 @@ if ($result) {
         <?php endif; ?>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('add')">
+            <button class="tab-btn active" data-onclick="switchTab('add')">
                 <i class="fas fa-plus-circle"></i> Add Employee
             </button>
-            <button class="tab-btn" onclick="switchTab('list')">
+            <button class="tab-btn" data-onclick="switchTab('list')">
                 <i class="fas fa-list"></i> Employee List (<?php echo count($employees); ?>)
             </button>
         </div>
@@ -575,10 +299,10 @@ if ($result) {
                                                 <small><?php echo date('M d, Y', strtotime($emp['created_at'])); ?></small>
                                             </td>
                                             <td>
-                                                <form method="POST" style="display: inline;">
+                                                <form method="POST" class="ac-434fc32e">
                                                     <input type="hidden" name="emp_id" value="<?php echo $emp['id']; ?>">
                                                     <button type="submit" name="delete_employee" class="btn btn-danger" 
-                                                            onclick="return confirm('Delete <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>?')">
+                                                            data-onclick="return confirm('Delete <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>?')">
                                                         <i class="fas fa-trash"></i> Delete
                                                     </button>
                                                 </form>
@@ -591,7 +315,7 @@ if ($result) {
                     <?php else: ?>
                         <div class="empty-state">
                             <i class="fas fa-users"></i>
-                            <p>No employees found. <a href="#" onclick="switchTab('add')">Add one now</a></p>
+                            <p>No employees found. <a href="#" data-onclick="switchTab('add')">Add one now</a></p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -635,22 +359,14 @@ if ($result) {
             </div>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
-    </script>
+<script src="../assets/js/admin.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+

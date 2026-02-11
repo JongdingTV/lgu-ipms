@@ -11,14 +11,7 @@ session_start();
 <html>
 <head>
     <title>Session Debug</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { font-family: monospace; padding: 2rem; background: #f5f5f5; }
-        .card { margin: 1rem 0; }
-        .session-var { padding: 1rem; border: 1px solid #ddd; margin: 0.5rem 0; background: white; }
-        .set { background: #d4edda; }
-        .not-set { background: #f8d7da; }
-    </style>
+<link rel="stylesheet" href="../assets/css/admin.css">
 </head>
 <body>
     <div class="container">
@@ -105,5 +98,12 @@ session_start();
             </ol>
         </div>
     </div>
+    <script src="../assets/js/admin.js"></script>
 </body>
 </html>
+
+
+
+
+
+
