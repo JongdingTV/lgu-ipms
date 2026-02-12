@@ -16,23 +16,190 @@ if ($db->connect_error) {
     exit;
 }
 
-// Handle API requests first (before rendering HTML)
-if (isset($_GET['action']) && $_GET['action'] === 'load_projects') {
+function budget_json_response(array $payload, int $status = 200): void {
+    http_response_code($status);
     header('Content-Type: application/json');
-    
-    $result = $db->query("SELECT id, code, name, budget FROM projects ORDER BY created_at DESC");
-    $projects = [];
-    
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $projects[] = $row;
+    echo json_encode($payload);
+}
+
+function budget_sync_spent(mysqli $db): void {
+    $sql = "UPDATE milestones m
+            LEFT JOIN (
+                SELECT milestoneId, COALESCE(SUM(amount), 0) AS total_spent
+                FROM expenses
+                GROUP BY milestoneId
+            ) e ON e.milestoneId = m.id
+            SET m.spent = COALESCE(e.total_spent, 0)";
+    $db->query($sql);
+}
+
+// Handle API requests first (before rendering HTML)
+$action = $_REQUEST['action'] ?? null;
+if ($action) {
+    try {
+        if ($action === 'load_projects') {
+            $result = $db->query("SELECT id, code, name, budget FROM projects ORDER BY created_at DESC");
+            $projects = [];
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $projects[] = $row;
+                }
+                $result->free();
+            }
+            budget_json_response($projects);
+            $db->close();
+            exit;
         }
-        $result->free();
+
+        if ($action === 'load_budget_state') {
+            budget_sync_spent($db);
+
+            $globalBudget = 0.0;
+            $settingsRes = $db->query("SELECT total_budget FROM project_settings ORDER BY id ASC LIMIT 1");
+            if ($settingsRes && ($settings = $settingsRes->fetch_assoc())) {
+                $globalBudget = (float) ($settings['total_budget'] ?? 0);
+                $settingsRes->free();
+            }
+
+            $milestones = [];
+            $milestoneRes = $db->query("SELECT id, name, allocated, spent FROM milestones ORDER BY id ASC");
+            if ($milestoneRes) {
+                while ($row = $milestoneRes->fetch_assoc()) {
+                    $milestones[] = [
+                        'id' => (int) $row['id'],
+                        'name' => (string) $row['name'],
+                        'allocated' => (float) ($row['allocated'] ?? 0),
+                        'spent' => (float) ($row['spent'] ?? 0),
+                    ];
+                }
+                $milestoneRes->free();
+            }
+
+            $expenses = [];
+            $expenseRes = $db->query("SELECT id, milestoneId, amount, description, date FROM expenses ORDER BY date DESC, id DESC");
+            if ($expenseRes) {
+                while ($row = $expenseRes->fetch_assoc()) {
+                    $expenses[] = [
+                        'id' => (int) $row['id'],
+                        'milestoneId' => (int) ($row['milestoneId'] ?? 0),
+                        'amount' => (float) ($row['amount'] ?? 0),
+                        'description' => (string) ($row['description'] ?? ''),
+                        'date' => $row['date'] ?? null,
+                    ];
+                }
+                $expenseRes->free();
+            }
+
+            budget_json_response([
+                'success' => true,
+                'data' => [
+                    'globalBudget' => $globalBudget,
+                    'milestones' => $milestones,
+                    'expenses' => $expenses,
+                ]
+            ]);
+            $db->close();
+            exit;
+        }
+
+        if ($action === 'set_global_budget') {
+            $budget = max(0, (float) ($_POST['budget'] ?? 0));
+            $stmt = $db->prepare("INSERT INTO project_settings (id, total_budget) VALUES (1, ?) ON DUPLICATE KEY UPDATE total_budget = VALUES(total_budget)");
+            $stmt->bind_param('d', $budget);
+            $stmt->execute();
+            $stmt->close();
+            budget_json_response(['success' => true, 'budget' => $budget]);
+            $db->close();
+            exit;
+        }
+
+        if ($action === 'add_milestone') {
+            $name = trim((string) ($_POST['name'] ?? ''));
+            $allocated = max(0, (float) ($_POST['allocated'] ?? 0));
+            if ($name === '') {
+                budget_json_response(['success' => false, 'message' => 'Source name is required.'], 422);
+                $db->close();
+                exit;
+            }
+            $stmt = $db->prepare("INSERT INTO milestones (name, allocated, spent) VALUES (?, ?, 0)");
+            $stmt->bind_param('sd', $name, $allocated);
+            $stmt->execute();
+            $id = $stmt->insert_id;
+            $stmt->close();
+            budget_json_response(['success' => true, 'id' => (int) $id]);
+            $db->close();
+            exit;
+        }
+
+        if ($action === 'update_milestone_alloc') {
+            $id = (int) ($_POST['id'] ?? 0);
+            $allocated = max(0, (float) ($_POST['allocated'] ?? 0));
+            $stmt = $db->prepare("UPDATE milestones SET allocated = ? WHERE id = ?");
+            $stmt->bind_param('di', $allocated, $id);
+            $stmt->execute();
+            $stmt->close();
+            budget_json_response(['success' => true]);
+            $db->close();
+            exit;
+        }
+
+        if ($action === 'delete_milestone') {
+            $id = (int) ($_POST['id'] ?? 0);
+            $stmtExp = $db->prepare("DELETE FROM expenses WHERE milestoneId = ?");
+            $stmtExp->bind_param('i', $id);
+            $stmtExp->execute();
+            $stmtExp->close();
+
+            $stmt = $db->prepare("DELETE FROM milestones WHERE id = ?");
+            $stmt->bind_param('i', $id);
+            $stmt->execute();
+            $stmt->close();
+            budget_json_response(['success' => true]);
+            $db->close();
+            exit;
+        }
+
+        if ($action === 'add_expense') {
+            $milestoneId = (int) ($_POST['milestoneId'] ?? 0);
+            $amount = max(0, (float) ($_POST['amount'] ?? 0));
+            $description = trim((string) ($_POST['description'] ?? ''));
+
+            if ($milestoneId <= 0 || $amount <= 0) {
+                budget_json_response(['success' => false, 'message' => 'Invalid expense data.'], 422);
+                $db->close();
+                exit;
+            }
+
+            $stmt = $db->prepare("INSERT INTO expenses (milestoneId, amount, description, date) VALUES (?, ?, ?, NOW())");
+            $stmt->bind_param('ids', $milestoneId, $amount, $description);
+            $stmt->execute();
+            $stmt->close();
+            budget_sync_spent($db);
+            budget_json_response(['success' => true]);
+            $db->close();
+            exit;
+        }
+
+        if ($action === 'delete_expense') {
+            $id = (int) ($_POST['id'] ?? 0);
+            $stmt = $db->prepare("DELETE FROM expenses WHERE id = ?");
+            $stmt->bind_param('i', $id);
+            $stmt->execute();
+            $stmt->close();
+            budget_sync_spent($db);
+            budget_json_response(['success' => true]);
+            $db->close();
+            exit;
+        }
+
+        budget_json_response(['success' => false, 'message' => 'Unknown action.'], 400);
+        $db->close();
+        exit;
+    } catch (Throwable $e) {
+        budget_json_response(['success' => false, 'message' => $e->getMessage()], 500);
+        $db->close();
+        exit;
     }
-    
-    echo json_encode($projects);
-    $db->close();
-    exit;
 }
 
 $db->close();
@@ -566,9 +733,10 @@ $db->close();
         const path = (window.location.pathname || '').replace(/\\/g, '/');
         if (!path.endsWith('/admin/budget_resources.php')) return;
 
-        const KEY = 'lgu_budget_module_v1';
         let booted = false;
         let activePanel = 'budget';
+        let stateCache = { globalBudget: 0, milestones: [], expenses: [] };
+        const API_BASE = 'budget_resources.php';
 
         function byId(id) { return document.getElementById(id); }
 
@@ -603,29 +771,47 @@ $db->close();
             return 'PHP ' + num.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
         }
 
-        function uid(prefix) {
-            return prefix + Math.random().toString(36).slice(2, 10);
-        }
-
-        function loadState() {
-            try {
-                const raw = localStorage.getItem(KEY);
-                if (!raw) return { globalBudget: 0, milestones: [], expenses: [] };
-                const parsed = JSON.parse(raw);
-                return {
-                    globalBudget: Number(parsed.globalBudget || 0),
-                    milestones: Array.isArray(parsed.milestones) ? parsed.milestones : [],
-                    expenses: Array.isArray(parsed.expenses) ? parsed.expenses : []
-                };
-            } catch (e) {
-                console.warn('Budget state is corrupted; resetting storage.', e);
-                localStorage.removeItem(KEY);
-                return { globalBudget: 0, milestones: [], expenses: [] };
+        function getApiUrlLocal(action) {
+            if (typeof window.getApiUrl === 'function') {
+                return window.getApiUrl('admin/' + API_BASE + '?action=' + encodeURIComponent(action));
             }
+            return API_BASE + '?action=' + encodeURIComponent(action);
         }
 
-        function saveState(state) {
-            localStorage.setItem(KEY, JSON.stringify(state));
+        async function apiGet(action) {
+            const url = getApiUrlLocal(action);
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }
+
+        async function apiPost(action, data) {
+            const url = getApiUrlLocal(action);
+            const body = new URLSearchParams();
+            Object.keys(data || {}).forEach((k) => body.set(k, String(data[k] ?? '')));
+            const res = await fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const json = await res.json();
+            if (json && json.success === false) throw new Error(json.message || 'Request failed');
+            return json;
+        }
+
+        async function refreshState() {
+            const json = await apiGet('load_budget_state');
+            if (!json || json.success === false || !json.data) {
+                throw new Error((json && json.message) ? json.message : 'Failed to load budget state');
+            }
+            stateCache = {
+                globalBudget: Number(json.data.globalBudget || 0),
+                milestones: Array.isArray(json.data.milestones) ? json.data.milestones : [],
+                expenses: Array.isArray(json.data.expenses) ? json.data.expenses : []
+            };
+            return stateCache;
         }
 
         function getSpentForMilestone(state, milestoneId) {
@@ -658,26 +844,29 @@ $db->close();
             });
 
             tbody.querySelectorAll('.allocInput').forEach((input) => {
-                input.addEventListener('change', function () {
+                input.addEventListener('change', async function () {
                     const id = this.getAttribute('data-id');
                     const value = Math.max(0, Number(this.value || 0));
-                    const next = loadState();
-                    const item = next.milestones.find((m) => m.id === id);
-                    if (!item) return;
-                    item.allocated = value;
-                    saveState(next);
-                    renderAll(next);
+                    try {
+                        await apiPost('update_milestone_alloc', { id: id, allocated: value });
+                        await renderAllFromServer();
+                    } catch (err) {
+                        console.error(err);
+                        alert('Failed to update source allocation.');
+                    }
                 });
             });
 
             tbody.querySelectorAll('.btnDeleteSource').forEach((btn) => {
-                btn.addEventListener('click', function () {
+                btn.addEventListener('click', async function () {
                     const id = this.getAttribute('data-id');
-                    const next = loadState();
-                    next.milestones = next.milestones.filter((m) => m.id !== id);
-                    next.expenses = next.expenses.filter((e) => e.milestoneId !== id);
-                    saveState(next);
-                    renderAll(next);
+                    try {
+                        await apiPost('delete_milestone', { id: id });
+                        await renderAllFromServer();
+                    } catch (err) {
+                        console.error(err);
+                        alert('Failed to delete source.');
+                    }
                 });
             });
         }
@@ -701,12 +890,15 @@ $db->close();
             });
 
             tbody.querySelectorAll('.btnDeleteExpense').forEach((btn) => {
-                btn.addEventListener('click', function () {
+                btn.addEventListener('click', async function () {
                     const id = this.getAttribute('data-id');
-                    const next = loadState();
-                    next.expenses = next.expenses.filter((e) => e.id !== id);
-                    saveState(next);
-                    renderAll(next);
+                    try {
+                        await apiPost('delete_expense', { id: id });
+                        await renderAllFromServer();
+                    } catch (err) {
+                        console.error(err);
+                        alert('Failed to delete expense.');
+                    }
                 });
             });
         }
@@ -802,7 +994,7 @@ $db->close();
         }
 
         function renderAll(stateArg) {
-            const state = stateArg || loadState();
+            const state = stateArg || stateCache;
             const globalBudget = byId('globalBudget');
             if (globalBudget) globalBudget.value = state.globalBudget || '';
             renderMilestones(state);
@@ -812,22 +1004,30 @@ $db->close();
             drawChart(state);
         }
 
-        function addSource() {
+        async function renderAllFromServer() {
+            const state = await refreshState();
+            renderAll(state);
+        }
+
+        async function addSource() {
             const nameEl = byId('milestoneName');
             const allocEl = byId('milestoneAlloc');
             if (!nameEl || !allocEl) return;
             const name = nameEl.value.trim();
             const allocated = Math.max(0, Number(allocEl.value || 0));
             if (!name) return;
-            const state = loadState();
-            state.milestones.push({ id: uid('m'), name: name, allocated: allocated });
-            saveState(state);
-            nameEl.value = '';
-            allocEl.value = '';
-            renderAll(state);
+            try {
+                await apiPost('add_milestone', { name: name, allocated: allocated });
+                nameEl.value = '';
+                allocEl.value = '';
+                await renderAllFromServer();
+            } catch (err) {
+                console.error(err);
+                alert('Failed to add source fund.');
+            }
         }
 
-        function addExpenseEntry() {
+        async function addExpenseEntry() {
             const sourceEl = byId('expenseMilestone');
             const amountEl = byId('expenseAmount');
             const descEl = byId('expenseDesc');
@@ -836,23 +1036,24 @@ $db->close();
             const amount = Math.max(0, Number(amountEl.value || 0));
             const description = descEl.value.trim();
             if (!milestoneId || !amount) return;
-            const state = loadState();
-            state.expenses.push({
-                id: uid('e'),
-                milestoneId: milestoneId,
-                amount: amount,
-                description: description,
-                date: new Date().toISOString()
-            });
-            saveState(state);
-            sourceEl.value = '';
-            amountEl.value = '';
-            descEl.value = '';
-            renderAll(state);
+            try {
+                await apiPost('add_expense', {
+                    milestoneId: milestoneId,
+                    amount: amount,
+                    description: description
+                });
+                sourceEl.value = '';
+                amountEl.value = '';
+                descEl.value = '';
+                await renderAllFromServer();
+            } catch (err) {
+                console.error(err);
+                alert('Failed to add expense.');
+            }
         }
 
         function exportCsv() {
-            const state = loadState();
+            const state = stateCache;
             const rows = [];
             rows.push(['type', 'source_id', 'source_name', 'allocated', 'expense_id', 'expense_amount', 'description', 'date'].join(','));
             state.milestones.forEach((m) => {
@@ -903,11 +1104,11 @@ $db->close();
                         return;
                     }
                     const project = projects[0];
-                    const state = loadState();
-                    state.globalBudget = Number(project.budget || 0);
-                    saveState(state);
-                    renderAll(state);
-                    alert('Imported budget from project: ' + (project.name || project.code || 'Project'));
+                    return apiPost('set_global_budget', { budget: Number(project.budget || 0) })
+                        .then(() => renderAllFromServer())
+                        .then(() => {
+                            alert('Imported budget from project: ' + (project.name || project.code || 'Project'));
+                        });
                 })
                 .catch((error) => {
                     console.error(error);
@@ -954,11 +1155,14 @@ $db->close();
             if (addExpense) addExpense.addEventListener('click', addExpenseEntry);
 
             if (globalBudget) {
-                globalBudget.addEventListener('change', function () {
-                    const state = loadState();
-                    state.globalBudget = Math.max(0, Number(this.value || 0));
-                    saveState(state);
-                    renderAll(state);
+                globalBudget.addEventListener('change', async function () {
+                    try {
+                        await apiPost('set_global_budget', { budget: Math.max(0, Number(this.value || 0)) });
+                        await renderAllFromServer();
+                    } catch (err) {
+                        console.error(err);
+                        alert('Failed to save global budget.');
+                    }
                 });
             }
 
@@ -966,11 +1170,14 @@ $db->close();
             if (btnImport) btnImport.addEventListener('click', importFromProject);
 
             window.addEventListener('resize', function () {
-                drawChart(loadState());
+                drawChart(stateCache);
             });
 
             initSectionTabs();
-            renderAll(loadState());
+            renderAllFromServer().catch((err) => {
+                console.error(err);
+                alert('Failed to load budget data from database.');
+            });
         }
 
         if (document.readyState === 'loading') {
