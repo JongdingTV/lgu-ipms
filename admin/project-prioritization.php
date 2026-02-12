@@ -43,17 +43,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     // Validate status value
     $allowed_statuses = ['Pending', 'Reviewed', 'Addressed'];
     if (!in_array($new_status, $allowed_statuses)) {
-        header('Location: project-prioritization.php?error=invalid_status');
+        header('Location: project-prioritization.php?status=invalid');
         exit;
     }
     
     $stmt = $db->prepare("UPDATE feedback SET status = ? WHERE id = ?");
     if ($stmt) {
         $stmt->bind_param('si', $new_status, $feedback_id);
-        $stmt->execute();
+        $ok = $stmt->execute();
         $stmt->close();
+        if ($ok) {
+            header('Location: project-prioritization.php?status=updated');
+            exit;
+        }
+        header('Location: project-prioritization.php?status=failed');
+        exit;
     }
-    header('Location: project-prioritization.php');
+    header('Location: project-prioritization.php?status=failed');
     exit;
 }
 
@@ -90,6 +96,7 @@ foreach ($feedbacks as $fb) {
 }
 
 $db->close();
+$status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
 ?>
 <!doctype html>
 <html>
@@ -446,6 +453,27 @@ $db->close();
         window.closeModal = closeModalById;
         window.openEditModal = openModalById;
         window.closeEditModal = closeModalById;
+
+        const statusFlash = <?php echo json_encode($status_flash); ?>;
+        if (statusFlash) {
+            const toast = document.createElement('div');
+            toast.className = 'prioritization-toast ' + (statusFlash === 'updated' ? 'is-success' : 'is-error');
+            toast.innerHTML = statusFlash === 'updated'
+                ? '<strong>Success</strong><span>Feedback status has been updated.</span>'
+                : statusFlash === 'invalid'
+                    ? '<strong>Invalid Status</strong><span>Please choose a valid status and try again.</span>'
+                    : '<strong>Update Failed</strong><span>Unable to save changes. Please try again.</span>';
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 220);
+            }, 3200);
+
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete('status');
+            history.replaceState({}, '', cleanUrl.toString());
+        }
     })();
     </script>
 </body>

@@ -867,6 +867,52 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-foo
     }
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-toast {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 1600;
+    min-width: 280px;
+    max-width: 420px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    box-shadow: 0 16px 30px rgba(12, 30, 56, 0.26);
+    padding: 12px 14px;
+    transform: translateY(-10px);
+    opacity: 0;
+    transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-toast strong {
+    display: block;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-toast span {
+    display: block;
+    font-size: 0.84rem;
+    line-height: 1.35;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-toast.is-success {
+    border-color: #86efac;
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    color: #166534;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-toast.is-error {
+    border-color: #fecaca;
+    background: linear-gradient(135deg, #fff1f2, #ffe4e6);
+    color: #9f1239;
+}
+
 /* Contractors pages refresh */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-page {
     display: grid;
