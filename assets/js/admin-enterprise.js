@@ -233,6 +233,170 @@
       .replace(/[^a-z0-9-]/g, '');
   }
 
+  function initTopUtilities() {
+    if ($('.admin-top-utilities')) return;
+
+    const bar = document.createElement('div');
+    bar.className = 'admin-top-utilities';
+    bar.innerHTML = `
+      <div class="admin-time-chip" aria-live="polite">
+        <span class="admin-time" id="adminLiveTime">--:--:--</span>
+        <span class="admin-date" id="adminLiveDate">----</span>
+      </div>
+      <div class="admin-utility-group">
+        <button type="button" class="admin-utility-btn" id="adminNotifBtn" aria-expanded="false" aria-controls="adminNotifPanel" title="Notifications">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path>
+            <path d="M9 17a3 3 0 0 0 6 0"></path>
+          </svg>
+          <span class="admin-utility-label">Alerts</span>
+          <span class="admin-utility-badge" id="adminNotifCount">0</span>
+        </button>
+        <button type="button" class="admin-utility-btn" id="adminThemeBtn" title="Toggle dark mode">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2"></path>
+            <path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path>
+            <path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="M2 12h2"></path>
+            <path d="M20 12h2"></path>
+            <path d="m6.34 17.66-1.41 1.41"></path>
+            <path d="m19.07 4.93-1.41 1.41"></path>
+          </svg>
+          <span class="admin-utility-label" id="adminThemeLabel">Dark</span>
+        </button>
+      </div>
+      <div class="admin-notif-panel" id="adminNotifPanel" hidden>
+        <div class="admin-notif-head">
+          <strong>Notifications</strong>
+          <button type="button" id="adminNotifMarkRead">Mark all read</button>
+        </div>
+        <ul class="admin-notif-list" id="adminNotifList"></ul>
+      </div>`;
+    document.body.appendChild(bar);
+
+    const timeEl = document.getElementById('adminLiveTime');
+    const dateEl = document.getElementById('adminLiveDate');
+    const notifBtn = document.getElementById('adminNotifBtn');
+    const notifPanel = document.getElementById('adminNotifPanel');
+    const notifList = document.getElementById('adminNotifList');
+    const notifCount = document.getElementById('adminNotifCount');
+    const markReadBtn = document.getElementById('adminNotifMarkRead');
+    const themeBtn = document.getElementById('adminThemeBtn');
+    const themeLabel = document.getElementById('adminThemeLabel');
+    const seenKey = 'ipms_admin_notifications_seen_id';
+
+    const persistedTheme = localStorage.getItem('ipms_admin_theme') || 'light';
+    document.body.classList.toggle('theme-dark', persistedTheme === 'dark');
+    if (themeLabel) themeLabel.textContent = persistedTheme === 'dark' ? 'Light' : 'Dark';
+
+    const clockTick = () => {
+      const now = new Date();
+      if (timeEl) {
+        timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+      if (dateEl) {
+        dateEl.textContent = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      }
+    };
+    clockTick();
+    setInterval(clockTick, 1000);
+
+    const getSeenId = () => Number(localStorage.getItem(seenKey) || 0) || 0;
+    const setSeenId = (id) => localStorage.setItem(seenKey, String(Number(id) || 0));
+    let notifications = [];
+    let latestNotificationId = 0;
+
+    const formatRelativeTime = (value) => {
+      if (!value) return '';
+      const ts = new Date(value);
+      if (Number.isNaN(ts.getTime())) return '';
+      const secs = Math.floor((Date.now() - ts.getTime()) / 1000);
+      if (secs < 60) return 'just now';
+      const mins = Math.floor(secs / 60);
+      if (mins < 60) return mins + 'm ago';
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return hrs + 'h ago';
+      const days = Math.floor(hrs / 24);
+      return days + 'd ago';
+    };
+
+    const renderNotifications = () => {
+      if (!notifList || !notifCount) return;
+      const seenId = getSeenId();
+      const unreadCount = notifications.filter((item) => Number(item.id) > seenId).length;
+
+      notifList.innerHTML = notifications.map((item) => {
+        const unread = Number(item.id) > seenId;
+        return `
+        <li class="admin-notif-item is-${item.level}${unread ? ' unread' : ''}">
+          <span class="dot"></span>
+          <span>
+            <strong>${item.title || 'Citizen concern submitted'}</strong>
+            <small>${item.message || ''}</small>
+            <em>${formatRelativeTime(item.created_at)}</em>
+          </span>
+        </li>`;
+      }).join('');
+      notifCount.textContent = String(unreadCount);
+      notifCount.style.display = unreadCount ? 'inline-flex' : 'none';
+    };
+
+    const fetchNotifications = () => {
+      const url = isFn(window.getApiUrl) ? window.getApiUrl('admin/notifications_api.php') : '/admin/notifications_api.php';
+      fetch(url + '?_=' + Date.now(), { credentials: 'same-origin' })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data || data.success !== true) return;
+          notifications = Array.isArray(data.items) ? data.items : [];
+          latestNotificationId = Number(data.latest_id || 0) || 0;
+          if (!notifications.length) {
+            notifications = [{ id: 0, level: 'info', title: 'No new concerns', message: 'No citizen concerns at the moment.', created_at: null }];
+          }
+          renderNotifications();
+        })
+        .catch(() => {
+          notifications = [{ id: 0, level: 'danger', title: 'Notification service unavailable', message: 'Unable to fetch citizen concerns right now.', created_at: null }];
+          renderNotifications();
+        });
+    };
+    fetchNotifications();
+    setInterval(fetchNotifications, 30000);
+
+    if (notifBtn && notifPanel) {
+      notifBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const open = notifPanel.hasAttribute('hidden');
+        notifPanel.toggleAttribute('hidden', !open);
+        notifBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
+
+    if (markReadBtn) {
+      markReadBtn.addEventListener('click', () => {
+        setSeenId(latestNotificationId);
+        renderNotifications();
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!bar.contains(e.target) && notifPanel && !notifPanel.hasAttribute('hidden')) {
+        notifPanel.setAttribute('hidden', 'hidden');
+        notifBtn?.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        const isDark = !document.body.classList.contains('theme-dark');
+        document.body.classList.toggle('theme-dark', isDark);
+        localStorage.setItem('ipms_admin_theme', isDark ? 'dark' : 'light');
+        if (themeLabel) themeLabel.textContent = isDark ? 'Light' : 'Dark';
+      });
+    }
+  }
+
   function formatShortDate(value) {
     if (!value) return '-';
     const dt = new Date(value);
@@ -475,6 +639,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     initTopSidebarToggle();
+    initTopUtilities();
     initUnifiedDropdowns();
     initLogoutModal();
     initDashboardBudgetHoldReveal();
