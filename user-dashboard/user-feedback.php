@@ -6,6 +6,7 @@ require dirname(__DIR__) . '/config-path.php';
 
 // Feedback submission logic: All user feedbacks are inserted into the feedback table.
 // The admin Project Prioritization page reads from this table, so all user concerns are sent to the admin side automatically.
+$msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
     set_no_cache_headers();
     check_auth();
@@ -24,27 +25,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
         $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
         $category = $_POST['category'];
-        $location = $_POST['street'] . ', ' . $_POST['barangay'];
+        $street = isset($_POST['street']) ? trim($_POST['street']) : '';
+        $barangay = isset($_POST['barangay']) ? trim($_POST['barangay']) : '';
+        $location = $street . ', ' . $barangay;
         $description = $_POST['feedback'];
         $status = 'Pending';
-        $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
-        if ($stmt->execute()) {
-            $msg = 'Feedback submitted!';
+        if ($subject && $category && $street && $barangay && $description) {
+            $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
+            if ($stmt->execute()) {
+                $msg = 'Feedback submitted!';
+            } else {
+                $msg = 'Error submitting feedback.';
+            }
+            $stmt->close();
         } else {
-            $msg = 'Error submitting feedback.';
+            $msg = 'All fields are required.';
         }
-        $stmt->close();
     }
     $db->close();
 }
 
 // Normal page load
-$msg = '';
 set_no_cache_headers();
 check_auth();
 check_suspicious_activity();
-// Get user info from database
 $user_id = $_SESSION['user_id'];
 $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->bind_param('i', $user_id);
@@ -53,27 +58,6 @@ $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 $stmt->close();
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
-$msg = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
-    if ($db->connect_error) {
-        $msg = 'Database connection failed.';
-    } else {
-        $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
-        $category = $_POST['category'];
-        $location = $_POST['street'] . ', ' . $_POST['barangay'];
-        $description = $_POST['feedback'];
-        $status = 'Pending';
-        $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
-        if ($stmt->execute()) {
-            $msg = 'Feedback submitted!';
-        } else {
-            $msg = 'Error submitting feedback.';
-        }
-        $stmt->close();
-    }
-}
-$db->close();
 ?>
 <!DOCTYPE html>
 <?php
