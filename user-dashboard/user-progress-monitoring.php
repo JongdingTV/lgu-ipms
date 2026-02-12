@@ -39,19 +39,17 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
-    <aside class="nav" id="navbar">
-        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div id="sidebarBurgerBtn" style="position:fixed;top:24px;right:32px;z-index:200;display:flex;align-items:center;cursor:pointer;">
+        <button class="navbar-menu-icon" title="Show/hide sidebar" style="background:none;border:none;padding:0;outline:none;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
         </button>
-        <div class="nav-logo">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;margin-bottom:4px;" />
-            <span class="logo-text">IPMS</span>
-        </div>
-        <div class="nav-user" style="border-top:none;padding-top:0;margin-bottom:8px;">
+    </div>
+
+    <!-- Removed duplicate aside nav burger and logo -->
             <?php
             $profile_img = '';
             $user_email = isset($user['email']) ? $user['email'] : '';
@@ -109,13 +107,7 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
         </script>
     </aside>
 
-    <div class="toggle-btn" id="showSidebarBtn">
-        <a href="#" id="toggleSidebarShow" title="Show sidebar">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-        </a>
-    </div>
+    <?php include __DIR__ . '/user-sidebar.php'; ?>
 
 
     <section class="main-content">
