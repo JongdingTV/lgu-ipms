@@ -53,17 +53,29 @@ $db->close();
     <!-- Sidebar with overlay for mobile -->
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <aside class="nav sidebar-animated" id="navbar">
-        <!-- Burger button beside sidebar (admin style) -->
-        <button id="sidebarBurgerBtn" class="sidebar-burger-btn beside-sidebar" aria-label="Open sidebar" type="button">
-            <span class="burger-bar"></span>
-            <span class="burger-bar"></span>
-            <span class="burger-bar"></span>
-        </button>
         <!-- Logo and IPMS side by side at top -->
         <div class="nav-logo admin-sidebar-logo" style="display:flex;flex-direction:row;align-items:center;justify-content:center;padding:18px 0 8px 0;gap:10px;">
             <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
             <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
         </div>
+
+            <!-- Mobile burger button (top left, only visible on mobile) -->
+            <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button" style="position:fixed;top:18px;left:18px;z-index:1002;display:none;">
+                <span class="burger-bar"></span>
+                <span class="burger-bar"></span>
+                <span class="burger-bar"></span>
+            </button>
+            <style>
+            /* Show burger only on mobile */
+            .sidebar-burger-btn.mobile-only {
+                display: none;
+            }
+            @media (max-width: 991px) {
+                .sidebar-burger-btn.mobile-only {
+                    display: block !important;
+                }
+            }
+            </style>
         <!-- Profile section, centered -->
         <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">
             <?php
@@ -295,11 +307,20 @@ $db->close();
     <script src="/assets/js/shared/shared-toggle.js"></script>
     <script src="user-dashboard.js"></script>
     <script>
-    // Sidebar burger and overlay logic (admin-style, fully hides sidebar)
+    // Sidebar burger and overlay logic (mobile burger only)
     (function() {
         const sidebar = document.getElementById('navbar');
         const burger = document.getElementById('sidebarBurgerBtn');
         const overlay = document.getElementById('sidebarOverlay');
+        // Show/hide burger only on mobile
+        function updateBurgerVisibility() {
+            if (window.innerWidth <= 991) {
+                burger.style.display = 'block';
+            } else {
+                burger.style.display = 'none';
+                closeSidebar();
+            }
+        }
         function openSidebar() {
             sidebar.classList.add('sidebar-open');
             overlay.classList.add('sidebar-overlay-active');
@@ -319,9 +340,15 @@ $db->close();
             }
         });
         overlay.addEventListener('click', closeSidebar);
-        // Hide sidebar on resize if desktop
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 991) {
+        window.addEventListener('resize', updateBurgerVisibility);
+        document.addEventListener('DOMContentLoaded', updateBurgerVisibility);
+        // Also close sidebar if clicking outside sidebar and burger (for extra safety)
+        document.addEventListener('click', function(e) {
+            if (
+                sidebar.classList.contains('sidebar-open') &&
+                !sidebar.contains(e.target) &&
+                !burger.contains(e.target)
+            ) {
                 closeSidebar();
             }
         });
