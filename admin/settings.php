@@ -115,7 +115,7 @@ if (isset($db) && !$db->connect_error) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <link rel="stylesheet" href="../assets/css/admin.css?v=20260212f">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260212g">
 </head>
 <body>
     <header class="nav" id="navbar">

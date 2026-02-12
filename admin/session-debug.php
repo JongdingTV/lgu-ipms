@@ -11,7 +11,7 @@ session_start();
 <html>
 <head>
     <title>Session Debug</title>
-<link rel="stylesheet" href="../assets/css/admin.css?v=20260212f">
+<link rel="stylesheet" href="../assets/css/admin.css?v=20260212g">
 </head>
 <body>
     <div class="container">

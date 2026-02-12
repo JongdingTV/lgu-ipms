@@ -111,7 +111,7 @@ if ($result) {
     <title>Manage Employees - Admin Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     
-    <link rel="stylesheet" href="../assets/css/admin.css?v=20260212f">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260212g">
 </head>
 <body>
     <div class="container">
