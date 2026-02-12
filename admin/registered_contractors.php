@@ -291,8 +291,15 @@ $db->close();
 
         <div class="recent-projects contractor-page contractor-registry-shell">
             <div class="contractor-page-head">
-                <h3>Contractor Registry</h3>
-                <p>Search, filter, assign, and maintain active contractors in one workspace.</p>
+                <div>
+                    <h3>Contractor Registry</h3>
+                    <p>Search, filter, assign, and maintain active contractors in one workspace.</p>
+                </div>
+                <div class="contractor-head-tools">
+                    <span id="contractorLastSync" class="contractor-last-sync">Last synced: --</span>
+                    <button type="button" id="refreshContractorsBtn" class="btn-contractor-secondary">Refresh</button>
+                    <button type="button" id="exportContractorsCsvBtn" class="btn-contractor-primary">Export CSV</button>
+                </div>
             </div>
 
             <div class="contractors-filter contractor-toolbar">
@@ -308,6 +315,29 @@ $db->close();
                     <option>Blacklisted</option>
                 </select>
                 <div id="contractorsCount" class="contractor-count-pill">0 contractors</div>
+            </div>
+
+            <div class="contractor-stats-grid">
+                <article class="contractor-stat-card">
+                    <span>Total Contractors</span>
+                    <strong id="contractorStatTotal">0</strong>
+                </article>
+                <article class="contractor-stat-card is-active">
+                    <span>Active</span>
+                    <strong id="contractorStatActive">0</strong>
+                </article>
+                <article class="contractor-stat-card is-suspended">
+                    <span>Suspended</span>
+                    <strong id="contractorStatSuspended">0</strong>
+                </article>
+                <article class="contractor-stat-card is-blacklisted">
+                    <span>Blacklisted</span>
+                    <strong id="contractorStatBlacklisted">0</strong>
+                </article>
+                <article class="contractor-stat-card is-rating">
+                    <span>Average Rating</span>
+                    <strong id="contractorStatAvgRating">0.0</strong>
+                </article>
             </div>
 
             <div class="contractors-section">
@@ -403,6 +433,14 @@ $db->close();
         const statusFilter = document.getElementById('filterStatus');
         const countEl = document.getElementById('contractorsCount');
         const formMessage = document.getElementById('formMessage');
+        const lastSyncEl = document.getElementById('contractorLastSync');
+        const refreshBtn = document.getElementById('refreshContractorsBtn');
+        const exportCsvBtn = document.getElementById('exportContractorsCsvBtn');
+        const statTotalEl = document.getElementById('contractorStatTotal');
+        const statActiveEl = document.getElementById('contractorStatActive');
+        const statSuspendedEl = document.getElementById('contractorStatSuspended');
+        const statBlacklistedEl = document.getElementById('contractorStatBlacklisted');
+        const statAvgRatingEl = document.getElementById('contractorStatAvgRating');
 
         const assignmentModal = document.getElementById('assignmentModal');
         const projectsViewModal = document.getElementById('projectsViewModal');
@@ -422,6 +460,7 @@ $db->close();
 
         let contractorsCache = [];
         let projectsCache = [];
+        let visibleContractors = [];
         let currentAssignedIds = [];
 
         function esc(v) {
@@ -483,6 +522,7 @@ $db->close();
             if (!contractorsTbody) return;
             contractorsTbody.innerHTML = '';
             const list = Array.isArray(rows) ? rows : [];
+            visibleContractors = list;
 
             if (countEl) countEl.textContent = `${list.length} contractor${list.length === 1 ? '' : 's'}`;
 
@@ -509,6 +549,73 @@ $db->close();
                 `;
                 contractorsTbody.appendChild(tr);
             }
+        }
+
+        function updateStats(rows) {
+            const list = Array.isArray(rows) ? rows : [];
+            let active = 0;
+            let suspended = 0;
+            let blacklisted = 0;
+            let ratingSum = 0;
+            let ratingCount = 0;
+
+            for (const c of list) {
+                const status = String(c.status || '').toLowerCase();
+                if (status === 'active') active += 1;
+                if (status === 'suspended') suspended += 1;
+                if (status === 'blacklisted') blacklisted += 1;
+                const r = Number(c.rating);
+                if (Number.isFinite(r) && r > 0) {
+                    ratingSum += r;
+                    ratingCount += 1;
+                }
+            }
+
+            if (statTotalEl) statTotalEl.textContent = String(list.length);
+            if (statActiveEl) statActiveEl.textContent = String(active);
+            if (statSuspendedEl) statSuspendedEl.textContent = String(suspended);
+            if (statBlacklistedEl) statBlacklistedEl.textContent = String(blacklisted);
+            if (statAvgRatingEl) statAvgRatingEl.textContent = ratingCount ? (ratingSum / ratingCount).toFixed(1) : '0.0';
+        }
+
+        function updateLastSync() {
+            if (!lastSyncEl) return;
+            const now = new Date();
+            const stamp = now.toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+            lastSyncEl.textContent = `Last synced: ${stamp}`;
+        }
+
+        function exportVisibleContractorsCsv() {
+            const list = Array.isArray(visibleContractors) ? visibleContractors : [];
+            if (!list.length) {
+                setMessage('No contractors to export.', true);
+                return;
+            }
+            const escCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const header = ['Company', 'License', 'Email', 'Phone', 'Status', 'Rating'];
+            const rows = list.map((c) => [
+                c.company || '',
+                c.license || '',
+                c.email || '',
+                c.phone || '',
+                c.status || '',
+                c.rating || ''
+            ]);
+            const csv = [header, ...rows].map((r) => r.map(escCsv).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `contractors-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(a.href);
         }
 
         function renderProjects(rows) {
@@ -696,9 +803,11 @@ $db->close();
         }
 
         let booted = false;
-        async function boot() {
-            if (booted) return;
-            booted = true;
+        async function loadAllData() {
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+                refreshBtn.textContent = 'Refreshing...';
+            }
             try {
                 const [contractors, projects] = await Promise.all([
                     fetchJsonWithFallback('action=load_contractors&_=' + Date.now()),
@@ -706,6 +815,8 @@ $db->close();
                 ]);
                 contractorsCache = Array.isArray(contractors) ? contractors : [];
                 projectsCache = Array.isArray(projects) ? projects : [];
+                updateStats(contractorsCache);
+                updateLastSync();
                 renderContractors(contractorsCache);
                 renderProjects(projectsCache);
             } catch (err) {
@@ -716,7 +827,18 @@ $db->close();
                     formMessage.style.color = '#c00';
                     formMessage.textContent = err.message || 'Failed to load data.';
                 }
+            } finally {
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = 'Refresh';
+                }
             }
+        }
+
+        async function boot() {
+            if (booted) return;
+            booted = true;
+            await loadAllData();
         }
 
         searchInput?.addEventListener('input', applyFilters);
@@ -745,6 +867,7 @@ $db->close();
                     const result = await postJsonWithFallback(`action=delete_contractor&id=${encodeURIComponent(contractorId)}`);
                     if (!result || result.success === false) throw new Error((result && result.message) || 'Delete failed');
                     contractorsCache = contractorsCache.filter((c) => String(c.id) !== String(contractorId));
+                    updateStats(contractorsCache);
                     applyFilters();
                     setMessage('Contractor deleted successfully.', false);
                 } catch (err) {
@@ -754,6 +877,8 @@ $db->close();
         });
 
         saveAssignmentsBtn?.addEventListener('click', saveAssignmentsHandler);
+        refreshBtn?.addEventListener('click', loadAllData);
+        exportCsvBtn?.addEventListener('click', exportVisibleContractorsCsv);
         assignCancelBtn?.addEventListener('click', closeAssignModal);
         projectsCloseBtn?.addEventListener('click', closeProjectsModal);
         assignmentModal?.addEventListener('click', (e) => { if (e.target === assignmentModal) closeAssignModal(); });
