@@ -104,14 +104,20 @@ $db->close();
     <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
 </head>
 <body>
-    <!-- Sidebar with logo and IPMS at the top -->
-    <aside class="nav" id="navbar">
-        <div class="nav-logo" style="display:flex;flex-direction:row;align-items:center;justify-content:center;padding:18px 0 8px 0;gap:10px;">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
-            <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
+
+    <!-- Burger button (always visible on mobile, top left) -->
+    <button id="sidebarBurgerBtn" class="sidebar-burger-btn" aria-label="Open sidebar" type="button">
+        <span class="burger-bar"></span>
+        <span class="burger-bar"></span>
+        <span class="burger-bar"></span>
+    </button>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <aside class="nav sidebar-animated" id="navbar">
+        <div class="nav-logo admin-sidebar-logo">
+            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" />
+            <span class="logo-text">IPMS</span>
         </div>
-        <!-- No burger button or header, sidebar only -->
-        <div class="nav-user" style="border-top:none;padding-top:0;margin-bottom:8px;">
+        <div class="nav-user">
             <?php
             $profile_img = '';
             $user_email = isset($user['email']) ? $user['email'] : '';
@@ -140,34 +146,67 @@ $db->close();
             }
             $bgcolor = stringToColor($user_name);
             ?>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <div class="user-profile">
                 <?php if ($profile_img): ?>
-                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon" style="width:48px;height:48px;" />
+                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon" />
                 <?php else: ?>
-                    <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;">
                         <?php echo $initials; ?>
                     </div>
                 <?php endif; ?>
-                <div style="font-weight:700;font-size:1.08em;line-height:1.2;margin-top:2px;text-align:center;"> <?php echo htmlspecialchars($user_name); ?> </div>
-                <div style="font-size:0.97em;color:#64748b;line-height:1.1;text-align:center;"> <?php echo htmlspecialchars($user_email); ?> </div>
+                <div class="user-name"> <?php echo htmlspecialchars($user_name); ?> </div>
+                <div class="user-email"> <?php echo htmlspecialchars($user_email); ?> </div>
             </div>
         </div>
-        <hr style="width:80%;margin:10px auto 16px auto;border:0;border-top:1.5px solid #e5e7eb;" />
+        <hr class="sidebar-divider" />
         <nav class="nav-links">
             <a href="user-dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
             <a href="user-progress-monitoring.php"><img src="../assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
             <a href="user-feedback.php" class="active"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
             <a href="user-settings.php"><img src="settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </nav>
-        <div style="margin-top:auto;padding:18px 0 0 0;display:flex;justify-content:center;">
+        <div class="sidebar-logout-container">
             <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
         </div>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            window.setupLogoutConfirmation && window.setupLogoutConfirmation();
-        });
-        </script>
     </aside>
+
+    <script>
+    // Sidebar burger and overlay logic (admin-style, fully hides sidebar)
+    (function() {
+        const sidebar = document.getElementById('navbar');
+        const burger = document.getElementById('sidebarBurgerBtn');
+        const overlay = document.getElementById('sidebarOverlay');
+        function openSidebar() {
+            sidebar.classList.add('sidebar-open');
+            overlay.classList.add('sidebar-overlay-active');
+            document.body.classList.add('sidebar-opened');
+        }
+        function closeSidebar() {
+            sidebar.classList.remove('sidebar-open');
+            overlay.classList.remove('sidebar-overlay-active');
+            document.body.classList.remove('sidebar-opened');
+        }
+        burger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (sidebar.classList.contains('sidebar-open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+        overlay.addEventListener('click', closeSidebar);
+        // Hide sidebar on resize if desktop
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 991) {
+                closeSidebar();
+            }
+        });
+    })();
+    // Logout confirmation (if needed)
+    document.addEventListener('DOMContentLoaded', function() {
+        window.setupLogoutConfirmation && window.setupLogoutConfirmation();
+    });
+    </script>
     <!-- Toggle button to show sidebar -->
     <div class="toggle-btn" id="showSidebarBtn">
         <a href="#" id="toggleSidebarShow" title="Show sidebar">

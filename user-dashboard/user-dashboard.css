@@ -583,7 +583,8 @@ body::before {
 }
 
 /* NAVIGATION SIDEBAR - Match admin design */
-.nav { 
+/* Sidebar base */
+.nav, .sidebar-animated {
     position: fixed;
     top: 0;
     left: 0;
@@ -602,8 +603,48 @@ body::before {
     overflow-y: auto;
     overflow-x: hidden;
     transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    transform: translateX(0);
 }
-.nav.hidden { transform: translateX(-100%); }
+.sidebar-animated {
+    will-change: transform;
+}
+.sidebar-animated:not(.sidebar-open) {
+    transform: translateX(-100%);
+}
+@media (max-width: 991px) {
+    .sidebar-animated {
+        width: 240px;
+        min-width: 220px;
+        max-width: 90vw;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    }
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+}
+.sidebar-open {
+    transform: translateX(0) !important;
+}
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(30, 41, 59, 0.25);
+    z-index: 2001;
+    transition: opacity 0.3s;
+    opacity: 0;
+}
+.sidebar-overlay-active {
+    display: block;
+    opacity: 1;
+}
 .nav-logo { 
     display: flex;
     flex-direction: column;
@@ -774,14 +815,103 @@ body::before {
     object-fit: contain;
 }
 
+/* Sidebar nav links with visible scrollbar */
 .nav-links {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    overflow-y: hidden;
+    overflow-y: auto;
     overflow-x: hidden;
+    max-height: 45vh;
     padding-right: 4px;
     margin-right: -4px;
+    scrollbar-width: thin;
+    scrollbar-color: #3762c8 #e8f0ff;
+}
+.nav-links::-webkit-scrollbar {
+    width: 8px;
+    background: #e8f0ff;
+}
+.nav-links::-webkit-scrollbar-thumb {
+    background: #3762c8;
+    border-radius: 6px;
+}
+/* Burger button styles */
+.sidebar-burger-btn {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    z-index: 2100;
+    width: 44px;
+    height: 44px;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(30,58,138,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: box-shadow 0.2s, background 0.2s;
+}
+.sidebar-burger-btn:hover {
+    background: #f1f5f9;
+    box-shadow: 0 4px 16px rgba(30,58,138,0.13);
+}
+.burger-bar {
+    width: 24px;
+    height: 3px;
+    background: #3762c8;
+    border-radius: 2px;
+    transition: all 0.2s;
+}
+@media (min-width: 992px) {
+    .sidebar-burger-btn {
+        display: none;
+    }
+    .sidebar-overlay {
+        display: none !important;
+    }
+}
+/* Sidebar logout container for centering */
+.sidebar-logout-container {
+    margin-top: auto;
+    padding: 18px 0 0 0;
+    display: flex;
+    justify-content: center;
+}
+/* User profile section in sidebar */
+.user-profile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.user-icon.user-initials {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1em;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.user-name {
+    font-weight: 700;
+    font-size: 1.08em;
+    line-height: 1.2;
+    margin-top: 2px;
+    text-align: center;
+}
+.user-email {
+    font-size: 0.97em;
+    color: #64748b;
+    line-height: 1.1;
+    text-align: center;
 }
 
 /* Custom scrollbar for nav-links only */
@@ -928,19 +1058,8 @@ body::before {
 
 @media (max-width: 768px) {
     .main-content {
-        margin-left: 220px;
-        width: calc(100% - 220px);
-        padding: 20px 25px;
-    }
-    .dash-header h1 {
-        font-size: 22px;
-    }
-}
-
-@media (max-width: 480px) {
-    .main-content {
-        margin-left: 0;
-        width: 100%;
+        margin-left: 0 !important;
+        width: 100% !important;
         padding: 15px;
     }
     .dash-header h1 {
