@@ -62,23 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 $db->close();
 ?>
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/assets/style.css">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - User Dashboard</title>
-    <link rel="icon" type="image/png" href="/logocityhall.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="user-dashboard.css">
-    <?php echo get_app_config_script(); ?>
-    <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
-</head>
-<body>
-    <header class="nav" id="navbar">
-        <!-- Sidebar toggle button at the far top left -->
+    <aside class="nav" id="navbar">
         <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -87,16 +71,10 @@ $db->close();
             </svg>
         </button>
         <div class="nav-logo">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;margin-bottom:4px;" />
             <span class="logo-text">IPMS</span>
         </div>
-        <div class="nav-links">
-            <a href="user-dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="../assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
-            <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php" class="active"><img src="settings.png" class="nav-icon"> Settings</a>
-        </div>
-        <div class="nav-user">
+        <div class="nav-user" style="border-top:none;padding-top:0;margin-bottom:8px;">
             <?php
             $profile_img = '';
             $user_email = isset($user['email']) ? $user['email'] : '';
@@ -125,40 +103,35 @@ $db->close();
             }
             $bgcolor = stringToColor($user_name);
             ?>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:110px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
                 <?php if ($profile_img): ?>
-                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon">
+                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon" style="width:48px;height:48px;" />
                 <?php else: ?>
                     <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
                         <?php echo $initials; ?>
                     </div>
                 <?php endif; ?>
-                <div style="font-weight:600;font-size:1.05em;line-height:1.2;margin-top:2px;"> <?php echo htmlspecialchars($user_name); ?> </div>
-                <div style="font-size:0.97em;color:#64748b;line-height:1.1;"> <?php echo htmlspecialchars($user_email); ?> </div>
+                <div style="font-weight:700;font-size:1.08em;line-height:1.2;margin-top:2px;text-align:center;"> <?php echo htmlspecialchars($user_name); ?> </div>
+                <div style="font-size:0.97em;color:#64748b;line-height:1.1;text-align:center;"> <?php echo htmlspecialchars($user_email); ?> </div>
             </div>
-            <a href="#" class="nav-logout logout-btn" id="logoutLink" style="background:#ef4444;color:#fff;padding:6px 16px;border-radius:6px;font-weight:500;margin-left:12px;">Logout</a>
+        </div>
+        <hr style="width:80%;margin:10px auto 16px auto;border:0;border-top:1.5px solid #e5e7eb;" />
+        <nav class="nav-links">
+            <a href="user-dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+            <a href="user-progress-monitoring.php"><img src="../assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
+            <a href="user-settings.php" class="active"><img src="settings.png" class="nav-icon"> Settings</a>
+        </nav>
+        <div style="margin-top:auto;padding:18px 0 0 0;display:flex;justify-content:center;">
+            <a href="#" class="nav-logout logout-btn" id="logoutLink">Logout</a>
         </div>
         <script>
         document.addEventListener('DOMContentLoaded', function() {
-            var logoutLink = document.getElementById('logoutLink');
-            if (logoutLink) {
-                logoutLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (confirm('You will be logged out. Are you sure?')) {
-                        window.location.href = '../logout.php';
-                    }
-                });
-            }
+            window.setupLogoutConfirmation && window.setupLogoutConfirmation();
         });
         </script>
-        <a href="#" id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle sidebar">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-        </a>
-    </header>
+    </aside>
+    // ...existing code...
 
     <!-- Toggle button to show sidebar -->
     <!-- Toggle button to show sidebar -->
