@@ -611,6 +611,32 @@ $db->close();
             background: #f8fbff;
         }
 
+        .main-content .br-btn-delete {
+            border: 1px solid #fecaca;
+            background: linear-gradient(135deg, #fff1f2, #ffe4e6);
+            color: #b91c1c;
+            border-radius: 10px;
+            min-height: 32px;
+            padding: 0 10px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            transition: all 0.18s ease;
+        }
+
+        .main-content .br-btn-delete:hover {
+            background: linear-gradient(135deg, #fee2e2, #fecdd3);
+            border-color: #fda4af;
+            color: #991b1b;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 14px rgba(220, 38, 38, 0.18);
+        }
+
+        .main-content .br-btn-delete:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+        }
+
         .main-content .summary {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -727,6 +753,97 @@ $db->close();
             to { opacity: 1; transform: translateY(0); }
         }
 
+        .br-confirm-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .br-confirm-overlay.show {
+            display: flex;
+        }
+
+        .br-confirm-dialog {
+            width: min(460px, 100%);
+            border-radius: 16px;
+            border: 1px solid #fecaca;
+            background: linear-gradient(165deg, #ffffff, #fff7f7);
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.3);
+            padding: 16px;
+        }
+
+        .br-confirm-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .br-confirm-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .br-confirm-title {
+            margin: 0;
+            color: #7f1d1d;
+            font-size: 1.02rem;
+        }
+
+        .br-confirm-message {
+            margin: 0 0 10px;
+            color: #4b5563;
+            line-height: 1.45;
+        }
+
+        .br-confirm-item {
+            border: 1px solid #fecaca;
+            background: #fff;
+            color: #991b1b;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .br-confirm-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .br-confirm-cancel,
+        .br-confirm-delete {
+            min-height: 38px;
+            border-radius: 10px;
+            padding: 0 14px;
+            font-weight: 700;
+        }
+
+        .br-confirm-cancel {
+            border: 1px solid #cfd8e3;
+            background: #eef2f7;
+            color: #355678;
+        }
+
+        .br-confirm-delete {
+            border: 1px solid #dc2626;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+        }
+
         @media (max-width: 1080px) {
             .main-content .summary {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -811,6 +928,63 @@ $db->close();
                 toast.style.transition = 'all 0.2s ease';
                 setTimeout(() => toast.remove(), 220);
             }, 2600);
+        }
+
+        function ensureConfirmDialog() {
+            let overlay = document.querySelector('.br-confirm-overlay');
+            if (overlay) return overlay;
+            overlay = document.createElement('div');
+            overlay.className = 'br-confirm-overlay';
+            overlay.innerHTML = [
+                '<div class="br-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="brConfirmTitle">',
+                '  <div class="br-confirm-head">',
+                '    <span class="br-confirm-icon">!</span>',
+                '    <h3 id="brConfirmTitle" class="br-confirm-title">Delete item?</h3>',
+                '  </div>',
+                '  <p class="br-confirm-message">This action cannot be undone.</p>',
+                '  <div class="br-confirm-item" id="brConfirmItem">Item</div>',
+                '  <div class="br-confirm-actions">',
+                '    <button type="button" class="br-confirm-cancel">Cancel</button>',
+                '    <button type="button" class="br-confirm-delete">Delete Permanently</button>',
+                '  </div>',
+                '</div>'
+            ].join('');
+            document.body.appendChild(overlay);
+            return overlay;
+        }
+
+        function confirmDelete(itemLabel, message) {
+            const overlay = ensureConfirmDialog();
+            const msgEl = overlay.querySelector('.br-confirm-message');
+            const itemEl = overlay.querySelector('#brConfirmItem');
+            const cancelBtn = overlay.querySelector('.br-confirm-cancel');
+            const deleteBtn = overlay.querySelector('.br-confirm-delete');
+
+            if (msgEl) msgEl.textContent = message || 'This action cannot be undone.';
+            if (itemEl) itemEl.textContent = itemLabel || 'Selected item';
+
+            return new Promise((resolve) => {
+                const close = (result) => {
+                    overlay.classList.remove('show');
+                    cancelBtn.removeEventListener('click', onCancel);
+                    deleteBtn.removeEventListener('click', onDelete);
+                    overlay.removeEventListener('click', onBackdrop);
+                    document.removeEventListener('keydown', onEscape);
+                    resolve(result);
+                };
+                const onCancel = () => close(false);
+                const onDelete = () => close(true);
+                const onBackdrop = (e) => { if (e.target === overlay) close(false); };
+                const onEscape = (e) => { if (e.key === 'Escape') close(false); };
+
+                cancelBtn.addEventListener('click', onCancel);
+                deleteBtn.addEventListener('click', onDelete);
+                overlay.addEventListener('click', onBackdrop);
+                document.addEventListener('keydown', onEscape);
+
+                overlay.classList.add('show');
+                deleteBtn.focus();
+            });
         }
 
         function switchPanel(panelKey) {
@@ -911,7 +1085,7 @@ $db->close();
                     '<td>' + currency(spent) + '</td>',
                     '<td>' + currency(remaining) + '</td>',
                     '<td>' + consumed + '%</td>',
-                    '<td><button class="btn-small btn-danger btnDeleteSource" type="button" data-id="' + ms.id + '">Delete</button></td>'
+                    '<td><button class="br-btn-delete btnDeleteSource" type="button" data-id="' + ms.id + '" data-name="' + String(ms.name || '').replace(/"/g, '&quot;') + '">Delete</button></td>'
                 ].join('');
                 tbody.appendChild(tr);
             });
@@ -933,9 +1107,13 @@ $db->close();
             tbody.querySelectorAll('.btnDeleteSource').forEach((btn) => {
                 btn.addEventListener('click', async function () {
                     const id = this.getAttribute('data-id');
+                    const name = this.getAttribute('data-name') || 'Source';
+                    const ok = await confirmDelete(name, 'Delete this source fund and all its related expenses?');
+                    if (!ok) return;
                     try {
                         await apiPost('delete_milestone', { id: id });
                         await renderAllFromServer();
+                        notify('Deleted', 'Source fund removed successfully.', 'success');
                     } catch (err) {
                         console.error(err);
                         notify('Delete Failed', 'Failed to delete source.', 'error');
@@ -957,7 +1135,7 @@ $db->close();
                     '<td>' + (ms ? ms.name : '(source removed)') + '</td>',
                     '<td>' + String(exp.description || '') + '</td>',
                     '<td>' + currency(exp.amount) + '</td>',
-                    '<td><button class="btn-small btn-danger btnDeleteExpense" type="button" data-id="' + exp.id + '">Delete</button></td>'
+                    '<td><button class="br-btn-delete btnDeleteExpense" type="button" data-id="' + exp.id + '" data-desc="' + String(exp.description || '').replace(/"/g, '&quot;') + '">Delete</button></td>'
                 ].join('');
                 tbody.appendChild(tr);
             });
@@ -965,9 +1143,14 @@ $db->close();
             tbody.querySelectorAll('.btnDeleteExpense').forEach((btn) => {
                 btn.addEventListener('click', async function () {
                     const id = this.getAttribute('data-id');
+                    const desc = this.getAttribute('data-desc') || 'Expense entry';
+                    const label = desc.trim() ? desc : 'Expense entry';
+                    const ok = await confirmDelete(label, 'Delete this expense record permanently?');
+                    if (!ok) return;
                     try {
                         await apiPost('delete_expense', { id: id });
                         await renderAllFromServer();
+                        notify('Deleted', 'Expense removed successfully.', 'success');
                     } catch (err) {
                         console.error(err);
                         notify('Delete Failed', 'Failed to delete expense.', 'error');
