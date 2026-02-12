@@ -3897,11 +3897,20 @@ document.addEventListener('click', function (event) {
     const modal = ensureLogoutModal();
     let pendingUrl = '/admin/logout.php';
 
+    // Ensure modal is hidden by default
+    modal.classList.remove('show');
+
     document.addEventListener('click', (e) => {
       const link = e.target.closest('a[href*="logout.php"]');
       if (!link) return;
-      if (!link.closest('.nav, .ac-723b1a7b, .footer, .main-content')) return;
+      
+      // Check if link is in admin nav or main content areas
+      const inAdmin = link.closest('.nav') || link.closest('.sidebar') || link.closest('.main-content');
+      if (!inAdmin) return;
+      
       e.preventDefault();
+      e.stopPropagation();
+      
       pendingUrl = link.getAttribute('href') || '/admin/logout.php';
       modal.classList.add('show');
       q('.btn-logout', modal).focus();
