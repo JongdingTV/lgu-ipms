@@ -44,7 +44,7 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
-    <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
+    <link rel="stylesheet" href="../assets/css/admin-component-overrides.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-component-overrides.css'); ?>">
 </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -210,6 +210,7 @@ $db->close();
         <!-- Recent Projects Section -->
         <div class="recent-projects card">
             <h3>Recent Projects</h3>
+            <div class="table-wrap dashboard-table-wrap">
             <table class="projects-table">
                 <thead>
                     <tr>
@@ -254,6 +255,7 @@ $db->close();
                     ?>
                 </tbody>
             </table>
+            </div>
         </div>
 
         <!-- Quick Stats -->

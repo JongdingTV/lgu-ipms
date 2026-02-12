@@ -471,3 +471,107 @@ body.sidebar-hidden .sidebar-toggle-wrapper {
         padding: 10px 20px !important;
     }
 }
+
+/* ============================================
+   DASHBOARD PAGE REFINEMENT
+   ============================================ */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
+    max-width: 1440px !important;
+    padding: 26px 28px 34px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(245, 250, 255, 0.85)) !important;
+    border: 1px solid #d7e3f2 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 14px 28px rgba(15, 30, 56, 0.16) !important;
+    padding: 22px 26px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header h1 {
+    color: #17345d !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header p {
+    color: #4d6684 !important;
+    font-weight: 500 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .metrics-container {
+    grid-template-columns: repeat(4, minmax(220px, 1fr)) !important;
+    gap: 18px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .charts-container {
+    grid-template-columns: repeat(2, minmax(320px, 1fr)) !important;
+    gap: 18px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .recent-projects {
+    padding: 18px 20px !important;
+}
+
+/* Critical overflow fix for Recent Projects table */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    border: 1px solid #dbe6f3 !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.82) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap .projects-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    margin: 0 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap th,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap td:first-child,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap th:first-child {
+    width: 24%;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap td:last-child,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap th:last-child {
+    width: 18%;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .quick-stats {
+    margin-top: 18px !important;
+}
+
+@media (max-width: 1200px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .metrics-container {
+        grid-template-columns: repeat(2, minmax(220px, 1fr)) !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .charts-container {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 768px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
+        padding: 14px 12px 22px !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .metrics-container {
+        grid-template-columns: 1fr !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap .projects-table {
+        min-width: 720px !important;
+    }
+}
