@@ -142,6 +142,13 @@ $db->close();
             <p>Manage your project budget efficiently: set total budget, define source funds for departments, track expenses, and monitor consumption.</p>
         </div>
 
+        <div class="br-tabs" role="tablist" aria-label="Budget module sections">
+            <button type="button" class="br-tab active" data-panel="budget" role="tab" aria-selected="true">Set Project Budget</button>
+            <button type="button" class="br-tab" data-panel="sources" role="tab" aria-selected="false">Source Funds</button>
+            <button type="button" class="br-tab" data-panel="expenses" role="tab" aria-selected="false">Track Expenses</button>
+        </div>
+
+        <div id="panel-budget" class="br-panel active">
         <div class="budget-section">
             <h2>Set Project Budget</h2>
             <div class="controls-bar">
@@ -155,7 +162,9 @@ $db->close();
                 </div>
             </div>
         </div>
+        </div>
 
+        <div id="panel-sources" class="br-panel">
         <div class="allocation-section">
             <h2>Source Funds</h2>
             <form id="milestoneForm" class="inline-form">
@@ -179,7 +188,9 @@ $db->close();
                 </table>
             </div>
         </div>
+        </div>
 
+        <div id="panel-expenses" class="br-panel">
         <div class="expense-section">
             <h2>Track Expenses</h2>
             <form id="expenseForm" class="inline-form">
@@ -198,6 +209,7 @@ $db->close();
                     <tbody></tbody>
                 </table>
             </div>
+        </div>
         </div>
 
         <div class="summary-section">
@@ -259,6 +271,53 @@ $db->close();
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
             padding: 16px;
             margin-bottom: 14px;
+        }
+
+        .main-content .br-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .main-content .br-tab {
+            border: 1px solid #cbddef;
+            background: #fff;
+            color: #36597d;
+            border-radius: 999px;
+            min-height: 36px;
+            padding: 0 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            transition: all 0.18s ease;
+        }
+
+        .main-content .br-tab:hover {
+            background: #eef5ff;
+            border-color: #9fc0e3;
+            color: #1f4f83;
+        }
+
+        .main-content .br-tab.active {
+            color: #fff;
+            border-color: #1d4ed8;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.22);
+        }
+
+        .main-content .br-panel {
+            display: none;
+            animation: fadeInPanel 0.22s ease;
+        }
+
+        .main-content .br-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeInPanel {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
 
@@ -463,6 +522,16 @@ $db->close();
         }
 
         @media (max-width: 760px) {
+            .main-content .br-tabs {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+
+            .main-content .br-tab {
+                width: 100%;
+                border-radius: 10px;
+            }
+
             .main-content .controls-bar {
                 grid-template-columns: 1fr;
             }
@@ -499,8 +568,35 @@ $db->close();
 
         const KEY = 'lgu_budget_module_v1';
         let booted = false;
+        let activePanel = 'budget';
 
         function byId(id) { return document.getElementById(id); }
+
+        function switchPanel(panelKey) {
+            const tabs = document.querySelectorAll('.br-tab[data-panel]');
+            const panels = document.querySelectorAll('.br-panel[id^="panel-"]');
+            tabs.forEach((tab) => {
+                const isActive = tab.getAttribute('data-panel') === panelKey;
+                tab.classList.toggle('active', isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+            panels.forEach((panel) => {
+                const isActive = panel.id === 'panel-' + panelKey;
+                panel.classList.toggle('active', isActive);
+            });
+            activePanel = panelKey;
+        }
+
+        function initSectionTabs() {
+            const tabs = document.querySelectorAll('.br-tab[data-panel]');
+            if (!tabs.length) return;
+            tabs.forEach((tab) => {
+                tab.addEventListener('click', function () {
+                    switchPanel(this.getAttribute('data-panel') || 'budget');
+                });
+            });
+            switchPanel(activePanel);
+        }
 
         function currency(value) {
             const num = Number(value || 0);
@@ -873,6 +969,7 @@ $db->close();
                 drawChart(loadState());
             });
 
+            initSectionTabs();
             renderAll(loadState());
         }
 
