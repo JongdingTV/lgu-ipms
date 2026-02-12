@@ -108,14 +108,6 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group.o
     pointer-events: auto !important;
 }
 
-/* Fallback behavior when JS listeners conflict; keeps dropdown usable */
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group:focus-within .nav-submenu,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group:hover .nav-submenu {
-    max-height: 320px;
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-}
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item {
     font-size: 0.86rem;
