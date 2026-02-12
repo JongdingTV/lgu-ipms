@@ -718,6 +718,29 @@ $db->close();
             background: #fff;
         }
 
+        #deleteConfirmProceed {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #fff;
+            border: 1px solid #b91c1c;
+            box-shadow: 0 8px 18px rgba(220, 38, 38, 0.28);
+        }
+
+        #deleteConfirmProceed:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(185, 28, 28, 0.35);
+        }
+
+        #deleteConfirmProceed:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(185, 28, 28, 0.3);
+        }
+
+        #deleteConfirmProceed:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(254, 202, 202, 0.95), 0 10px 22px rgba(185, 28, 28, 0.35);
+        }
+
         @keyframes deleteModalIn {
             from {
                 opacity: 0;
