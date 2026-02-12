@@ -1,3 +1,33 @@
+/* Burger button beside sidebar (admin style) */
+.sidebar-burger-btn.beside-sidebar {
+    position: absolute;
+    left: 250px;
+    top: 18px;
+    z-index: 2100;
+    width: 44px;
+    height: 44px;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(30,58,138,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: box-shadow 0.2s, background 0.2s;
+}
+.sidebar-burger-btn.beside-sidebar:hover {
+    background: #f1f5f9;
+    box-shadow: 0 4px 16px rgba(30,58,138,0.13);
+}
+@media (max-width: 991px) {
+    .sidebar-burger-btn.beside-sidebar {
+        left: 100vw;
+        display: none;
+    }
+}
 /* Account Information Box Styles */
 .user-info-box {
     background: #fff;
