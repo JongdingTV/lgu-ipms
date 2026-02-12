@@ -1,3 +1,45 @@
+/* Account Information Box Styles */
+.user-info-box {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    padding: 28px 36px 24px 36px;
+    min-width: 340px;
+    max-width: 440px;
+    margin-bottom: 24px;
+    border: 1.5px solid #e5e7eb;
+}
+.user-info-box h2 {
+    font-size: 1.25em;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin-bottom: 16px;
+}
+.user-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    background: none;
+}
+.user-info-table th {
+    text-align: left;
+    font-weight: 600;
+    color: #1e3a8a;
+    padding: 8px 10px 8px 0;
+    width: 140px;
+    background: none;
+}
+.user-info-table td {
+    color: #334155;
+    padding: 8px 0 8px 6px;
+    background: none;
+}
+.user-info-table tr {
+    border-bottom: 1px solid #f1f5f9;
+}
+.user-info-table tr:last-child {
+    border-bottom: none;
+}
 /* Settings page styles */
 .settings-container {
     display: flex;
