@@ -419,11 +419,27 @@ $db->close();
         }
 
         .main-content .pm-controls {
+            display: grid;
+            grid-template-columns: minmax(260px, 1.2fr) minmax(0, 3fr);
+            align-items: end;
             gap: 12px;
         }
 
         .main-content .pm-left {
             min-width: 240px;
+        }
+
+        .main-content .pm-right {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .main-content .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
         }
 
         .main-content .pm-left label,
@@ -438,11 +454,13 @@ $db->close();
 
         .main-content .pm-left input,
         .main-content .pm-controls select {
+            width: 100%;
             border: 1px solid #cddced;
             background: #fff;
             border-radius: 10px;
             color: #1f3858;
             min-height: 38px;
+            padding: 0 12px;
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
         }
 
@@ -453,19 +471,22 @@ $db->close();
         }
 
         .main-content .btn-export {
+            align-self: end;
             min-height: 38px;
-            padding: 0 14px;
-            border: 1px solid #bfd8f8;
-            background: linear-gradient(135deg, #eff6ff, #dbeafe);
-            color: #1d4ed8;
+            padding: 0 16px;
+            border: 1px solid #1d4ed8;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #fff;
             border-radius: 10px;
             font-weight: 700;
             letter-spacing: 0.2px;
+            white-space: nowrap;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
         }
 
         .main-content .btn-export:hover {
-            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-            box-shadow: 0 8px 18px rgba(59, 130, 246, 0.22);
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            box-shadow: 0 12px 22px rgba(29, 78, 216, 0.28);
             transform: translateY(-1px);
         }
 
@@ -572,6 +593,15 @@ $db->close();
             .main-content .pm-stats-wrapper {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
+
+            .main-content .pm-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content .pm-right {
+                grid-template-columns: repeat(3, minmax(150px, 1fr));
+            }
+
             .main-content .projects-list {
                 grid-template-columns: 1fr;
             }
@@ -581,8 +611,27 @@ $db->close();
             .main-content .pm-stats-wrapper {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+
+            .main-content .pm-right {
+                grid-template-columns: repeat(2, minmax(140px, 1fr));
+            }
+
             .main-content .pm-controls-wrapper {
                 position: static;
+            }
+        }
+
+        @media (max-width: 620px) {
+            .main-content .pm-stats-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content .pm-right {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content .btn-export {
+                width: 100%;
             }
         }
     </style>
