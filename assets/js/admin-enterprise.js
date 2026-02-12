@@ -114,8 +114,14 @@
       modal.style.cssText = hiddenModalStyle;
       modal.innerHTML = `
         <div class="admin-logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle">
-          <h3 id="logoutModalTitle">Confirm Logout</h3>
-          <p>You are about to end your session. Continue?</p>
+          <div class="admin-logout-head">
+            <span class="admin-logout-icon" aria-hidden="true">↪</span>
+            <div>
+              <h3 id="logoutModalTitle">Logout Confirmation</h3>
+              <p>You are about to end your current admin session.</p>
+            </div>
+          </div>
+          <p class="admin-logout-note">Any unsaved changes on this page may be lost.</p>
           <div class="admin-logout-actions">
             <button type="button" class="btn-cancel">Cancel</button>
             <button type="button" class="btn-logout">Logout</button>

@@ -201,10 +201,136 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .export-btn {
 /* Unified logout */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-logout.nav-logout,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003 {
-    border: 1px solid #efbcbc !important;
-    background: linear-gradient(135deg, #fff5f5, #ffeaea) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #f4b4b4 !important;
+    background: linear-gradient(140deg, #fff6f6 0%, #ffe5e5 100%) !important;
     color: #b42318 !important;
     font-weight: 700 !important;
+    letter-spacing: 0.01em;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-logout.nav-logout:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003:hover {
+    border-color: #ea9797 !important;
+    background: linear-gradient(140deg, #ffecec 0%, #ffdede 100%) !important;
+    box-shadow: 0 12px 22px rgba(180, 35, 24, 0.18);
+    transform: translateY(-1px);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-logout.nav-logout:focus-visible,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2), 0 10px 18px rgba(180, 35, 24, 0.14);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-logout.nav-logout svg,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003 svg {
+    color: #c0342b;
+}
+
+/* Unified logout confirmation modal */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-modal {
+    background: rgba(7, 17, 32, 0.58) !important;
+    backdrop-filter: blur(5px) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-dialog {
+    width: min(460px, 92vw);
+    border: 1px solid #d9e5f2;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+    box-shadow: 0 20px 48px rgba(12, 28, 54, 0.3);
+    padding: 18px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #b42318;
+    background: linear-gradient(135deg, #ffe9e9, #ffd9d9);
+    border: 1px solid #f6bcbc;
+    flex: 0 0 auto;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-dialog h3 {
+    margin: 0 0 4px;
+    color: #12345a;
+    font-size: 1.06rem;
+    font-weight: 800;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-dialog p {
+    margin: 0;
+    color: #4f6784;
+    font-size: 0.91rem;
+    line-height: 1.45;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-note {
+    margin-top: 12px !important;
+    padding: 10px 11px;
+    border-radius: 10px;
+    border: 1px solid #f7c8c8;
+    background: #fff4f4;
+    color: #9f1239 !important;
+    font-size: 0.84rem !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-actions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-actions .btn-cancel,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-actions .btn-logout {
+    min-height: 39px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    padding: 0 14px;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-actions .btn-cancel {
+    color: #35557b;
+    border-color: #d4e1ee;
+    background: #ffffff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-actions .btn-cancel:hover {
+    background: #f4f8fd;
+    border-color: #c4d5ea;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-actions .btn-logout {
+    color: #ffffff;
+    border-color: #cc4b4b;
+    background: linear-gradient(135deg, #dc3a3a, #b42318);
+    box-shadow: 0 8px 18px rgba(180, 35, 24, 0.22);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-actions .btn-logout:hover {
+    background: linear-gradient(135deg, #c93131, #991b1b);
 }
 
 /* Settings page layout refresh */
