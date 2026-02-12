@@ -84,9 +84,6 @@ $db->close();
                 justify-content: center;
                 align-items: center;
                 padding: 0;
-                /* Hide visually and remove from layout in desktop */
-                visibility: hidden;
-                pointer-events: none;
             }
             .sidebar-burger-btn.mobile-only:active,
             .sidebar-burger-btn.mobile-only:focus {
@@ -113,8 +110,26 @@ $db->close();
             @media (max-width: 991px) {
                 .sidebar-burger-btn.mobile-only {
                     display: flex !important;
-                    visibility: visible;
-                    pointer-events: auto;
+                }
+                #navbar {
+                    transform: translateX(-110%);
+                    transition: transform 0.3s cubic-bezier(.4,2,.6,1);
+                    position: fixed;
+                    left: 0;
+                    top: 0;
+                    height: 100vh;
+                    z-index: 1003;
+                }
+                #navbar.sidebar-open {
+                    transform: translateX(0);
+                }
+            }
+            @media (min-width: 992px) {
+                #navbar {
+                    transform: none !important;
+                    position: static !important;
+                    height: auto !important;
+                    z-index: 1001;
                 }
             }
             </style>
@@ -301,7 +316,7 @@ $db->close();
             </table>
         </div>
 
-        <!-- Quick Stats -->
+        <!-- Quick Stats: Feedback Review Table Only (no feedback form, no duplicate) -->
         <div class="feedback-review recent-projects">
             <h3>Your Feedback Review</h3>
             <table class="projects-table">
