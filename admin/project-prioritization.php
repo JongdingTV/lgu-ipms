@@ -253,8 +253,8 @@ $db->close();
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="edit-btn" data-onclick="openEditModal('edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">Edit</button>
-                                        <button class="view-btn" data-onclick="openModal('modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">View Details</button>
+                                        <button type="button" class="edit-btn" data-edit-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Edit</button>
+                                        <button type="button" class="view-btn" data-view-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Details</button>
                                     </td>
                                 </tr>
 
@@ -263,7 +263,7 @@ $db->close();
                                     <div class="modal-content">
                                         <div class="modal-header">
                                             <h2>Update Feedback Status</h2>
-                                            <button class="modal-close" data-onclick="closeEditModal('edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">&times;</button>
+                                            <button type="button" class="modal-close" data-close-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">&times;</button>
                                         </div>
                                         <form method="post" class="modal-form">
                                             <div class="modal-body">
@@ -290,7 +290,7 @@ $db->close();
                                             </div>
                                             <div class="modal-footer">
                                                 <input type="hidden" name="feedback_id" value="<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">
-                                                <button type="button" class="modal-btn modal-btn-close" data-onclick="closeEditModal('edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">Cancel</button>
+                                                <button type="button" class="modal-btn modal-btn-close" data-close-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Cancel</button>
                                                 <button type="submit" name="update_status" class="modal-btn modal-btn-action">Save Changes</button>
                                             </div>
                                         </form>
@@ -302,7 +302,7 @@ $db->close();
                                     <div class="modal-content">
                                         <div class="modal-header">
                                             <h2>Feedback Details</h2>
-                                            <button class="modal-close" data-onclick="closeModal('modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">&times;</button>
+                                            <button type="button" class="modal-close" data-close-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">&times;</button>
                                         </div>
                                         <div class="modal-body">
                                             <div class="modal-field">
@@ -343,7 +343,7 @@ $db->close();
                                             </div>
                                         </div>
                                         <div class="modal-footer">
-                                            <button class="modal-btn modal-btn-close" data-onclick="closeModal('modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>')">Close</button>
+                                            <button type="button" class="modal-btn modal-btn-close" data-close-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Close</button>
                                         </div>
                                     </div>
                                 </div>
@@ -383,6 +383,66 @@ $db->close();
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script>
+    (function () {
+        if (!location.pathname.endsWith('/project-prioritization.php')) return;
+
+        function openModalById(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            document.querySelectorAll('.modal.show').forEach((m) => m.classList.remove('show'));
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModalById(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.classList.remove('show');
+            if (!document.querySelector('.modal.show')) {
+                document.body.style.overflow = '';
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            const editBtn = e.target.closest('[data-edit-modal]');
+            if (editBtn) {
+                openModalById(editBtn.getAttribute('data-edit-modal'));
+                return;
+            }
+
+            const viewBtn = e.target.closest('[data-view-modal]');
+            if (viewBtn) {
+                openModalById(viewBtn.getAttribute('data-view-modal'));
+                return;
+            }
+
+            const closeBtn = e.target.closest('[data-close-modal]');
+            if (closeBtn) {
+                closeModalById(closeBtn.getAttribute('data-close-modal'));
+                return;
+            }
+
+            const overlay = e.target.classList && e.target.classList.contains('modal') ? e.target : null;
+            if (overlay) {
+                overlay.classList.remove('show');
+                if (!document.querySelector('.modal.show')) document.body.style.overflow = '';
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            document.querySelectorAll('.modal.show').forEach((m) => m.classList.remove('show'));
+            document.body.style.overflow = '';
+        });
+
+        // Expose compatibility functions used elsewhere
+        window.openModal = openModalById;
+        window.closeModal = closeModalById;
+        window.openEditModal = openModalById;
+        window.closeEditModal = closeModalById;
+    })();
+    </script>
 </body>
 </html>
 

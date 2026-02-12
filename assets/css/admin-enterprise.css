@@ -769,6 +769,93 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-btn
     border-color: #c8d8ea;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(9, 20, 39, 0.56);
+    backdrop-filter: blur(4px);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal.show {
+    display: flex !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1px solid #dbe6f3;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid #d6e2ef;
+    background: #f4f8fd;
+    color: #31567e;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-body {
+    max-height: 58vh;
+    overflow: auto;
+    padding-right: 4px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-field {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #dce7f4;
+    background: #f9fbff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #547296;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-value {
+    font-size: 0.93rem;
+    color: #1f3d61;
+    line-height: 1.45;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .status-dropdown {
+    width: 100%;
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid #c9d9eb;
+    background: #ffffff;
+    color: #1f3d61;
+    padding: 0 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-footer {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #dbe6f3;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 @media (max-width: 980px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-controls {
         grid-template-columns: 1fr;
