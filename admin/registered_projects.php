@@ -449,6 +449,24 @@ $db->close();
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="delete-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle" aria-hidden="true">
+        <div class="delete-confirm-content">
+            <div class="delete-confirm-header">
+                <div class="delete-confirm-icon" aria-hidden="true">!</div>
+                <h2 id="deleteConfirmTitle">Delete Project?</h2>
+            </div>
+            <div class="delete-confirm-body">
+                <p id="deleteConfirmMessage">This project and all associated data will be permanently deleted.</p>
+                <div id="deleteConfirmProjectName" class="delete-confirm-project"></div>
+            </div>
+            <div class="delete-confirm-footer">
+                <button type="button" id="deleteConfirmCancel" class="btn-cancel">Cancel</button>
+                <button type="button" id="deleteConfirmProceed" class="btn-delete">Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+
     <style>
         .edit-project-modal {
             display: none;
@@ -616,6 +634,100 @@ $db->close();
                 opacity: 1;
             }
         }
+
+        .delete-confirm-modal {
+            display: none;
+            position: fixed;
+            z-index: 2100;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(2px);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .delete-confirm-modal.show {
+            display: flex;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .delete-confirm-content {
+            width: 100%;
+            max-width: 480px;
+            background: linear-gradient(180deg, #fff7f7 0%, #ffffff 100%);
+            border: 1px solid #fecaca;
+            border-radius: 14px;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.32);
+            overflow: hidden;
+            transform: translateY(8px);
+            animation: deleteModalIn 0.2s ease-out forwards;
+        }
+
+        .delete-confirm-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 20px 10px;
+        }
+
+        .delete-confirm-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .delete-confirm-header h2 {
+            margin: 0;
+            color: #7f1d1d;
+            font-size: 20px;
+        }
+
+        .delete-confirm-body {
+            padding: 0 20px 14px;
+            color: #334155;
+        }
+
+        .delete-confirm-body p {
+            margin: 0 0 10px;
+            line-height: 1.5;
+        }
+
+        .delete-confirm-project {
+            padding: 10px 12px;
+            background: #fff;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            color: #991b1b;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .delete-confirm-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 14px 20px 18px;
+            border-top: 1px solid #fee2e2;
+            background: #fff;
+        }
+
+        @keyframes deleteModalIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
@@ -633,10 +745,15 @@ $db->close();
         const editModal = document.getElementById('editProjectModal');
         const editForm = document.getElementById('editProjectForm');
         const editSaveBtn = document.querySelector('.btn-save');
+        const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        const deleteConfirmProjectName = document.getElementById('deleteConfirmProjectName');
+        const deleteConfirmCancel = document.getElementById('deleteConfirmCancel');
+        const deleteConfirmProceed = document.getElementById('deleteConfirmProceed');
 
         if (!table || !tbody) return;
 
         let allProjects = [];
+        let pendingDeleteId = null;
 
         function showMsg(text, ok) {
             if (!msg) return;
@@ -793,22 +910,26 @@ $db->close();
 
         function confirmDeleteProject(id, projectName) {
             const safeName = projectName || 'this project';
-            if (typeof window.showConfirmation === 'function') {
-                showConfirmation({
-                    title: 'Delete Project',
-                    message: 'This project and all associated data will be permanently deleted. This action cannot be undone.',
-                    itemName: `Project: ${safeName}`,
-                    icon: 'Delete',
-                    confirmText: 'Delete Permanently',
-                    cancelText: 'Cancel',
-                    onConfirm: () => performDelete(id)
-                });
+
+            if (!deleteConfirmModal || !deleteConfirmProjectName) {
+                if (window.confirm(`Delete "${safeName}" permanently? This cannot be undone.`)) {
+                    performDelete(id);
+                }
                 return;
             }
 
-            if (window.confirm(`Delete "${safeName}" permanently? This cannot be undone.`)) {
-                performDelete(id);
-            }
+            pendingDeleteId = id;
+            deleteConfirmProjectName.textContent = safeName;
+            deleteConfirmModal.classList.add('show');
+            deleteConfirmModal.setAttribute('aria-hidden', 'false');
+            if (deleteConfirmProceed) deleteConfirmProceed.focus();
+        }
+
+        function closeDeleteConfirmModal() {
+            pendingDeleteId = null;
+            if (!deleteConfirmModal) return;
+            deleteConfirmModal.classList.remove('show');
+            deleteConfirmModal.setAttribute('aria-hidden', 'true');
         }
 
         function filterProjects() {
@@ -897,7 +1018,31 @@ $db->close();
             if (event.key === 'Escape' && editModal && editModal.classList.contains('show')) {
                 closeEditProjectModal();
             }
+            if (event.key === 'Escape' && deleteConfirmModal && deleteConfirmModal.classList.contains('show')) {
+                closeDeleteConfirmModal();
+            }
         });
+
+        if (deleteConfirmCancel) {
+            deleteConfirmCancel.addEventListener('click', closeDeleteConfirmModal);
+        }
+
+        if (deleteConfirmProceed) {
+            deleteConfirmProceed.addEventListener('click', function () {
+                if (!pendingDeleteId) return;
+                const idToDelete = pendingDeleteId;
+                closeDeleteConfirmModal();
+                performDelete(idToDelete);
+            });
+        }
+
+        if (deleteConfirmModal) {
+            deleteConfirmModal.addEventListener('click', function (event) {
+                if (event.target === deleteConfirmModal) {
+                    closeDeleteConfirmModal();
+                }
+            });
+        }
 
         loadProjects();
     })();
