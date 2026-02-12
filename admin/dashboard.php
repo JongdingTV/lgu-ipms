@@ -47,7 +47,6 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/dashboard-redesign-enhanced.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
-    <link rel="stylesheet" href="../assets/css/footer-shared.css">
     </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -166,12 +165,12 @@ $db->close();
                     <h3>Total Budget</h3>
                     <div class="ac-9b373689">
                         <p class="metric-value ac-03320d86" id="budgetValue">●●●●●●●●</p>
-                        <span id="budgetVisibilityToggle" class="ac-d278272f" title="Hold to reveal budget">
+                        <button type="button" id="budgetVisibilityToggle" class="ac-d278272f" title="Hold to reveal budget" aria-label="Hold to reveal total budget">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ac-8a303121">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
                             </svg>
-                        </span>
+                        </button>
                     </div>
                     <span class="metric-status">Allocated funds</span>
                 </div>
@@ -278,12 +277,10 @@ $db->close();
         </div>
     </section>
 
-    <?php include('../includes/footer.php'); ?>
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <!-- Component Utilities: Dropdowns, Modals, Toast, Sidebar Toggle -->
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
-    <script src="../assets/js/smart-footer.js"></script>
 </body>
 </html>
 

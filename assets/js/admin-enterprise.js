@@ -157,10 +157,11 @@
     const budgetBtn = $('#budgetVisibilityToggle');
     if (!budgetCard || !budgetValue || !budgetBtn) return;
 
-    const masked = '●●●●●●●●';
-    const actual = '₱' + (budgetCard.getAttribute('data-budget') || '0.00');
+    const masked = '********';
+    const actual = '\u20B1' + (budgetCard.getAttribute('data-budget') || '0.00');
     let holding = false;
     budgetValue.textContent = masked;
+    budgetBtn.style.touchAction = 'none';
 
     const show = () => {
       if (holding) return;
@@ -168,6 +169,7 @@
       budgetValue.textContent = actual;
       budgetBtn.style.opacity = '1';
     };
+
     const hide = () => {
       if (!holding) return;
       holding = false;
@@ -175,13 +177,37 @@
       budgetBtn.style.opacity = '0.8';
     };
 
-    budgetBtn.addEventListener('mousedown', (e) => { e.preventDefault(); show(); });
-    budgetBtn.addEventListener('touchstart', (e) => { e.preventDefault(); show(); }, { passive: false });
-    ['mouseup', 'mouseleave', 'touchend', 'touchcancel', 'blur'].forEach((ev) => {
-      budgetBtn.addEventListener(ev, hide);
+    if (window.PointerEvent) {
+      budgetBtn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        budgetBtn.setPointerCapture?.(e.pointerId);
+        show();
+      });
+      budgetBtn.addEventListener('pointerup', hide);
+      budgetBtn.addEventListener('pointercancel', hide);
+      budgetBtn.addEventListener('pointerleave', hide);
+    } else {
+      budgetBtn.addEventListener('mousedown', (e) => { e.preventDefault(); show(); });
+      budgetBtn.addEventListener('touchstart', (e) => { e.preventDefault(); show(); }, { passive: false });
+      ['mouseup', 'mouseleave', 'touchend', 'touchcancel', 'blur'].forEach((ev) => {
+        budgetBtn.addEventListener(ev, hide);
+      });
+      document.addEventListener('mouseup', hide);
+      document.addEventListener('touchend', hide);
+    }
+
+    budgetBtn.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        show();
+      }
     });
-    document.addEventListener('mouseup', hide);
-    document.addEventListener('touchend', hide);
+
+    budgetBtn.addEventListener('keyup', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') hide();
+    });
+
+    budgetBtn.addEventListener('blur', hide);
   }
 
   function statusClass(status) {
