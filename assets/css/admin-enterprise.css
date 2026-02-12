@@ -199,6 +199,12 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .export-btn {
 }
 
 /* Unified logout */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-action-footer {
+    margin-top: auto;
+    padding: 10px 12px 12px;
+    border-top: 1px solid #e8eef6;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-logout.nav-logout,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003 {
     display: inline-flex;
@@ -207,9 +213,15 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003 {
     gap: 8px;
     width: 100%;
     min-height: 40px;
+    padding: 10px 14px !important;
+    box-sizing: border-box;
     border: 1px solid #f3c0c0 !important;
     background: linear-gradient(135deg, #fff6f6, #ffecec) !important;
     color: #b42318 !important;
+    text-decoration: none !important;
+    font-size: 0.95rem !important;
+    line-height: 1.1 !important;
+    white-space: nowrap;
     font-weight: 700 !important;
     transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
@@ -229,6 +241,8 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003:focu
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-logout.nav-logout svg,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003 svg {
+    width: 15px;
+    height: 15px;
     color: #c0342b;
 }
 
