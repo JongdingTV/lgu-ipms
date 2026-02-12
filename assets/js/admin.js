@@ -36,6 +36,15 @@
             return endpoint;
         }
     };
+
+    // Backward-compatible global helper used throughout legacy modules.
+    if (typeof window.getApiUrl !== 'function') {
+        window.getApiUrl = function(endpoint) {
+            const clean = String(endpoint || '').replace(/^\/+/, '');
+            const base = window.CONFIG && window.CONFIG.appRoot ? window.CONFIG.appRoot : '/';
+            return base + clean;
+        };
+    }
 })();
 
 
@@ -3344,18 +3353,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#6b7280;">No projects found.</td></tr>';
                 return;
             }
+
+            const esc = (v) => String(v ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+            const toKey = (v) => String(v || 'draft').toLowerCase().replace(/\s+/g, '');
             
             projects.forEach((p) => {
                 const row = document.createElement('tr');
                 const createdDate = p.created_at ? new Date(p.created_at).toLocaleDateString() : 'N/A';
+                const priority = p.priority || 'Medium';
+                const status = p.status || 'Draft';
                 row.innerHTML = `
-                    <td>${p.code || ''}</td>
-                    <td>${p.name || ''}</td>
-                    <td>${p.type || ''}</td>
-                    <td>${p.sector || ''}</td>
-                    <td>${p.priority || 'Medium'}</td>
-                    <td>${p.status || 'Draft'}</td>
-                    <td>${createdDate}</td>
+                    <td>${esc(p.code)}</td>
+                    <td>${esc(p.name)}</td>
+                    <td>${esc(p.type)}</td>
+                    <td>${esc(p.sector)}</td>
+                    <td><span class="priority-badge ${toKey(priority)}">${esc(priority)}</span></td>
+                    <td><span class="status-badge ${toKey(status)}">${esc(status)}</span></td>
+                    <td>${esc(createdDate)}</td>
                     <td>
                         <div class="action-buttons">
                             <button class="btn-delete" data-id="${p.id}">Delete</button>

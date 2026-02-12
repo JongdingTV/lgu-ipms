@@ -367,3 +367,118 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #pr
         flex: 1;
     }
 }
+
+/* Registered Projects page refresh */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .projects-filter {
+    margin-bottom: 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .projects-filter .ac-c59ce897 {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) 180px auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid #d8e5f3;
+    background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #searchProjects,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #filterStatus {
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid #c8d9ec;
+    background: #fbfdff;
+    color: #1f3653;
+    padding: 0 12px;
+    font-size: 0.95rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #searchProjects:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #filterStatus:focus {
+    outline: none;
+    border-color: #4b81d9;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #exportCsv {
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid #c8d9ec;
+    background: #eef5ff;
+    color: #1e406d;
+    font-weight: 700;
+    padding: 0 14px;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .projects-section .table-wrap {
+    border-radius: 14px !important;
+    border: 1px solid #d7e3f0 !important;
+    overflow: auto;
+    background: #fff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectsTable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 940px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectsTable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: linear-gradient(135deg, #1f4ca8, #21427d);
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.77rem;
+    font-weight: 700;
+    padding: 12px 10px;
+    border: 0;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectsTable tbody td {
+    padding: 11px 10px;
+    font-size: 0.9rem;
+    color: #244262;
+    border-bottom: 1px solid #e2eaf4;
+    background: rgba(255, 255, 255, 0.96);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectsTable tbody tr:nth-child(even) td {
+    background: #f8fbff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectsTable tbody tr:hover td {
+    background: #edf4ff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectsTable td:nth-child(6) {
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .action-buttons {
+    display: flex;
+    justify-content: center;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-delete {
+    min-height: 32px;
+    border-radius: 8px;
+    border: 1px solid #efb8b8;
+    background: #fff5f5;
+    color: #b42318;
+    font-weight: 700;
+    padding: 0 10px;
+    cursor: pointer;
+}
+
+@media (max-width: 920px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .projects-filter .ac-c59ce897 {
+        grid-template-columns: 1fr;
+    }
+}
