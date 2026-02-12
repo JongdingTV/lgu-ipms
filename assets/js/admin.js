@@ -3048,7 +3048,12 @@ document.addEventListener('DOMContentLoaded', function() {
         function showProjectPopup(text) {
             if (!text || hasShownPostSubmitPopup) return;
             hasShownPostSubmitPopup = true;
-            window.alert(text);
+            if (typeof window.showProjectNotice === 'function') {
+                const popupType = /successfully|added|updated/i.test(text) ? 'success' : 'error';
+                window.showProjectNotice(text, popupType);
+            } else {
+                window.alert(text);
+            }
         }
 
         function projectRegistrationUrls(suffix = '') {

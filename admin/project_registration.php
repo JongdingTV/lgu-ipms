@@ -442,6 +442,91 @@ $db->close();
         </div>
     </section>
 
+    <div id="projectNoticeModal" class="project-notice-modal" aria-hidden="true">
+        <div class="project-notice-card" role="alertdialog" aria-modal="true" aria-labelledby="projectNoticeTitle">
+            <div class="project-notice-head">
+                <div id="projectNoticeIcon" class="project-notice-icon">i</div>
+                <h3 id="projectNoticeTitle">Notice</h3>
+            </div>
+            <p id="projectNoticeText" class="project-notice-text"></p>
+            <div class="project-notice-actions">
+                <button type="button" id="projectNoticeOk" class="btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .project-notice-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 4000;
+            padding: 16px;
+        }
+
+        .project-notice-modal.show {
+            display: flex;
+        }
+
+        .project-notice-card {
+            width: min(96vw, 460px);
+            border-radius: 14px;
+            border: 1px solid #dbe5f1;
+            background: #fff;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.3);
+            padding: 18px;
+        }
+
+        .project-notice-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .project-notice-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: #fff;
+            background: #1d4ed8;
+        }
+
+        .project-notice-card.success .project-notice-icon {
+            background: #16a34a;
+        }
+
+        .project-notice-card.error .project-notice-icon {
+            background: #dc2626;
+        }
+
+        .project-notice-head h3 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 1.15rem;
+        }
+
+        .project-notice-text {
+            margin: 0;
+            color: #334155;
+            line-height: 1.45;
+        }
+
+        .project-notice-actions {
+            margin-top: 14px;
+            display: flex;
+            justify-content: flex-end;
+        }
+    </style>
+
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
@@ -452,6 +537,44 @@ $db->close();
         const error = params.get('error');
         const savedMsg = params.get('msg') || 'Project has been added successfully.';
         const formMsg = document.getElementById('formMessage');
+        const noticeModal = document.getElementById('projectNoticeModal');
+        const noticeCard = noticeModal ? noticeModal.querySelector('.project-notice-card') : null;
+        const noticeIcon = document.getElementById('projectNoticeIcon');
+        const noticeTitle = document.getElementById('projectNoticeTitle');
+        const noticeText = document.getElementById('projectNoticeText');
+        const noticeOk = document.getElementById('projectNoticeOk');
+
+        function showProjectNotice(message, type) {
+            if (!noticeModal || !noticeCard || !noticeText || !noticeTitle || !noticeIcon) {
+                alert(message);
+                return;
+            }
+            noticeCard.classList.remove('success', 'error');
+            if (type === 'success') {
+                noticeCard.classList.add('success');
+                noticeTitle.textContent = 'Success';
+                noticeIcon.textContent = '✓';
+            } else if (type === 'error') {
+                noticeCard.classList.add('error');
+                noticeTitle.textContent = 'Unable to Save';
+                noticeIcon.textContent = '!';
+            } else {
+                noticeTitle.textContent = 'Notice';
+                noticeIcon.textContent = 'i';
+            }
+            noticeText.textContent = message || '';
+            noticeModal.classList.add('show');
+            noticeModal.setAttribute('aria-hidden', 'false');
+            if (noticeOk) noticeOk.focus();
+        }
+
+        function closeProjectNotice() {
+            if (!noticeModal) return;
+            noticeModal.classList.remove('show');
+            noticeModal.setAttribute('aria-hidden', 'true');
+        }
+
+        window.showProjectNotice = showProjectNotice;
 
         if (saved === '1') {
             if (formMsg) {
@@ -461,7 +584,7 @@ $db->close();
             }
             if (!window.__projectRegPopupShown) {
                 window.__projectRegPopupShown = true;
-                alert(savedMsg);
+                showProjectNotice(savedMsg, 'success');
             }
         } else if (error) {
             let errText = decodeURIComponent(error);
@@ -475,9 +598,21 @@ $db->close();
             }
             if (!window.__projectRegPopupShown) {
                 window.__projectRegPopupShown = true;
-                alert(errText);
+                showProjectNotice(errText, 'error');
             }
         }
+
+        if (noticeOk) {
+            noticeOk.addEventListener('click', closeProjectNotice);
+        }
+        if (noticeModal) {
+            noticeModal.addEventListener('click', function (e) {
+                if (e.target === noticeModal) closeProjectNotice();
+            });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeProjectNotice();
+        });
     })();
     </script>
 </body>
