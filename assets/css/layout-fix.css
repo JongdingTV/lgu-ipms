@@ -1,0 +1,255 @@
+/**
+ * Layout Fix CSS - AGGRESSIVE VERSION
+ * Fixes navbar blocking content and footer overlap issues across all pages
+ * Applied to all admin pages to ensure proper spacing with fixed header/footer
+ */
+
+/* ============================================
+   CRITICAL: PREVENT FOOTER OVERLAP
+   ============================================ */
+
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Main content MUST have margin-bottom to prevent footer overlap */
+.main-content {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+    flex: 1 1 auto;
+    min-height: calc(100vh - 80px);
+}
+
+section.main-content {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+}
+
+/* All containers inside main-content */
+.main-content > * {
+    margin-bottom: 20px !important;
+}
+
+.main-content > *:last-child {
+    margin-bottom: 40px !important;
+}
+
+/* ============================================
+   FORM AND PAGE CONTAINERS
+   ============================================ */
+
+.form-container,
+.page-container,
+.container,
+.content-area,
+.wrapper,
+[role="main"],
+.page,
+.admin-page {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+}
+
+form {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+}
+
+section {
+    margin-bottom: 20px !important;
+}
+
+section:last-of-type {
+    margin-bottom: 80px !important;
+    padding-bottom: 40px !important;
+}
+
+/* ============================================
+   TABLE AND LIST SPACING
+   ============================================ */
+
+.table-wrapper,
+.table-container,
+.list-container {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+}
+
+/* All table sections */
+table,
+.table {
+    margin-bottom: 40px !important;
+}
+
+/* ============================================
+   LOGIN AND AUTH PAGES
+   ============================================ */
+
+.login-page,
+.auth-page,
+.forgot-password-page,
+.login-container,
+.auth-container {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+    min-height: 100vh;
+}
+
+/* ============================================
+   DASHBOARD SPECIFIC
+   ============================================ */
+
+.dash-header {
+    margin-bottom: 30px !important;
+}
+
+.metrics-container {
+    margin-bottom: 30px !important;
+}
+
+.metric-card,
+.card {
+    margin-bottom: 20px !important;
+}
+
+/* Charts and sections */
+.chart-container,
+.section-container,
+.content-section {
+    margin-bottom: 30px !important;
+}
+
+/* Last visible section before footer */
+.main-content section:last-child,
+.main-content .card:last-child,
+.main-content > div:last-child {
+    margin-bottom: 80px !important;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 1024px) {
+    .main-content {
+        margin-bottom: 75px !important;
+    }
+    
+    .form-container,
+    .page-container,
+    section {
+        margin-bottom: 75px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin-bottom: 70px !important;
+        min-height: calc(100vh - 70px);
+    }
+    
+    .form-container,
+    .page-container,
+    section {
+        margin-bottom: 70px !important;
+    }
+
+    section:last-of-type {
+        margin-bottom: 70px !important;
+        padding-bottom: 30px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        margin-bottom: 65px !important;
+        min-height: calc(100vh - 65px);
+    }
+
+    .form-container,
+    .page-container,
+    section {
+        margin-bottom: 65px !important;
+        padding-bottom: 20px !important;
+    }
+
+    section:last-of-type {
+        margin-bottom: 65px !important;
+        padding-bottom: 25px !important;
+    }
+}
+
+@media (max-width: 374px) {
+    .main-content {
+        margin-bottom: 60px !important;
+        min-height: calc(100vh - 60px);
+    }
+
+    .form-container,
+    .page-container,
+    section {
+        margin-bottom: 60px !important;
+        padding-bottom: 15px !important;
+    }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.has-fixed-footer {
+    margin-bottom: 80px !important;
+}
+
+.spacing-footer {
+    margin-bottom: 80px !important;
+}
+
+.prevent-overlap {
+    padding-bottom: 40px !important;
+}
+
+/* ============================================
+   ENSURE NO HIDDEN CONTENT
+   ============================================ */
+
+.hidden-by-footer {
+    display: none !important;
+}
+
+/* Make sure content scrolls properly */
+* {
+    box-sizing: border-box !important;
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+    body {
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .main-content,
+    .form-container,
+    section {
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .footer {
+        position: static !important;
+        bottom: auto !important;
+    }
+}
+
