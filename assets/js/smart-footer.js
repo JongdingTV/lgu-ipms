@@ -17,14 +17,14 @@
 
     function showFooter() {
         if (!isFooterVisible) {
-            footer.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-            footer.style.display = 'flex';
+            footer.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important';
+            footer.style.setProperty('display', 'flex', 'important');
             // Small delay for smooth animation sequence
             setTimeout(() => {
-                footer.style.opacity = '1';
-                footer.style.visibility = 'visible';
-                footer.style.pointerEvents = 'auto';
-                footer.style.transform = 'translateY(0)';
+                footer.style.setProperty('opacity', '1', 'important');
+                footer.style.setProperty('visibility', 'visible', 'important');
+                footer.style.setProperty('pointer-events', 'auto', 'important');
+                footer.style.setProperty('transform', 'translateY(0)', 'important');
             }, 10);
             isFooterVisible = true;
         }
@@ -32,16 +32,16 @@
 
     function hideFooter() {
         if (isFooterVisible) {
-            footer.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-            footer.style.opacity = '0';
-            footer.style.visibility = 'hidden';
-            footer.style.pointerEvents = 'none';
-            footer.style.transform = 'translateY(100%)';
+            footer.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important';
+            footer.style.setProperty('opacity', '0', 'important');
+            footer.style.setProperty('visibility', 'hidden', 'important');
+            footer.style.setProperty('pointer-events', 'none', 'important');
+            footer.style.setProperty('transform', 'translateY(100%)', 'important');
             
             // Hide display after animation completes
             setTimeout(() => {
                 if (footer.style.opacity === '0') {
-                    footer.style.display = 'none';
+                    footer.style.setProperty('display', 'none', 'important');
                 }
             }, 400);
             isFooterVisible = false;
@@ -55,15 +55,15 @@
         
         if (scrollTop > 50) {
             // Show immediately without animation on page load
-            footer.style.display = 'flex';
-            footer.style.opacity = '1';
-            footer.style.visibility = 'visible';
-            footer.style.pointerEvents = 'auto';
-            footer.style.transform = 'translateY(0)';
+            footer.style.setProperty('display', 'flex', 'important');
+            footer.style.setProperty('opacity', '1', 'important');
+            footer.style.setProperty('visibility', 'visible', 'important');
+            footer.style.setProperty('pointer-events', 'auto', 'important');
+            footer.style.setProperty('transform', 'translateY(0)', 'important');
             isFooterVisible = true;
         } else {
-            footer.style.display = 'none';
-            footer.style.transform = 'translateY(100%)';
+            footer.style.setProperty('display', 'none', 'important');
+            footer.style.setProperty('transform', 'translateY(100%)', 'important');
             isFooterVisible = false;
         }
     }

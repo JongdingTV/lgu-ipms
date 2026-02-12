@@ -4,25 +4,21 @@
  * Footer is managed by smart-footer.js
  */
 
-/* Remove any forced padding-bottom that conflicts with smart footer */
-html,
-body {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-    overflow-x: hidden !important;
-}
-
-/* Ensure single scrollbar only */
+/* Ensure single scrollbar - let browser decide when to show */
 html {
     overflow-y: auto !important;
+    padding-bottom: 0 !important;
 }
 
 body {
-    overflow-y: visible !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
     min-height: 100vh;
 }
 
-/* Main content should not have its own scrollbar */
+/* Main content should NOT have its own scrollbar */
 .main-content,
 section.main-content,
 main {
@@ -32,11 +28,12 @@ main {
     padding-bottom: 0 !important;
 }
 
-/* Sidebar nav should not scroll */
+/* Sidebar nav should NEVER scroll */
 .nav,
 .navbar,
 .sidebar {
     overflow-y: hidden !important;
+    overflow-x: hidden !important;
 }
 
 .nav-links {
@@ -44,22 +41,10 @@ main {
     overflow-x: hidden !important;
 }
 
-/* Remove forced margins from footer management */
-.footer,
-footer {
-    margin-bottom: 0 !important;
-}
-
-/* Utility class system */
+/* Utility */
 * {
     box-sizing: border-box;
 }
 
-@media print {
-    body {
-        padding-bottom: 0;
-        margin-bottom: 0;
-    }
-}
 
 
