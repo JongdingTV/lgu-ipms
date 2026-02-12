@@ -3187,24 +3187,24 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e){
             e.preventDefault();
             const fd = new FormData();
-            fd.append('action', 'save_project');
-            fd.append('code', document.getElementById('projCode').value);
-            fd.append('name', document.getElementById('projName').value);
-            fd.append('type', document.getElementById('projType').value);
-            fd.append('sector', document.getElementById('projSector').value);
-            fd.append('description', document.getElementById('projDescription').value);
-            fd.append('priority', document.getElementById('projPriority').value);
-            fd.append('province', document.getElementById('province').value);
-            fd.append('barangay', document.getElementById('barangay').value);
-            fd.append('location', document.getElementById('projLocation').value);
-            fd.append('start_date', document.getElementById('startDate').value);
-            fd.append('end_date', document.getElementById('endDate').value);
-            fd.append('duration_months', document.getElementById('projDuration').value);
-            fd.append('budget', document.getElementById('projBudget').value);
-            fd.append('project_manager', document.getElementById('projManager').value);
-            fd.append('status', document.getElementById('status').value);
+            fd.set('action', 'save_project');
+            fd.set('code', document.getElementById('projCode').value);
+            fd.set('name', document.getElementById('projName').value);
+            fd.set('type', document.getElementById('projType').value);
+            fd.set('sector', document.getElementById('projSector').value);
+            fd.set('description', document.getElementById('projDescription').value);
+            fd.set('priority', document.getElementById('projPriority').value);
+            fd.set('province', document.getElementById('province').value);
+            fd.set('barangay', document.getElementById('barangay').value);
+            fd.set('location', document.getElementById('projLocation').value);
+            fd.set('start_date', document.getElementById('startDate').value);
+            fd.set('end_date', document.getElementById('endDate').value);
+            fd.set('duration_months', document.getElementById('projDuration').value);
+            fd.set('budget', document.getElementById('projBudget').value);
+            fd.set('project_manager', document.getElementById('projManager').value);
+            fd.set('status', document.getElementById('status').value);
             if (editProjectId) {
-                fd.append('id', editProjectId);
+                fd.set('id', editProjectId);
             }
             fetchJsonWithFallback(projectRegistrationUrls(''), {
                 method: 'POST',

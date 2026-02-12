@@ -299,18 +299,19 @@ $db->close();
         <div class="recent-projects">
             <h3>New Project Form</h3>
 
-            <form id="projectForm" enctype="multipart/form-data">
+            <form id="projectForm" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="save_project">
                 <!-- Basic project details -->
                 <fieldset>
                     <legend>Basic Project Details</legend>
                     <label for="projCode">Project Code / Reference ID</label>
-                    <input type="text" id="projCode" required>
+                    <input type="text" id="projCode" name="code" required>
 
                     <label for="projName">Project Name</label>
-                    <input type="text" id="projName" required>
+                    <input type="text" id="projName" name="name" required>
 
                     <label for="projType">Project Type</label>
-                    <select id="projType" required>
+                    <select id="projType" name="type" required>
                         <option value="">-- Select --</option>
                         <option>New</option>
                         <option>Rehabilitation</option>
@@ -319,7 +320,7 @@ $db->close();
                     </select>
 
                     <label for="projSector">Sector</label>
-                    <select id="projSector" required>
+                    <select id="projSector" name="sector" required>
                         <option value="">-- Select --</option>
                         <option>Road</option>
                         <option>Drainage</option>
@@ -330,10 +331,10 @@ $db->close();
                     </select>
 
                     <label for="projDescription">Project Description / Objective</label>
-                    <textarea id="projDescription" rows="3"></textarea>
+                    <textarea id="projDescription" name="description" rows="3"></textarea>
 
                     <label for="projPriority">Priority Level</label>
-                    <select id="projPriority">
+                    <select id="projPriority" name="priority">
                         <option>High</option>
                         <option>Medium</option>
                         <option>Low</option>
@@ -344,47 +345,47 @@ $db->close();
                 <fieldset>
                     <legend>Location</legend>
                     <label for="province">Province / City / Municipality</label>
-                    <input type="text" id="province" required>
+                    <input type="text" id="province" name="province" required>
 
                     <label for="barangay">Barangay(s)</label>
-                    <input type="text" id="barangay">
+                    <input type="text" id="barangay" name="barangay">
 
                     <label for="projLocation">Exact Site / Address</label>
-                    <input type="text" id="projLocation" required>
+                    <input type="text" id="projLocation" name="location" required>
                 </fieldset>
 
                 <!-- Schedule -->
                 <fieldset>
                     <legend>Schedule</legend>
                     <label for="startDate">Estimated Start Date</label>
-                    <input type="date" id="startDate">
+                    <input type="date" id="startDate" name="start_date">
 
                     <label for="endDate">Estimated End Date</label>
-                    <input type="date" id="endDate">
+                    <input type="date" id="endDate" name="end_date">
 
                     <label for="projDuration">Estimated Duration (months)</label>
-                    <input type="number" id="projDuration" min="0" required>
+                    <input type="number" id="projDuration" name="duration_months" min="0" required>
                 </fieldset>
 
                 <!-- Budget -->
                 <fieldset>
                     <legend>Budget</legend>
                     <label for="projBudget">Total Estimated Cost</label>
-                    <input type="number" id="projBudget" min="0" step="0.01" required>
+                    <input type="number" id="projBudget" name="budget" min="0" step="0.01" required>
                 </fieldset>
 
                 <!-- Implementation -->
                 <fieldset>
                     <legend>Implementation</legend>
                     <label for="projManager">Project Manager / Engineer In-Charge</label>
-                    <input type="text" id="projManager" placeholder="Name">
+                    <input type="text" id="projManager" name="project_manager" placeholder="Name">
                 </fieldset>
 
                 <!-- Status -->
                 <fieldset>
                     <legend>Status</legend>
                     <label for="status">Approval Status</label>
-                    <select id="status">
+                    <select id="status" name="status">
                         <option>Draft</option>
                         <option>For Approval</option>
                         <option>Approved</option>
