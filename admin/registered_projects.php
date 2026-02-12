@@ -113,6 +113,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
+// Initial data for server-rendered fallback (non-AJAX page view).
+$initialProjects = [];
+$initialResult = $db->query("SELECT id, code, name, type, sector, priority, status, description, created_at FROM projects ORDER BY created_at DESC");
+if ($initialResult) {
+    while ($row = $initialResult->fetch_assoc()) {
+        $initialProjects[] = $row;
+    }
+    $initialResult->free();
+}
+
 $db->close();
 ?>
 <!doctype html>
@@ -135,9 +145,6 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/table-redesign-base.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
-    <link rel="stylesheet" href="../assets/css/footer-shared.css">
-    <link rel="stylesheet" href="../assets/css/layout-fix.css">
-    <link rel="stylesheet" href="../assets/css/critical-footer-fix.css">
     </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -291,7 +298,31 @@ $db->close();
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody></tbody>
+                        <tbody>
+                            <?php if (count($initialProjects) === 0): ?>
+                                <tr>
+                                    <td colspan="8" style="text-align:center; padding:20px; color:#6b7280;">No projects found.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($initialProjects as $p): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($p['code'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars($p['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars($p['type'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars($p['sector'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><span class="priority-badge <?php echo strtolower(str_replace(' ', '', $p['priority'] ?? 'medium')); ?>"><?php echo htmlspecialchars($p['priority'] ?? 'Medium', ENT_QUOTES, 'UTF-8'); ?></span></td>
+                                        <td><span class="status-badge <?php echo strtolower(str_replace(' ', '', $p['status'] ?? 'draft')); ?>"><?php echo htmlspecialchars($p['status'] ?? 'Draft', ENT_QUOTES, 'UTF-8'); ?></span></td>
+                                        <td><?php echo !empty($p['created_at']) ? date('n/j/Y', strtotime($p['created_at'])) : 'N/A'; ?></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="btn-edit" data-id="<?php echo (int)($p['id'] ?? 0); ?>">Edit</button>
+                                                <button class="btn-delete" data-id="<?php echo (int)($p['id'] ?? 0); ?>">Delete</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
                     </table>
                 </div>
             </div>
