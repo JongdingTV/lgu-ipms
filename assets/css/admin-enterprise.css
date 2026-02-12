@@ -10,6 +10,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) {
     --ipms-border: #d8e4f2;
     --ipms-radius: 14px;
     --ipms-shadow: 0 16px 30px rgba(15, 30, 56, 0.16);
+    overflow-x: hidden !important;
 }
 
 /* Top-right utilities: time/date, notifications, theme toggle */
@@ -427,7 +428,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .n
     gap: 6px;
     padding-left: 8px;
     padding-right: 8px;
-    overflow-x: visible;
+    overflow: visible !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-links > a,
@@ -454,11 +455,12 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .n
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-item-group {
     position: relative !important;
+    z-index: 1500;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-submenu {
     position: absolute !important;
-    top: 0 !important;
+    top: 50% !important;
     left: calc(100% + 8px) !important;
     width: 220px !important;
     min-width: 220px !important;
@@ -467,7 +469,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .n
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
-    transform: translateY(0) !important;
+    transform: translateY(-50%) !important;
     z-index: 1450 !important;
     display: block !important;
     box-shadow: 0 14px 28px rgba(8, 22, 41, 0.24) !important;
