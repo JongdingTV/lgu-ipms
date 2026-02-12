@@ -1114,6 +1114,124 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .bt
     box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.24), 0 8px 18px rgba(190, 24, 93, 0.16);
 }
 
+/* Dark mode refinement v2: improve readability and visual balance */
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content {
+    color: #d9e7fb !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .projects-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .contractors-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .budget-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .allocation-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .expense-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .summary-section {
+    background: linear-gradient(170deg, rgba(15, 30, 49, 0.95), rgba(10, 24, 40, 0.94)) !important;
+    border-color: #2f4666 !important;
+    box-shadow: 0 16px 32px rgba(2, 9, 18, 0.45) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dash-header {
+    background: linear-gradient(160deg, rgba(17, 34, 55, 0.94), rgba(13, 29, 48, 0.94)) !important;
+    border-color: #2f4666 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dash-header h1 {
+    color: #eaf3ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dash-header p {
+    color: #b7cce7 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content h2,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content h3,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content h4 {
+    color: #e4efff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content p,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content small,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .muted {
+    color: #b1c6e0 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content label {
+    color: #c9dcf5 !important;
+    font-weight: 600;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark textarea {
+    background: #10243c !important;
+    border-color: #365273 !important;
+    color: #e8f2ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark input::placeholder,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark textarea::placeholder {
+    color: #8ea6c2 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .table-wrap {
+    background: rgba(10, 22, 36, 0.9) !important;
+    border-color: #2f4666 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content table thead th {
+    background: linear-gradient(135deg, #1c3a60, #132a47) !important;
+    color: #eef5ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content table tbody td {
+    background: rgba(12, 25, 40, 0.96) !important;
+    border-bottom-color: #2f4666 !important;
+    color: #d8e7fb !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content table tbody tr:nth-child(even) td {
+    background: rgba(13, 28, 45, 0.96) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content table tbody tr:hover td {
+    background: rgba(21, 40, 62, 0.98) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content button:not(.btn-logout),
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .tab-btn {
+    border-color: #3a5678 !important;
+    color: #d8e8fc !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .secondary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .btn-secondary {
+    background: #152b45 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .status-chip,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .badge {
+    filter: saturate(0.95) brightness(1.05);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .modal {
+    background: rgba(4, 10, 19, 0.72) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .modal .modal-content {
+    background: linear-gradient(180deg, #12253e, #0e1f34) !important;
+    border-color: #30496a !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .modal .modal-label {
+    color: #b9d0ea !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .modal .modal-value {
+    color: #e3efff !important;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-edit {
     min-height: 32px;
     border-radius: 8px;
