@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         $description = $_POST['feedback'];
         $status = 'Pending';
         if ($subject && $category && $location && $description) {
-            $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, STATUS) VALUES (?, ?, ?, ?, ?, ?)");
             $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
             if ($stmt->execute()) {
                 $msg = 'Feedback submitted!';
