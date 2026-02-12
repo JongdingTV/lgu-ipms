@@ -1,192 +1,233 @@
 /**
- * Layout Fix CSS
+ * Layout Fix CSS - AGGRESSIVE VERSION
  * Fixes navbar blocking content and footer overlap issues across all pages
  * Applied to all admin pages to ensure proper spacing with fixed header/footer
  */
 
 /* ============================================
-   MAIN LAYOUT FIXES
+   CRITICAL: PREVENT FOOTER OVERLAP
    ============================================ */
 
-/* Prevent body from scrolling when footer is fixed */
-html {
+html, body {
+    height: 100%;
+    width: 100%;
     overflow-x: hidden;
 }
 
 body {
-    overflow-x: hidden;
-    padding-bottom: 70px !important;
-    margin-bottom: 0 !important;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
-/* Main content area - add bottom padding for fixed footer */
-.main-content,
-section.main-content,
-main {
-    padding-bottom: 70px !important;
-    margin-bottom: 0 !important;
+/* Main content MUST have margin-bottom to prevent footer overlap */
+.main-content {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+    flex: 1 1 auto;
+    min-height: calc(100vh - 80px);
 }
 
-/* Form containers */
+section.main-content {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+}
+
+/* All containers inside main-content */
+.main-content > * {
+    margin-bottom: 20px !important;
+}
+
+.main-content > *:last-child {
+    margin-bottom: 40px !important;
+}
+
+/* ============================================
+   FORM AND PAGE CONTAINERS
+   ============================================ */
+
 .form-container,
 .page-container,
 .container,
-.content-area {
-    padding-bottom: 70px !important;
-    margin-bottom: 0 !important;
-}
-
-/* All sections inside content */
-section {
-    margin-bottom: 0 !important;
-}
-
-section:last-of-type {
-    padding-bottom: 70px !important;
-}
-
-/* ============================================
-   RESPONSIVE PADDING FOR FOOTER
-   ============================================ */
-
-@media (max-width: 768px) {
-    body {
-        padding-bottom: 60px !important;
-    }
-    
-    .main-content,
-    section.main-content,
-    main,
-    .form-container,
-    .page-container {
-        padding-bottom: 60px !important;
-    }
-}
-
-@media (max-width: 480px) {
-    body {
-        padding-bottom: 55px !important;
-    }
-    
-    .main-content,
-    section.main-content,
-    main,
-    .form-container,
-    .page-container {
-        padding-bottom: 55px !important;
-    }
-}
-
-@media (max-width: 374px) {
-    body {
-        padding-bottom: 50px !important;
-    }
-    
-    .main-content,
-    section.main-content,
-    main,
-    .form-container,
-    .page-container {
-        padding-bottom: 50px !important;
-    }
-}
-
-/* ============================================
-   ENSURE FOOTER DOESN'T OVERLAP
-   ============================================ */
-
-/* Any wrapper or container element */
+.content-area,
 .wrapper,
 [role="main"],
 .page,
 .admin-page {
-    padding-bottom: 70px !important;
-    margin-bottom: 0 !important;
-}
-
-/* Tables and list containers */
-.table-wrapper,
-.table-container,
-.list-container {
-    margin-bottom: 70px !important;
-    padding-bottom: 20px !important;
-}
-
-/* Forms */
-form {
-    margin-bottom: 70px !important;
-    padding-bottom: 20px !important;
-}
-
-/* Login/Auth pages */
-.login-page,
-.auth-page,
-.forgot-password-page {
-    padding-bottom: 70px !important;
-}
-
-/* ============================================
-   FIX ANY NAVBAR BLOCKING
-   ============================================ */
-
-/* If there's a top navbar, add margin-top to content */
-.has-topbar .main-content,
-.has-topbar section.main-content,
-body.has-topbar .main-content {
-    margin-top: 80px !important;
-}
-
-/* Sidebar navigation fixes */
-.nav {
-    z-index: 1000 !important;
-}
-
-/* Toggle button styling */
-.toggle-btn {
-    z-index: 999 !important;
-}
-
-/* Content should be below navbar sidebar */
-.main-content,
-section.main-content {
-    z-index: 1 !important;
-    position: relative;
-}
-
-/* ============================================
-   UTILITY: FOOTER SPACING
-   ============================================ */
-
-/* Class to add footer spacing to any element */
-.has-fixed-footer {
-    padding-bottom: 70px !important;
-    margin-bottom: 0 !important;
-}
-
-.spacing-footer {
-    margin-bottom: 70px !important;
-}
-
-/* Last section/container needs extra spacing */
-.main-content > section:last-child,
-.main-content > div:last-child,
-section.main-content > section:last-child,
-section.main-content > div:last-child {
-    margin-bottom: 40px !important;
+    margin-bottom: 80px !important;
     padding-bottom: 30px !important;
 }
 
-/* ============================================
-   SCROLL BEHAVIOR
-   ============================================ */
-
-html {
-    scroll-behavior: smooth;
+form {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
 }
 
-/* Ensure content doesn't get hidden */
+section {
+    margin-bottom: 20px !important;
+}
+
+section:last-of-type {
+    margin-bottom: 80px !important;
+    padding-bottom: 40px !important;
+}
+
+/* ============================================
+   TABLE AND LIST SPACING
+   ============================================ */
+
+.table-wrapper,
+.table-container,
+.list-container {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+}
+
+/* All table sections */
+table,
+.table {
+    margin-bottom: 40px !important;
+}
+
+/* ============================================
+   LOGIN AND AUTH PAGES
+   ============================================ */
+
+.login-page,
+.auth-page,
+.forgot-password-page,
+.login-container,
+.auth-container {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+    min-height: 100vh;
+}
+
+/* ============================================
+   DASHBOARD SPECIFIC
+   ============================================ */
+
+.dash-header {
+    margin-bottom: 30px !important;
+}
+
+.metrics-container {
+    margin-bottom: 30px !important;
+}
+
+.metric-card,
+.card {
+    margin-bottom: 20px !important;
+}
+
+/* Charts and sections */
+.chart-container,
+.section-container,
+.content-section {
+    margin-bottom: 30px !important;
+}
+
+/* Last visible section before footer */
+.main-content section:last-child,
+.main-content .card:last-child,
+.main-content > div:last-child {
+    margin-bottom: 80px !important;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 1024px) {
+    .main-content {
+        margin-bottom: 75px !important;
+    }
+    
+    .form-container,
+    .page-container,
+    section {
+        margin-bottom: 75px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin-bottom: 70px !important;
+        min-height: calc(100vh - 70px);
+    }
+    
+    .form-container,
+    .page-container,
+    section {
+        margin-bottom: 70px !important;
+    }
+
+    section:last-of-type {
+        margin-bottom: 70px !important;
+        padding-bottom: 30px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        margin-bottom: 65px !important;
+        min-height: calc(100vh - 65px);
+    }
+
+    .form-container,
+    .page-container,
+    section {
+        margin-bottom: 65px !important;
+        padding-bottom: 20px !important;
+    }
+
+    section:last-of-type {
+        margin-bottom: 65px !important;
+        padding-bottom: 25px !important;
+    }
+}
+
+@media (max-width: 374px) {
+    .main-content {
+        margin-bottom: 60px !important;
+        min-height: calc(100vh - 60px);
+    }
+
+    .form-container,
+    .page-container,
+    section {
+        margin-bottom: 60px !important;
+        padding-bottom: 15px !important;
+    }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.has-fixed-footer {
+    margin-bottom: 80px !important;
+}
+
+.spacing-footer {
+    margin-bottom: 80px !important;
+}
+
+.prevent-overlap {
+    padding-bottom: 40px !important;
+}
+
+/* ============================================
+   ENSURE NO HIDDEN CONTENT
+   ============================================ */
+
+.hidden-by-footer {
+    display: none !important;
+}
+
+/* Make sure content scrolls properly */
 * {
-    box-sizing: border-box;
+    box-sizing: border-box !important;
 }
 
 /* ============================================
@@ -195,12 +236,15 @@ html {
 
 @media print {
     body {
-        padding-bottom: 0 !important;
+        margin-bottom: 0;
+        padding-bottom: 0;
     }
     
     .main-content,
-    section.main-content {
-        padding-bottom: 0 !important;
+    .form-container,
+    section {
+        margin-bottom: 0;
+        padding-bottom: 0;
     }
     
     .footer {
@@ -208,3 +252,4 @@ html {
         bottom: auto !important;
     }
 }
+
