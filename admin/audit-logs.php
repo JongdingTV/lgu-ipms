@@ -75,6 +75,7 @@ if (isset($db)) {
 <link rel="icon" type="image/png" href="../logocityhall.png">
 <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
 </head>
 <body>
 <div class="container">

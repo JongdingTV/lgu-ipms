@@ -1,0 +1,473 @@
+/* ============================================
+   ADMIN COMPONENT OVERRIDES
+   Enforce new component styles over legacy admin.css
+   Load AFTER admin.css to ensure precedence
+   ============================================ */
+
+/* ============================================
+   LOGOUT BUTTON STYLING
+   ============================================ */
+
+.nav-action-footer {
+    padding: 10px 16px !important;
+    margin-top: auto !important;
+}
+
+.btn-logout.nav-logout {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #ef4444 !important;
+    border-radius: 8px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    padding: 10px 16px !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+    width: 100% !important;
+}
+
+.btn-logout.nav-logout:hover {
+    background-color: #fee2e2 !important;
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2) !important;
+    transform: translateY(-2px) !important;
+}
+
+.btn-logout.nav-logout:active {
+    transform: translateY(0) !important;
+}
+
+.btn-logout.nav-logout svg {
+    pointer-events: none !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+}
+
+.btn-logout.nav-logout span {
+    pointer-events: none !important;
+}
+
+/* ============================================
+   SIDEBAR TOGGLE WRAPPER
+   ============================================ */
+
+.sidebar-toggle-wrapper {
+    position: fixed !important;
+    top: 16px !important;
+    left: 16px !important;
+    z-index: 1000 !important;
+    display: none !important;
+}
+
+body.sidebar-hidden .sidebar-toggle-wrapper {
+    display: flex !important;
+}
+
+.sidebar-toggle-btn {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
+    border: none !important;
+    color: white !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    overflow: hidden !important;
+    position: relative !important;
+    padding: 0 !important;
+}
+
+.sidebar-toggle-btn::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%) !important;
+    opacity: 0 !important;
+    transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+.sidebar-toggle-btn:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #0f2744 100%) !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25) !important;
+}
+
+.sidebar-toggle-btn:hover::before {
+    opacity: 1 !important;
+}
+
+.sidebar-toggle-btn:active {
+    transform: scale(0.95) !important;
+}
+
+.sidebar-toggle-btn svg {
+    width: 24px !important;
+    height: 24px !important;
+    stroke: currentColor !important;
+    stroke-width: 2 !important;
+    fill: none !important;
+    pointer-events: none !important;
+}
+
+/* ============================================
+   NAVIGATION DROPDOWNS
+   ============================================ */
+
+.nav-dropdown,
+.nav-item-group {
+    position: relative !important;
+}
+
+.nav-dropdown-toggle,
+.nav-main-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    color: #1a1a1a !important;
+    text-decoration: none !important;
+    padding: 12px 16px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    position: relative !important;
+}
+
+.nav-dropdown-toggle:hover,
+.nav-main-item:hover {
+    background-color: #f5f7fa !important;
+}
+
+.dropdown-arrow,
+.nav-dropdown-toggle::after,
+.nav-main-item::after {
+    margin-left: auto !important;
+    transition: transform 0.2s ease !important;
+}
+
+.nav-dropdown.open .dropdown-arrow,
+.nav-item-group.open .dropdown-arrow,
+.nav-dropdown.open .nav-dropdown-toggle::after,
+.nav-item-group.open .nav-main-item::after {
+    transform: rotate(180deg) !important;
+}
+
+.nav-dropdown-menu,
+.nav-submenu {
+    max-height: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background-color: #f8fafc !important;
+    border-radius: 0 0 6px 6px !important;
+}
+
+.nav-dropdown.open .nav-dropdown-menu,
+.nav-item-group.open .nav-submenu {
+    max-height: 500px !important;
+    opacity: 1 !important;
+}
+
+.nav-dropdown-item,
+.nav-submenu-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 12px 24px !important;
+    color: #6b7280 !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+    border-left: 4px solid transparent !important;
+}
+
+.nav-dropdown-item:hover,
+.nav-submenu-item:hover {
+    background-color: #f0f4ff !important;
+    color: #1e3a8a !important;
+}
+
+.nav-dropdown-item.active,
+.nav-submenu-item.active {
+    background-color: #f0f4ff !important;
+    color: #1e3a8a !important;
+    border-left-color: #1e3a8a !important;
+    font-weight: 500 !important;
+}
+
+/* ============================================
+   MODAL & CONFIRMATION STYLING
+   ============================================ */
+
+.modal-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 1003 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.modal-backdrop.show {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.confirmation-modal {
+    background: white !important;
+    border-radius: 12px !important;
+    padding: 32px !important;
+    max-width: 400px !important;
+    width: 90% !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+    animation: bounce-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    position: relative !important;
+}
+
+.confirmation-content {
+    text-align: center !important;
+}
+
+.confirmation-icon {
+    font-size: 48px !important;
+    margin-bottom: 16px !important;
+    display: block !important;
+}
+
+.confirmation-modal h2,
+.confirmation-modal .title {
+    font-size: 20px !important;
+    font-weight: 600 !important;
+    color: #1a1a1a !important;
+    margin-bottom: 12px !important;
+}
+
+.confirmation-modal p,
+.confirmation-modal .message {
+    font-size: 14px !important;
+    color: #6b7280 !important;
+    margin-bottom: 24px !important;
+    line-height: 1.5 !important;
+}
+
+.confirmation-buttons {
+    display: flex !important;
+    gap: 12px !important;
+    justify-content: center !important;
+    margin-top: 24px !important;
+}
+
+.confirmation-buttons button {
+    flex: 1 !important;
+    padding: 12px 24px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.confirmation-buttons .btn-cancel {
+    background-color: #e2e8f0 !important;
+    color: #1a1a1a !important;
+}
+
+.confirmation-buttons .btn-cancel:hover {
+    background-color: #cbd5e1 !important;
+}
+
+.confirmation-buttons .btn-confirm {
+    background-color: #1e3a8a !important;
+    color: white !important;
+}
+
+.confirmation-buttons .btn-confirm:hover {
+    background-color: #1e40af !important;
+}
+
+.confirmation-buttons .btn-confirm.danger {
+    background-color: #ef4444 !important;
+}
+
+.confirmation-buttons .btn-confirm.danger:hover {
+    background-color: #dc2626 !important;
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+
+.toast-container {
+    position: fixed !important;
+    top: 24px !important;
+    right: 24px !important;
+    z-index: 1005 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    max-width: 400px !important;
+    pointer-events: none !important;
+}
+
+.toast {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 16px !important;
+    background: white !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+    animation: slide-in-up 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    pointer-events: auto !important;
+    border-left: 4px solid #ddd !important;
+}
+
+.toast.success {
+    border-left-color: #10b981 !important;
+}
+
+.toast.error {
+    border-left-color: #ef4444 !important;
+}
+
+.toast.warning {
+    border-left-color: #f59e0b !important;
+}
+
+.toast.info {
+    border-left-color: #0ea5e9 !important;
+}
+
+.toast-icon {
+    font-size: 20px !important;
+    flex-shrink: 0 !important;
+    min-width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.toast-content {
+    flex: 1 !important;
+}
+
+.toast-title {
+    font-weight: 600 !important;
+    color: #1a1a1a !important;
+    margin-bottom: 4px !important;
+}
+
+.toast-message {
+    font-size: 14px !important;
+    color: #6b7280 !important;
+    margin: 0 !important;
+}
+
+.toast-close {
+    cursor: pointer !important;
+    color: #9ca3af !important;
+    border: none !important;
+    background: none !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.toast-close:hover {
+    color: #6b7280 !important;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes slide-in-up {
+    from {
+        opacity: 0 !important;
+        transform: translateY(20px) !important;
+    }
+    to {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+}
+
+@keyframes slide-out-down {
+    from {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+    to {
+        opacity: 0 !important;
+        transform: translateY(20px) !important;
+    }
+}
+
+@keyframes bounce-in {
+    0% {
+        opacity: 0 !important;
+        transform: scale(0.8) !important;
+    }
+    50% {
+        transform: scale(1.05) !important;
+    }
+    100% {
+        opacity: 1 !important;
+        transform: scale(1) !important;
+    }
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 768px) {
+    .sidebar-toggle-wrapper {
+        top: 12px !important;
+        left: 12px !important;
+    }
+
+    .sidebar-toggle-btn {
+        width: 44px !important;
+        height: 44px !important;
+    }
+
+    .toast-container {
+        top: 12px !important;
+        right: 12px !important;
+        left: 12px !important;
+        max-width: none !important;
+    }
+
+    .confirmation-modal {
+        width: 95% !important;
+        padding: 24px !important;
+    }
+
+    .nav-dropdown-item,
+    .nav-submenu-item {
+        padding: 10px 20px !important;
+    }
+}

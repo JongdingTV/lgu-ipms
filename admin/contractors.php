@@ -52,6 +52,7 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
 </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
