@@ -11,7 +11,7 @@ session_start();
 <html>
 <head>
     <title>Session Debug</title>
-<link rel="stylesheet" href="../assets/css/admin.css?v=20260212g">
+<link rel="stylesheet" href="../assets/css/admin.css?v=20260212j">
 </head>
 <body>
     <div class="container">
@@ -98,7 +98,7 @@ session_start();
             </ol>
         </div>
     </div>
-    <script src="../assets/js/admin.js"></script>
+    <script src="../assets/js/admin.js?v=20260212j"></script>
 </body>
 </html>
 

@@ -3796,6 +3796,203 @@ document.addEventListener('click', function (event) {
   }
 });
 
+/* ===== Admin unified UI behavior layer (final overrides) ===== */
+(function () {
+  const path = (window.location.pathname || "").replace(/\\/g, "/");
+  const isAdminPage = path.includes("/admin/") && !/\/admin\/(index|logout|forgot-password|change-password)\.php$/i.test(path);
+  if (!isAdminPage) return;
+
+  function q(sel, root = document) { return root.querySelector(sel); }
+  function qa(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
+
+  function applySidebarTooltips() {
+    qa('.nav-links > a, .nav-main-item').forEach((el) => {
+      const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (text) {
+        el.setAttribute('data-tooltip', text);
+        el.setAttribute('title', text);
+      }
+    });
+  }
+
+  function createTopToggle() {
+    if (q('.admin-top-toggle')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'admin-top-toggle';
+    btn.setAttribute('aria-label', 'Toggle sidebar');
+    btn.setAttribute('title', 'Toggle sidebar');
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>';
+    document.body.appendChild(btn);
+
+    const persisted = localStorage.getItem('admin_sidebar_hidden');
+    if (persisted === '1') document.body.classList.add('sidebar-hidden');
+
+    btn.addEventListener('click', () => {
+      const hidden = document.body.classList.toggle('sidebar-hidden');
+      localStorage.setItem('admin_sidebar_hidden', hidden ? '1' : '0');
+      btn.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+    });
+  }
+
+  function setupDropdowns() {
+    qa('.nav-item-group').forEach((group) => {
+      const trigger = q('.nav-main-item', group);
+      if (!trigger) return;
+
+      trigger.setAttribute('role', 'button');
+      trigger.setAttribute('aria-haspopup', 'true');
+      trigger.setAttribute('aria-expanded', group.classList.contains('open') ? 'true' : 'false');
+
+      trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const willOpen = !group.classList.contains('open');
+        qa('.nav-item-group.open').forEach((other) => {
+          if (other !== group) {
+            other.classList.remove('open');
+            const t = q('.nav-main-item', other);
+            if (t) t.setAttribute('aria-expanded', 'false');
+          }
+        });
+        group.classList.toggle('open', willOpen);
+        trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.nav-item-group')) return;
+      qa('.nav-item-group.open').forEach((group) => {
+        group.classList.remove('open');
+        const t = q('.nav-main-item', group);
+        if (t) t.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+
+  function ensureLogoutModal() {
+    if (q('#adminLogoutModal')) return q('#adminLogoutModal');
+    const modal = document.createElement('div');
+    modal.id = 'adminLogoutModal';
+    modal.className = 'admin-logout-modal';
+    modal.innerHTML = `
+      <div class="admin-logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+        <h3 id="logoutTitle">Confirm Logout</h3>
+        <p>You are about to end your admin session. Continue?</p>
+        <div class="admin-logout-actions">
+          <button type="button" class="btn-cancel">Cancel</button>
+          <button type="button" class="btn-logout">Logout</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    q('.btn-cancel', modal).addEventListener('click', () => modal.classList.remove('show'));
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.remove('show');
+    });
+    return modal;
+  }
+
+  function setupLogoutConfirmation() {
+    const modal = ensureLogoutModal();
+    let pendingUrl = '/admin/logout.php';
+
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a[href*="logout.php"]');
+      if (!link) return;
+      if (!link.closest('.nav, .ac-723b1a7b, .footer, .main-content')) return;
+      e.preventDefault();
+      pendingUrl = link.getAttribute('href') || '/admin/logout.php';
+      modal.classList.add('show');
+      q('.btn-logout', modal).focus();
+    }, true);
+
+    q('.btn-logout', modal).addEventListener('click', () => {
+      window.location.href = pendingUrl;
+    });
+  }
+
+  function setupToastSystem() {
+    if (window.adminToast) return;
+    let wrap = q('.admin-toast-wrap');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'admin-toast-wrap';
+      document.body.appendChild(wrap);
+    }
+
+    window.adminToast = function adminToast(message, type = 'info', timeout = 2800) {
+      const item = document.createElement('div');
+      item.className = 'admin-toast is-' + (type || 'info');
+      item.textContent = message;
+      wrap.appendChild(item);
+      window.setTimeout(() => {
+        item.remove();
+      }, timeout);
+    };
+  }
+
+  function setupUnsavedWarning() {
+    const forms = qa('.main-content form').filter((form) => !form.matches('.inline-form,[data-no-dirty-watch]'));
+    if (!forms.length) return;
+    let hasUnsaved = false;
+
+    forms.forEach((form) => {
+      form.addEventListener('input', () => { hasUnsaved = true; });
+      form.addEventListener('change', () => { hasUnsaved = true; });
+      form.addEventListener('submit', () => { hasUnsaved = false; });
+    });
+
+    window.addEventListener('beforeunload', (e) => {
+      if (!hasUnsaved) return;
+      e.preventDefault();
+      e.returnValue = '';
+    });
+  }
+
+  function renderEmptyStates() {
+    qa('.table-wrap table').forEach((table) => {
+      const tbody = q('tbody', table);
+      if (!tbody) return;
+      const rows = qa('tr', tbody).filter((tr) => tr.children.length > 0);
+      if (rows.length !== 1) return;
+
+      const only = rows[0];
+      const content = (only.textContent || '').trim().toLowerCase();
+      if (!content.includes('no ') && !content.includes('not found') && !content.includes('empty')) return;
+
+      const colCount = q('thead tr', table)?.children.length || only.children.length || 1;
+      const td = document.createElement('td');
+      td.colSpan = colCount;
+      td.innerHTML = '<div class="admin-empty-state"><span class="title">No records yet</span><span>Data will appear here once available.</span></div>';
+      const tr = document.createElement('tr');
+      tr.appendChild(td);
+      tbody.innerHTML = '';
+      tbody.appendChild(tr);
+    });
+  }
+
+  function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const logout = q('#adminLogoutModal.show');
+      if (logout) logout.classList.remove('show');
+      qa('.nav-item-group.open').forEach((group) => group.classList.remove('open'));
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    createTopToggle();
+    applySidebarTooltips();
+    setupDropdowns();
+    setupLogoutConfirmation();
+    setupToastSystem();
+    setupUnsavedWarning();
+    setupKeyboardShortcuts();
+    renderEmptyStates();
+  });
+})();
+
 
 
 
