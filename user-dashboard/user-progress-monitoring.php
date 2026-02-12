@@ -40,7 +40,7 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
 </head>
 <body>
     <!-- Mobile burger button (top left, only visible on mobile) -->
-    <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button" style="position:fixed;top:18px;left:18px;z-index:1002;display:none;">
+        <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button">
         <span class="burger-bar"></span>
         <span class="burger-bar"></span>
         <span class="burger-bar"></span>
@@ -48,11 +48,11 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
     <style>
     /* Show burger only on mobile */
     .sidebar-burger-btn.mobile-only {
-        display: none;
+        display: none !important;
     }
     @media (max-width: 991px) {
         .sidebar-burger-btn.mobile-only {
-            display: block !important;
+            display: flex !important;
         }
     }
     </style>
@@ -113,7 +113,10 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
             <a href="user-settings.php"><img src="settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </nav>
         <div class="sidebar-logout-container">
-            <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
+                <a href="/logout.php" class="nav-logout logout-btn admin-logout-btn" id="logoutLink">
+                    <span class="logout-icon" style="display:inline-block;width:22px;height:22px;vertical-align:middle;margin-right:6px;background:url('/assets/images/admin/logout.png') no-repeat center/contain;"></span>
+                    <span style="vertical-align:middle;font-weight:600;color:#dc2626;">Logout</span>
+                </a>
         </div>
     </aside>
 
