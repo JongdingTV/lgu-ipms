@@ -5608,3 +5608,70 @@ body { font-family: monospace; padding: 2rem; background: #f5f5f5; }
   background: #fee2e2;
   padding-left: 18px;
 }
+
+/* Final safeguard: keep authenticated admin pages in sidebar layout.
+   This overrides late embedded auth/login styles that set top-nav layout. */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) {
+    display: block !important;
+    padding-top: 0 !important;
+    min-height: 100vh !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page)::before {
+    content: none !important;
+    display: none !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    width: 250px !important;
+    height: 100vh !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: stretch !important;
+    z-index: 1000 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav {
+    width: 100px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
+    margin-left: 270px !important;
+    width: calc(100% - 270px) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .main-content {
+    margin-left: 120px !important;
+    width: calc(100% - 120px) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .toggle-btn {
+    left: 258px !important;
+    right: auto !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .toggle-btn {
+    left: 108px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+}
+
+@media (max-width: 992px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+}
