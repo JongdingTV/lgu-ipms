@@ -82,6 +82,9 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/table-redesign-base.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/footer-shared.css">
+    <link rel="stylesheet" href="../assets/css/layout-fix.css">
+    <link rel="stylesheet" href="../assets/css/critical-footer-fix.css">
     </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -245,6 +248,83 @@ $db->close();
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    
+    <?php include('../includes/footer.php'); ?>
+    <script src="../assets/js/smart-footer.js"></script>
+    
+    <script>
+        // Load registered projects on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRegisteredProjects();
+        });
+
+        function loadRegisteredProjects() {
+            fetch('?action=load_projects')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector('#projectsTable tbody');
+                    tbody.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No projects found</td></tr>';
+                        return;
+                    }
+                    
+                    data.forEach(project => {
+                        const row = document.createElement('tr');
+                        const statusClass = project.status.toLowerCase().replace(/\s+/g, '-');
+                        const createdDate = new Date(project.created_at).toLocaleDateString();
+                        
+                        row.innerHTML = `
+                            <td>${escapeHtml(project.code || '-')}</td>
+                            <td>${escapeHtml(project.name)}</td>
+                            <td>${escapeHtml(project.type || '-')}</td>
+                            <td>${escapeHtml(project.sector || '-')}</td>
+                            <td>${escapeHtml(project.priority || '-')}</td>
+                            <td><span class="status-badge ${statusClass}">${project.status}</span></td>
+                            <td>${createdDate}</td>
+                            <td>
+                                <a href="project_registration.php?id=${project.id}" class="btn-edit">Edit</a>
+                                <button class="btn-delete" onclick="deleteProject(${project.id})">Delete</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading projects:', error);
+                    document.querySelector('#projectsTable tbody').innerHTML = '<tr><td colspan="8" style="text-align: center; color: red;">Error loading projects</td></tr>';
+                });
+        }
+
+        function deleteProject(id) {
+            if (!confirm('Are you sure you want to delete this project?')) return;
+            
+            const formData = new FormData();
+            formData.append('action', 'delete_project');
+            formData.append('id', id);
+            
+            fetch('<?php echo $_SERVER['PHP_SELF']; ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadRegisteredProjects();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 </html>
 
