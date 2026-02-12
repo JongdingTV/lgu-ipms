@@ -55,6 +55,7 @@ $db->close();
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <!-- Sidebar with overlay for mobile -->
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <aside class="nav sidebar-animated" id="navbar">
@@ -64,61 +65,19 @@ $db->close();
             <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
         </div>
         <!-- Mobile burger button (top left, only visible on mobile) -->
-        <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button">
+        <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button" style="position:fixed;top:18px;left:18px;z-index:1002;display:none;">
             <span class="burger-bar"></span>
             <span class="burger-bar"></span>
             <span class="burger-bar"></span>
         </button>
         <style>
+        /* Show burger only on mobile */
         .sidebar-burger-btn.mobile-only {
             display: none;
-            position: fixed;
-            top: 18px;
-            left: 18px;
-            z-index: 1002;
-            width: 48px;
-            height: 48px;
-            background: #fff;
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(30,58,138,0.10);
-            transition: box-shadow 0.2s;
-            cursor: pointer;
-            outline: none;
-            justify-content: center;
-            align-items: center;
-            padding: 0;
-            /* Hide visually and remove from layout in desktop */
-            visibility: hidden;
-            pointer-events: none;
-        }
-        .sidebar-burger-btn.mobile-only:active,
-        .sidebar-burger-btn.mobile-only:focus {
-            box-shadow: 0 4px 16px rgba(30,58,138,0.18);
-        }
-        .sidebar-burger-btn.mobile-only .burger-bar {
-            display: block;
-            width: 28px;
-            height: 4px;
-            margin: 5px auto;
-            background: #1e3a8a;
-            border-radius: 2px;
-            transition: all 0.3s cubic-bezier(.4,2,.6,1);
-        }
-        .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(1) {
-            transform: translateY(9px) rotate(45deg);
-        }
-        .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(2) {
-            opacity: 0;
-        }
-        .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(3) {
-            transform: translateY(-9px) rotate(-45deg);
         }
         @media (max-width: 991px) {
             .sidebar-burger-btn.mobile-only {
-                display: flex !important;
-                visibility: visible;
-                pointer-events: auto;
+                display: block !important;
             }
         }
         </style>
@@ -236,14 +195,15 @@ $db->close();
     <script src="/assets/js/shared/shared-toggle.js"></script>
     <script src="user-dashboard.js"></script>
     <script>
-    // Sidebar burger and overlay logic (mobile burger only, with animation)
+    // Sidebar burger and overlay logic (mobile burger only)
     (function() {
         const sidebar = document.getElementById('navbar');
         const burger = document.getElementById('sidebarBurgerBtn');
         const overlay = document.getElementById('sidebarOverlay');
+        // Show/hide burger only on mobile
         function updateBurgerVisibility() {
             if (window.innerWidth <= 991) {
-                burger.style.display = 'flex';
+                burger.style.display = 'block';
             } else {
                 burger.style.display = 'none';
                 closeSidebar();
@@ -253,13 +213,11 @@ $db->close();
             sidebar.classList.add('sidebar-open');
             overlay.classList.add('sidebar-overlay-active');
             document.body.classList.add('sidebar-opened');
-            burger.classList.add('open');
         }
         function closeSidebar() {
             sidebar.classList.remove('sidebar-open');
             overlay.classList.remove('sidebar-overlay-active');
             document.body.classList.remove('sidebar-opened');
-            burger.classList.remove('open');
         }
         burger.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -272,7 +230,18 @@ $db->close();
         overlay.addEventListener('click', closeSidebar);
         window.addEventListener('resize', updateBurgerVisibility);
         document.addEventListener('DOMContentLoaded', updateBurgerVisibility);
+        // Also close sidebar if clicking outside sidebar and burger (for extra safety)
+        document.addEventListener('click', function(e) {
+            if (
+                sidebar.classList.contains('sidebar-open') &&
+                !sidebar.contains(e.target) &&
+                !burger.contains(e.target)
+            ) {
+                closeSidebar();
+            }
+        });
     })();
+    // Logout confirmation (if needed)
     document.addEventListener('DOMContentLoaded', function() {
         window.setupLogoutConfirmation && window.setupLogoutConfirmation();
     });
