@@ -299,6 +299,20 @@ $db->close();
                             </select>
                         </div>
                     </div>
+
+                    <div class="pm-bottom-row">
+                        <div id="pmQuickFilters" class="pm-quick-filters" aria-label="Quick status filters">
+                            <button type="button" data-status="" class="active">All</button>
+                            <button type="button" data-status="For Approval">For Approval</button>
+                            <button type="button" data-status="Approved">Approved</button>
+                            <button type="button" data-status="On-hold">On-hold</button>
+                            <button type="button" data-status="Completed">Completed</button>
+                        </div>
+                        <div class="pm-utility-row">
+                            <span id="pmResultSummary" class="pm-result-summary">Showing 0 of 0 projects</span>
+                            <button id="pmClearFilters" type="button" class="btn-clear-filters">Clear Filters</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -451,6 +465,74 @@ $db->close();
             display: flex;
             flex-direction: column;
             min-width: 0;
+        }
+
+        .main-content .pm-bottom-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .main-content .pm-quick-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .main-content .pm-quick-filters button {
+            border: 1px solid #c8d9ec;
+            background: #fff;
+            color: #355678;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            transition: all 0.18s ease;
+        }
+
+        .main-content .pm-quick-filters button:hover {
+            border-color: #93b8e1;
+            background: #eef5ff;
+            color: #1d4f86;
+        }
+
+        .main-content .pm-quick-filters button.active {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            border-color: #1e40af;
+            color: #fff;
+            box-shadow: 0 8px 16px rgba(29, 78, 216, 0.24);
+        }
+
+        .main-content .pm-utility-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .main-content .pm-result-summary {
+            color: #516f90;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .main-content .btn-clear-filters {
+            border: 1px solid #cfdced;
+            background: #fff;
+            color: #365679;
+            border-radius: 9px;
+            min-height: 36px;
+            padding: 0 12px;
+            font-weight: 700;
+        }
+
+        .main-content .btn-clear-filters:hover {
+            border-color: #98b9dd;
+            background: #eef5ff;
+            color: #214c7d;
         }
 
         .main-content .pm-left label,
@@ -761,6 +843,14 @@ $db->close();
                 grid-template-columns: repeat(2, minmax(140px, 1fr));
             }
 
+            .main-content .pm-bottom-row {
+                align-items: flex-start;
+            }
+
+            .main-content .pm-utility-row {
+                margin-left: 0;
+            }
+
             .main-content .pm-controls-wrapper {
                 position: static;
             }
@@ -775,11 +865,22 @@ $db->close();
                 grid-template-columns: 1fr;
             }
 
+            .main-content .pm-bottom-row,
+            .main-content .pm-utility-row {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
             .main-content .project-meta {
                 grid-template-columns: 1fr;
             }
 
             .main-content .btn-export {
+                width: 100%;
+            }
+
+            .main-content .btn-clear-filters {
                 width: 100%;
             }
         }
