@@ -60,76 +60,19 @@ $db->close();
         </div>
 
             <!-- Mobile burger button (top left, only visible on mobile) -->
-            <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button">
+            <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button" style="position:fixed;top:18px;left:18px;z-index:1002;display:none;">
                 <span class="burger-bar"></span>
                 <span class="burger-bar"></span>
                 <span class="burger-bar"></span>
             </button>
             <style>
+            /* Show burger only on mobile */
             .sidebar-burger-btn.mobile-only {
                 display: none;
-                position: fixed;
-                top: 18px;
-                left: 18px;
-                z-index: 1002;
-                width: 48px;
-                height: 48px;
-                background: #fff;
-                border: none;
-                border-radius: 12px;
-                box-shadow: 0 2px 8px rgba(30,58,138,0.10);
-                transition: box-shadow 0.2s;
-                cursor: pointer;
-                outline: none;
-                justify-content: center;
-                align-items: center;
-                padding: 0;
-            }
-            .sidebar-burger-btn.mobile-only:active,
-            .sidebar-burger-btn.mobile-only:focus {
-                box-shadow: 0 4px 16px rgba(30,58,138,0.18);
-            }
-            .sidebar-burger-btn.mobile-only .burger-bar {
-                display: block;
-                width: 28px;
-                height: 4px;
-                margin: 5px auto;
-                background: #1e3a8a;
-                border-radius: 2px;
-                transition: all 0.3s cubic-bezier(.4,2,.6,1);
-            }
-            .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(1) {
-                transform: translateY(9px) rotate(45deg);
-            }
-            .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(2) {
-                opacity: 0;
-            }
-            .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(3) {
-                transform: translateY(-9px) rotate(-45deg);
             }
             @media (max-width: 991px) {
                 .sidebar-burger-btn.mobile-only {
-                    display: flex !important;
-                }
-                #navbar {
-                    transform: translateX(-110%);
-                    transition: transform 0.3s cubic-bezier(.4,2,.6,1);
-                    position: fixed;
-                    left: 0;
-                    top: 0;
-                    height: 100vh;
-                    z-index: 1003;
-                }
-                #navbar.sidebar-open {
-                    transform: translateX(0);
-                }
-            }
-            @media (min-width: 992px) {
-                #navbar {
-                    transform: none !important;
-                    position: static !important;
-                    height: auto !important;
-                    z-index: 1001;
+                    display: block !important;
                 }
             }
             </style>
@@ -316,7 +259,7 @@ $db->close();
             </table>
         </div>
 
-        <!-- Quick Stats: Feedback Review Table Only (no feedback form, no duplicate) -->
+        <!-- Quick Stats -->
         <div class="feedback-review recent-projects">
             <h3>Your Feedback Review</h3>
             <table class="projects-table">
@@ -364,14 +307,15 @@ $db->close();
     <script src="/assets/js/shared/shared-toggle.js"></script>
     <script src="user-dashboard.js"></script>
     <script>
-    // Sidebar burger and overlay logic (mobile burger only, with animation)
+    // Sidebar burger and overlay logic (mobile burger only)
     (function() {
         const sidebar = document.getElementById('navbar');
         const burger = document.getElementById('sidebarBurgerBtn');
         const overlay = document.getElementById('sidebarOverlay');
+        // Show/hide burger only on mobile
         function updateBurgerVisibility() {
             if (window.innerWidth <= 991) {
-                burger.style.display = 'flex';
+                burger.style.display = 'block';
             } else {
                 burger.style.display = 'none';
                 closeSidebar();
@@ -381,13 +325,11 @@ $db->close();
             sidebar.classList.add('sidebar-open');
             overlay.classList.add('sidebar-overlay-active');
             document.body.classList.add('sidebar-opened');
-            burger.classList.add('open');
         }
         function closeSidebar() {
             sidebar.classList.remove('sidebar-open');
             overlay.classList.remove('sidebar-overlay-active');
             document.body.classList.remove('sidebar-opened');
-            burger.classList.remove('open');
         }
         burger.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -400,6 +342,16 @@ $db->close();
         overlay.addEventListener('click', closeSidebar);
         window.addEventListener('resize', updateBurgerVisibility);
         document.addEventListener('DOMContentLoaded', updateBurgerVisibility);
+        // Also close sidebar if clicking outside sidebar and burger (for extra safety)
+        document.addEventListener('click', function(e) {
+            if (
+                sidebar.classList.contains('sidebar-open') &&
+                !sidebar.contains(e.target) &&
+                !burger.contains(e.target)
+            ) {
+                closeSidebar();
+            }
+        });
     })();
     // Logout confirmation (if needed)
     document.addEventListener('DOMContentLoaded', function() {
