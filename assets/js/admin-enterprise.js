@@ -44,11 +44,8 @@
     const setGroupOpen = (group, open) => {
       if (!group) return;
       const trigger = $('.nav-main-item', group);
-      const submenu = $('.nav-submenu', group);
       group.classList.toggle('open', !!open);
       if (trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-      // Legacy scripts may leave inline display:none; normalize it here.
-      if (submenu) submenu.style.display = open ? 'block' : 'none';
     };
 
     groups.forEach((group) => {

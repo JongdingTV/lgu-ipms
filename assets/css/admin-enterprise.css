@@ -79,29 +79,42 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .dropdown-arrow {
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu {
-    position: absolute !important;
-    top: calc(100% + 6px);
-    left: 0;
+    position: static !important;
+    top: auto;
+    left: auto;
     right: auto;
-    min-width: 220px;
-    margin-top: 0;
+    min-width: 0;
+    width: 100%;
+    margin-top: 6px;
     border: 1px solid #d9e5f2;
     border-radius: 11px;
     box-shadow: 0 12px 20px rgba(17, 35, 61, 0.18);
     background: #ffffff;
+    display: block !important;
+    max-height: 0;
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
-    transform: translateY(-6px);
-    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    transform: none;
+    overflow: hidden;
+    transition: max-height 0.22s ease, opacity 0.2s ease, visibility 0.2s ease;
     z-index: 1400;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group.open .nav-submenu {
+    max-height: 320px;
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
-    transform: translateY(0);
+}
+
+/* Fallback behavior when JS listeners conflict; keeps dropdown usable */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group:focus-within .nav-submenu,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group:hover .nav-submenu {
+    max-height: 320px;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item {
