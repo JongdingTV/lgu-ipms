@@ -5,17 +5,20 @@
 /* ============================================
    LOGOUT BUTTON
    ============================================ */
-#logoutBtn {
+#logoutBtn,
+.ac-bb30b003 {
     cursor: pointer !important;
     pointer-events: auto !important;
 }
 
-#logoutBtn svg {
+#logoutBtn svg,
+.ac-bb30b003 svg {
     pointer-events: none;
     cursor: pointer;
 }
 
-#logoutBtn span {
+#logoutBtn span,
+.ac-bb30b003 span {
     pointer-events: none;
     cursor: pointer;
 }
@@ -50,15 +53,7 @@ body {
 }
 
 body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.35);
-    z-index: 0;
-    pointer-events: none;
+    content: none;
 }
 
 /* ============================================
@@ -4587,7 +4582,7 @@ body {
 
 .nav-links a {
     margin-left: 25px;
-    text-decoration: none;   /* ⛔ Removes underline */
+    text-decoration: none;   /* Ã¢â€ºâ€ Removes underline */
     cursor: pointer;
     color: #fff;
     opacity: .8;
@@ -4595,7 +4590,7 @@ body {
 }
 
 .nav-logo {
-    text-decoration: none;   /* ⛔ Removes underline */
+    text-decoration: none;   /* Ã¢â€ºâ€ Removes underline */
     cursor: pointer;
     color: #fff;
     opacity: .8;
@@ -4605,7 +4600,7 @@ body {
 .nav-links a:hover,
 .nav-links .active {
     opacity: 1;
-    text-decoration: none;   /* ⛔ Removes underline */
+    text-decoration: none;   /* Ã¢â€ºâ€ Removes underline */
     font-weight: 600;
 }
 
@@ -4721,7 +4716,7 @@ body {
     text-decoration: underline;
 }
 
-/* FOOTER — same design as NAVBAR */
+/* FOOTER Ã¢â‚¬â€ same design as NAVBAR */
 .footer {
     width: 100%;
     padding: 18px 45px;
@@ -4748,7 +4743,7 @@ body {
 
 .footer-links a {
     margin-right: 25px;
-    text-decoration: none;   /* ⛔ Removes underline */
+    text-decoration: none;   /* Ã¢â€ºâ€ Removes underline */
     cursor: pointer;
     color: #fff;
     opacity: .8;
@@ -4757,7 +4752,7 @@ body {
 
 .footer-links a:hover {
     opacity: 1;
-    text-decoration: none;   /* ⛔ Removes underline */
+    text-decoration: none;   /* Ã¢â€ºâ€ Removes underline */
     font-weight: 600;
 }
 
@@ -4797,200 +4792,6 @@ body.admin-login-page .home-btn:hover {
 
 
 
-
-
-/* ===== Inline styles extracted from employee-login.php ===== */
-body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-
-    /* NEW — background image + blur */
-    background: url("/cityhall.jpeg") center/cover no-repeat fixed;
-    position: relative;
-    padding-top: 80px;
-}
-
-/* NEW — Blur overlay */
-body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
-    backdrop-filter: blur(6px); /* actual blur */
-    background: rgba(0, 0, 0, 0.35); /* dark overlay */
-    z-index: 0; /* keeps blur behind content */
-}
-
-/* Make content appear ABOVE blur */
-.nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    z-index: 100;
-}
-
-.wrapper, .footer {
-    position: relative;
-    z-index: 1;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-
-.nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.nav-logo img {
-    height: 45px;
-    width: auto;
-    object-fit: contain;
-}
-
-
-/* ===== Inline styles extracted from employee-forgot-password.php ===== */
-body { font-family: Arial, sans-serif; background: #f5f5f5; }
-                    .container { max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                    .header { text-align: center; margin-bottom: 30px; }
-                    .header h1 { color: #1e3a5f; margin: 0; }
-                    .button-box { text-align: center; margin: 30px 0; }
-                    .reset-btn { background: #f39c12; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; }
-                    .warning { color: #c3423f; font-size: 14px; margin-top: 15px; background: #ffe5e5; padding: 10px; border-radius: 4px; }
-                    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; border-top: 1px solid #e0e0e0; padding-top: 15px; }
-                    .link-text { color: #3498db; word-break: break-all; }
-
-body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: url("/cityhall.jpeg") center/cover no-repeat fixed;
-    position: relative;
-    padding-top: 80px;
-}
-
-body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    backdrop-filter: blur(6px);
-    background: rgba(0, 0, 0, 0.35);
-    z-index: 0;
-}
-
-.nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    z-index: 100;
-}
-
-.wrapper, .footer {
-    position: relative;
-    z-index: 1;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-
-.nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.nav-logo img {
-    height: 45px;
-    width: auto;
-    object-fit: contain;
-}
-
-
-/* ===== Inline styles extracted from employee-change-password.php ===== */
-body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: url("/cityhall.jpeg") center/cover no-repeat fixed;
-    position: relative;
-    padding-top: 80px;
-}
-
-body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    backdrop-filter: blur(6px);
-    background: rgba(0, 0, 0, 0.35);
-    z-index: 0;
-}
-
-.nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    z-index: 100;
-}
-
-.wrapper, .footer {
-    position: relative;
-    z-index: 1;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-
-.nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.nav-logo img {
-    height: 45px;
-    width: auto;
-    object-fit: contain;
-}
 
 
 /* ===== Inline styles extracted from employee-manage-employees.php ===== */
@@ -5802,80 +5603,8 @@ body { font-family: monospace; padding: 2rem; background: #f5f5f5; }
 
 
 /* Logout hover replacement for removed inline mouse handlers */
-#logoutBtn:hover {
+#logoutBtn:hover,
+.ac-bb30b003:hover {
   background: #fee2e2;
   padding-left: 18px;
 }
-
-/* Neutralize legacy global blur overlays on authenticated admin pages */
-body:not(.admin-login-page):not(.login-page):not(.signup-page)::before {
-    content: none !important;
-    display: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-/* Force layout reset for authenticated admin pages.
-   This neutralizes late legacy rules that convert sidebar into top nav. */
-body:not(.admin-login-page):not(.login-page):not(.signup-page) {
-    display: block !important;
-    padding-top: 0 !important;
-    overflow-x: hidden;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: auto !important;
-    width: 250px !important;
-    height: 100vh !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-    align-items: stretch !important;
-    padding: 0 !important;
-    z-index: 1000 !important;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav {
-    width: 100px !important;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
-    margin-left: 270px !important;
-    width: calc(100% - 270px) !important;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .main-content {
-    margin-left: 120px !important;
-    width: calc(100% - 120px) !important;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .toggle-btn {
-    left: 258px !important;
-    right: auto !important;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .toggle-btn {
-    left: 108px !important;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer {
-    position: static !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-}
-
-@media (max-width: 992px) {
-    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
-        margin-left: 0 !important;
-        width: 100% !important;
-    }
-
-    body:not(.admin-login-page):not(.login-page):not(.signup-page) .toggle-btn {
-        left: 12px !important;
-    }
-}
-

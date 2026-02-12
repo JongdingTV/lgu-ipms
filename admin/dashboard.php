@@ -38,7 +38,7 @@ $db->close();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <link rel="stylesheet" href="../assets/css/admin.css">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=20260212c">
 </head>
 <body>
     <header class="nav" id="navbar">
@@ -84,7 +84,7 @@ $db->close();
         </div>
         <div class="nav-divider"></div>
         <div class="ac-723b1a7b">
-            <a href="/admin/logout.php" id="logoutBtn" class="ac-bb30b003">
+            <a href="/admin/logout.php" class="ac-bb30b003">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                     <polyline points="16 17 21 12 16 7"></polyline>

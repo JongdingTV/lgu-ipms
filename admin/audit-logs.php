@@ -73,7 +73,7 @@ if (isset($db)) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audit Logs - LGU Admin</title>
 <link rel="icon" type="image/png" href="../logocityhall.png">
-<link rel="stylesheet" href="../assets/css/admin.css">
+<link rel="stylesheet" href="../assets/css/admin.css?v=20260212c">
 </head>
 <body>
 <div class="container">
