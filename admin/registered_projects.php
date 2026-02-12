@@ -20,21 +20,68 @@ if ($db->connect_error) {
     exit;
 }
 
+/**
+ * Load projects using only columns available in the current schema.
+ * This avoids silent failures when deployments have slight table differences.
+ *
+ * @return array{projects: array<int, array<string, mixed>>, error: ?string}
+ */
+function load_projects_data(mysqli $db): array
+{
+    $preferredColumns = ['id', 'code', 'name', 'type', 'sector', 'priority', 'status', 'description', 'created_at'];
+    $availableColumns = [];
+
+    $columnsResult = $db->query("SHOW COLUMNS FROM projects");
+    if ($columnsResult) {
+        while ($column = $columnsResult->fetch_assoc()) {
+            if (!empty($column['Field'])) {
+                $availableColumns[] = $column['Field'];
+            }
+        }
+        $columnsResult->free();
+    }
+
+    if (!empty($availableColumns)) {
+        $selectedColumns = array_values(array_intersect($preferredColumns, $availableColumns));
+    } else {
+        // Fallback if SHOW COLUMNS is blocked by permissions.
+        $selectedColumns = $preferredColumns;
+    }
+
+    $selectClause = !empty($selectedColumns) ? implode(', ', $selectedColumns) : '*';
+    $orderClause = in_array('created_at', $selectedColumns, true) ? ' ORDER BY created_at DESC' : '';
+    if ($orderClause === '' && in_array('id', $selectedColumns, true)) {
+        $orderClause = ' ORDER BY id DESC';
+    }
+
+    $query = "SELECT {$selectClause} FROM projects{$orderClause}";
+    $result = $db->query($query);
+
+    if (!$result) {
+        return ['projects' => [], 'error' => 'Failed to load projects: ' . $db->error];
+    }
+
+    $projects = [];
+    while ($row = $result->fetch_assoc()) {
+        $projects[] = $row;
+    }
+    $result->free();
+
+    return ['projects' => $projects, 'error' => null];
+}
+
 // Handle GET request for loading projects
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
-    
-    $result = $db->query("SELECT id, code, name, type, sector, priority, status, description, created_at FROM projects ORDER BY created_at DESC");
-    $projects = [];
-    
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $projects[] = $row;
-        }
-        $result->free();
+
+    $data = load_projects_data($db);
+    if (!empty($data['error'])) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $data['error']]);
+        exit;
     }
-    
-    echo json_encode($projects);
+
+    echo json_encode($data['projects']);
     exit;
 }
 
@@ -115,13 +162,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Initial data for server-rendered fallback (non-AJAX page view).
 $initialProjects = [];
-$initialResult = $db->query("SELECT id, code, name, type, sector, priority, status, description, created_at FROM projects ORDER BY created_at DESC");
-if ($initialResult) {
-    while ($row = $initialResult->fetch_assoc()) {
-        $initialProjects[] = $row;
-    }
-    $initialResult->free();
-}
+$initialLoadError = null;
+$initialData = load_projects_data($db);
+$initialProjects = $initialData['projects'];
+$initialLoadError = $initialData['error'];
 
 $db->close();
 ?>
@@ -299,7 +343,13 @@ $db->close();
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (count($initialProjects) === 0): ?>
+                            <?php if (!empty($initialLoadError)): ?>
+                                <tr>
+                                    <td colspan="8" style="text-align:center; padding:20px; color:#c00;">
+                                        <?php echo htmlspecialchars($initialLoadError, ENT_QUOTES, 'UTF-8'); ?>
+                                    </td>
+                                </tr>
+                            <?php elseif (count($initialProjects) === 0): ?>
                                 <tr>
                                     <td colspan="8" style="text-align:center; padding:20px; color:#6b7280;">No projects found.</td>
                                 </tr>
