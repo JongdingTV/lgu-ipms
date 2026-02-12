@@ -421,6 +421,15 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-dropdown-ite
 }
 
 /* Icon-only collapsed sidebar */
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-links {
+    display: flex !important;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+    overflow-x: visible;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-links > a,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-main-item {
     justify-content: center !important;
@@ -437,6 +446,31 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .n
 body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .dropdown-arrow,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-submenu {
     display: none !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-action-footer {
+    padding: 8px !important;
+    border-top: 1px solid #d7e4f2;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-action-footer .btn-logout.nav-logout {
+    min-height: 40px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-action-footer .btn-logout.nav-logout span {
+    display: none !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-action-footer .btn-logout.nav-logout svg {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
 }
 
 /* Shared surface/table/form consistency */
