@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
             if ($stmt->execute()) {
                 $msg = 'Feedback submitted!';
             } else {
-                $msg = 'Error submitting feedback.';
+                $msg = 'Error submitting feedback: ' . $stmt->error . ' | DB: ' . $db->error;
             }
             $stmt->close();
         } else {
