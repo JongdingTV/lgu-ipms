@@ -65,32 +65,50 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
             pointer-events: none;
         }
         .sidebar-burger-btn.mobile-only:active,
-        .sidebar-burger-btn.mobile-only:focus {
-            box-shadow: 0 4px 16px rgba(30,58,138,0.18);
+        .sidebar-burger-btn.mobile-only {
+            display: none;
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            z-index: 1002;
+            width: 48px;
+            height: 48px;
+            background: #fff;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(30,58,138,0.10);
+            transition: box-shadow 0.2s;
+            cursor: pointer;
+            outline: none;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
         }
-        .sidebar-burger-btn.mobile-only .burger-bar {
-            display: block;
-            width: 28px;
-            height: 4px;
-            margin: 5px auto;
-            background: #1e3a8a;
-            border-radius: 2px;
-            transition: all 0.3s cubic-bezier(.4,2,.6,1);
-        }
-        .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(1) {
-            transform: translateY(9px) rotate(45deg);
-        }
-        .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(2) {
-            opacity: 0;
-        }
-        .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(3) {
             transform: translateY(-9px) rotate(-45deg);
         }
         @media (max-width: 991px) {
             .sidebar-burger-btn.mobile-only {
                 display: flex !important;
-                visibility: visible;
-                pointer-events: auto;
+            }
+            #navbar {
+                transform: translateX(-110%);
+                transition: transform 0.3s cubic-bezier(.4,2,.6,1);
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 1003;
+            }
+            #navbar.sidebar-open {
+                transform: translateX(0);
+            }
+        }
+        @media (min-width: 992px) {
+            #navbar {
+                transform: none !important;
+                position: static !important;
+                height: auto !important;
+                z-index: 1001;
             }
         }
         </style>
