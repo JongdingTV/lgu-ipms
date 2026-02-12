@@ -1,0 +1,210 @@
+/**
+ * Layout Fix CSS
+ * Fixes navbar blocking content and footer overlap issues across all pages
+ * Applied to all admin pages to ensure proper spacing with fixed header/footer
+ */
+
+/* ============================================
+   MAIN LAYOUT FIXES
+   ============================================ */
+
+/* Prevent body from scrolling when footer is fixed */
+html {
+    overflow-x: hidden;
+}
+
+body {
+    overflow-x: hidden;
+    padding-bottom: 70px !important;
+    margin-bottom: 0 !important;
+}
+
+/* Main content area - add bottom padding for fixed footer */
+.main-content,
+section.main-content,
+main {
+    padding-bottom: 70px !important;
+    margin-bottom: 0 !important;
+}
+
+/* Form containers */
+.form-container,
+.page-container,
+.container,
+.content-area {
+    padding-bottom: 70px !important;
+    margin-bottom: 0 !important;
+}
+
+/* All sections inside content */
+section {
+    margin-bottom: 0 !important;
+}
+
+section:last-of-type {
+    padding-bottom: 70px !important;
+}
+
+/* ============================================
+   RESPONSIVE PADDING FOR FOOTER
+   ============================================ */
+
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 60px !important;
+    }
+    
+    .main-content,
+    section.main-content,
+    main,
+    .form-container,
+    .page-container {
+        padding-bottom: 60px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding-bottom: 55px !important;
+    }
+    
+    .main-content,
+    section.main-content,
+    main,
+    .form-container,
+    .page-container {
+        padding-bottom: 55px !important;
+    }
+}
+
+@media (max-width: 374px) {
+    body {
+        padding-bottom: 50px !important;
+    }
+    
+    .main-content,
+    section.main-content,
+    main,
+    .form-container,
+    .page-container {
+        padding-bottom: 50px !important;
+    }
+}
+
+/* ============================================
+   ENSURE FOOTER DOESN'T OVERLAP
+   ============================================ */
+
+/* Any wrapper or container element */
+.wrapper,
+[role="main"],
+.page,
+.admin-page {
+    padding-bottom: 70px !important;
+    margin-bottom: 0 !important;
+}
+
+/* Tables and list containers */
+.table-wrapper,
+.table-container,
+.list-container {
+    margin-bottom: 70px !important;
+    padding-bottom: 20px !important;
+}
+
+/* Forms */
+form {
+    margin-bottom: 70px !important;
+    padding-bottom: 20px !important;
+}
+
+/* Login/Auth pages */
+.login-page,
+.auth-page,
+.forgot-password-page {
+    padding-bottom: 70px !important;
+}
+
+/* ============================================
+   FIX ANY NAVBAR BLOCKING
+   ============================================ */
+
+/* If there's a top navbar, add margin-top to content */
+.has-topbar .main-content,
+.has-topbar section.main-content,
+body.has-topbar .main-content {
+    margin-top: 80px !important;
+}
+
+/* Sidebar navigation fixes */
+.nav {
+    z-index: 1000 !important;
+}
+
+/* Toggle button styling */
+.toggle-btn {
+    z-index: 999 !important;
+}
+
+/* Content should be below navbar sidebar */
+.main-content,
+section.main-content {
+    z-index: 1 !important;
+    position: relative;
+}
+
+/* ============================================
+   UTILITY: FOOTER SPACING
+   ============================================ */
+
+/* Class to add footer spacing to any element */
+.has-fixed-footer {
+    padding-bottom: 70px !important;
+    margin-bottom: 0 !important;
+}
+
+.spacing-footer {
+    margin-bottom: 70px !important;
+}
+
+/* Last section/container needs extra spacing */
+.main-content > section:last-child,
+.main-content > div:last-child,
+section.main-content > section:last-child,
+section.main-content > div:last-child {
+    margin-bottom: 40px !important;
+    padding-bottom: 30px !important;
+}
+
+/* ============================================
+   SCROLL BEHAVIOR
+   ============================================ */
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Ensure content doesn't get hidden */
+* {
+    box-sizing: border-box;
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+    body {
+        padding-bottom: 0 !important;
+    }
+    
+    .main-content,
+    section.main-content {
+        padding-bottom: 0 !important;
+    }
+    
+    .footer {
+        position: static !important;
+        bottom: auto !important;
+    }
+}
