@@ -44,6 +44,18 @@ function project_has_column(mysqli $db, string $columnName): bool
 
 $projectsHasCreatedAt = project_has_column($db, 'created_at');
 
+function build_db_debug_error(mysqli $db, string $context, string $stmtError = ''): string
+{
+    $parts = [];
+    $parts[] = $context;
+    $parts[] = 'db_errno=' . (int)$db->errno;
+    $parts[] = 'db_error=' . ($db->error ?: 'n/a');
+    if ($stmtError !== '') {
+        $parts[] = 'stmt_error=' . $stmtError;
+    }
+    return implode(' | ', $parts);
+}
+
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
@@ -77,7 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $id = (int)$_POST['id'];
             $stmt = $db->prepare("UPDATE projects SET code=?, name=?, type=?, sector=?, description=?, priority=?, province=?, barangay=?, location=?, start_date=?, end_date=?, duration_months=?, budget=?, project_manager=?, status=? WHERE id=?");
             if (!$stmt) {
-                echo json_encode(['success' => false, 'message' => 'Failed to prepare project update: ' . $db->error]);
+                $debugError = build_db_debug_error($db, 'Failed to prepare project update');
+                error_log('[project_registration] ' . $debugError);
+                echo json_encode(['success' => false, 'message' => $debugError]);
                 exit;
             }
             $stmt->bind_param('sssssssssssidssi', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status, $id);
@@ -86,14 +100,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if ($projectsHasCreatedAt) {
                 $stmt = $db->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
                 if (!$stmt) {
-                    echo json_encode(['success' => false, 'message' => 'Failed to prepare project insert: ' . $db->error]);
+                    $debugError = build_db_debug_error($db, 'Failed to prepare project insert (with created_at)');
+                    error_log('[project_registration] ' . $debugError);
+                    echo json_encode(['success' => false, 'message' => $debugError]);
                     exit;
                 }
                 $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
             } else {
                 $stmt = $db->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 if (!$stmt) {
-                    echo json_encode(['success' => false, 'message' => 'Failed to prepare project insert: ' . $db->error]);
+                    $debugError = build_db_debug_error($db, 'Failed to prepare project insert (without created_at)');
+                    error_log('[project_registration] ' . $debugError);
+                    echo json_encode(['success' => false, 'message' => $debugError]);
                     exit;
                 }
                 $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
@@ -103,7 +121,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Project saved successfully']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to save project: ' . $stmt->error]);
+            $debugError = build_db_debug_error($db, 'Failed to save project', $stmt->error);
+            error_log('[project_registration] ' . $debugError);
+            echo json_encode(['success' => false, 'message' => $debugError]);
         }
         if ($stmt) $stmt->close();
         exit;
