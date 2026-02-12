@@ -15,6 +15,35 @@ if ($db->connect_error) {
     exit;
 }
 
+function project_has_column(mysqli $db, string $columnName): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'projects'
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param('s', $columnName);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+
+    return $exists;
+}
+
+$projectsHasCreatedAt = project_has_column($db, 'created_at');
+
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
@@ -47,11 +76,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             // Update existing project
             $id = (int)$_POST['id'];
             $stmt = $db->prepare("UPDATE projects SET code=?, name=?, type=?, sector=?, description=?, priority=?, province=?, barangay=?, location=?, start_date=?, end_date=?, duration_months=?, budget=?, project_manager=?, status=? WHERE id=?");
+            if (!$stmt) {
+                echo json_encode(['success' => false, 'message' => 'Failed to prepare project update: ' . $db->error]);
+                exit;
+            }
             $stmt->bind_param('sssssssssssidssi', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status, $id);
         } else {
-            // Insert new project and set created_at explicitly
-            $stmt = $db->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-            $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
+            // Insert new project; support schemas with or without created_at.
+            if ($projectsHasCreatedAt) {
+                $stmt = $db->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+                if (!$stmt) {
+                    echo json_encode(['success' => false, 'message' => 'Failed to prepare project insert: ' . $db->error]);
+                    exit;
+                }
+                $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
+            } else {
+                $stmt = $db->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                if (!$stmt) {
+                    echo json_encode(['success' => false, 'message' => 'Failed to prepare project insert: ' . $db->error]);
+                    exit;
+                }
+                $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
+            }
         }
         
         if ($stmt->execute()) {
@@ -81,8 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // Handle GET request for loading projects
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
-    
-    $result = $db->query("SELECT * FROM projects ORDER BY created_at DESC");
+
+    $orderBy = $projectsHasCreatedAt ? 'created_at DESC' : 'id DESC';
+    $result = $db->query("SELECT * FROM projects ORDER BY {$orderBy}");
     $projects = [];
     
     if ($result) {
