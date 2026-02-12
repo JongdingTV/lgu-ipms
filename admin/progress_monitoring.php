@@ -234,10 +234,14 @@ $db->close();
             <!-- Control Panel -->
             <div class="pm-controls-wrapper">
                 <div class="pm-controls">
-                    <div class="pm-left">
-                        <label for="pmSearch">Search Projects</label>
-                        <input id="pmSearch" type="search" placeholder="Search by code, name, or location...">
+                    <div class="pm-top-row">
+                        <div class="pm-left">
+                            <label for="pmSearch">Search Projects</label>
+                            <input id="pmSearch" type="search" placeholder="Search by code, name, or location...">
+                        </div>
+                        <button id="exportCsv" type="button" class="btn-export">Export CSV</button>
                     </div>
+
                     <div class="pm-right">
                         <div class="filter-group">
                             <label for="pmStatusFilter">Status</label>
@@ -294,8 +298,6 @@ $db->close();
                                 <option value="progress_asc">Progress (low to high)</option>
                             </select>
                         </div>
-
-                        <button id="exportCsv" type="button" class="btn-export">Export CSV</button>
                     </div>
                 </div>
             </div>
@@ -421,9 +423,15 @@ $db->close();
 
         .main-content .pm-controls {
             display: grid;
-            grid-template-columns: minmax(220px, 1.15fr) minmax(0, 2.85fr);
-            align-items: end;
             gap: 12px;
+            min-width: 0;
+        }
+
+        .main-content .pm-top-row {
+            display: grid;
+            grid-template-columns: minmax(260px, 1fr) auto;
+            gap: 10px;
+            align-items: end;
             min-width: 0;
         }
 
@@ -433,7 +441,7 @@ $db->close();
 
         .main-content .pm-right {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(130px, 1fr));
             gap: 10px;
             align-items: end;
             min-width: 0;
@@ -485,7 +493,7 @@ $db->close();
             letter-spacing: 0.2px;
             white-space: nowrap;
             box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
-            width: 100%;
+            width: auto;
         }
 
         .main-content .btn-export:hover {
@@ -598,10 +606,6 @@ $db->close();
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
 
-            .main-content .pm-controls {
-                grid-template-columns: 1fr;
-            }
-
             .main-content .pm-right {
                 grid-template-columns: repeat(3, minmax(150px, 1fr));
             }
@@ -614,6 +618,10 @@ $db->close();
         @media (max-width: 860px) {
             .main-content .pm-stats-wrapper {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .main-content .pm-top-row {
+                grid-template-columns: 1fr;
             }
 
             .main-content .pm-right {
