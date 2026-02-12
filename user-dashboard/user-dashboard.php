@@ -43,7 +43,7 @@ $db->close();
     <title>User Dashboard - LGU IPMS</title>
     <link rel="icon" type="image/png" href="/logocityhall.png">
     <link rel="stylesheet" href="/assets/style.css">
-    <link rel="stylesheet" href="user-dashboard.css">
+    <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
     <?php echo get_app_config_script(); ?>
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
@@ -108,10 +108,10 @@ $db->close();
         <hr style="width:80%;margin:10px auto 16px auto;border:0;border-top:1.5px solid #e5e7eb;" />
         <!-- Navigation menu -->
         <nav class="nav-links">
-            <a href="user-dashboard.php" class="active"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="../assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
-            <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php"><img src="settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
+            <a href="user-dashboard.php" class="active"><img src="/assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+            <a href="user-progress-monitoring.php"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-feedback.php"><img src="/user-dashboard/feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
+            <a href="user-settings.php"><img src="/user-dashboard/settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </nav>
         <!-- Logout button at bottom -->
         <div style="margin-top:auto;padding:18px 0 0 0;display:flex;justify-content:center;">

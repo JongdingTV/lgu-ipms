@@ -62,6 +62,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 $db->close();
 ?>
 <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Settings</title>
+    <link rel="icon" type="image/png" href="/logocityhall.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
+</head>
+<body>
+<!DOCTYPE html>
     <aside class="nav" id="navbar">
         <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -133,15 +146,7 @@ $db->close();
     </aside>
     // ...existing code...
 
-    <!-- Toggle button to show sidebar -->
-    <!-- Toggle button to show sidebar -->
-    <div class="toggle-btn" id="showSidebarBtn">
-        <a href="#" id="toggleSidebarShow" title="Show sidebar">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-        </a>
-    </div>
+
 
     <section class="main-content">
         <div class="dash-header">
