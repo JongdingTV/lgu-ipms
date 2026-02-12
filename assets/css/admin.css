@@ -5921,3 +5921,67 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item
     background: var(--admin-primary-soft);
 }
 
+/* Force layout reset for authenticated admin pages.
+   This neutralizes late legacy rules that convert sidebar into top nav. */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) {
+    display: block !important;
+    padding-top: 0 !important;
+    overflow-x: hidden;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    width: 250px !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: stretch !important;
+    padding: 0 !important;
+    z-index: 1000 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav {
+    width: 100px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
+    margin-left: 270px !important;
+    width: calc(100% - 270px) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .main-content {
+    margin-left: 120px !important;
+    width: calc(100% - 120px) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .toggle-btn {
+    left: 258px !important;
+    right: auto !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .toggle-btn {
+    left: 108px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+}
+
+@media (max-width: 992px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .toggle-btn {
+        left: 12px !important;
+    }
+}
+
