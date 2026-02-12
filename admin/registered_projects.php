@@ -21,44 +21,31 @@ if ($db->connect_error) {
 }
 
 /**
- * Load projects using only columns available in the current schema.
- * This avoids silent failures when deployments have slight table differences.
+ * Load projects with robust query fallbacks.
+ * This avoids empty screens when schema/permissions vary across environments.
  *
  * @return array{projects: array<int, array<string, mixed>>, error: ?string}
  */
 function load_projects_data(mysqli $db): array
 {
-    $preferredColumns = ['id', 'code', 'name', 'type', 'sector', 'priority', 'status', 'description', 'created_at'];
-    $availableColumns = [];
+    $queries = [
+        "SELECT * FROM projects ORDER BY created_at DESC",
+        "SELECT * FROM projects ORDER BY id DESC",
+        "SELECT * FROM projects",
+    ];
 
-    $columnsResult = $db->query("SHOW COLUMNS FROM projects");
-    if ($columnsResult) {
-        while ($column = $columnsResult->fetch_assoc()) {
-            if (!empty($column['Field'])) {
-                $availableColumns[] = $column['Field'];
-            }
+    $result = null;
+    $lastError = '';
+    foreach ($queries as $query) {
+        $result = $db->query($query);
+        if ($result) {
+            break;
         }
-        $columnsResult->free();
+        $lastError = $db->error;
     }
-
-    if (!empty($availableColumns)) {
-        $selectedColumns = array_values(array_intersect($preferredColumns, $availableColumns));
-    } else {
-        // Fallback if SHOW COLUMNS is blocked by permissions.
-        $selectedColumns = $preferredColumns;
-    }
-
-    $selectClause = !empty($selectedColumns) ? implode(', ', $selectedColumns) : '*';
-    $orderClause = in_array('created_at', $selectedColumns, true) ? ' ORDER BY created_at DESC' : '';
-    if ($orderClause === '' && in_array('id', $selectedColumns, true)) {
-        $orderClause = ' ORDER BY id DESC';
-    }
-
-    $query = "SELECT {$selectClause} FROM projects{$orderClause}";
-    $result = $db->query($query);
 
     if (!$result) {
-        return ['projects' => [], 'error' => 'Failed to load projects: ' . $db->error];
+        return ['projects' => [], 'error' => 'Failed to load projects: ' . $lastError];
     }
 
     $projects = [];
