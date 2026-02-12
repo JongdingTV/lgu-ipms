@@ -212,3 +212,51 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) select:focus-visi
         top: 10px;
     }
 }
+
+/* Centered admin content: keep visual center stable and only stretch on sidebar collapse. */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) {
+    --admin-sidebar-open: 270px;
+    --admin-sidebar-collapsed: 120px;
+    --admin-page-gutter: 20px;
+    --admin-side-reserve: var(--admin-sidebar-open);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden {
+    --admin-side-reserve: var(--admin-sidebar-collapsed);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding-left: calc(var(--admin-side-reserve) + var(--admin-page-gutter)) !important;
+    padding-right: calc(var(--admin-side-reserve) + var(--admin-page-gutter)) !important;
+    transition: padding-left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), padding-right 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .dash-header,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .metrics-container,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .charts-container,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .recent-projects,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .quick-stats,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .projects-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .contractors-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .budget-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .allocation-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .expense-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .summary-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .controls-bar,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .table-wrap,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .card {
+    width: 100%;
+    max-width: 1360px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+@media (max-width: 992px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+}
