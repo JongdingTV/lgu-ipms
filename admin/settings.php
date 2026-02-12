@@ -88,7 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
         }
     }
 }
-
 // Fetch security logs
 $logs = [];
 if (isset($db) && !$db->connect_error) {
@@ -195,41 +194,43 @@ if (isset($db) && !$db->connect_error) {
         </div>
     </header>
 
-    <section class="main-content">
+    <section class="main-content settings-page">
         <div class="dash-header">
             <h1>Account Settings</h1>
             <p>Manage your account and security preferences</p>
         </div>
 
-        <div class="card ac-e9b6d4ca">
+        <div class="settings-layout">
+        <div class="card ac-e9b6d4ca settings-card">
             <!-- Tab Navigation -->
-            <div class="tabs-container">
-                <button class="tab-btn <?php echo $active_tab === 'password' ? 'active' : ''; ?>" data-onclick="switchTab('password')">
-                    🔐 Change Password
+            <div class="tabs-container settings-tabs" role="tablist" aria-label="Settings Tabs">
+                <button type="button" class="tab-btn <?php echo $active_tab === 'password' ? 'active' : ''; ?>" data-tab="password" role="tab" aria-selected="<?php echo $active_tab === 'password' ? 'true' : 'false'; ?>">
+                    Change Password
                 </button>
-                <button class="tab-btn <?php echo $active_tab === 'security' ? 'active' : ''; ?>" data-onclick="switchTab('security')">
-                    🔒 Security Logs
+                <button type="button" class="tab-btn <?php echo $active_tab === 'security' ? 'active' : ''; ?>" data-tab="security" role="tab" aria-selected="<?php echo $active_tab === 'security' ? 'true' : 'false'; ?>">
+                    Security Logs
                 </button>
             </div>
 
             <!-- Change Password Tab -->
             <div id="password-tab" class="tab-content <?php echo $active_tab === 'password' ? 'active' : ''; ?>">
-                <div class="ac-dc271cfe">
+                <div class="ac-dc271cfe settings-panel">
                     <h3 class="ac-b75fad00">Change Your Password</h3>
+                    <p class="settings-subtitle">Use a strong password with at least 8 characters.</p>
                     
                     <?php if (!empty($error)): ?>
-                        <div class="ac-565a021d">
+                        <div class="ac-565a021d settings-alert settings-alert-error">
                             <strong>Error:</strong> <?php echo $error; ?>
                         </div>
                     <?php endif; ?>
                     
                     <?php if (!empty($success)): ?>
-                        <div class="ac-6c5498e2">
+                        <div class="ac-6c5498e2 settings-alert settings-alert-success">
                             <strong>Success:</strong> <?php echo $success; ?>
                         </div>
                     <?php endif; ?>
                     
-                    <form method="POST" action="">
+                    <form method="POST" action="" class="settings-form">
                         <input type="hidden" name="change_password" value="1">
                         
                         <div class="ac-4a3180e2">
@@ -259,12 +260,12 @@ if (isset($db) && !$db->connect_error) {
 
             <!-- Security Logs Tab -->
             <div id="security-tab" class="tab-content <?php echo $active_tab === 'security' ? 'active' : ''; ?>">
-                <div>
+                <div class="settings-panel">
                     <h3 class="ac-b75fad00">Security Logs</h3>
                     <p class="ac-bcaa02df">View your recent login activities and security events</p>
                     
                     <?php if (count($logs) > 0): ?>
-                        <div class="ac-42d4450c">
+                        <div class="ac-42d4450c table-wrap settings-logs-wrap">
                             <table class="ac-297d90f5">
                                 <thead>
                                     <tr class="ac-7707967d">
@@ -295,20 +296,46 @@ if (isset($db) && !$db->connect_error) {
                             </table>
                         </div>
                     <?php else: ?>
-                        <div class="ac-a6302130">
+                        <div class="ac-a6302130 settings-empty">
                             <p>No security logs found</p>
                         </div>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
+        </div>
     </section>
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script>
+    (function () {
+        if (!location.pathname.endsWith('/settings.php')) return;
+        const tabs = Array.from(document.querySelectorAll('.settings-tabs .tab-btn'));
+        const contents = Array.from(document.querySelectorAll('.tab-content'));
+        if (!tabs.length || !contents.length) return;
+
+        const setTab = (tabName) => {
+            contents.forEach((panel) => panel.classList.toggle('active', panel.id === tabName + '-tab'));
+            tabs.forEach((btn) => {
+                const active = btn.getAttribute('data-tab') === tabName;
+                btn.classList.toggle('active', active);
+                btn.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tabName);
+            history.replaceState({}, '', url.toString());
+        };
+
+        tabs.forEach((btn) => {
+            btn.addEventListener('click', () => setTab(btn.getAttribute('data-tab')));
+        });
+    })();
+    </script>
 </body>
 </html>
+
 
 
 

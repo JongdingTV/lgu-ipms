@@ -207,6 +207,96 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003 {
     font-weight: 700 !important;
 }
 
+/* Settings page layout refresh */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-layout {
+    display: grid;
+    gap: 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-card {
+    padding: 16px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 6px;
+    border: 1px solid #d6e4f3;
+    border-radius: 12px;
+    background: linear-gradient(160deg, #f6fbff, #ffffff);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-tabs .tab-btn {
+    min-height: 42px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #3a5c85;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-tabs .tab-btn.active {
+    border-color: #bfd4f2;
+    background: linear-gradient(135deg, #eaf3ff, #f6f9ff);
+    color: #153d6a;
+    box-shadow: 0 8px 14px rgba(31, 84, 164, 0.16);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-panel {
+    border: 1px solid #d8e4f2;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff, #f8fbff);
+    padding: 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-subtitle {
+    margin: 0 0 12px;
+    color: #5a7596;
+    font-size: 0.9rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-form {
+    display: grid;
+    gap: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-alert {
+    border-radius: 10px;
+    border: 1px solid transparent;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-alert-error {
+    border-color: #fecaca;
+    background: #fff1f2;
+    color: #9f1239;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-alert-success {
+    border-color: #86efac;
+    background: #ecfdf5;
+    color: #166534;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-logs-wrap {
+    max-height: 460px;
+    overflow: auto;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-empty {
+    border: 1px dashed #c9d8ea;
+    border-radius: 12px;
+    background: #f8fbff;
+    color: #5e7896;
+    text-align: center;
+    padding: 26px 12px;
+}
+
 /* Progress monitoring project cards */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-list {
     display: grid;
