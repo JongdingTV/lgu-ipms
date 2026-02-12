@@ -40,31 +40,45 @@
   }
 
   function initUnifiedDropdowns() {
-    $$('.nav-item-group').forEach((group) => {
+    const groups = $$('.nav-item-group');
+    const setGroupOpen = (group, open) => {
+      if (!group) return;
+      const trigger = $('.nav-main-item', group);
+      const submenu = $('.nav-submenu', group);
+      group.classList.toggle('open', !!open);
+      if (trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      // Legacy scripts may leave inline display:none; normalize it here.
+      if (submenu) submenu.style.display = open ? 'block' : 'none';
+    };
+
+    groups.forEach((group) => {
       const trigger = $('.nav-main-item', group);
       if (!trigger || trigger.dataset.enterpriseBound === '1') return;
       trigger.dataset.enterpriseBound = '1';
 
       trigger.setAttribute('role', 'button');
       trigger.setAttribute('aria-haspopup', 'true');
-      trigger.setAttribute('aria-expanded', group.classList.contains('open') ? 'true' : 'false');
+
+      // Initial state: open only when a submenu link is active.
+      const hasActiveSubmenu = !!$('.nav-submenu-item.active', group);
+      setGroupOpen(group, hasActiveSubmenu);
 
       trigger.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         const willOpen = !group.classList.contains('open');
-        $$('.nav-item-group.open').forEach((other) => {
-          if (other !== group) other.classList.remove('open');
+        groups.forEach((other) => {
+          if (other !== group) setGroupOpen(other, false);
         });
-        group.classList.toggle('open', willOpen);
-        trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        setGroupOpen(group, willOpen);
       }, true);
     });
 
     document.addEventListener('click', (e) => {
       if (e.target.closest('.nav-item-group')) return;
-      $$('.nav-item-group.open').forEach((g) => g.classList.remove('open'));
-    });
+      groups.forEach((group) => setGroupOpen(group, false));
+    }, true);
   }
 
   function initLogoutModal() {
