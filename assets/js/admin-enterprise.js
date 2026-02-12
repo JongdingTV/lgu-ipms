@@ -57,8 +57,7 @@
       trigger.setAttribute('aria-haspopup', 'true');
 
       // Initial state: open only when a submenu link is active.
-      const hasActiveSubmenu = !!$('.nav-submenu-item.active', group);
-      setGroupOpen(group, hasActiveSubmenu);
+      setGroupOpen(group, false);
 
       trigger.addEventListener('click', (e) => {
         e.preventDefault();
@@ -115,7 +114,7 @@
       modal.innerHTML = `
         <div class="admin-logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle">
           <div class="admin-logout-head">
-            <span class="admin-logout-icon" aria-hidden="true">↪</span>
+            <span class="admin-logout-icon" aria-hidden="true">&#8618;</span>
             <div>
               <h3 id="logoutModalTitle">Logout Confirmation</h3>
               <p>You are about to end your current admin session.</p>
@@ -482,3 +481,4 @@
     initProgressMonitoringFix();
   });
 })();
+

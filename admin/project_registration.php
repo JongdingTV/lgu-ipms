@@ -277,7 +277,7 @@ $db->close();
                     <span class="dropdown-arrow">▼</span>
                 </a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="contractors.php" class="nav-submenu-item active">
+                    <a href="contractors.php" class="nav-submenu-item">
                         <span class="submenu-icon">➕</span>
                         <span>Add Contractor</span>
                     </a>
