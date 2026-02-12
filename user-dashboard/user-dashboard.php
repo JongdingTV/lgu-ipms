@@ -48,16 +48,81 @@ $db->close();
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
-    <div id="sidebarBurgerBtn" style="position:fixed;top:24px;right:32px;z-index:200;display:flex;align-items:center;cursor:pointer;">
-        <button class="navbar-menu-icon" title="Show/hide sidebar" style="background:none;border:none;padding:0;outline:none;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <aside class="nav" id="navbar">
+        <!-- Hamburger toggle at top-left -->
+        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
         </button>
-    </div>
-    <?php include __DIR__ . '/user-sidebar.php'; ?>
+        <!-- Logo at the top, small and neat -->
+        <div class="nav-logo">
+            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;margin-bottom:4px;" />
+            <span class="logo-text">IPMS</span>
+        </div>
+        <!-- Profile section -->
+        <div class="nav-user" style="border-top:none;padding-top:0;margin-bottom:8px;">
+            <?php
+            $profile_img = '';
+            $user_email = isset($user['email']) ? $user['email'] : '';
+            $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : (isset($user['first_name']) ? $user['first_name'] . ' ' . $user['last_name'] : 'User');
+            $initials = '';
+            if ($user_name) {
+                $parts = explode(' ', $user_name);
+                foreach ($parts as $p) {
+                    if ($p) $initials .= strtoupper($p[0]);
+                }
+            }
+            if (!function_exists('stringToColor')) {
+                function stringToColor($str) {
+                    $colors = [
+                        '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
+                        '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
+                        '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#607D8B'
+                    ];
+                    $hash = 0;
+                    for ($i = 0; $i < strlen($str); $i++) {
+                        $hash = ord($str[$i]) + (($hash << 5) - $hash);
+                    }
+                    $index = abs($hash) % count($colors);
+                    return $colors[$index];
+                }
+            }
+            $bgcolor = stringToColor($user_name);
+            ?>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <?php if ($profile_img): ?>
+                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon" style="width:48px;height:48px;" />
+                <?php else: ?>
+                    <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                        <?php echo $initials; ?>
+                    </div>
+                <?php endif; ?>
+                <div style="font-weight:700;font-size:1.08em;line-height:1.2;margin-top:2px;text-align:center;"> <?php echo htmlspecialchars($user_name); ?> </div>
+                <div style="font-size:0.97em;color:#64748b;line-height:1.1;text-align:center;"> <?php echo htmlspecialchars($user_email); ?> </div>
+            </div>
+        </div>
+        <!-- Divider -->
+        <hr style="width:80%;margin:10px auto 16px auto;border:0;border-top:1.5px solid #e5e7eb;" />
+        <!-- Navigation menu -->
+        <nav class="nav-links">
+            <a href="user-dashboard.php" class="active"><img src="/assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+            <a href="user-progress-monitoring.php"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-feedback.php"><img src="/user-dashboard/feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
+            <a href="user-settings.php"><img src="/user-dashboard/settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
+        </nav>
+        <!-- Logout button at bottom -->
+        <div style="margin-top:auto;padding:18px 0 0 0;display:flex;justify-content:center;">
+            <a href="#" class="nav-logout logout-btn" id="logoutLink">Logout</a>
+        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.setupLogoutConfirmation && window.setupLogoutConfirmation();
+        });
+        </script>
+    </aside>
 
     <!-- Toggle button for mobile (if needed) can be added here if required -->
 
@@ -275,31 +340,6 @@ $db->close();
         }
     })();
     </script>
-    <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.getElementById('navbar');
-    const burgerBtn = document.getElementById('sidebarBurgerBtn');
-    if (sidebar && burgerBtn) {
-        burgerBtn.addEventListener('click', function() {
-            sidebar.classList.toggle('sidebar-open');
-            if (sidebar.classList.contains('sidebar-open')) {
-                sidebar.style.transform = 'translateX(0)';
-            } else {
-                sidebar.style.transform = 'translateX(-110%)';
-            }
-        });
-        // Optional: close sidebar when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!sidebar.contains(e.target) && !burgerBtn.contains(e.target)) {
-                sidebar.classList.remove('sidebar-open');
-                sidebar.style.transform = 'translateX(-110%)';
-            }
-        });
-    }
-    // Initialize sidebar state
-    sidebar && (sidebar.style.transform = 'translateX(0)');
-});
-</script>
 </body>
 </html>
 

@@ -1,7 +1,4 @@
 <?php
-// Suppress PHP errors and warnings for clean login UI
-ini_set('display_errors', 0);
-error_reporting(0);
 // Include security authentication
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
