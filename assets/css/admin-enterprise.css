@@ -1243,6 +1243,65 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .bt
     cursor: pointer;
 }
 
+/* Dashboard budget card: keep reveal value inside card and improve layout */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #budgetCard .metric-content {
+    width: 100%;
+    min-width: 0;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #budgetCard .ac-9b373689 {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 10px;
+    width: 100%;
+    min-width: 0;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #budgetCard #budgetValue {
+    margin: 0 !important;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15 !important;
+    font-size: clamp(1.02rem, 1.75vw, 1.5rem) !important;
+    color: #1e3f74;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #budgetCard #budgetVisibilityToggle {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 10px;
+    border: 1px solid #cfddee;
+    background: #f8fbff;
+    color: #284a75;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: 1;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #budgetCard #budgetVisibilityToggle:hover {
+    border-color: #b9cee7;
+    background: #eef5ff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark #budgetCard #budgetValue {
+    color: #e5f0ff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark #budgetCard #budgetVisibilityToggle {
+    border-color: #365273;
+    background: #122843;
+    color: #d3e3f8;
+}
+
 @media (max-width: 920px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .projects-filter .ac-c59ce897 {
         grid-template-columns: 1fr;
