@@ -17,7 +17,7 @@ footer,
     margin: 0 !important;
     padding: 16px 20px !important;
     z-index: 999 !important;
-    display: flex !important;
+    display: none !important;
     align-items: center !important;
     justify-content: center !important;
     background: linear-gradient(135deg, #1e3a8a 0%, #2c5282 100%) !important;
@@ -28,23 +28,26 @@ footer,
     text-align: center !important;
     box-sizing: border-box !important;
     transition: all 0.3s ease-in-out !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-
-/* Hide footer initially with smooth transition */
-footer.hidden,
-.footer.hidden {
     opacity: 0 !important;
     visibility: hidden !important;
-    transform: translateY(100%) !important;
+    pointer-events: none !important;
 }
 
-/* Prevent footer from being hidden by other elements */
-footer:not([style*="display: none"]),
-.footer:not([style*="display: none"]) {
-    visibility: visible !important;
+/* Show footer when smart-footer.js triggers display: flex */
+footer[style*="display: flex"],
+.footer[style*="display: flex"] {
+    display: flex !important;
     opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+/* Alternative: when display is explicitly set to flex */
+footer.show,
+.footer.show {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 /* Move all content up to make room for footer */
