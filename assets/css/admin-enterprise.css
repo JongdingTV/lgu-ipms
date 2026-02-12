@@ -227,7 +227,9 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden {
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
     margin-left: var(--admin-sidebar-width) !important;
+    margin-right: 0 !important;
     width: calc(100% - var(--admin-sidebar-width)) !important;
+    max-width: none !important;
     box-sizing: border-box !important;
     padding-left: clamp(12px, 2vw, 28px) !important;
     padding-right: clamp(12px, 2vw, 28px) !important;
