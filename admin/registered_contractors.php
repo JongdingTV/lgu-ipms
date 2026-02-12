@@ -359,8 +359,8 @@ $db->close();
             <h2 id="assignmentTitle"></h2>
             <div id="projectsList" class="contractor-modal-list"></div>
             <div class="contractor-modal-actions">
-                <button type="button" data-onclick="closeAssignModal()" class="btn-contractor-secondary">Cancel</button>
-                <button type="button" id="saveAssignments" data-onclick="saveAssignmentsHandler()" class="btn-contractor-primary">Save Assignments</button>
+                <button type="button" id="assignCancelBtn" class="btn-contractor-secondary">Cancel</button>
+                <button type="button" id="saveAssignments" class="btn-contractor-primary">Save Assignments</button>
             </div>
         </div>
     </div>
@@ -371,7 +371,22 @@ $db->close();
             <h2 id="projectsViewTitle"></h2>
             <div id="projectsViewList" class="contractor-modal-list"></div>
             <div class="contractor-modal-actions">
-                <button type="button" data-onclick="closeProjectsModal()" class="btn-contractor-primary">Close</button>
+                <button type="button" id="projectsCloseBtn" class="btn-contractor-primary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="contractorDeleteModal" class="contractor-modal" role="dialog" aria-modal="true" aria-labelledby="contractorDeleteTitle">
+        <div class="contractor-modal-panel contractor-delete-panel">
+            <div class="contractor-delete-head">
+                <span class="contractor-delete-icon">!</span>
+                <h2 id="contractorDeleteTitle">Delete Contractor?</h2>
+            </div>
+            <p class="contractor-delete-message">This contractor and all related assignment records will be permanently deleted.</p>
+            <div id="contractorDeleteName" class="contractor-delete-name"></div>
+            <div class="contractor-modal-actions">
+                <button type="button" id="contractorDeleteCancel" class="btn-contractor-secondary">Cancel</button>
+                <button type="button" id="contractorDeleteConfirm" class="btn-contractor-danger">Delete Permanently</button>
             </div>
         </div>
     </div>
@@ -397,6 +412,13 @@ $db->close();
         const projectsViewList = document.getElementById('projectsViewList');
         const assignContractorId = document.getElementById('assignContractorId');
         const saveAssignmentsBtn = document.getElementById('saveAssignments');
+        const assignCancelBtn = document.getElementById('assignCancelBtn');
+        const projectsCloseBtn = document.getElementById('projectsCloseBtn');
+
+        const contractorDeleteModal = document.getElementById('contractorDeleteModal');
+        const contractorDeleteName = document.getElementById('contractorDeleteName');
+        const contractorDeleteCancel = document.getElementById('contractorDeleteCancel');
+        const contractorDeleteConfirm = document.getElementById('contractorDeleteConfirm');
 
         let contractorsCache = [];
         let projectsCache = [];
@@ -560,6 +582,43 @@ $db->close();
             if (projectsViewModal) projectsViewModal.style.display = 'none';
         }
 
+        function closeDeleteModal() {
+            if (contractorDeleteModal) contractorDeleteModal.style.display = 'none';
+        }
+
+        function confirmDeleteContractor(contractorName) {
+            return new Promise((resolve) => {
+                if (!contractorDeleteModal) {
+                    resolve(window.confirm(`Delete ${contractorName}? This cannot be undone.`));
+                    return;
+                }
+                contractorDeleteName.textContent = contractorName || 'Selected contractor';
+                contractorDeleteModal.style.display = 'flex';
+
+                const cancel = () => {
+                    closeDeleteModal();
+                    contractorDeleteCancel?.removeEventListener('click', onCancel);
+                    contractorDeleteConfirm?.removeEventListener('click', onConfirm);
+                    contractorDeleteModal?.removeEventListener('click', onBackdrop);
+                    resolve(false);
+                };
+                const confirm = () => {
+                    closeDeleteModal();
+                    contractorDeleteCancel?.removeEventListener('click', onCancel);
+                    contractorDeleteConfirm?.removeEventListener('click', onConfirm);
+                    contractorDeleteModal?.removeEventListener('click', onBackdrop);
+                    resolve(true);
+                };
+                const onCancel = () => cancel();
+                const onConfirm = () => confirm();
+                const onBackdrop = (e) => { if (e.target === contractorDeleteModal) cancel(); };
+
+                contractorDeleteCancel?.addEventListener('click', onCancel);
+                contractorDeleteConfirm?.addEventListener('click', onConfirm);
+                contractorDeleteModal?.addEventListener('click', onBackdrop);
+            });
+        }
+
         async function loadProjectsForAssignment(contractorId) {
             try {
                 const [assigned, allProjects] = await Promise.all([
@@ -679,19 +738,7 @@ $db->close();
                 return;
             }
             if (btn.classList.contains('btn-delete')) {
-                const proceed = typeof window.showConfirmation === 'function'
-                    ? await new Promise((resolve) => {
-                        window.showConfirmation({
-                            title: 'Delete Contractor',
-                            message: 'This contractor and related assignments will be permanently deleted.',
-                            itemName: contractorName,
-                            confirmText: 'Delete Permanently',
-                            cancelText: 'Cancel',
-                            onConfirm: () => resolve(true),
-                            onCancel: () => resolve(false)
-                        });
-                    })
-                    : window.confirm(`Delete ${contractorName}? This cannot be undone.`);
+                const proceed = await confirmDeleteContractor(contractorName);
                 if (!proceed) return;
 
                 try {
@@ -707,8 +754,16 @@ $db->close();
         });
 
         saveAssignmentsBtn?.addEventListener('click', saveAssignmentsHandler);
+        assignCancelBtn?.addEventListener('click', closeAssignModal);
+        projectsCloseBtn?.addEventListener('click', closeProjectsModal);
         assignmentModal?.addEventListener('click', (e) => { if (e.target === assignmentModal) closeAssignModal(); });
         projectsViewModal?.addEventListener('click', (e) => { if (e.target === projectsViewModal) closeProjectsModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            closeAssignModal();
+            closeProjectsModal();
+            closeDeleteModal();
+        });
 
         window.closeAssignModal = closeAssignModal;
         window.closeProjectsModal = closeProjectsModal;
