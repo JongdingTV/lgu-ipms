@@ -13,16 +13,16 @@ footer,
     right: 0 !important;
     width: 100% !important;
     max-width: none !important;
-    height: 40px !important;
+    height: 30px !important;
     margin: 0 !important;
-    padding: 8px 14px !important;
+    padding: 5px 12px !important;
     z-index: 999 !important;
     display: none !important;
     align-items: center !important;
     justify-content: center !important;
     background: linear-gradient(135deg, #1e3a8a 0%, #2c5282 100%) !important;
     color: #ffffff !important;
-    font-size: 11px !important;
+    font-size: 9px !important;
     border-top: 2px solid #3b82f6 !important;
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     text-align: center !important;
@@ -55,11 +55,11 @@ footer.show,
 
 /* Move all content up to make room for compact footer */
 html {
-    padding-bottom: 40px !important;
+    padding-bottom: 30px !important;
 }
 
 body {
-    padding-bottom: 40px !important;
+    padding-bottom: 30px !important;
     margin-bottom: 0 !important;
     overflow-x: hidden !important;
 }
@@ -70,7 +70,7 @@ section.main-content,
 main,
 .page-content,
 .content-wrapper {
-    margin-bottom: 40px !important;
+    margin-bottom: 30px !important;
     padding-bottom: 0 !important;
 }
 
@@ -79,7 +79,7 @@ main,
 .wrapper,
 .form-container,
 .page-container {
-    margin-bottom: 40px !important;
+    margin-bottom: 30px !important;
     padding-bottom: 0 !important;
 }
 
@@ -103,69 +103,69 @@ table,
 @media (max-width: 768px) {
     footer,
     .footer {
-        height: 38px !important;
-        padding: 7px 12px !important;
-        font-size: 10px !important;
+        height: 28px !important;
+        padding: 4px 10px !important;
+        font-size: 8px !important;
     }
     
     html {
-        padding-bottom: 38px !important;
+        padding-bottom: 28px !important;
     }
     
     body {
-        padding-bottom: 38px !important;
+        padding-bottom: 28px !important;
     }
     
     .main-content,
     section.main-content,
     main {
-        margin-bottom: 38px !important;
+        margin-bottom: 28px !important;
     }
 }
 
 @media (max-width: 480px) {
     footer,
     .footer {
-        height: 36px !important;
-        padding: 6px 10px !important;
-        font-size: 9px !important;
+        height: 26px !important;
+        padding: 3px 8px !important;
+        font-size: 7px !important;
     }
     
     html {
-        padding-bottom: 36px !important;
+        padding-bottom: 26px !important;
     }
     
     body {
-        padding-bottom: 36px !important;
+        padding-bottom: 26px !important;
     }
     
     .main-content,
     section.main-content,
     main {
-        margin-bottom: 36px !important;
+        margin-bottom: 26px !important;
     }
 }
 
 @media (max-width: 374px) {
     footer,
     .footer {
-        height: 34px !important;
-        padding: 5px 8px !important;
-        font-size: 8px !important;
+        height: 24px !important;
+        padding: 2px 6px !important;
+        font-size: 6px !important;
     }
     
     html {
-        padding-bottom: 34px !important;
+        padding-bottom: 24px !important;
     }
     
     body {
-        padding-bottom: 34px !important;
+        padding-bottom: 24px !important;
     }
     
     .main-content,
     section.main-content,
     main {
-        margin-bottom: 34px !important;
+        margin-bottom: 24px !important;
     }
 }
 
