@@ -467,14 +467,30 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .ac
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-delete {
-    min-height: 32px;
-    border-radius: 8px;
-    border: 1px solid #efb8b8;
-    background: #fff5f5;
+    min-height: 36px;
+    border-radius: 10px;
+    border: 1px solid #f8b4b4;
+    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
     color: #b42318;
     font-weight: 700;
-    padding: 0 10px;
+    padding: 0.5rem 0.95rem;
     cursor: pointer;
+    letter-spacing: 0.2px;
+    box-shadow: 0 2px 10px rgba(180, 35, 24, 0.14);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-delete:hover {
+    background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%);
+    border-color: #fda4af;
+    color: #9f1239;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(190, 24, 93, 0.2);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-delete:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.24), 0 8px 18px rgba(190, 24, 93, 0.16);
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-edit {
