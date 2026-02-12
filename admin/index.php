@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Start session first
 session_start();
 
@@ -234,8 +234,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <link rel="stylesheet" href="../assets/css/shared/admin-auth.css">
     <link rel="stylesheet" href="../assets/css/footer-shared.css">
-    <link rel="stylesheet" href="../assets/css/layout-fix.css">
-    <link rel="stylesheet" href="../assets/css/critical-footer-fix.css">
     <style>
         :root {
             --page-navy: #0f2a4a;

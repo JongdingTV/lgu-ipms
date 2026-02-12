@@ -111,3 +111,61 @@ body {
         padding-bottom: 45px;
     }
 }
+
+/* Admin pages: enforce compact fixed footer to avoid layout conflicts. */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer {
+    position: fixed !important;
+    left: 270px !important;
+    right: auto !important;
+    bottom: 0 !important;
+    width: calc(100% - 270px) !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    margin: 0 !important;
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    border-top-width: 1px !important;
+    z-index: 1200 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer p {
+    margin: 0 !important;
+    line-height: 1.2 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) {
+    padding-bottom: 46px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .footer {
+    left: 120px !important;
+    width: calc(100% - 120px) !important;
+}
+
+@media (max-width: 768px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer {
+        height: 36px !important;
+        min-height: 36px !important;
+        padding: 5px 10px !important;
+        font-size: 10px !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) {
+        padding-bottom: 42px !important;
+    }
+}
+
+@media (max-width: 992px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .footer {
+        left: 0 !important;
+        width: 100% !important;
+    }
+}
