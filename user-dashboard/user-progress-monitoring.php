@@ -36,14 +36,63 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
             <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
             <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
         </div>
-        <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button" style="position:fixed;top:18px;left:18px;z-index:1002;display:none;">
+        <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button">
             <span class="burger-bar"></span>
             <span class="burger-bar"></span>
             <span class="burger-bar"></span>
         </button>
         <style>
-        .sidebar-burger-btn.mobile-only { display: none; }
-        @media (max-width: 991px) { .sidebar-burger-btn.mobile-only { display: block !important; } }
+        .sidebar-burger-btn.mobile-only {
+            display: none;
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            z-index: 1002;
+            width: 48px;
+            height: 48px;
+            background: #fff;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(30,58,138,0.10);
+            transition: box-shadow 0.2s;
+            cursor: pointer;
+            outline: none;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            /* Hide visually and remove from layout in desktop */
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .sidebar-burger-btn.mobile-only:active,
+        .sidebar-burger-btn.mobile-only:focus {
+            box-shadow: 0 4px 16px rgba(30,58,138,0.18);
+        }
+        .sidebar-burger-btn.mobile-only .burger-bar {
+            display: block;
+            width: 28px;
+            height: 4px;
+            margin: 5px auto;
+            background: #1e3a8a;
+            border-radius: 2px;
+            transition: all 0.3s cubic-bezier(.4,2,.6,1);
+        }
+        .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(1) {
+            transform: translateY(9px) rotate(45deg);
+        }
+        .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(2) {
+            opacity: 0;
+        }
+        .sidebar-burger-btn.mobile-only.open .burger-bar:nth-child(3) {
+            transform: translateY(-9px) rotate(-45deg);
+        }
+        @media (max-width: 991px) {
+            .sidebar-burger-btn.mobile-only {
+                display: flex !important;
+                visibility: visible;
+                pointer-events: auto;
+            }
+        }
         </style>
         <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">
             <?php
@@ -142,13 +191,14 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
     <script src="/assets/js/shared/shared-toggle.js"></script>
     <script src="user-progress-monitoring.js"></script>
     <script>
+    // Sidebar burger and overlay logic (mobile burger only, with animation)
     (function() {
         const sidebar = document.getElementById('navbar');
         const burger = document.getElementById('sidebarBurgerBtn');
         const overlay = document.getElementById('sidebarOverlay');
         function updateBurgerVisibility() {
             if (window.innerWidth <= 991) {
-                burger.style.display = 'block';
+                burger.style.display = 'flex';
             } else {
                 burger.style.display = 'none';
                 closeSidebar();
@@ -158,11 +208,13 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
             sidebar.classList.add('sidebar-open');
             overlay.classList.add('sidebar-overlay-active');
             document.body.classList.add('sidebar-opened');
+            burger.classList.add('open');
         }
         function closeSidebar() {
             sidebar.classList.remove('sidebar-open');
             overlay.classList.remove('sidebar-overlay-active');
             document.body.classList.remove('sidebar-opened');
+            burger.classList.remove('open');
         }
         burger.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -175,15 +227,6 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
         overlay.addEventListener('click', closeSidebar);
         window.addEventListener('resize', updateBurgerVisibility);
         document.addEventListener('DOMContentLoaded', updateBurgerVisibility);
-        document.addEventListener('click', function(e) {
-            if (
-                sidebar.classList.contains('sidebar-open') &&
-                !sidebar.contains(e.target) &&
-                !burger.contains(e.target)
-            ) {
-                closeSidebar();
-            }
-        });
     })();
     document.addEventListener('DOMContentLoaded', function() {
         window.setupLogoutConfirmation && window.setupLogoutConfirmation();
