@@ -56,16 +56,42 @@ function build_db_debug_error(mysqli $db, string $context, string $stmtError = '
     return implode(' | ', $parts);
 }
 
+function is_ajax_request(): bool
+{
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        return true;
+    }
+    if (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+        return true;
+    }
+    return false;
+}
+
+function respond_project_registration(bool $success, string $message, array $extra = []): void
+{
+    $payload = array_merge(['success' => $success, 'message' => $message], $extra);
+    if (is_ajax_request()) {
+        header('Content-Type: application/json');
+        echo json_encode($payload);
+        exit;
+    }
+
+    // Fallback for normal form POST: redirect back to the form page.
+    $query = $success
+        ? 'saved=1&msg=' . rawurlencode($message)
+        : 'error=' . rawurlencode($message);
+    header('Location: project_registration.php?' . $query);
+    exit;
+}
+
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    header('Content-Type: application/json');
     error_reporting(E_ALL);
     
     if ($_POST['action'] === 'save_project') {
         // Validate required fields
         if (empty($_POST['code']) || empty($_POST['name'])) {
-            echo json_encode(['success' => false, 'message' => 'Project Code and Name are required']);
-            exit;
+            respond_project_registration(false, 'Project Code and Name are required');
         }
         
         $code = trim($_POST['code']);
@@ -91,8 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if (!$stmt) {
                 $debugError = build_db_debug_error($db, 'Failed to prepare project update');
                 error_log('[project_registration] ' . $debugError);
-                echo json_encode(['success' => false, 'message' => $debugError]);
-                exit;
+                respond_project_registration(false, $debugError);
             }
             $stmt->bind_param('sssssssssssidssi', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status, $id);
         } else {
@@ -102,8 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if (!$stmt) {
                     $debugError = build_db_debug_error($db, 'Failed to prepare project insert (with created_at)');
                     error_log('[project_registration] ' . $debugError);
-                    echo json_encode(['success' => false, 'message' => $debugError]);
-                    exit;
+                    respond_project_registration(false, $debugError);
                 }
                 $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
             } else {
@@ -111,20 +135,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if (!$stmt) {
                     $debugError = build_db_debug_error($db, 'Failed to prepare project insert (without created_at)');
                     error_log('[project_registration] ' . $debugError);
-                    echo json_encode(['success' => false, 'message' => $debugError]);
-                    exit;
+                    respond_project_registration(false, $debugError);
                 }
                 $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
             }
         }
         
-        if ($stmt->execute()) {
-            $savedId = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : (int)$db->insert_id;
-            echo json_encode(['success' => true, 'message' => 'Project saved successfully', 'project_id' => $savedId]);
-        } else {
-            $debugError = build_db_debug_error($db, 'Failed to save project', $stmt->error);
-            error_log('[project_registration] ' . $debugError);
-            echo json_encode(['success' => false, 'message' => $debugError]);
+        try {
+            $executed = $stmt->execute();
+            if ($executed) {
+                $savedId = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : (int)$db->insert_id;
+                respond_project_registration(true, 'Project saved successfully', ['project_id' => $savedId]);
+            } else {
+                $debugError = build_db_debug_error($db, 'Failed to save project', $stmt->error);
+                error_log('[project_registration] ' . $debugError);
+                respond_project_registration(false, $debugError);
+            }
+        } catch (mysqli_sql_exception $e) {
+            if ((int)$e->getCode() === 1062) {
+                respond_project_registration(false, 'Project already exists. Please try again with a different Project Code.');
+            } else {
+                $debugError = build_db_debug_error($db, 'Failed to save project (exception)', $e->getMessage());
+                error_log('[project_registration] ' . $debugError);
+                respond_project_registration(false, $debugError);
+            }
         }
         if ($stmt) $stmt->close();
         exit;
@@ -136,9 +170,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt->bind_param('i', $id);
         
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Project deleted successfully']);
+            respond_project_registration(true, 'Project deleted successfully');
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to delete project: ' . $db->error]);
+            respond_project_registration(false, 'Failed to delete project: ' . $db->error);
         }
         $stmt->close();
         exit;
@@ -299,18 +333,19 @@ $db->close();
         <div class="recent-projects">
             <h3>New Project Form</h3>
 
-            <form id="projectForm" enctype="multipart/form-data">
+            <form id="projectForm" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="save_project">
                 <!-- Basic project details -->
                 <fieldset>
                     <legend>Basic Project Details</legend>
                     <label for="projCode">Project Code / Reference ID</label>
-                    <input type="text" id="projCode" required>
+                    <input type="text" id="projCode" name="code" required>
 
                     <label for="projName">Project Name</label>
-                    <input type="text" id="projName" required>
+                    <input type="text" id="projName" name="name" required>
 
                     <label for="projType">Project Type</label>
-                    <select id="projType" required>
+                    <select id="projType" name="type" required>
                         <option value="">-- Select --</option>
                         <option>New</option>
                         <option>Rehabilitation</option>
@@ -319,7 +354,7 @@ $db->close();
                     </select>
 
                     <label for="projSector">Sector</label>
-                    <select id="projSector" required>
+                    <select id="projSector" name="sector" required>
                         <option value="">-- Select --</option>
                         <option>Road</option>
                         <option>Drainage</option>
@@ -330,10 +365,10 @@ $db->close();
                     </select>
 
                     <label for="projDescription">Project Description / Objective</label>
-                    <textarea id="projDescription" rows="3"></textarea>
+                    <textarea id="projDescription" name="description" rows="3"></textarea>
 
                     <label for="projPriority">Priority Level</label>
-                    <select id="projPriority">
+                    <select id="projPriority" name="priority">
                         <option>High</option>
                         <option>Medium</option>
                         <option>Low</option>
@@ -344,47 +379,47 @@ $db->close();
                 <fieldset>
                     <legend>Location</legend>
                     <label for="province">Province / City / Municipality</label>
-                    <input type="text" id="province" required>
+                    <input type="text" id="province" name="province" required>
 
                     <label for="barangay">Barangay(s)</label>
-                    <input type="text" id="barangay">
+                    <input type="text" id="barangay" name="barangay">
 
                     <label for="projLocation">Exact Site / Address</label>
-                    <input type="text" id="projLocation" required>
+                    <input type="text" id="projLocation" name="location" required>
                 </fieldset>
 
                 <!-- Schedule -->
                 <fieldset>
                     <legend>Schedule</legend>
                     <label for="startDate">Estimated Start Date</label>
-                    <input type="date" id="startDate">
+                    <input type="date" id="startDate" name="start_date">
 
                     <label for="endDate">Estimated End Date</label>
-                    <input type="date" id="endDate">
+                    <input type="date" id="endDate" name="end_date">
 
                     <label for="projDuration">Estimated Duration (months)</label>
-                    <input type="number" id="projDuration" min="0" required>
+                    <input type="number" id="projDuration" name="duration_months" min="0" required>
                 </fieldset>
 
                 <!-- Budget -->
                 <fieldset>
                     <legend>Budget</legend>
                     <label for="projBudget">Total Estimated Cost</label>
-                    <input type="number" id="projBudget" min="0" step="0.01" required>
+                    <input type="number" id="projBudget" name="budget" min="0" step="0.01" required>
                 </fieldset>
 
                 <!-- Implementation -->
                 <fieldset>
                     <legend>Implementation</legend>
                     <label for="projManager">Project Manager / Engineer In-Charge</label>
-                    <input type="text" id="projManager" placeholder="Name">
+                    <input type="text" id="projManager" name="project_manager" placeholder="Name">
                 </fieldset>
 
                 <!-- Status -->
                 <fieldset>
                     <legend>Status</legend>
                     <label for="status">Approval Status</label>
-                    <select id="status">
+                    <select id="status" name="status">
                         <option>Draft</option>
                         <option>For Approval</option>
                         <option>Approved</option>

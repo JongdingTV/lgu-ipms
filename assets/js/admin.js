@@ -3043,6 +3043,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const msg = document.getElementById('formMessage');
         const resetBtn = document.getElementById('resetBtn');
         let editProjectId = null;
+        let hasShownPostSubmitPopup = false;
+
+        function showProjectPopup(text) {
+            if (!text || hasShownPostSubmitPopup) return;
+            hasShownPostSubmitPopup = true;
+            window.alert(text);
+        }
 
         function projectRegistrationUrls(suffix = '') {
             const urls = [];
@@ -3055,9 +3062,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function fetchJsonWithFallback(urls, options = {}) {
+            const requestOptions = Object.assign({}, options);
+            requestOptions.headers = Object.assign({}, requestOptions.headers, { 'X-Requested-With': 'XMLHttpRequest' });
+
             const tryFetch = (idx) => {
                 if (idx >= urls.length) throw new Error('All project registration endpoints failed');
-                return fetch(urls[idx], options)
+                return fetch(urls[idx], requestOptions)
                     .then((res) => {
                         if (!res.ok) throw new Error('HTTP ' + res.status + ' @ ' + urls[idx]);
                         return res.json();
@@ -3187,33 +3197,40 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e){
             e.preventDefault();
             const fd = new FormData();
-            fd.append('action', 'save_project');
-            fd.append('code', document.getElementById('projCode').value);
-            fd.append('name', document.getElementById('projName').value);
-            fd.append('type', document.getElementById('projType').value);
-            fd.append('sector', document.getElementById('projSector').value);
-            fd.append('description', document.getElementById('projDescription').value);
-            fd.append('priority', document.getElementById('projPriority').value);
-            fd.append('province', document.getElementById('province').value);
-            fd.append('barangay', document.getElementById('barangay').value);
-            fd.append('location', document.getElementById('projLocation').value);
-            fd.append('start_date', document.getElementById('startDate').value);
-            fd.append('end_date', document.getElementById('endDate').value);
-            fd.append('duration_months', document.getElementById('projDuration').value);
-            fd.append('budget', document.getElementById('projBudget').value);
-            fd.append('project_manager', document.getElementById('projManager').value);
-            fd.append('status', document.getElementById('status').value);
+            fd.set('action', 'save_project');
+            fd.set('code', document.getElementById('projCode').value);
+            fd.set('name', document.getElementById('projName').value);
+            fd.set('type', document.getElementById('projType').value);
+            fd.set('sector', document.getElementById('projSector').value);
+            fd.set('description', document.getElementById('projDescription').value);
+            fd.set('priority', document.getElementById('projPriority').value);
+            fd.set('province', document.getElementById('province').value);
+            fd.set('barangay', document.getElementById('barangay').value);
+            fd.set('location', document.getElementById('projLocation').value);
+            fd.set('start_date', document.getElementById('startDate').value);
+            fd.set('end_date', document.getElementById('endDate').value);
+            fd.set('duration_months', document.getElementById('projDuration').value);
+            fd.set('budget', document.getElementById('projBudget').value);
+            fd.set('project_manager', document.getElementById('projManager').value);
+            fd.set('status', document.getElementById('status').value);
             if (editProjectId) {
-                fd.append('id', editProjectId);
+                fd.set('id', editProjectId);
             }
             fetchJsonWithFallback(projectRegistrationUrls(''), {
                 method: 'POST',
                 body: fd
             })
             .then(data => {
-                msg.textContent = data.message || (data.success ? 'Project saved successfully' : 'Failed to save project');
+                const isCreate = !editProjectId;
+                const duplicate = !data.success && /already exists|duplicate/i.test(String(data.message || ''));
+                const successMessage = isCreate ? 'Project has been added successfully.' : 'Project has been updated successfully.';
+                const errorMessage = duplicate
+                    ? 'Project already exists. Please try again with a different Project Code.'
+                    : (data.message || 'Failed to save project');
+                msg.textContent = data.success ? successMessage : errorMessage;
                 msg.style.display = 'block';
                 msg.style.color = data.success ? '#0b5' : '#f00';
+                showProjectPopup(data.success ? successMessage : errorMessage);
                 if (data.success) {
                     form.reset();
                     editProjectId = null;
@@ -3229,6 +3246,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 msg.textContent = 'Error: ' + error.message;
                 msg.style.display = 'block';
                 msg.style.color = '#f00';
+                showProjectPopup('Error saving project. Please try again.');
                 setTimeout(() => { msg.style.display = 'none'; }, 3000);
             });
         });
@@ -3243,6 +3261,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Load projects on page load
         document.addEventListener('DOMContentLoaded', function(){
+            const params = new URLSearchParams(window.location.search);
+            const saved = params.get('saved');
+            const error = params.get('error');
+            const savedMsg = params.get('msg') || 'Project has been added successfully.';
+
+            if (saved === '1') {
+                if (msg) {
+                    msg.textContent = savedMsg;
+                    msg.style.display = 'block';
+                    msg.style.color = '#0b5';
+                    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+                }
+                showProjectPopup(savedMsg);
+            } else if (error) {
+                let errText = decodeURIComponent(error);
+                if (/already exists|duplicate/i.test(errText)) {
+                    errText = 'Project already exists. Please try again with a different Project Code.';
+                }
+                if (msg) {
+                    msg.textContent = errText;
+                    msg.style.display = 'block';
+                    msg.style.color = '#f00';
+                    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+                }
+                showProjectPopup(errText);
+            }
+
+            if ((saved === '1' || error) && window.history && window.history.replaceState) {
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+
             loadSavedProjects();
         });
 
