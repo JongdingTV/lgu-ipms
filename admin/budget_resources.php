@@ -339,6 +339,9 @@ $db->close();
                 <input id="milestoneAlloc" type="number" min="0" step="0.01" placeholder="Amount ₱" required>
                 <button type="button" id="addMilestone">Add Source</button>
             </form>
+            <div class="br-table-tools">
+                <input id="searchSources" type="search" placeholder="Search source funds...">
+            </div>
             <div class="table-wrap">
                 <table id="milestonesTable" class="table">
                     <thead>
@@ -368,6 +371,9 @@ $db->close();
                 <input id="expenseDesc" type="text" placeholder="Description (optional)">
                 <button type="button" id="addExpense">Add Expense</button>
             </form>
+            <div class="br-table-tools">
+                <input id="searchExpenses" type="search" placeholder="Search expenses by source or description...">
+            </div>
             <div class="table-wrap">
                 <table id="expensesTable" class="table">
                     <thead>
@@ -398,6 +404,16 @@ $db->close();
                     <div id="summaryConsumption">0%</div>
                     <small>Consumption</small>
                 </div>
+            </div>
+            <div class="br-health-card">
+                <div class="br-health-head">
+                    <strong>Budget Health</strong>
+                    <span id="budgetHealthTag" class="br-health-tag normal">Normal</span>
+                </div>
+                <div class="br-health-bar">
+                    <div id="budgetHealthFill" class="br-health-fill" style="width:0%"></div>
+                </div>
+                <small id="budgetHealthText" class="br-health-text">No budget activity yet.</small>
             </div>
             <h3>Budget Consumption Graph</h3>
             <div class="chart-row">
@@ -575,6 +591,26 @@ $db->close();
             align-items: end;
         }
 
+        .main-content .br-table-tools {
+            margin-bottom: 10px;
+        }
+
+        .main-content .br-table-tools input {
+            width: 100%;
+            min-height: 38px;
+            border: 1px solid #cddced;
+            border-radius: 10px;
+            padding: 0 12px;
+            color: #1f3858;
+            background: #fff;
+        }
+
+        .main-content .br-table-tools input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+            outline: none;
+        }
+
         .main-content .table-wrap {
             border: 1px solid #d8e6f4;
             border-radius: 12px;
@@ -689,6 +725,75 @@ $db->close();
             color: #244a73;
             font-size: 0.95rem;
             letter-spacing: 0.2px;
+        }
+
+        .main-content .br-health-card {
+            border: 1px solid #d9e6f4;
+            border-radius: 12px;
+            background: linear-gradient(165deg, #ffffff, #f7fbff);
+            padding: 10px 12px;
+            margin-bottom: 12px;
+        }
+
+        .main-content .br-health-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .main-content .br-health-head strong {
+            color: #1d3f64;
+            font-size: 0.88rem;
+        }
+
+        .main-content .br-health-tag {
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border: 1px solid #d0dbe8;
+            color: #3f5f83;
+            background: #f8fbff;
+        }
+
+        .main-content .br-health-tag.good {
+            border-color: #86efac;
+            background: #ecfdf5;
+            color: #166534;
+        }
+
+        .main-content .br-health-tag.warn {
+            border-color: #facc15;
+            background: #fefce8;
+            color: #854d0e;
+        }
+
+        .main-content .br-health-tag.danger {
+            border-color: #fca5a5;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .main-content .br-health-bar {
+            width: 100%;
+            height: 10px;
+            background: #e7eef8;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 7px;
+        }
+
+        .main-content .br-health-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #22c55e 0%, #3b82f6 60%, #2563eb 100%);
+        }
+
+        .main-content .br-health-text {
+            color: #5a7697;
+            font-size: 0.78rem;
+            font-weight: 600;
         }
 
         .main-content .chart-row {
@@ -1071,8 +1176,10 @@ $db->close();
             const tbody = document.querySelector('#milestonesTable tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
+            const q = (byId('searchSources')?.value || '').trim().toLowerCase();
 
             state.milestones.forEach((ms) => {
+                if (q && String(ms.name || '').toLowerCase().indexOf(q) === -1) return;
                 const spent = getSpentForMilestone(state, ms.id);
                 const allocated = Number(ms.allocated || 0);
                 const remaining = Math.max(0, allocated - spent);
@@ -1126,9 +1233,12 @@ $db->close();
             const tbody = document.querySelector('#expensesTable tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
+            const q = (byId('searchExpenses')?.value || '').trim().toLowerCase();
 
             state.expenses.slice().reverse().forEach((exp) => {
                 const ms = state.milestones.find((m) => m.id === exp.milestoneId);
+                const hay = ((ms ? ms.name : '') + ' ' + String(exp.description || '')).toLowerCase();
+                if (q && hay.indexOf(q) === -1) return;
                 const tr = document.createElement('tr');
                 tr.innerHTML = [
                     '<td>' + new Date(exp.date || Date.now()).toLocaleString() + '</td>',
@@ -1186,6 +1296,31 @@ $db->close();
             if (spentEl) spentEl.textContent = currency(spent);
             if (remainingEl) remainingEl.textContent = currency(remaining);
             if (consumptionEl) consumptionEl.textContent = consumption + '%';
+
+            const healthFill = byId('budgetHealthFill');
+            const healthTag = byId('budgetHealthTag');
+            const healthText = byId('budgetHealthText');
+            if (healthFill) healthFill.style.width = Math.max(0, Math.min(100, consumption)) + '%';
+            if (healthTag && healthText) {
+                healthTag.className = 'br-health-tag';
+                if (consumption >= 90) {
+                    healthTag.classList.add('danger');
+                    healthTag.textContent = 'Critical';
+                    healthText.textContent = 'Budget is near or over limit. Consider immediate review.';
+                } else if (consumption >= 70) {
+                    healthTag.classList.add('warn');
+                    healthTag.textContent = 'Warning';
+                    healthText.textContent = 'Budget usage is high. Monitor next expenses closely.';
+                } else if (base > 0) {
+                    healthTag.classList.add('good');
+                    healthTag.textContent = 'Healthy';
+                    healthText.textContent = 'Budget is under control with safe remaining balance.';
+                } else {
+                    healthTag.classList.add('normal');
+                    healthTag.textContent = 'Normal';
+                    healthText.textContent = 'No budget activity yet.';
+                }
+            }
         }
 
         function drawChart(state) {
@@ -1391,6 +1526,8 @@ $db->close();
             const globalBudget = byId('globalBudget');
             const btnExport = byId('btnExportBudget');
             const btnImport = byId('btnImport');
+            const searchSources = byId('searchSources');
+            const searchExpenses = byId('searchExpenses');
 
             if (milestoneForm) {
                 milestoneForm.addEventListener('submit', function (e) {
@@ -1424,6 +1561,8 @@ $db->close();
 
             if (btnExport) btnExport.addEventListener('click', exportCsv);
             if (btnImport) btnImport.addEventListener('click', importFromProject);
+            if (searchSources) searchSources.addEventListener('input', function () { renderMilestones(stateCache); });
+            if (searchExpenses) searchExpenses.addEventListener('input', function () { renderExpenses(stateCache); });
 
             window.addEventListener('resize', function () {
                 drawChart(stateCache);
