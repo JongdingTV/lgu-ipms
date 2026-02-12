@@ -112,6 +112,7 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
     <link rel="stylesheet" href="../assets/css/footer-shared.css">
     <link rel="stylesheet" href="../assets/css/layout-fix.css">
+    <link rel="stylesheet" href="../assets/css/critical-footer-fix.css">
 </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->

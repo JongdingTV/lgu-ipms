@@ -143,6 +143,7 @@ if (isset($db)) {
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/footer-shared.css">
     <link rel="stylesheet" href="../assets/css/layout-fix.css">
+    <link rel="stylesheet" href="../assets/css/critical-footer-fix.css">
 </head>
 
 <body>

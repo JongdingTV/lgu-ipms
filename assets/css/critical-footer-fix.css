@@ -1,0 +1,191 @@
+/**
+ * CRITICAL FOOTER FIX
+ * Forces footer to stay at bottom of viewport
+ * Load this LAST after all other CSS files
+ */
+
+/* CRITICAL: Override all footer positioning */
+footer,
+.footer {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: 70px !important;
+    margin: 0 !important;
+    padding: 16px 20px !important;
+    z-index: 999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2c5282 100%) !important;
+    color: #ffffff !important;
+    font-size: 14px !important;
+    border-top: 2px solid #3b82f6 !important;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+}
+
+/* Prevent footer from being hidden by other elements */
+footer:not([style*="display: none"]),
+.footer:not([style*="display: none"]) {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Move all content up to make room for footer */
+html {
+    padding-bottom: 70px !important;
+}
+
+body {
+    padding-bottom: 70px !important;
+    margin-bottom: 0 !important;
+    overflow-x: hidden !important;
+}
+
+/* Ensure main content doesn't overlap footer */
+.main-content,
+section.main-content,
+main,
+.page-content,
+.content-wrapper {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+}
+
+/* Make sure all containers below nav/sidebar account for footer */
+.container,
+.wrapper,
+.form-container,
+.page-container {
+    margin-bottom: 80px !important;
+    padding-bottom: 30px !important;
+}
+
+/* Sections and cards */
+section,
+.card,
+.modal,
+.dialog {
+    margin-bottom: 0 !important;
+}
+
+section:last-of-type {
+    margin-bottom: 80px !important;
+    padding-bottom: 40px !important;
+}
+
+/* Tables */
+table,
+.table,
+.table-wrapper,
+.table-container {
+    margin-bottom: 40px !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    footer,
+    .footer {
+        height: 60px !important;
+        padding: 12px 16px !important;
+        font-size: 12px !important;
+    }
+    
+    html {
+        padding-bottom: 60px !important;
+    }
+    
+    body {
+        padding-bottom: 60px !important;
+    }
+    
+    .main-content,
+    section.main-content,
+    main {
+        margin-bottom: 70px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    footer,
+    .footer {
+        height: 60px !important;
+        padding: 11px 14px !important;
+        font-size: 11px !important;
+    }
+    
+    html {
+        padding-bottom: 60px !important;
+    }
+    
+    body {
+        padding-bottom: 60px !important;
+    }
+    
+    .main-content,
+    section.main-content,
+    main {
+        margin-bottom: 70px !important;
+    }
+}
+
+@media (max-width: 374px) {
+    footer,
+    .footer {
+        height: 55px !important;
+        padding: 10px 12px !important;
+        font-size: 10px !important;
+    }
+    
+    html {
+        padding-bottom: 55px !important;
+    }
+    
+    body {
+        padding-bottom: 55px !important;
+    }
+    
+    .main-content,
+    section.main-content,
+    main {
+        margin-bottom: 65px !important;
+    }
+}
+
+/* Ensure no element goes behind footer */
+* {
+    backface-visibility: hidden !important;
+}
+
+/* Sidebar should be behind footer */
+.nav,
+.sidebar,
+.navbar {
+    z-index: 1000 !important;
+}
+
+/* Footer is on top */
+.footer,
+footer {
+    z-index: 999 !important;
+}
+
+/* Main content below both */
+.main-content,
+section.main-content {
+    z-index: 1 !important;
+}
+
+/* Print styles */
+@media print {
+    footer,
+    .footer {
+        position: static !important;
+        bottom: auto !important;
+    }
+}
