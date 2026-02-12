@@ -303,6 +303,99 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     }
 }
 
+/* Global mobile compatibility */
+@media (max-width: 992px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(7, 17, 31, 0.56);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        z-index: 1480;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode.mobile-nav-open::after {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .nav {
+        width: min(82vw, 320px) !important;
+        max-width: 320px !important;
+        z-index: 1490 !important;
+        transform: translateX(-104%) !important;
+        transition: transform 0.26s ease !important;
+        overflow-y: auto !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode.mobile-nav-open .nav {
+        transform: translateX(0) !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 82px 12px 18px !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .top-sidebar-toggle {
+        top: 10px !important;
+        left: 10px !important;
+        z-index: 1501 !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .admin-top-utilities {
+        top: 10px;
+        right: 10px;
+        z-index: 1501;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .metrics-container,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .charts-container,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .quick-stats,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-list,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .summary,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-summary .summary {
+        grid-template-columns: 1fr !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .feedback-controls,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-filter .ac-c59ce897 {
+        grid-template-columns: 1fr !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .card,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-section,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .summary-section {
+        padding: 12px !important;
+    }
+}
+
+@media (max-width: 640px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header h1 {
+        font-size: 1.7rem !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header p {
+        font-size: 0.9rem !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
+        min-width: 128px;
+        padding: 6px 7px;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-time {
+        font-size: 0.83rem;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-date {
+        font-size: 0.68rem;
+    }
+}
+
 /* Top sidebar toggle */
 .top-sidebar-toggle {
     position: fixed;
