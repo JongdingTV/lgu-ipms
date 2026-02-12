@@ -285,6 +285,7 @@
     const markReadBtn = document.getElementById('adminNotifMarkRead');
     const themeBtn = document.getElementById('adminThemeBtn');
     const themeLabel = document.getElementById('adminThemeLabel');
+    const seenKey = 'ipms_admin_notifications_seen_id';
 
     const persistedTheme = localStorage.getItem('ipms_admin_theme') || 'light';
     document.body.classList.toggle('theme-dark', persistedTheme === 'dark');
@@ -302,33 +303,66 @@
     clockTick();
     setInterval(clockTick, 1000);
 
-    const buildNotifications = () => {
-      const items = [];
-      const pendingCount = $$('.badge.pending').length;
-      if (pendingCount > 0) {
-        items.push({ level: 'warning', text: `${pendingCount} pending item(s) need review.` });
-      }
-      if (document.querySelector('.settings-alert-error')) {
-        items.push({ level: 'danger', text: 'A settings error was detected on this page.' });
-      }
-      if (!items.length) {
-        items.push({ level: 'info', text: 'No urgent notifications. System is running normally.' });
-      }
-      return items;
+    const getSeenId = () => Number(localStorage.getItem(seenKey) || 0) || 0;
+    const setSeenId = (id) => localStorage.setItem(seenKey, String(Number(id) || 0));
+    let notifications = [];
+    let latestNotificationId = 0;
+
+    const formatRelativeTime = (value) => {
+      if (!value) return '';
+      const ts = new Date(value);
+      if (Number.isNaN(ts.getTime())) return '';
+      const secs = Math.floor((Date.now() - ts.getTime()) / 1000);
+      if (secs < 60) return 'just now';
+      const mins = Math.floor(secs / 60);
+      if (mins < 60) return mins + 'm ago';
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return hrs + 'h ago';
+      const days = Math.floor(hrs / 24);
+      return days + 'd ago';
     };
 
-    let notifications = buildNotifications();
     const renderNotifications = () => {
       if (!notifList || !notifCount) return;
-      notifList.innerHTML = notifications.map((item) => `
-        <li class="admin-notif-item is-${item.level}">
+      const seenId = getSeenId();
+      const unreadCount = notifications.filter((item) => Number(item.id) > seenId).length;
+
+      notifList.innerHTML = notifications.map((item) => {
+        const unread = Number(item.id) > seenId;
+        return `
+        <li class="admin-notif-item is-${item.level}${unread ? ' unread' : ''}">
           <span class="dot"></span>
-          <span>${item.text}</span>
-        </li>`).join('');
-      notifCount.textContent = String(notifications.length);
-      notifCount.style.display = notifications.length ? 'inline-flex' : 'none';
+          <span>
+            <strong>${item.title || 'Citizen concern submitted'}</strong>
+            <small>${item.message || ''}</small>
+            <em>${formatRelativeTime(item.created_at)}</em>
+          </span>
+        </li>`;
+      }).join('');
+      notifCount.textContent = String(unreadCount);
+      notifCount.style.display = unreadCount ? 'inline-flex' : 'none';
     };
-    renderNotifications();
+
+    const fetchNotifications = () => {
+      const url = isFn(window.getApiUrl) ? window.getApiUrl('admin/notifications_api.php') : '/admin/notifications_api.php';
+      fetch(url + '?_=' + Date.now(), { credentials: 'same-origin' })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data || data.success !== true) return;
+          notifications = Array.isArray(data.items) ? data.items : [];
+          latestNotificationId = Number(data.latest_id || 0) || 0;
+          if (!notifications.length) {
+            notifications = [{ id: 0, level: 'info', title: 'No new concerns', message: 'No citizen concerns at the moment.', created_at: null }];
+          }
+          renderNotifications();
+        })
+        .catch(() => {
+          notifications = [{ id: 0, level: 'danger', title: 'Notification service unavailable', message: 'Unable to fetch citizen concerns right now.', created_at: null }];
+          renderNotifications();
+        });
+    };
+    fetchNotifications();
+    setInterval(fetchNotifications, 30000);
 
     if (notifBtn && notifPanel) {
       notifBtn.addEventListener('click', (e) => {
@@ -341,7 +375,7 @@
 
     if (markReadBtn) {
       markReadBtn.addEventListener('click', () => {
-        notifications = [];
+        setSeenId(latestNotificationId);
         renderNotifications();
       });
     }

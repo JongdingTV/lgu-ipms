@@ -146,6 +146,32 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item
     font-size: 0.82rem;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item span strong {
+    display: block;
+    color: #1a3f6d;
+    font-size: 0.83rem;
+    margin-bottom: 2px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item span small {
+    display: block;
+    color: #4f6f93;
+    font-size: 0.76rem;
+    margin-bottom: 2px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item span em {
+    display: block;
+    color: #6b84a3;
+    font-size: 0.72rem;
+    font-style: normal;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item.unread {
+    border-color: #bcd4f2;
+    background: #edf4ff;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item .dot {
     width: 8px;
     height: 8px;
@@ -193,12 +219,71 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dash-
     color: #d8e6fa !important;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content p,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content h2,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content h3,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content h4,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content label,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content small {
+    color: #d6e3f5 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark textarea {
+    background: #0f1f33 !important;
+    border-color: #2e4665 !important;
+    color: #d6e3f5 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark input::placeholder,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark textarea::placeholder {
+    color: #8ea4be !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark table thead th {
+    background: linear-gradient(135deg, #183457, #122743) !important;
+    color: #eef5ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark table tbody td {
+    background: rgba(14, 26, 42, 0.94) !important;
+    border-bottom-color: #2a3f5e !important;
+    color: #d6e3f5 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .modal .modal-content {
+    background: linear-gradient(180deg, #13243a, #0f1d30) !important;
+    border-color: #2d4564 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .modal .modal-field {
+    background: #0f1f33 !important;
+    border-color: #2d4564 !important;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-time-chip,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-utility-btn,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-panel {
     background: #14243a;
     border-color: #2c4463;
     color: #d6e3f5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-item {
+    background: #102236;
+    border-color: #2f4767;
+    color: #d6e3f5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-item span strong {
+    color: #e9f2ff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-item span small,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-item span em {
+    color: #a8bed8;
 }
 
 @media (max-width: 860px) {
