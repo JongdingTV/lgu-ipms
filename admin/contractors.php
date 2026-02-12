@@ -162,54 +162,56 @@ $db->close();
     <section class="main-content">
         <div class="dash-header">
             <h1>Contractors</h1>
-            <p>Manage contractor information</p>
+            <p>Register and maintain accredited contractors for infrastructure projects.</p>
         </div>
 
-        <div class="recent-projects">
-            <h3>Add/Edit Contractor</h3>
+        <div class="recent-projects contractor-page contractor-form-shell">
+            <div class="contractor-page-head">
+                <h3>Add or Edit Contractor</h3>
+                <p>Fill in company details, compliance information, and current accreditation status.</p>
+            </div>
 
-            <form id="contractorForm" enctype="multipart/form-data">
-                <!-- Basic contractor details -->
+            <form id="contractorForm" class="contractor-form" enctype="multipart/form-data">
                 <fieldset>
                     <legend>Basic Information</legend>
-                    <div>
-                        <div>
+                    <div class="contractor-grid contractor-grid-3">
+                        <div class="contractor-field">
                             <label for="ctrCompany">Company Name</label>
-                            <input type="text" id="ctrCompany" required>
+                            <input type="text" id="ctrCompany" placeholder="Enter company name" required>
                         </div>
-                        <div>
+                        <div class="contractor-field">
                             <label for="ctrOwner">Owner Name</label>
-                            <input type="text" id="ctrOwner">
+                            <input type="text" id="ctrOwner" placeholder="Enter owner name">
                         </div>
-                        <div>
+                        <div class="contractor-field">
                             <label for="ctrLicense">License Number</label>
-                            <input type="text" id="ctrLicense" required>
+                            <input type="text" id="ctrLicense" placeholder="Enter license number" required>
                         </div>
                     </div>
-                    <div>
-                        <div>
+
+                    <div class="contractor-grid contractor-grid-2">
+                        <div class="contractor-field">
                             <label for="ctrEmail">Email</label>
-                            <input type="email" id="ctrEmail">
+                            <input type="email" id="ctrEmail" placeholder="company@email.com">
                         </div>
-                        <div>
+                        <div class="contractor-field">
                             <label for="ctrPhone">Phone Number</label>
-                            <input type="tel" id="ctrPhone">
+                            <input type="tel" id="ctrPhone" placeholder="09xx xxx xxxx">
                         </div>
                     </div>
                 </fieldset>
 
-                <!-- Additional details -->
                 <fieldset>
                     <legend>Additional Details</legend>
-                    <div>
-                        <div>
+                    <div class="contractor-grid contractor-grid-3">
+                        <div class="contractor-field">
                             <label for="ctrAddress">Address</label>
-                            <input type="text" id="ctrAddress" required>
+                            <input type="text" id="ctrAddress" placeholder="Complete address" required>
                         </div>
-                        <div>
+                        <div class="contractor-field">
                             <label for="ctrSpecialization">Specialization</label>
                             <select id="ctrSpecialization">
-                                <option value="">-- Select --</option>
+                                <option value="">Select specialization</option>
                                 <option>Construction</option>
                                 <option>Plumbing</option>
                                 <option>Electrical</option>
@@ -217,17 +219,18 @@ $db->close();
                                 <option>Other</option>
                             </select>
                         </div>
-                        <div>
+                        <div class="contractor-field">
                             <label for="ctrExperience">Years of Experience</label>
-                            <input type="number" id="ctrExperience" min="0">
+                            <input type="number" id="ctrExperience" min="0" placeholder="0">
                         </div>
                     </div>
-                    <div>
-                        <div>
+
+                    <div class="contractor-grid contractor-grid-2">
+                        <div class="contractor-field">
                             <label for="ctrRating">Rating (1-5)</label>
-                            <input type="number" id="ctrRating" min="1" max="5" step="0.1">
+                            <input type="number" id="ctrRating" min="1" max="5" step="0.1" placeholder="4.5">
                         </div>
-                        <div>
+                        <div class="contractor-field">
                             <label for="ctrStatus">Status</label>
                             <select id="ctrStatus">
                                 <option value="Active">Active</option>
@@ -236,25 +239,20 @@ $db->close();
                             </select>
                         </div>
                     </div>
-                    <div>
-                        <div class="ac-ee3d55bf">
-                            <label for="ctrNotes">Notes</label>
-                            <textarea id="ctrNotes" rows="2"></textarea>
-                        </div>
+
+                    <div class="contractor-field">
+                        <label for="ctrNotes">Notes</label>
+                        <textarea id="ctrNotes" rows="3" placeholder="Additional notes about this contractor"></textarea>
                     </div>
                 </fieldset>
 
-                <div class="ac-9374e842">
-                    <button type="submit" id="submitBtn">
-                        Create Contractor
-                    </button>
-                    <button type="button" id="resetBtn">
-                        Reset
-                    </button>
+                <div class="contractor-form-actions">
+                    <button type="submit" id="submitBtn" class="btn-contractor-primary">Create Contractor</button>
+                    <button type="button" id="resetBtn" class="btn-contractor-secondary">Reset</button>
                 </div>
             </form>
 
-            <div id="formMessage" class="ac-133c5402"></div>
+            <div id="formMessage" class="contractor-form-message" role="status" aria-live="polite"></div>
         </div>
     </section>
 

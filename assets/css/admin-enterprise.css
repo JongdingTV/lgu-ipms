@@ -525,3 +525,316 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .bt
         grid-template-columns: 1fr;
     }
 }
+
+/* Contractors pages refresh */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-page {
+    display: grid;
+    gap: 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-page-head h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #13345f;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-page-head p {
+    margin: 0;
+    color: #5a7595;
+    font-size: 0.92rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-form {
+    display: grid;
+    gap: 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-form fieldset {
+    margin: 0;
+    padding: 16px;
+    border: 1px solid #d5e3f3;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-form legend {
+    padding: 0 8px;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #1f4a84;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-grid {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #2f4f75;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-field input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-field select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-field textarea,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-toolbar input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-toolbar select {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #c7d9ec !important;
+    border-radius: 10px !important;
+    background: #fbfdff !important;
+    color: #1e3652 !important;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-field textarea {
+    min-height: 94px;
+    resize: vertical;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-contractor-primary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-contractor-secondary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-view-projects,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-assign {
+    min-height: 38px;
+    border-radius: 10px !important;
+    border: 1px solid transparent;
+    padding: 0 14px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-contractor-primary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-assign {
+    color: #ffffff;
+    background: linear-gradient(135deg, #1f56bd, #2f6fdd);
+    border-color: #2a61bf;
+    box-shadow: 0 8px 16px rgba(42, 97, 191, 0.2);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-contractor-secondary {
+    color: #27496f;
+    background: #f1f6fd;
+    border-color: #ccdae9;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-view-projects {
+    color: #ffffff;
+    background: linear-gradient(135deg, #0d9f6e, #17b37f);
+    border-color: #169067;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-form-message {
+    display: none;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: 1px solid #cddcf0;
+    background: #f7fbff;
+    font-weight: 600;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-toolbar {
+    display: grid;
+    grid-template-columns: minmax(260px, 1.2fr) minmax(180px, 0.7fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #d7e4f2;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-count-pill {
+    justify-self: end;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid #c7daee;
+    background: #edf5ff;
+    color: #1c457d;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectsTable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 960px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable thead th,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectsTable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border: 0;
+    padding: 12px 10px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #ffffff;
+    background: linear-gradient(135deg, #1f4ca8, #21427d);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable tbody td,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectsTable tbody td {
+    padding: 11px 10px;
+    font-size: 0.91rem;
+    color: #233f5f;
+    border-bottom: 1px solid #e1eaf4;
+    background: rgba(255, 255, 255, 0.96);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable tbody tr:nth-child(even) td,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectsTable tbody tr:nth-child(even) td {
+    background: #f8fbff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    padding: 4px 10px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge.active,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge.approved,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge.completed {
+    color: #065f46;
+    border-color: #9ae6c8;
+    background: #ecfdf5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge.suspended,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge.on-hold,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge.for-approval {
+    color: #92400e;
+    border-color: #f7dca4;
+    background: #fff7ed;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge.blacklisted,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge.rejected,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge.cancelled {
+    color: #9f1239;
+    border-color: #fecdd3;
+    background: #fff1f2;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-subtext {
+    margin: -4px 0 12px;
+    color: #597695;
+    font-size: 0.88rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    align-items: center;
+    justify-content: center;
+    background: rgba(9, 20, 39, 0.56);
+    backdrop-filter: blur(4px);
+    padding: 18px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-modal-panel {
+    width: min(760px, 100%);
+    max-height: 85vh;
+    overflow: auto;
+    border-radius: 16px;
+    border: 1px solid #d2dff0;
+    background: linear-gradient(180deg, #ffffff, #f7fbff);
+    box-shadow: 0 20px 50px rgba(11, 28, 56, 0.3);
+    padding: 16px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-modal-panel h2 {
+    margin: 0 0 10px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #133c6f;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-modal-list {
+    max-height: 52vh;
+    overflow: auto;
+    padding: 4px 2px 6px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+@media (max-width: 960px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-grid-3,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-count-pill {
+        justify-self: start;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-form-actions {
+        justify-content: stretch;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-form-actions > button {
+        flex: 1;
+    }
+}

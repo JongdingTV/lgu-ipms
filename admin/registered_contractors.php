@@ -125,6 +125,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
+// Handle POST request for deleting contractor
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_contractor') {
+    header('Content-Type: application/json');
+
+    $contractor_id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($contractor_id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid contractor ID']);
+        exit;
+    }
+
+    $stmt = $db->prepare("DELETE FROM contractors WHERE id = ?");
+    $stmt->bind_param("i", $contractor_id);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Contractor deleted successfully']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to delete contractor']);
+    }
+
+    $stmt->close();
+    exit;
+}
+
 // Handle GET request for loading assigned projects for a contractor
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_assigned_projects') {
     header('Content-Type: application/json');
@@ -263,32 +286,32 @@ $db->close();
     <section class="main-content">
         <div class="dash-header">
             <h1>Registered Contractors</h1>
-            <p>View and manage registered contractors</p>
+            <p>Review contractor records, assign projects, and monitor accreditation status.</p>
         </div>
 
-        <div class="recent-projects">
-            <!-- Filter Section -->
-            <div class="contractors-filter ac-c59ce897">
-                <input 
-                    type="search" 
-                    id="searchContractors" 
-                    placeholder="🔍 Search contractors by company, license or contact..." 
-                    class="ac-54b56ade"
+        <div class="recent-projects contractor-page contractor-registry-shell">
+            <div class="contractor-page-head">
+                <h3>Contractor Registry</h3>
+                <p>Search, filter, assign, and maintain active contractors in one workspace.</p>
+            </div>
+
+            <div class="contractors-filter contractor-toolbar">
+                <input
+                    type="search"
+                    id="searchContractors"
+                    placeholder="Search by company, license, email, or phone"
                 >
-                <select 
-                    id="filterStatus" 
-                    class="ac-5c727874"
-                >
+                <select id="filterStatus">
                     <option value="">All Status</option>
                     <option>Active</option>
                     <option>Suspended</option>
                     <option>Blacklisted</option>
                 </select>
+                <div id="contractorsCount" class="contractor-count-pill">0 contractors</div>
             </div>
 
-            <!-- Registered Contractors Table -->
             <div class="contractors-section">
-                <div id="formMessage" class="ac-2be89d81"></div>
+                <div id="formMessage" class="contractor-form-message" role="status" aria-live="polite"></div>
                 
                 <div class="table-wrap">
                     <table id="contractorsTable" class="table">
@@ -308,9 +331,9 @@ $db->close();
                 </div>
             </div>
 
-            <!-- Available Projects Section (Inside Registered Contractors) -->
-            <div class="projects-section ac-d5800fe5" id="available-projects">
+            <div class="projects-section contractor-project-bank" id="available-projects">
                 <h3>Available Projects</h3>
+                <p class="contractor-subtext">Projects listed below are available for assignment to selected contractors.</p>
                 <div class="table-wrap">
                     <table id="projectsTable" class="table">
                         <thead>
@@ -330,25 +353,25 @@ $db->close();
     </section>
 
 <!-- Assignment Modal -->
-    <div id="assignmentModal" class="ac-5b39cf12">
-        <div class="ac-c6f8fef1">
+    <div id="assignmentModal" class="contractor-modal" role="dialog" aria-modal="true" aria-labelledby="assignmentTitle">
+        <div class="contractor-modal-panel">
             <input type="hidden" id="assignContractorId" value="">
-            <h2 id="assignmentTitle" class="ac-88fa5680"></h2>
-            <div id="projectsList" class="ac-98afbba6"></div>
-            <div class="ac-df8c553b">
-                <button data-onclick="closeAssignModal()" class="ac-d460eae5">Cancel</button>
-                <button id="saveAssignments" data-onclick="saveAssignmentsHandler()" class="ac-eef2e445">✓ Save Assignments</button>
+            <h2 id="assignmentTitle"></h2>
+            <div id="projectsList" class="contractor-modal-list"></div>
+            <div class="contractor-modal-actions">
+                <button type="button" data-onclick="closeAssignModal()" class="btn-contractor-secondary">Cancel</button>
+                <button type="button" id="saveAssignments" data-onclick="saveAssignmentsHandler()" class="btn-contractor-primary">Save Assignments</button>
             </div>
         </div>
     </div>
 
     <!-- Projects View Modal -->
-    <div id="projectsViewModal" class="ac-5b39cf12">
-        <div class="ac-c6f8fef1">
-            <h2 id="projectsViewTitle" class="ac-88fa5680"></h2>
-            <div id="projectsViewList" class="ac-98afbba6"></div>
-            <div class="ac-df8c553b">
-                <button data-onclick="closeProjectsModal()" class="ac-eef2e445">Close</button>
+    <div id="projectsViewModal" class="contractor-modal" role="dialog" aria-modal="true" aria-labelledby="projectsViewTitle">
+        <div class="contractor-modal-panel">
+            <h2 id="projectsViewTitle"></h2>
+            <div id="projectsViewList" class="contractor-modal-list"></div>
+            <div class="contractor-modal-actions">
+                <button type="button" data-onclick="closeProjectsModal()" class="btn-contractor-primary">Close</button>
             </div>
         </div>
     </div>
@@ -357,6 +380,8 @@ $db->close();
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 

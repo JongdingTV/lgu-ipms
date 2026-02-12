@@ -2550,37 +2550,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Cannot find #contractorsTable tbody');
                 return;
             }
+
             tbody.innerHTML = '';
-            
+            const countEl = document.getElementById('contractorsCount');
+            if (countEl) {
+                const total = Array.isArray(contractors) ? contractors.length : 0;
+                countEl.textContent = `${total} contractor${total === 1 ? '' : 's'}`;
+            }
+
             if (!contractors || !contractors.length) {
                 console.log('No contractors to display');
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#6b7280;">No contractors found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#6b7280;">No contractors found.</td></tr>';
                 return;
             }
-            console.log('Rendering', contractors.length, 'contractors');
 
+            console.log('Rendering', contractors.length, 'contractors');
             contractors.forEach(c => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td><strong>${c.company || 'N/A'}</strong></td>
                     <td>${c.license || 'N/A'}</td>
                     <td>${c.email || c.phone || 'N/A'}</td>
-                    <td><span class="status-badge ${(c.status || '').toLowerCase()}">${c.status || 'N/A'}</span></td>
-                    <td>${c.rating ? '⭐ ' + c.rating + '/5' : '—'}</td>
+                    <td><span class="status-badge ${(c.status || '').toLowerCase().replace(/\s+/g, '-')}">${c.status || 'N/A'}</span></td>
+                    <td>${c.rating ? Number(c.rating).toFixed(1) + '/5' : '-'}</td>
                     <td>
-                        <button class="btn-view-projects" data-id="${c.id}" style="padding: 8px 14px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s ease;">View Projects</button>
+                        <button class="btn-view-projects" data-id="${c.id}">View Projects</button>
                     </td>
                     <td>
                         <div class="action-buttons">
                             <button class="btn-assign" data-id="${c.id}">Assign Projects</button>
-                            <button class="btn-delete" data-id="${c.id}">🗑️ Delete</button>
+                            <button class="btn-delete" data-id="${c.id}">Delete</button>
                         </div>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
 
-            // Wire up view projects buttons
             document.querySelectorAll('#contractorsTable .btn-view-projects').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const contractorId = this.dataset.id;
@@ -2590,7 +2595,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
 
-            // Wire up assign buttons
             document.querySelectorAll('#contractorsTable .btn-assign').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -2603,18 +2607,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
 
-            // Wire up delete buttons
             document.querySelectorAll('#contractorsTable .btn-delete').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.dataset.id;
                     const contractorRow = this.closest('tr');
                     const contractorName = contractorRow.querySelector('td:nth-child(1)').textContent;
-                    
+
                     showConfirmation({
                         title: 'Delete Contractor',
                         message: 'This contractor and all associated records will be permanently deleted. This action cannot be undone.',
                         itemName: `Contractor: ${contractorName}`,
-                        icon: '🗑️',
+                        icon: 'Delete',
                         confirmText: 'Delete Permanently',
                         cancelText: 'Cancel',
                         onConfirm: () => {
@@ -2634,7 +2637,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
         }
-
         // Render projects table
         function renderProjects(projects) {
             const tbody = document.querySelector('#projectsTable tbody');
@@ -2759,6 +2761,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (modal) modal.style.display = 'none';
         }
 
+        window.closeAssignModal = closeAssignModal;
+        window.closeProjectsModal = closeProjectsModal;
+
         function loadProjectsForAssignment(contractorId) {
             console.log('loadProjectsForAssignment called with contractorId:', contractorId);
             const projectsList = document.getElementById('projectsList');
@@ -2832,16 +2837,16 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('=== SAVE ASSIGNMENTS HANDLER CALLED ===');
             const saveBtn = document.getElementById('saveAssignments');
             saveBtn.disabled = true;
-            saveBtn.textContent = '⏳ Saving...';
+            saveBtn.textContent = 'Saving...';
             
             const contractorId = document.getElementById('assignContractorId').value;
             console.log('Contractor ID:', contractorId);
             
             if (!contractorId) {
                 console.error('No contractor ID');
-                alert('Error: No contractor selected');
+                showSuccessNotification('Assignment Error', 'No contractor selected.');
                 saveBtn.disabled = false;
-                saveBtn.textContent = '✓ Save Assignments';
+                saveBtn.textContent = 'Save Assignments';
                 return;
             }
             
@@ -2850,9 +2855,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (checkboxes.length === 0) {
                 console.error('No checkboxes found');
-                alert('No projects to assign');
+                showSuccessNotification('No Projects', 'No projects available to assign.');
                 saveBtn.disabled = false;
-                saveBtn.textContent = '✓ Save Assignments';
+                saveBtn.textContent = 'Save Assignments';
                 return;
             }
 
@@ -2906,7 +2911,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Success:', successCount, 'Fail:', failCount);
             
             // Show notification
-            showSuccessNotification('✅ Assignments Saved!', `Successfully updated ${successCount} project(s)`);
+            showSuccessNotification('Assignments Saved', `Successfully updated ${successCount} project(s)`);
             
             // Close and refresh
             setTimeout(() => {
@@ -2915,22 +2920,32 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 1500);
             
             saveBtn.disabled = false;
-            saveBtn.textContent = '✓ Save Assignments';
+            saveBtn.textContent = 'Save Assignments';
         }
+
+        window.saveAssignmentsHandler = saveAssignmentsHandler;
 
         // Success notification function
         function showSuccessNotification(title, message) {
+            const isError = /error|failed|no projects/i.test(`${title} ${message}`);
+            const bg = isError
+                ? 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)'
+                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            const shadow = isError
+                ? '0 10px 40px rgba(220, 38, 38, 0.32)'
+                : '0 10px 40px rgba(16, 185, 129, 0.3)';
+
             const notification = document.createElement('div');
             notification.id = 'successNotification';
             notification.style.cssText = `
                 position: fixed;
                 top: 30px;
                 right: 30px;
-                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                background: ${bg};
                 color: white;
                 padding: 20px 30px;
                 border-radius: 12px;
-                box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+                box-shadow: ${shadow};
                 z-index: 2000;
                 min-width: 300px;
                 animation: slideIn 0.4s ease-out;
