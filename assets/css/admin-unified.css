@@ -1,0 +1,112 @@
+/* Final admin overrides loaded after admin.css.
+   Purpose: beat conflicting legacy selectors in admin.css. */
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) {
+    --u-bg-overlay: linear-gradient(145deg, rgba(9, 28, 53, 0.44), rgba(16, 60, 99, 0.26));
+    --u-bg-image: url("../../cityhall.jpeg");
+    --u-surface: rgba(255, 255, 255, 0.92);
+    --u-border: #d5e1f0;
+    --u-text: #1d3553;
+    --u-muted: #5d7290;
+    --u-primary: #1d4ed8;
+    --u-primary-strong: #1e40af;
+    --u-shadow: 0 18px 34px rgba(13, 31, 57, 0.18);
+    background: var(--u-bg-overlay), var(--u-bg-image) center/cover no-repeat fixed !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page)::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(245, 250, 255, 0.24), rgba(235, 243, 252, 0.4));
+    pointer-events: none;
+    z-index: 0;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-toggle {
+    position: relative;
+    z-index: 1;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .metric-card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .recent-projects,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractors-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .summary-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .budget-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .allocation-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .expense-section {
+    background: var(--u-surface) !important;
+    border: 1px solid var(--u-border) !important;
+    box-shadow: var(--u-shadow) !important;
+    border-radius: 16px !important;
+}
+
+/* Unify dropdown nav buttons */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item {
+    width: 100%;
+    min-height: 42px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    padding: 10px 12px !important;
+    color: #304a69 !important;
+    background: transparent;
+    font-weight: 600;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group.open .nav-main-item {
+    background: #edf4ff !important;
+    border-color: #d4e3f4 !important;
+    color: #1e406b !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dropdown-arrow {
+    margin-left: auto;
+    font-size: 0.72rem;
+    color: #5c789e;
+}
+
+/* Unify logout button */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003 {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid #efb7b7;
+    background: linear-gradient(135deg, #fff4f4, #ffe9e9);
+    color: #af1f15 !important;
+    font-weight: 700;
+}
+
+/* Ensure old floating toggle is hidden; top toggle is the only one */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .toggle-btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .sidebar-toggle-btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #navbarMenuIcon {
+    display: none !important;
+}
+
+/* Force icon-only collapsed nav (requested behavior) */
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-links > a,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-main-item {
+    justify-content: center !important;
+    font-size: 0 !important;
+    gap: 0 !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-icon {
+    margin: 0 !important;
+    width: 19px;
+    height: 19px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .dropdown-arrow,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-submenu {
+    display: none !important;
+}

@@ -606,6 +606,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 </footer>
 
-    <script src="../assets/js/admin.js?v=20260212j"></script>
+    <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
+
+

@@ -11,7 +11,8 @@ session_start();
 <html>
 <head>
     <title>Session Debug</title>
-<link rel="stylesheet" href="../assets/css/admin.css?v=20260212j">
+<link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
 </head>
 <body>
     <div class="container">
@@ -98,9 +99,11 @@ session_start();
             </ol>
         </div>
     </div>
-    <script src="../assets/js/admin.js?v=20260212j"></script>
+    <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 

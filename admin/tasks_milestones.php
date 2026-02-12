@@ -52,7 +52,8 @@ $db->close();
     <!-- Design System & Components CSS -->
     <link rel="stylesheet" href="../assets/css/design-system.css">
     <link rel="stylesheet" href="../assets/css/components.css">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=20260212j">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
 </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -166,10 +167,12 @@ $db->close();
     <footer class="footer">
         <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
     </footer>
-    <script src="../assets/js/admin.js?v=20260212j"></script>
+    <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <script src="../assets/js/component-utilities.js"></script>
 </body>
 </html>
+
+
 
 
 

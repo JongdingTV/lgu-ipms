@@ -73,7 +73,8 @@ if (isset($db)) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audit Logs - LGU Admin</title>
 <link rel="icon" type="image/png" href="../logocityhall.png">
-<link rel="stylesheet" href="../assets/css/admin.css?v=20260212j">
+<link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
 </head>
 <body>
 <div class="container">
@@ -171,9 +172,11 @@ if (isset($db)) {
         </div>
     </div>
 </div>
-<script src="../assets/js/admin.js?v=20260212j"></script>
+<script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 

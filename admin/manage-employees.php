@@ -111,7 +111,8 @@ if ($result) {
     <title>Manage Employees - Admin Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     
-    <link rel="stylesheet" href="../assets/css/admin.css?v=20260212j">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
 </head>
 <body>
     <div class="container">
@@ -359,9 +360,11 @@ if ($result) {
             </div>
         </div>
     </div>
-<script src="../assets/js/admin.js?v=20260212j"></script>
+<script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 
