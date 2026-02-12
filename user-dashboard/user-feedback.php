@@ -25,12 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
         $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
         $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
         $category = $_POST['category'];
-        $street = isset($_POST['street']) ? trim($_POST['street']) : '';
-        $barangay = isset($_POST['barangay']) ? trim($_POST['barangay']) : '';
-        $location = $street . ', ' . $barangay;
+        $location = isset($_POST['location']) ? trim($_POST['location']) : '';
         $description = $_POST['feedback'];
         $status = 'Pending';
-        if ($subject && $category && $street && $barangay && $description) {
+        if ($subject && $category && $location && $description) {
             $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
             $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
             if ($stmt->execute()) {
@@ -163,19 +161,15 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
             </div>
             <form id="userFeedbackForm" method="post" action="">
                 <div class="form-row">
-                    <div class="input-box">
+                    <div class="input-box" style="width:100%;">
                         <label for="subject">Subject</label>
                         <input type="text" id="subject" name="subject" maxlength="100" placeholder="Enter subject (e.g. Road Repair Request)" required>
                     </div>
                 </div>
                 <div class="form-row">
-                    <div class="input-box">
-                        <label for="street">Street</label>
-                        <input type="text" id="street" name="street" placeholder="Enter street name" required>
-                    </div>
-                    <div class="input-box">
-                        <label for="barangay">Barangay</label>
-                        <input type="text" id="barangay" name="barangay" placeholder="Enter barangay" required>
+                    <div class="input-box" style="width:100%;">
+                        <label for="location">Location</label>
+                        <input type="text" id="location" name="location" placeholder="Enter location (e.g. Barangay name, address)" required>
                     </div>
                 </div>
                 <div class="input-box">
