@@ -229,12 +229,16 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.set
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-tabs .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     min-height: 42px;
     border-radius: 10px;
     border: 1px solid transparent;
     background: transparent;
     color: #3a5c85;
     font-weight: 700;
+    text-decoration: none;
     transition: all 0.2s ease;
 }
 
@@ -252,6 +256,10 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.set
     padding: 14px;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-view {
+    margin-top: 4px;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-subtitle {
     margin: 0 0 12px;
     color: #5a7596;
@@ -261,6 +269,42 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.set
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-form {
     display: grid;
     gap: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-password-panel .ac-4a3180e2,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-password-panel .ac-b75fad00 {
+    margin-bottom: 0;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-password-panel .ac-37c29296 {
+    display: block;
+    margin-bottom: 6px;
+    color: #25476f;
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-password-panel .ac-6f762f4a {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 44px !important;
+    padding: 0 12px !important;
+    border: 1px solid #c9d9eb !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    color: #1f3653 !important;
+    font-size: 0.95rem !important;
+    box-sizing: border-box;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-password-panel .ac-f84d9680 {
+    width: 100% !important;
+    min-height: 44px !important;
+    border: 1px solid #2a61bf !important;
+    border-radius: 10px !important;
+    background: linear-gradient(135deg, #1f56bd, #2f6fdd) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    cursor: pointer;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content.settings-page .settings-alert {

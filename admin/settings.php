@@ -202,19 +202,18 @@ if (isset($db) && !$db->connect_error) {
 
         <div class="settings-layout">
         <div class="card ac-e9b6d4ca settings-card">
-            <!-- Tab Navigation -->
-            <div class="tabs-container settings-tabs" role="tablist" aria-label="Settings Tabs">
-                <button type="button" class="tab-btn <?php echo $active_tab === 'password' ? 'active' : ''; ?>" data-tab="password" role="tab" aria-selected="<?php echo $active_tab === 'password' ? 'true' : 'false'; ?>">
+            <div class="settings-tabs settings-switcher">
+                <a href="settings.php?tab=password" class="tab-btn <?php echo $active_tab === 'password' ? 'active' : ''; ?>" aria-current="<?php echo $active_tab === 'password' ? 'page' : 'false'; ?>">
                     Change Password
-                </button>
-                <button type="button" class="tab-btn <?php echo $active_tab === 'security' ? 'active' : ''; ?>" data-tab="security" role="tab" aria-selected="<?php echo $active_tab === 'security' ? 'true' : 'false'; ?>">
+                </a>
+                <a href="settings.php?tab=security" class="tab-btn <?php echo $active_tab === 'security' ? 'active' : ''; ?>" aria-current="<?php echo $active_tab === 'security' ? 'page' : 'false'; ?>">
                     Security Logs
-                </button>
+                </a>
             </div>
 
-            <!-- Change Password Tab -->
-            <div id="password-tab" class="tab-content <?php echo $active_tab === 'password' ? 'active' : ''; ?>">
-                <div class="ac-dc271cfe settings-panel">
+            <?php if ($active_tab === 'password'): ?>
+            <div class="settings-view">
+                <div class="ac-dc271cfe settings-panel settings-password-panel">
                     <h3 class="ac-b75fad00">Change Your Password</h3>
                     <p class="settings-subtitle">Use a strong password with at least 8 characters.</p>
                     
@@ -257,9 +256,8 @@ if (isset($db) && !$db->connect_error) {
                     </form>
                 </div>
             </div>
-
-            <!-- Security Logs Tab -->
-            <div id="security-tab" class="tab-content <?php echo $active_tab === 'security' ? 'active' : ''; ?>">
+            <?php else: ?>
+            <div class="settings-view">
                 <div class="settings-panel">
                     <h3 class="ac-b75fad00">Security Logs</h3>
                     <p class="ac-bcaa02df">View your recent login activities and security events</p>
@@ -302,37 +300,13 @@ if (isset($db) && !$db->connect_error) {
                     <?php endif; ?>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
         </div>
     </section>
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
-    
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
-    <script>
-    (function () {
-        if (!location.pathname.endsWith('/settings.php')) return;
-        const tabs = Array.from(document.querySelectorAll('.settings-tabs .tab-btn'));
-        const contents = Array.from(document.querySelectorAll('.tab-content'));
-        if (!tabs.length || !contents.length) return;
-
-        const setTab = (tabName) => {
-            contents.forEach((panel) => panel.classList.toggle('active', panel.id === tabName + '-tab'));
-            tabs.forEach((btn) => {
-                const active = btn.getAttribute('data-tab') === tabName;
-                btn.classList.toggle('active', active);
-                btn.setAttribute('aria-selected', active ? 'true' : 'false');
-            });
-            const url = new URL(window.location.href);
-            url.searchParams.set('tab', tabName);
-            history.replaceState({}, '', url.toString());
-        };
-
-        tabs.forEach((btn) => {
-            btn.addEventListener('click', () => setTab(btn.getAttribute('data-tab')));
-        });
-    })();
-    </script>
 </body>
 </html>
 
