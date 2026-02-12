@@ -378,6 +378,143 @@ $db->close();
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script>
+    (function () {
+        if (!location.pathname.endsWith('/registered_contractors.php')) return;
+
+        const contractorsTbody = document.querySelector('#contractorsTable tbody');
+        const projectsTbody = document.querySelector('#projectsTable tbody');
+        const searchInput = document.getElementById('searchContractors');
+        const statusFilter = document.getElementById('filterStatus');
+        const countEl = document.getElementById('contractorsCount');
+        const formMessage = document.getElementById('formMessage');
+
+        let contractorsCache = [];
+
+        function esc(v) {
+            return String(v ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function apiCandidates(query) {
+            const list = ['registered_contractors.php?' + query, '/admin/registered_contractors.php?' + query];
+            if (typeof window.getApiUrl === 'function') {
+                list.unshift(window.getApiUrl('admin/registered_contractors.php?' + query));
+            }
+            return Array.from(new Set(list));
+        }
+
+        async function fetchJsonWithFallback(query) {
+            const urls = apiCandidates(query);
+            for (const url of urls) {
+                try {
+                    const res = await fetch(url, { credentials: 'same-origin' });
+                    if (!res.ok) continue;
+                    const text = await res.text();
+                    return JSON.parse(text);
+                } catch (_) {}
+            }
+            throw new Error('Unable to load data from API');
+        }
+
+        function renderContractors(rows) {
+            if (!contractorsTbody) return;
+            contractorsTbody.innerHTML = '';
+            const list = Array.isArray(rows) ? rows : [];
+
+            if (countEl) countEl.textContent = `${list.length} contractor${list.length === 1 ? '' : 's'}`;
+
+            if (!list.length) {
+                contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#6b7280;">No contractors found.</td></tr>';
+                return;
+            }
+
+            for (const c of list) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${esc(c.company || 'N/A')}</strong></td>
+                    <td>${esc(c.license || 'N/A')}</td>
+                    <td>${esc(c.email || c.phone || 'N/A')}</td>
+                    <td><span class="status-badge ${esc(String(c.status || '').toLowerCase().replace(/\s+/g, '-'))}">${esc(c.status || 'N/A')}</span></td>
+                    <td>${c.rating ? Number(c.rating).toFixed(1) + '/5' : '-'}</td>
+                    <td><button class="btn-view-projects" data-id="${esc(c.id)}">View Projects</button></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-assign" data-id="${esc(c.id)}">Assign Projects</button>
+                            <button class="btn-delete" data-id="${esc(c.id)}">Delete</button>
+                        </div>
+                    </td>
+                `;
+                contractorsTbody.appendChild(tr);
+            }
+        }
+
+        function renderProjects(rows) {
+            if (!projectsTbody) return;
+            projectsTbody.innerHTML = '';
+            const list = Array.isArray(rows) ? rows : [];
+            if (!list.length) {
+                projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#6b7280;">No projects available.</td></tr>';
+                return;
+            }
+
+            for (const p of list) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${esc(p.code || '')}</td>
+                    <td>${esc(p.name || '')}</td>
+                    <td>${esc(p.type || '')}</td>
+                    <td>${esc(p.sector || '')}</td>
+                    <td><span class="status-badge ${esc(String(p.status || '').toLowerCase().replace(/\s+/g, '-'))}">${esc(p.status || 'N/A')}</span></td>
+                `;
+                projectsTbody.appendChild(tr);
+            }
+        }
+
+        function applyFilters() {
+            const q = (searchInput?.value || '').trim().toLowerCase();
+            const s = (statusFilter?.value || '').trim();
+            const filtered = contractorsCache.filter((c) => {
+                const hitSearch = !q || `${c.company || ''} ${c.license || ''} ${c.email || ''} ${c.phone || ''}`.toLowerCase().includes(q);
+                const hitStatus = !s || String(c.status || '') === s;
+                return hitSearch && hitStatus;
+            });
+            renderContractors(filtered);
+        }
+
+        let booted = false;
+        async function boot() {
+            if (booted) return;
+            booted = true;
+            try {
+                const [contractors, projects] = await Promise.all([
+                    fetchJsonWithFallback('action=load_contractors&_=' + Date.now()),
+                    fetchJsonWithFallback('action=load_projects&_=' + Date.now())
+                ]);
+                contractorsCache = Array.isArray(contractors) ? contractors : [];
+                renderContractors(contractorsCache);
+                renderProjects(Array.isArray(projects) ? projects : []);
+            } catch (err) {
+                if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#c00;">Failed to load contractors data.</td></tr>';
+                if (projectsTbody) projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#c00;">Failed to load projects data.</td></tr>';
+                if (formMessage) {
+                    formMessage.style.display = 'block';
+                    formMessage.style.color = '#c00';
+                    formMessage.textContent = err.message || 'Failed to load data.';
+                }
+            }
+        }
+
+        searchInput?.addEventListener('input', applyFilters);
+        statusFilter?.addEventListener('change', applyFilters);
+        document.addEventListener('DOMContentLoaded', boot);
+        if (document.readyState !== 'loading') boot();
+    })();
+    </script>
 </body>
 </html>
 
