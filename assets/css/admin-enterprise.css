@@ -264,3 +264,106 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .
         padding-right: 14px !important;
     }
 }
+
+/* Project Registration page polish */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm {
+    display: grid;
+    gap: 16px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm fieldset {
+    margin: 0;
+    padding: 18px 18px 14px;
+    border: 1px solid #d6e2f0;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffffff, #f7fbff);
+    box-shadow: 0 8px 20px rgba(14, 35, 65, 0.08);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm legend {
+    padding: 0 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1f3e75;
+    letter-spacing: 0.01em;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm label {
+    display: block;
+    margin: 10px 0 6px;
+    font-weight: 600;
+    color: #27496f;
+    font-size: 0.94rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm textarea {
+    width: 100% !important;
+    min-height: 42px;
+    border: 1px solid #c9d9ea;
+    border-radius: 10px;
+    background: #fbfdff;
+    color: #1e3652;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm input:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm select:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm textarea:focus {
+    outline: none;
+    border-color: #4b81d9;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+    background: #ffffff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm .ac-9374e842 {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm #submitBtn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm #resetBtn {
+    min-height: 42px;
+    border-radius: 10px;
+    font-weight: 700;
+    padding: 0 16px;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm #submitBtn {
+    border: 1px solid #2d63bc;
+    background: linear-gradient(135deg, #1e4fb6, #2f6fe1);
+    color: #fff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm #resetBtn {
+    border: 1px solid #ccd8e6;
+    background: #f3f7fc;
+    color: #27496f;
+}
+
+@media (max-width: 768px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm fieldset {
+        padding: 14px 14px 12px;
+        border-radius: 12px;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm .ac-9374e842 {
+        justify-content: stretch;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm #submitBtn,
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #projectForm #resetBtn {
+        flex: 1;
+    }
+}
