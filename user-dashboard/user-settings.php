@@ -166,6 +166,12 @@ $db->close();
         <div class="sidebar-logout-container">
             <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
         </div>
+        <div class="sidebar-logout-container">
+            <a href="/logout.php" class="nav-logout logout-btn admin-logout-btn" id="logoutLink">
+                <span class="logout-icon" style="display:inline-block;width:22px;height:22px;vertical-align:middle;margin-right:6px;background:url('/assets/images/admin/logout.png') no-repeat center/contain;"></span>
+                <span style="vertical-align:middle;font-weight:600;color:#dc2626;">Logout</span>
+            </a>
+        </div>
     </aside>
 
         <div id="sidebarOverlay" class="sidebar-overlay"></div>
