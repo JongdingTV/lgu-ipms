@@ -631,7 +631,8 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .co
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-contractor-primary,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-contractor-secondary,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-view-projects,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-assign {
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-assign,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-contractor-danger {
     min-height: 38px;
     border-radius: 10px !important;
     border: 1px solid transparent;
@@ -659,6 +660,13 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .bt
     color: #ffffff;
     background: linear-gradient(135deg, #0d9f6e, #17b37f);
     border-color: #169067;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-contractor-danger {
+    color: #ffffff;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    border-color: #991b1b;
+    box-shadow: 0 10px 20px rgba(185, 28, 28, 0.22);
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-form-message {
@@ -817,6 +825,47 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-modal
     font-size: 1.1rem;
     font-weight: 800;
     color: #133c6f;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-delete-panel {
+    width: min(520px, 100%);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-delete-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-delete-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #ffffff;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 8px 14px rgba(220, 38, 38, 0.26);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-delete-message {
+    margin: 0;
+    color: #546d8a;
+    font-size: 0.94rem;
+    line-height: 1.5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-delete-name {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #fecaca;
+    background: #fff1f2;
+    color: #9f1239;
+    font-weight: 700;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-modal-list {
