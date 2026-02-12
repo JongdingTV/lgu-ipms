@@ -54,6 +54,9 @@ if (!isset($_SESSION['employee_id'])) {
     $show_login_form = true;
 } else {
     $show_login_form = false;
+    // Redirect authenticated users before any HTML output
+    header('Location: /admin/dashboard.php');
+    exit;
 }
 
 // If already logged in, proceed normally
@@ -585,8 +588,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <?php endif; ?>
 
         </form>
-        <?php else: ?>
-            <?php header('Location: /admin/dashboard.php'); exit; ?>
         <?php endif; ?>
     </div>
 </div>
