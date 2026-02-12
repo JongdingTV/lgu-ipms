@@ -257,102 +257,107 @@ $db->close();
                                         <button type="button" class="view-btn" data-view-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Details</button>
                                     </td>
                                 </tr>
-
-                                <!-- Edit Modal for Status -->
-                                <div id="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h2>Update Feedback Status</h2>
-                                            <button type="button" class="modal-close" data-close-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">&times;</button>
-                                        </div>
-                                        <form method="post" class="modal-form">
-                                            <div class="modal-body">
-                                                <div class="modal-field">
-                                                    <span class="modal-label">Control Number:</span>
-                                                    <div class="modal-value"><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></div>
-                                                </div>
-                                                <div class="modal-field">
-                                                    <span class="modal-label">From:</span>
-                                                    <div class="modal-value"><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></div>
-                                                </div>
-                                                <div class="modal-field">
-                                                    <span class="modal-label">Subject:</span>
-                                                    <div class="modal-value"><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></div>
-                                                </div>
-                                                <div class="modal-field">
-                                                    <label for="status-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal-label">Change Status:</label>
-                                                    <select id="status-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" name="new_status" class="status-dropdown">
-                                                        <option value="Pending" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ?'selected':'' ?>>Pending</option>
-                                                        <option value="Reviewed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Reviewed') ?'selected':'' ?>>Reviewed</option>
-                                                        <option value="Addressed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Addressed') ?'selected':'' ?>>Addressed</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <input type="hidden" name="feedback_id" value="<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">
-                                                <button type="button" class="modal-btn modal-btn-close" data-close-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Cancel</button>
-                                                <button type="submit" name="update_status" class="modal-btn modal-btn-action">Save Changes</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <!-- Modal for this feedback -->
-                                <div id="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h2>Feedback Details</h2>
-                                            <button type="button" class="modal-close" data-close-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">&times;</button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <div class="modal-field">
-                                                <span class="modal-label">Control Number:</span>
-                                                <div class="modal-value"><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></div>
-                                            </div>
-                                            <div class="modal-field">
-                                                <span class="modal-label">Submitted By:</span>
-                                                <div class="modal-value"><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></div>
-                                            </div>
-                                            <div class="modal-field">
-                                                <span class="modal-label">Date Submitted:</span>
-                                                <div class="modal-value"><?= isset($fb_lc['date_submitted']) ? htmlspecialchars($fb_lc['date_submitted']) : '-' ?></div>
-                                            </div>
-                                            <div class="modal-field">
-                                                <span class="modal-label">Subject:</span>
-                                                <div class="modal-value"><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></div>
-                                            </div>
-                                            <div class="modal-field">
-                                                <span class="modal-label">Category:</span>
-                                                <div class="modal-value"><?= isset($fb_lc['category']) ? htmlspecialchars($fb_lc['category']) : '-' ?></div>
-                                            </div>
-                                            <div class="modal-field">
-                                                <span class="modal-label">Location:</span>
-                                                <div class="modal-value"><?= isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-' ?></div>
-                                            </div>
-                                            <div class="modal-field">
-                                                <span class="modal-label">Status:</span>
-                                                <div class="modal-value">
-                                                    <span class="badge <?= (isset($fb_lc['status']) ? strtolower($fb_lc['status']) : '') ?>">
-                                                        <?= isset($fb_lc['status']) ? htmlspecialchars($fb_lc['status']) : '-' ?>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div class="modal-field">
-                                                <span class="modal-label">Message / Description:</span>
-                                                <div class="modal-value"><?= isset($fb_lc['description']) ? htmlspecialchars($fb_lc['description']) : '-' ?></div>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="modal-btn modal-btn-close" data-close-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Close</button>
-                                        </div>
-                                    </div>
-                                </div>
                             <?php $count++; endforeach; ?>
                         <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            <?php if (!empty($feedbacks)): ?>
+                <div id="prioritizationModalRoot">
+                    <?php $count = 1; foreach ($feedbacks as $fb): ?>
+                        <?php $fb_lc = array_change_key_case($fb, CASE_LOWER); ?>
+                        <div id="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h2>Update Feedback Status</h2>
+                                    <button type="button" class="modal-close" data-close-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">&times;</button>
+                                </div>
+                                <form method="post" class="modal-form">
+                                    <div class="modal-body">
+                                        <div class="modal-field">
+                                            <span class="modal-label">Control Number:</span>
+                                            <div class="modal-value"><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></div>
+                                        </div>
+                                        <div class="modal-field">
+                                            <span class="modal-label">From:</span>
+                                            <div class="modal-value"><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></div>
+                                        </div>
+                                        <div class="modal-field">
+                                            <span class="modal-label">Subject:</span>
+                                            <div class="modal-value"><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></div>
+                                        </div>
+                                        <div class="modal-field">
+                                            <label for="status-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal-label">Change Status:</label>
+                                            <select id="status-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" name="new_status" class="status-dropdown">
+                                                <option value="Pending" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ?'selected':'' ?>>Pending</option>
+                                                <option value="Reviewed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Reviewed') ?'selected':'' ?>>Reviewed</option>
+                                                <option value="Addressed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Addressed') ?'selected':'' ?>>Addressed</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <input type="hidden" name="feedback_id" value="<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">
+                                        <button type="button" class="modal-btn modal-btn-close" data-close-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Cancel</button>
+                                        <button type="submit" name="update_status" class="modal-btn modal-btn-action">Save Changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div id="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h2>Feedback Details</h2>
+                                    <button type="button" class="modal-close" data-close-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="modal-field">
+                                        <span class="modal-label">Control Number:</span>
+                                        <div class="modal-value"><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Submitted By:</span>
+                                        <div class="modal-value"><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Date Submitted:</span>
+                                        <div class="modal-value"><?= isset($fb_lc['date_submitted']) ? htmlspecialchars($fb_lc['date_submitted']) : '-' ?></div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Subject:</span>
+                                        <div class="modal-value"><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Category:</span>
+                                        <div class="modal-value"><?= isset($fb_lc['category']) ? htmlspecialchars($fb_lc['category']) : '-' ?></div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Location:</span>
+                                        <div class="modal-value"><?= isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-' ?></div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Status:</span>
+                                        <div class="modal-value">
+                                            <span class="badge <?= (isset($fb_lc['status']) ? strtolower($fb_lc['status']) : '') ?>">
+                                                <?= isset($fb_lc['status']) ? htmlspecialchars($fb_lc['status']) : '-' ?>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Message / Description:</span>
+                                        <div class="modal-value"><?= isset($fb_lc['description']) ? htmlspecialchars($fb_lc['description']) : '-' ?></div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="modal-btn modal-btn-close" data-close-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php $count++; endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
 
         <div class="summary-section prioritization-summary">
