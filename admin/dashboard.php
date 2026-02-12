@@ -18,6 +18,31 @@ if ($db->connect_error) {
     die('Database connection failed: ' . $db->connect_error);
 }
 
+function dashboard_projects_has_created_at(mysqli $db): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'projects'
+           AND COLUMN_NAME = 'created_at'
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+
+    return $exists;
+}
+
 // Get project statistics
 $totalProjects = $db->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'];
 $inProgressProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'];
@@ -25,7 +50,8 @@ $completedProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE st
 $totalBudget = $db->query("SELECT COALESCE(SUM(budget), 0) as total FROM projects")->fetch_assoc()['total'];
 
 // Get recent projects
-$recentProjects = $db->query("SELECT id, name, location, status, budget FROM projects ORDER BY created_at DESC LIMIT 5");
+$recentOrder = dashboard_projects_has_created_at($db) ? 'created_at DESC' : 'id DESC';
+$recentProjects = $db->query("SELECT id, name, location, status, budget FROM projects ORDER BY {$recentOrder} LIMIT 5");
 $db->close();
 ?>
 <html>

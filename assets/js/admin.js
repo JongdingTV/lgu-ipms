@@ -3044,6 +3044,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const resetBtn = document.getElementById('resetBtn');
         let editProjectId = null;
 
+        function projectRegistrationUrls(suffix = '') {
+            const urls = [];
+            if (typeof window.getApiUrl === 'function') {
+                urls.push(getApiUrl('admin/project_registration.php' + suffix));
+            }
+            urls.push('project_registration.php' + suffix);
+            urls.push('/admin/project_registration.php' + suffix);
+            return urls;
+        }
+
+        function fetchJsonWithFallback(urls, options = {}) {
+            const tryFetch = (idx) => {
+                if (idx >= urls.length) throw new Error('All project registration endpoints failed');
+                return fetch(urls[idx], options)
+                    .then((res) => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status + ' @ ' + urls[idx]);
+                        return res.json();
+                    })
+                    .catch(() => tryFetch(idx + 1));
+            };
+            return tryFetch(0);
+        }
+
         // Sidebar toggle handlers (unchanged)
         const sidebarToggle = document.getElementById('toggleSidebar');
         const sidebarShow = document.getElementById('toggleSidebarShow');
@@ -3060,13 +3083,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Load projects from DB
         function loadSavedProjects() {
+            const tbody = document.querySelector('#projectsTable tbody');
+            const projectCount = document.getElementById('projectCount');
+            if (!tbody || !projectCount) {
+                return;
+            }
+
             // Add cache-busting param to always get fresh data
-            fetch(getApiUrl('admin/project_registration.php?action=load_projects&_=' + Date.now()))
-                .then(res => res.json())
+            fetchJsonWithFallback(projectRegistrationUrls('?action=load_projects&_=' + Date.now()))
                 .then(projects => {
                     console.log('Fetched projects:', projects); // DEBUG
-                    const tbody = document.querySelector('#projectsTable tbody');
-                    const projectCount = document.getElementById('projectCount');
                     
                     // Update project count
                     projectCount.textContent = `${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`;
@@ -3110,12 +3136,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 confirmText: 'Delete Permanently',
                                 cancelText: 'Cancel',
                                 onConfirm: () => {
-                                    fetch(getApiUrl('admin/project_registration.php'), {
+                                    fetchJsonWithFallback(projectRegistrationUrls(''), {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                                         body: `action=delete_project&id=${encodeURIComponent(id)}`
                                     })
-                                    .then(res => res.json())
                                     .then(data => {
                                         msg.textContent = data.message;
                                         msg.style.display = 'block';
@@ -3181,40 +3206,23 @@ document.addEventListener('DOMContentLoaded', function() {
             if (editProjectId) {
                 fd.append('id', editProjectId);
             }
-            fetch(getApiUrl('admin/project_registration.php'), {
+            fetchJsonWithFallback(projectRegistrationUrls(''), {
                 method: 'POST',
                 body: fd
             })
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error('HTTP Error: ' + res.status);
+            .then(data => {
+                msg.textContent = data.message || (data.success ? 'Project saved successfully' : 'Failed to save project');
+                msg.style.display = 'block';
+                msg.style.color = data.success ? '#0b5' : '#f00';
+                if (data.success) {
+                    form.reset();
+                    editProjectId = null;
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = 'Create Project';
+                    // Reload project list when present
+                    loadSavedProjects();
                 }
-                return res.text();
-            })
-            .then(text => {
-                console.log('Response text:', text);
-                try {
-                    const data = JSON.parse(text);
-                    msg.textContent = data.message;
-                    msg.style.display = 'block';
-                    msg.style.color = data.success ? '#0b5' : '#f00';
-                    if (data.success) {
-                        form.reset();
-                        editProjectId = null;
-                        const submitBtn = form.querySelector('button[type="submit"]');
-                        submitBtn.innerHTML = 'Create Project';
-                        // Reload the projects table without full page reload
-                        loadSavedProjects();
-                    }
-                    setTimeout(() => { msg.style.display = 'none'; }, 3000);
-                } catch (e) {
-                    console.error('JSON Parse Error:', e);
-                    console.error('Raw response:', text);
-                    msg.textContent = 'Error: Invalid response from server. Check browser console.';
-                    msg.style.display = 'block';
-                    msg.style.color = '#f00';
-                    setTimeout(() => { msg.style.display = 'none'; }, 5000);
-                }
+                setTimeout(() => { msg.style.display = 'none'; }, 3000);
             })
             .catch(error => {
                 console.error('Fetch Error:', error);

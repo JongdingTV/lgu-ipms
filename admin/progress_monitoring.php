@@ -20,6 +20,31 @@ if ($db->connect_error) {
     exit;
 }
 
+function progress_projects_has_created_at(mysqli $db): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'projects'
+           AND COLUMN_NAME = 'created_at'
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+
+    return $exists;
+}
+
 // Handle API requests first (before rendering HTML)
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
@@ -34,8 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
     )");
     
-    // Simple query first - use safe column selection
-    $result = $db->query("SELECT id, code, name, description, location, province, sector, budget, status, project_manager, start_date, end_date, duration_months, created_at FROM projects ORDER BY created_at DESC LIMIT 500");
+    // Simple query first - support schemas with or without created_at.
+    $hasCreatedAt = progress_projects_has_created_at($db);
+    $selectCreatedAt = $hasCreatedAt ? ", created_at" : "";
+    $orderBy = $hasCreatedAt ? "created_at DESC" : "id DESC";
+    $result = $db->query("SELECT id, code, name, description, location, province, sector, budget, status, project_manager, start_date, end_date, duration_months{$selectCreatedAt} FROM projects ORDER BY {$orderBy} LIMIT 500");
     
     $projects = [];
     
