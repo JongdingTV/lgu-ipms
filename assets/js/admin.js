@@ -3043,6 +3043,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const msg = document.getElementById('formMessage');
         const resetBtn = document.getElementById('resetBtn');
         let editProjectId = null;
+        let hasShownPostSubmitPopup = false;
+
+        function showProjectPopup(text) {
+            if (!text || hasShownPostSubmitPopup) return;
+            hasShownPostSubmitPopup = true;
+            window.alert(text);
+        }
 
         function projectRegistrationUrls(suffix = '') {
             const urls = [];
@@ -3214,9 +3221,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: fd
             })
             .then(data => {
-                msg.textContent = data.message || (data.success ? 'Project saved successfully' : 'Failed to save project');
+                const isCreate = !editProjectId;
+                const duplicate = !data.success && /already exists|duplicate/i.test(String(data.message || ''));
+                const successMessage = isCreate ? 'Project has been added successfully.' : 'Project has been updated successfully.';
+                const errorMessage = duplicate
+                    ? 'Project already exists. Please try again with a different Project Code.'
+                    : (data.message || 'Failed to save project');
+                msg.textContent = data.success ? successMessage : errorMessage;
                 msg.style.display = 'block';
                 msg.style.color = data.success ? '#0b5' : '#f00';
+                showProjectPopup(data.success ? successMessage : errorMessage);
                 if (data.success) {
                     form.reset();
                     editProjectId = null;
@@ -3232,6 +3246,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 msg.textContent = 'Error: ' + error.message;
                 msg.style.display = 'block';
                 msg.style.color = '#f00';
+                showProjectPopup('Error saving project. Please try again.');
                 setTimeout(() => { msg.style.display = 'none'; }, 3000);
             });
         });
@@ -3246,6 +3261,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Load projects on page load
         document.addEventListener('DOMContentLoaded', function(){
+            const params = new URLSearchParams(window.location.search);
+            const saved = params.get('saved');
+            const error = params.get('error');
+            const savedMsg = params.get('msg') || 'Project has been added successfully.';
+
+            if (saved === '1') {
+                if (msg) {
+                    msg.textContent = savedMsg;
+                    msg.style.display = 'block';
+                    msg.style.color = '#0b5';
+                    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+                }
+                showProjectPopup(savedMsg);
+            } else if (error) {
+                let errText = decodeURIComponent(error);
+                if (/already exists|duplicate/i.test(errText)) {
+                    errText = 'Project already exists. Please try again with a different Project Code.';
+                }
+                if (msg) {
+                    msg.textContent = errText;
+                    msg.style.display = 'block';
+                    msg.style.color = '#f00';
+                    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+                }
+                showProjectPopup(errText);
+            }
+
+            if ((saved === '1' || error) && window.history && window.history.replaceState) {
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+
             loadSavedProjects();
         });
 

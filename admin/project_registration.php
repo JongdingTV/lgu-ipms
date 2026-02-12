@@ -77,7 +77,9 @@ function respond_project_registration(bool $success, string $message, array $ext
     }
 
     // Fallback for normal form POST: redirect back to the form page.
-    $query = $success ? 'saved=1' : 'error=' . rawurlencode($message);
+    $query = $success
+        ? 'saved=1&msg=' . rawurlencode($message)
+        : 'error=' . rawurlencode($message);
     header('Location: project_registration.php?' . $query);
     exit;
 }
@@ -151,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         } catch (mysqli_sql_exception $e) {
             if ((int)$e->getCode() === 1062) {
-                respond_project_registration(false, 'Project code already exists. Please use a different Project Code.');
+                respond_project_registration(false, 'Project already exists. Please try again with a different Project Code.');
             } else {
                 $debugError = build_db_debug_error($db, 'Failed to save project (exception)', $e->getMessage());
                 error_log('[project_registration] ' . $debugError);
