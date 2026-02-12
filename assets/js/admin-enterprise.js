@@ -233,6 +233,136 @@
       .replace(/[^a-z0-9-]/g, '');
   }
 
+  function initTopUtilities() {
+    if ($('.admin-top-utilities')) return;
+
+    const bar = document.createElement('div');
+    bar.className = 'admin-top-utilities';
+    bar.innerHTML = `
+      <div class="admin-time-chip" aria-live="polite">
+        <span class="admin-time" id="adminLiveTime">--:--:--</span>
+        <span class="admin-date" id="adminLiveDate">----</span>
+      </div>
+      <div class="admin-utility-group">
+        <button type="button" class="admin-utility-btn" id="adminNotifBtn" aria-expanded="false" aria-controls="adminNotifPanel" title="Notifications">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path>
+            <path d="M9 17a3 3 0 0 0 6 0"></path>
+          </svg>
+          <span class="admin-utility-label">Alerts</span>
+          <span class="admin-utility-badge" id="adminNotifCount">0</span>
+        </button>
+        <button type="button" class="admin-utility-btn" id="adminThemeBtn" title="Toggle dark mode">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2"></path>
+            <path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path>
+            <path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="M2 12h2"></path>
+            <path d="M20 12h2"></path>
+            <path d="m6.34 17.66-1.41 1.41"></path>
+            <path d="m19.07 4.93-1.41 1.41"></path>
+          </svg>
+          <span class="admin-utility-label" id="adminThemeLabel">Dark</span>
+        </button>
+      </div>
+      <div class="admin-notif-panel" id="adminNotifPanel" hidden>
+        <div class="admin-notif-head">
+          <strong>Notifications</strong>
+          <button type="button" id="adminNotifMarkRead">Mark all read</button>
+        </div>
+        <ul class="admin-notif-list" id="adminNotifList"></ul>
+      </div>`;
+    document.body.appendChild(bar);
+
+    const timeEl = document.getElementById('adminLiveTime');
+    const dateEl = document.getElementById('adminLiveDate');
+    const notifBtn = document.getElementById('adminNotifBtn');
+    const notifPanel = document.getElementById('adminNotifPanel');
+    const notifList = document.getElementById('adminNotifList');
+    const notifCount = document.getElementById('adminNotifCount');
+    const markReadBtn = document.getElementById('adminNotifMarkRead');
+    const themeBtn = document.getElementById('adminThemeBtn');
+    const themeLabel = document.getElementById('adminThemeLabel');
+
+    const persistedTheme = localStorage.getItem('ipms_admin_theme') || 'light';
+    document.body.classList.toggle('theme-dark', persistedTheme === 'dark');
+    if (themeLabel) themeLabel.textContent = persistedTheme === 'dark' ? 'Light' : 'Dark';
+
+    const clockTick = () => {
+      const now = new Date();
+      if (timeEl) {
+        timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+      if (dateEl) {
+        dateEl.textContent = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      }
+    };
+    clockTick();
+    setInterval(clockTick, 1000);
+
+    const buildNotifications = () => {
+      const items = [];
+      const pendingCount = $$('.badge.pending').length;
+      if (pendingCount > 0) {
+        items.push({ level: 'warning', text: `${pendingCount} pending item(s) need review.` });
+      }
+      if (document.querySelector('.settings-alert-error')) {
+        items.push({ level: 'danger', text: 'A settings error was detected on this page.' });
+      }
+      if (!items.length) {
+        items.push({ level: 'info', text: 'No urgent notifications. System is running normally.' });
+      }
+      return items;
+    };
+
+    let notifications = buildNotifications();
+    const renderNotifications = () => {
+      if (!notifList || !notifCount) return;
+      notifList.innerHTML = notifications.map((item) => `
+        <li class="admin-notif-item is-${item.level}">
+          <span class="dot"></span>
+          <span>${item.text}</span>
+        </li>`).join('');
+      notifCount.textContent = String(notifications.length);
+      notifCount.style.display = notifications.length ? 'inline-flex' : 'none';
+    };
+    renderNotifications();
+
+    if (notifBtn && notifPanel) {
+      notifBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const open = notifPanel.hasAttribute('hidden');
+        notifPanel.toggleAttribute('hidden', !open);
+        notifBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
+
+    if (markReadBtn) {
+      markReadBtn.addEventListener('click', () => {
+        notifications = [];
+        renderNotifications();
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!bar.contains(e.target) && notifPanel && !notifPanel.hasAttribute('hidden')) {
+        notifPanel.setAttribute('hidden', 'hidden');
+        notifBtn?.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        const isDark = !document.body.classList.contains('theme-dark');
+        document.body.classList.toggle('theme-dark', isDark);
+        localStorage.setItem('ipms_admin_theme', isDark ? 'dark' : 'light');
+        if (themeLabel) themeLabel.textContent = isDark ? 'Light' : 'Dark';
+      });
+    }
+  }
+
   function formatShortDate(value) {
     if (!value) return '-';
     const dt = new Date(value);
@@ -475,6 +605,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     initTopSidebarToggle();
+    initTopUtilities();
     initUnifiedDropdowns();
     initLogoutModal();
     initDashboardBudgetHoldReveal();

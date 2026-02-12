@@ -12,6 +12,211 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) {
     --ipms-shadow: 0 16px 30px rgba(15, 30, 56, 0.16);
 }
 
+/* Top-right utilities: time/date, notifications, theme toggle */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    z-index: 1320;
+    display: grid;
+    gap: 8px;
+    justify-items: end;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    min-width: 190px;
+    border: 1px solid #d4e2f2;
+    border-radius: 12px;
+    background: linear-gradient(160deg, #ffffff, #f6fbff);
+    box-shadow: 0 10px 24px rgba(14, 33, 58, 0.18);
+    padding: 8px 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-time {
+    color: #183e6b;
+    font-weight: 800;
+    font-size: 0.98rem;
+    line-height: 1;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-date {
+    color: #5a7697;
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-group {
+    display: inline-flex;
+    gap: 8px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    border: 1px solid #c9d9eb;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #2a4c77;
+    padding: 0 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-btn:hover {
+    border-color: #a9c2df;
+    background: #f2f7ff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-badge {
+    min-width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #dc2626;
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 0 5px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-panel {
+    width: min(340px, 86vw);
+    border: 1px solid #d7e4f2;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 16px 30px rgba(11, 28, 54, 0.22);
+    overflow: hidden;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e2ebf5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-head strong {
+    color: #193f6e;
+    font-size: 0.9rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-head button {
+    border: 1px solid #c9d9eb;
+    border-radius: 8px;
+    background: #f2f7ff;
+    color: #31557f;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-list {
+    list-style: none;
+    margin: 0;
+    padding: 8px;
+    max-height: 260px;
+    overflow: auto;
+    display: grid;
+    gap: 7px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item {
+    display: grid;
+    grid-template-columns: 10px 1fr;
+    align-items: start;
+    gap: 8px;
+    border: 1px solid #dde8f4;
+    border-radius: 9px;
+    background: #f8fbff;
+    padding: 8px 9px;
+    color: #355579;
+    font-size: 0.82rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    margin-top: 5px;
+    background: #2563eb;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item.is-warning .dot { background: #d97706; }
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item.is-danger .dot { background: #dc2626; }
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item.is-info .dot { background: #2563eb; }
+
+/* Dark mode */
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark {
+    background-color: #0b1422;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav {
+    background: linear-gradient(180deg, #111c2e 0%, #0f1a2b 100%) !important;
+    border-right-color: #1f324d !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav-logo,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav-links a,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav-main-item {
+    color: #d2e0f3 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav-links a:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav-main-item:hover {
+    background: #1b2d47 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .projects-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .summary-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .table-wrap {
+    background: rgba(16, 28, 45, 0.9) !important;
+    border-color: #2a3f5e !important;
+    color: #d6e3f5 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dash-header h1,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dash-header p {
+    color: #d8e6fa !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-time-chip,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-utility-btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-panel {
+    background: #14243a;
+    border-color: #2c4463;
+    color: #d6e3f5;
+}
+
+@media (max-width: 860px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
+        top: 10px;
+        right: 10px;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
+        min-width: 160px;
+        padding: 7px 8px;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-label {
+        display: none;
+    }
+}
+
 /* Top sidebar toggle */
 .top-sidebar-toggle {
     position: fixed;
