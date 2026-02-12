@@ -598,7 +598,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <?php include('../includes/footer.php'); ?>
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
+    <script src="../assets/js/smart-footer.js"></script>
 </body>
-</html>
 
 

@@ -1,7 +1,7 @@
 /**
  * CRITICAL FOOTER FIX
- * Forces footer to stay at bottom of viewport
- * Load this LAST after all other CSS files
+ * Forces footer to stay at bottom of viewport with smooth animations
+ * Works with smart-footer.js for show/hide on scroll
  */
 
 /* CRITICAL: Override all footer positioning */
@@ -27,6 +27,17 @@ footer,
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     text-align: center !important;
     box-sizing: border-box !important;
+    transition: all 0.3s ease-in-out !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Hide footer initially with smooth transition */
+footer.hidden,
+.footer.hidden {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transform: translateY(100%) !important;
 }
 
 /* Prevent footer from being hidden by other elements */
@@ -187,5 +198,9 @@ section.main-content {
     .footer {
         position: static !important;
         bottom: auto !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
 }
+
