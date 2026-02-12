@@ -3044,6 +3044,47 @@ document.addEventListener('DOMContentLoaded', function() {
         const resetBtn = document.getElementById('resetBtn');
         let editProjectId = null;
         let hasShownPostSubmitPopup = false;
+        let fallbackProjectNoticeModal = null;
+
+        function showFallbackProjectNotice(text, type) {
+            if (!text) return;
+            if (!fallbackProjectNoticeModal) {
+                const wrap = document.createElement('div');
+                wrap.id = 'projectRegFallbackNotice';
+                wrap.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.52);z-index:5000;padding:16px;';
+                wrap.innerHTML = `
+                    <div style="width:min(96vw,460px);background:#fff;border:1px solid #dbe5f1;border-radius:14px;box-shadow:0 20px 45px rgba(15,23,42,.30);padding:18px;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                            <div id="projectRegFallbackIcon" style="width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;background:#1d4ed8;">i</div>
+                            <h3 id="projectRegFallbackTitle" style="margin:0;color:#0f172a;font-size:1.15rem;">Notice</h3>
+                        </div>
+                        <p id="projectRegFallbackText" style="margin:0;color:#334155;line-height:1.45;"></p>
+                        <div style="margin-top:14px;display:flex;justify-content:flex-end;">
+                            <button type="button" id="projectRegFallbackOk" style="padding:10px 18px;border:none;border-radius:10px;background:#1d4ed8;color:#fff;font-weight:600;cursor:pointer;">OK</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(wrap);
+                const ok = wrap.querySelector('#projectRegFallbackOk');
+                if (ok) ok.addEventListener('click', () => { wrap.style.display = 'none'; });
+                wrap.addEventListener('click', (e) => { if (e.target === wrap) wrap.style.display = 'none'; });
+                fallbackProjectNoticeModal = wrap;
+            }
+
+            const icon = fallbackProjectNoticeModal.querySelector('#projectRegFallbackIcon');
+            const title = fallbackProjectNoticeModal.querySelector('#projectRegFallbackTitle');
+            const textEl = fallbackProjectNoticeModal.querySelector('#projectRegFallbackText');
+            const isSuccess = type === 'success';
+            if (icon) {
+                icon.textContent = isSuccess ? '✓' : '!';
+                icon.style.background = isSuccess ? '#16a34a' : '#dc2626';
+            }
+            if (title) title.textContent = isSuccess ? 'Success' : 'Notice';
+            if (textEl) textEl.textContent = text;
+            fallbackProjectNoticeModal.style.display = 'flex';
+            const ok = fallbackProjectNoticeModal.querySelector('#projectRegFallbackOk');
+            if (ok) ok.focus();
+        }
 
         function showProjectPopup(text) {
             if (!text || hasShownPostSubmitPopup) return;
@@ -3063,7 +3104,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     onCancel: function () {}
                 });
             } else {
-                window.alert(text);
+                showFallbackProjectNotice(text, /successfully|added|updated/i.test(text) ? 'success' : 'error');
             }
         }
 

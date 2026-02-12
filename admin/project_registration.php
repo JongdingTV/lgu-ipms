@@ -558,8 +558,6 @@ $db->close();
                         onConfirm: function () {},
                         onCancel: function () {}
                     });
-                } else {
-                    alert(message);
                 }
                 return;
             }

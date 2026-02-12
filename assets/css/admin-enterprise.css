@@ -89,6 +89,22 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item
     font-weight: 600;
 }
 
+/* Ensure active submenu links stay readable on dark/gradient active backgrounds */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item.active,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-dropdown-item.active {
+    color: #f8fbff !important;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2f5aa0 100%) !important;
+    border-left-color: #93c5fd !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item.active .submenu-icon,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-dropdown-item.active .submenu-icon,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item.active span,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-dropdown-item.active span {
+    color: #f8fbff !important;
+    opacity: 1 !important;
+}
+
 /* Icon-only collapsed sidebar */
 body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-links > a,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-main-item {
