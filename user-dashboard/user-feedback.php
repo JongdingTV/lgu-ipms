@@ -1,16 +1,62 @@
 
+
+// AJAX handler for feedback submission
+if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+    header('Content-Type: application/json');
+    ini_set('display_errors', 0);
+    error_reporting(E_ERROR | E_PARSE);
+    
+    // Check authentication
+    check_auth();
+    
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Not logged in']);
+        exit;
+    }
+    // Get user info from database
+    $user_id = $_SESSION['user_id'];
+    $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+    $stmt->close();
+    $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
+        if ($db->connect_error) {
+            echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
+            exit;
+        }
+        $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
+        $category = $_POST['category'];
+        $location = $_POST['street'] . ', ' . $_POST['barangay'];
+        $description = $_POST['feedback'];
+        $status = 'Pending';
+        $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Feedback submitted!']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error submitting feedback.']);
+        }
+        $stmt->close();
+        $db->close();
+        exit;
+    }
+    echo json_encode(['success' => false, 'message' => 'Invalid request']);
+    exit;
+}
+
+// Normal page load
+$msg = '';
 <?php
 // Import security functions
 require dirname(__DIR__) . '/session-auth.php';
-set_no_cache_headers();
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
+set_no_cache_headers();
 if ($db->connect_error) {
     die('Database connection failed: ' . $db->connect_error);
-}
-if (!isset($_SESSION['user_id'])) {
-    header('Location: user-login.php');
-    exit;
 }
 $user_id = $_SESSION['user_id'];
 $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
@@ -56,32 +102,20 @@ $db->close();
 </head>
 <body>
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
-    <!-- Sidebar with overlay for mobile -->
-    <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <aside class="nav sidebar-animated" id="navbar">
-        <!-- Logo and IPMS side by side at top -->
         <div class="nav-logo admin-sidebar-logo" style="display:flex;flex-direction:row;align-items:center;justify-content:center;padding:18px 0 8px 0;gap:10px;">
             <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
             <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
         </div>
-        <!-- Mobile burger button (top left, only visible on mobile) -->
         <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button" style="position:fixed;top:18px;left:18px;z-index:1002;display:none;">
             <span class="burger-bar"></span>
             <span class="burger-bar"></span>
             <span class="burger-bar"></span>
         </button>
         <style>
-        /* Show burger only on mobile */
-        .sidebar-burger-btn.mobile-only {
-            display: none;
-        }
-        @media (max-width: 991px) {
-            .sidebar-burger-btn.mobile-only {
-                display: block !important;
-            }
-        }
+        .sidebar-burger-btn.mobile-only { display: none; }
+        @media (max-width: 991px) { .sidebar-burger-btn.mobile-only { display: block !important; } }
         </style>
-        <!-- Profile section, centered -->
         <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">
             <?php
             $profile_img = '';
@@ -90,9 +124,7 @@ $db->close();
             $initials = '';
             if ($user_name) {
                 $parts = explode(' ', $user_name);
-                foreach ($parts as $p) {
-                    if ($p) $initials .= strtoupper($p[0]);
-                }
+                foreach ($parts as $p) { if ($p) $initials .= strtoupper($p[0]); }
             }
             if (!function_exists('stringToColor')) {
                 function stringToColor($str) {
@@ -193,14 +225,12 @@ $db->close();
     </footer>
     <script src="/assets/js/shared/shared-data.js"></script>
     <script src="/assets/js/shared/shared-toggle.js"></script>
-    <script src="user-dashboard.js"></script>
+    <script src="user-feedback.js"></script>
     <script>
-    // Sidebar burger and overlay logic (mobile burger only)
     (function() {
         const sidebar = document.getElementById('navbar');
         const burger = document.getElementById('sidebarBurgerBtn');
         const overlay = document.getElementById('sidebarOverlay');
-        // Show/hide burger only on mobile
         function updateBurgerVisibility() {
             if (window.innerWidth <= 991) {
                 burger.style.display = 'block';
@@ -230,7 +260,6 @@ $db->close();
         overlay.addEventListener('click', closeSidebar);
         window.addEventListener('resize', updateBurgerVisibility);
         document.addEventListener('DOMContentLoaded', updateBurgerVisibility);
-        // Also close sidebar if clicking outside sidebar and burger (for extra safety)
         document.addEventListener('click', function(e) {
             if (
                 sidebar.classList.contains('sidebar-open') &&
@@ -241,7 +270,6 @@ $db->close();
             }
         });
     })();
-    // Logout confirmation (if needed)
     document.addEventListener('DOMContentLoaded', function() {
         window.setupLogoutConfirmation && window.setupLogoutConfirmation();
     });
