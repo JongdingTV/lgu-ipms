@@ -110,18 +110,48 @@ $db->close();
         <div class="settings-container">
             <div class="user-info-box">
                 <h2>Account Information</h2>
-                <table class="user-info-table">
-                    <tr><th>Name:</th><td><?php echo htmlspecialchars($user_name); ?></td></tr>
-                    <tr><th>Username:</th><td><?php echo htmlspecialchars($user['username'] ?? ''); ?></td></tr>
-                    <tr><th>Email:</th><td><?php echo htmlspecialchars($user['email']); ?></td></tr>
-                    <tr><th>Contact No.:</th><td><?php echo htmlspecialchars($user['contact_number'] ?? ''); ?></td></tr>
-                    <tr><th>Address:</th><td><?php echo htmlspecialchars($user['address'] ?? ''); ?></td></tr>
-                    <tr><th>Barangay:</th><td><?php echo htmlspecialchars($user['barangay'] ?? ''); ?></td></tr>
-                    <tr><th>Gender:</th><td><?php echo htmlspecialchars($gender_display); ?></td></tr>
-                    <tr><th>Civil Status:</th><td><?php echo htmlspecialchars($civil_status_display); ?></td></tr>
-                    <tr><th>Registration Date:</th><td><?php echo isset($user['created_at']) ? date('M d, Y', strtotime($user['created_at'])) : ''; ?></td></tr>
-                    <tr><th>User Type:</th><td><?php echo htmlspecialchars($user['user_type'] ?? ''); ?></td></tr>
-                </table>
+                <form class="user-info-form" autocomplete="off" style="pointer-events:none;">
+                    <div class="input-box">
+                        <label>Name</label>
+                        <input type="text" value="<?php echo htmlspecialchars($user_name); ?>" readonly />
+                    </div>
+                    <div class="input-box">
+                        <label>Username</label>
+                        <input type="text" value="<?php echo htmlspecialchars($user['username'] ?? ''); ?>" readonly />
+                    </div>
+                    <div class="input-box">
+                        <label>Email</label>
+                        <input type="email" value="<?php echo htmlspecialchars($user['email']); ?>" readonly />
+                    </div>
+                    <div class="input-box">
+                        <label>Contact No.</label>
+                        <input type="text" value="<?php echo htmlspecialchars($user['contact_number'] ?? ''); ?>" readonly />
+                    </div>
+                    <div class="input-box">
+                        <label>Address</label>
+                        <input type="text" value="<?php echo htmlspecialchars($user['address'] ?? ''); ?>" readonly />
+                    </div>
+                    <div class="input-box">
+                        <label>Barangay</label>
+                        <input type="text" value="<?php echo htmlspecialchars($user['barangay'] ?? ''); ?>" readonly />
+                    </div>
+                    <div class="input-box">
+                        <label>Gender</label>
+                        <input type="text" value="<?php echo htmlspecialchars($gender_display); ?>" readonly />
+                    </div>
+                    <div class="input-box">
+                        <label>Civil Status</label>
+                        <input type="text" value="<?php echo htmlspecialchars($civil_status_display); ?>" readonly />
+                    </div>
+                    <div class="input-box">
+                        <label>Registration Date</label>
+                        <input type="text" value="<?php echo isset($user['created_at']) ? date('M d, Y', strtotime($user['created_at'])) : ''; ?>" readonly />
+                    </div>
+                    <div class="input-box">
+                        <label>User Type</label>
+                        <input type="text" value="<?php echo htmlspecialchars($user['user_type'] ?? ''); ?>" readonly />
+                    </div>
+                </form>
             </div>
             <div class="password-change-box">
                 <h2>Change Password</h2>
