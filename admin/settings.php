@@ -115,9 +115,20 @@ if (isset($db) && !$db->connect_error) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
+    <!-- Design System & Components CSS -->
+    <link rel="stylesheet" href="../assets/css/design-system.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../assets/css/admin.css?v=20260212j">
 </head>
 <body>
+    <!-- Sidebar Toggle Button (Floating) -->
+    <div class="sidebar-toggle-wrapper">
+        <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+    </div>
     <header class="nav" id="navbar">
         <!-- Navbar menu icon - shows when sidebar is hidden -->
         <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
@@ -160,8 +171,8 @@ if (isset($db) && !$db->connect_error) {
             </div>
         </div>
         <div class="nav-divider"></div>
-        <div class="ac-723b1a7b">
-            <a href="/admin/logout.php" class="ac-bb30b003">
+        <div class="nav-action-footer">
+            <a href="/admin/logout.php" class="btn-logout nav-logout">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                     <polyline points="16 17 21 12 16 7"></polyline>
@@ -300,6 +311,7 @@ if (isset($db) && !$db->connect_error) {
         </div>
     </footer>
     <script src="../assets/js/admin.js?v=20260212j"></script>
+    <script src="../assets/js/component-utilities.js"></script>
 </body>
 </html>
 
