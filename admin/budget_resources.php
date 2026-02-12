@@ -161,7 +161,7 @@ $db->close();
             <form id="milestoneForm" class="inline-form">
                 <input id="milestoneName" type="text" placeholder="Source name (e.g., National Grant)" required>
                 <input id="milestoneAlloc" type="number" min="0" step="0.01" placeholder="Amount ₱" required>
-                <button type="submit" id="addMilestone">Add Source</button>
+                <button type="button" id="addMilestone">Add Source</button>
             </form>
             <div class="table-wrap">
                 <table id="milestonesTable" class="table">
@@ -188,7 +188,7 @@ $db->close();
                 </select>
                 <input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount ₱" required>
                 <input id="expenseDesc" type="text" placeholder="Description (optional)">
-                <button type="submit" id="addExpense">Add Expense</button>
+                <button type="button" id="addExpense">Add Expense</button>
             </form>
             <div class="table-wrap">
                 <table id="expensesTable" class="table">
@@ -491,6 +491,397 @@ $db->close();
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script>
+    (function () {
+        const path = (window.location.pathname || '').replace(/\\/g, '/');
+        if (!path.endsWith('/admin/budget_resources.php')) return;
+
+        const KEY = 'lgu_budget_module_v1';
+        let booted = false;
+
+        function byId(id) { return document.getElementById(id); }
+
+        function currency(value) {
+            const num = Number(value || 0);
+            return 'PHP ' + num.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        }
+
+        function uid(prefix) {
+            return prefix + Math.random().toString(36).slice(2, 10);
+        }
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(KEY);
+                if (!raw) return { globalBudget: 0, milestones: [], expenses: [] };
+                const parsed = JSON.parse(raw);
+                return {
+                    globalBudget: Number(parsed.globalBudget || 0),
+                    milestones: Array.isArray(parsed.milestones) ? parsed.milestones : [],
+                    expenses: Array.isArray(parsed.expenses) ? parsed.expenses : []
+                };
+            } catch (e) {
+                console.warn('Budget state is corrupted; resetting storage.', e);
+                localStorage.removeItem(KEY);
+                return { globalBudget: 0, milestones: [], expenses: [] };
+            }
+        }
+
+        function saveState(state) {
+            localStorage.setItem(KEY, JSON.stringify(state));
+        }
+
+        function getSpentForMilestone(state, milestoneId) {
+            return state.expenses
+                .filter((exp) => exp.milestoneId === milestoneId)
+                .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+        }
+
+        function renderMilestones(state) {
+            const tbody = document.querySelector('#milestonesTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            state.milestones.forEach((ms) => {
+                const spent = getSpentForMilestone(state, ms.id);
+                const allocated = Number(ms.allocated || 0);
+                const remaining = Math.max(0, allocated - spent);
+                const consumed = allocated ? Math.round((spent / allocated) * 100) : 0;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = [
+                    '<td>' + String(ms.name || '') + '</td>',
+                    '<td><input class="allocInput" data-id="' + ms.id + '" type="number" min="0" step="0.01" value="' + allocated + '"></td>',
+                    '<td>' + currency(spent) + '</td>',
+                    '<td>' + currency(remaining) + '</td>',
+                    '<td>' + consumed + '%</td>',
+                    '<td><button class="btn-small btn-danger btnDeleteSource" type="button" data-id="' + ms.id + '">Delete</button></td>'
+                ].join('');
+                tbody.appendChild(tr);
+            });
+
+            tbody.querySelectorAll('.allocInput').forEach((input) => {
+                input.addEventListener('change', function () {
+                    const id = this.getAttribute('data-id');
+                    const value = Math.max(0, Number(this.value || 0));
+                    const next = loadState();
+                    const item = next.milestones.find((m) => m.id === id);
+                    if (!item) return;
+                    item.allocated = value;
+                    saveState(next);
+                    renderAll(next);
+                });
+            });
+
+            tbody.querySelectorAll('.btnDeleteSource').forEach((btn) => {
+                btn.addEventListener('click', function () {
+                    const id = this.getAttribute('data-id');
+                    const next = loadState();
+                    next.milestones = next.milestones.filter((m) => m.id !== id);
+                    next.expenses = next.expenses.filter((e) => e.milestoneId !== id);
+                    saveState(next);
+                    renderAll(next);
+                });
+            });
+        }
+
+        function renderExpenses(state) {
+            const tbody = document.querySelector('#expensesTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            state.expenses.slice().reverse().forEach((exp) => {
+                const ms = state.milestones.find((m) => m.id === exp.milestoneId);
+                const tr = document.createElement('tr');
+                tr.innerHTML = [
+                    '<td>' + new Date(exp.date || Date.now()).toLocaleString() + '</td>',
+                    '<td>' + (ms ? ms.name : '(source removed)') + '</td>',
+                    '<td>' + String(exp.description || '') + '</td>',
+                    '<td>' + currency(exp.amount) + '</td>',
+                    '<td><button class="btn-small btn-danger btnDeleteExpense" type="button" data-id="' + exp.id + '">Delete</button></td>'
+                ].join('');
+                tbody.appendChild(tr);
+            });
+
+            tbody.querySelectorAll('.btnDeleteExpense').forEach((btn) => {
+                btn.addEventListener('click', function () {
+                    const id = this.getAttribute('data-id');
+                    const next = loadState();
+                    next.expenses = next.expenses.filter((e) => e.id !== id);
+                    saveState(next);
+                    renderAll(next);
+                });
+            });
+        }
+
+        function populateSourceSelect(state) {
+            const select = byId('expenseMilestone');
+            if (!select) return;
+            select.innerHTML = '<option value="">Select source</option>';
+            state.milestones.forEach((m) => {
+                const option = document.createElement('option');
+                option.value = m.id;
+                option.textContent = m.name;
+                select.appendChild(option);
+            });
+        }
+
+        function renderSummary(state) {
+            const allocated = state.milestones.reduce((sum, m) => sum + Number(m.allocated || 0), 0);
+            const spent = state.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            const remaining = Math.max(0, Number(state.globalBudget || 0) - spent);
+            const base = Number(state.globalBudget || 0) || allocated || 0;
+            const consumption = base ? Math.round((spent / base) * 100) : 0;
+
+            const allocatedEl = byId('summaryAllocated');
+            const spentEl = byId('summarySpent');
+            const remainingEl = byId('summaryRemaining');
+            const consumptionEl = byId('summaryConsumption');
+            if (allocatedEl) allocatedEl.textContent = currency(allocated);
+            if (spentEl) spentEl.textContent = currency(spent);
+            if (remainingEl) remainingEl.textContent = currency(remaining);
+            if (consumptionEl) consumptionEl.textContent = consumption + '%';
+        }
+
+        function drawChart(state) {
+            const canvas = byId('consumptionChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            const dpr = window.devicePixelRatio || 1;
+            const cssWidth = Math.max(320, canvas.clientWidth || 800);
+            const cssHeight = Math.max(220, canvas.clientHeight || 280);
+            canvas.width = Math.floor(cssWidth * dpr);
+            canvas.height = Math.floor(cssHeight * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+            const padding = 18;
+            const leftLabel = 180;
+            const rightLabel = 110;
+            const chartX = padding + leftLabel;
+            const chartY = padding;
+            const chartW = Math.max(120, cssWidth - leftLabel - rightLabel - padding * 2);
+            const chartH = cssHeight - padding * 2;
+            const ms = state.milestones || [];
+
+            if (!ms.length) {
+                ctx.fillStyle = '#6b7280';
+                ctx.font = '14px Poppins, sans-serif';
+                ctx.fillText('Add source funds to generate the consumption graph.', padding, padding + 20);
+                return;
+            }
+
+            const maxVal = Math.max(1, ...ms.map((m) => Number(m.allocated || 0)));
+            const gap = 10;
+            const barH = Math.max(16, Math.floor((chartH - gap * (ms.length - 1)) / ms.length));
+
+            ms.forEach((m, i) => {
+                const y = chartY + i * (barH + gap);
+                const allocated = Number(m.allocated || 0);
+                const spent = getSpentForMilestone(state, m.id);
+                const allocW = (allocated / maxVal) * chartW;
+                const spentW = allocated > 0 ? Math.min(allocW, (spent / allocated) * allocW) : 0;
+
+                ctx.fillStyle = '#ecf2ff';
+                ctx.fillRect(chartX, y, chartW, barH);
+                ctx.fillStyle = '#3b82f6';
+                ctx.fillRect(chartX, y, allocW, barH);
+                ctx.fillStyle = '#16a34a';
+                ctx.fillRect(chartX, y, spentW, barH);
+
+                ctx.fillStyle = '#1f3f65';
+                ctx.font = '600 12px Poppins, sans-serif';
+                ctx.fillText(String(m.name || ''), padding, y + barH / 2 + 4);
+
+                ctx.fillStyle = '#0f172a';
+                ctx.font = '500 11px Poppins, sans-serif';
+                ctx.fillText(currency(allocated), chartX + 6, y + barH / 2 + 4);
+
+                ctx.fillStyle = '#0f766e';
+                ctx.fillText(currency(spent), chartX + chartW + 10, y + barH / 2 + 4);
+            });
+        }
+
+        function renderAll(stateArg) {
+            const state = stateArg || loadState();
+            const globalBudget = byId('globalBudget');
+            if (globalBudget) globalBudget.value = state.globalBudget || '';
+            renderMilestones(state);
+            renderExpenses(state);
+            populateSourceSelect(state);
+            renderSummary(state);
+            drawChart(state);
+        }
+
+        function addSource() {
+            const nameEl = byId('milestoneName');
+            const allocEl = byId('milestoneAlloc');
+            if (!nameEl || !allocEl) return;
+            const name = nameEl.value.trim();
+            const allocated = Math.max(0, Number(allocEl.value || 0));
+            if (!name) return;
+            const state = loadState();
+            state.milestones.push({ id: uid('m'), name: name, allocated: allocated });
+            saveState(state);
+            nameEl.value = '';
+            allocEl.value = '';
+            renderAll(state);
+        }
+
+        function addExpenseEntry() {
+            const sourceEl = byId('expenseMilestone');
+            const amountEl = byId('expenseAmount');
+            const descEl = byId('expenseDesc');
+            if (!sourceEl || !amountEl || !descEl) return;
+            const milestoneId = sourceEl.value;
+            const amount = Math.max(0, Number(amountEl.value || 0));
+            const description = descEl.value.trim();
+            if (!milestoneId || !amount) return;
+            const state = loadState();
+            state.expenses.push({
+                id: uid('e'),
+                milestoneId: milestoneId,
+                amount: amount,
+                description: description,
+                date: new Date().toISOString()
+            });
+            saveState(state);
+            sourceEl.value = '';
+            amountEl.value = '';
+            descEl.value = '';
+            renderAll(state);
+        }
+
+        function exportCsv() {
+            const state = loadState();
+            const rows = [];
+            rows.push(['type', 'source_id', 'source_name', 'allocated', 'expense_id', 'expense_amount', 'description', 'date'].join(','));
+            state.milestones.forEach((m) => {
+                const expenses = state.expenses.filter((e) => e.milestoneId === m.id);
+                if (!expenses.length) {
+                    rows.push(['source', m.id, '"' + String(m.name).replace(/"/g, '""') + '"', m.allocated, '', '', '', ''].join(','));
+                    return;
+                }
+                expenses.forEach((e) => {
+                    rows.push(['expense', m.id, '"' + String(m.name).replace(/"/g, '""') + '"', m.allocated, e.id, e.amount, '"' + String(e.description || '').replace(/"/g, '""') + '"', e.date].join(','));
+                });
+            });
+            const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const href = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = href;
+            a.download = 'budget-resources-' + new Date().toISOString().slice(0, 10) + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(href);
+        }
+
+        function importFromProject() {
+            const urlCandidates = [];
+            if (typeof window.getApiUrl === 'function') {
+                urlCandidates.push(window.getApiUrl('admin/budget_resources.php?action=load_projects'));
+            }
+            urlCandidates.push('budget_resources.php?action=load_projects');
+            urlCandidates.push('/admin/budget_resources.php?action=load_projects');
+
+            const tryFetch = function (idx) {
+                if (idx >= urlCandidates.length) {
+                    return Promise.reject(new Error('Unable to reach project API.'));
+                }
+                return fetch(urlCandidates[idx], { credentials: 'same-origin' })
+                    .then((res) => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .catch(() => tryFetch(idx + 1));
+            };
+
+            tryFetch(0)
+                .then((projects) => {
+                    if (!Array.isArray(projects) || !projects.length) {
+                        alert('No projects available to import.');
+                        return;
+                    }
+                    const project = projects[0];
+                    const state = loadState();
+                    state.globalBudget = Number(project.budget || 0);
+                    saveState(state);
+                    renderAll(state);
+                    alert('Imported budget from project: ' + (project.name || project.code || 'Project'));
+                })
+                .catch((error) => {
+                    console.error(error);
+                    alert('Failed to import budget from project list.');
+                });
+        }
+
+        function init() {
+            if (booted) return;
+            booted = true;
+
+            const required = ['milestoneForm', 'expenseForm', 'milestonesTable', 'expensesTable', 'consumptionChart'];
+            for (let i = 0; i < required.length; i++) {
+                if (!byId(required[i])) {
+                    console.warn('Budget module missing element:', required[i]);
+                    return;
+                }
+            }
+
+            const milestoneForm = byId('milestoneForm');
+            const expenseForm = byId('expenseForm');
+            const addMilestone = byId('addMilestone');
+            const addExpense = byId('addExpense');
+            const globalBudget = byId('globalBudget');
+            const btnExport = byId('btnExportBudget');
+            const btnImport = byId('btnImport');
+
+            if (milestoneForm) {
+                milestoneForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    addSource();
+                }, true);
+            }
+            if (expenseForm) {
+                expenseForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    addExpenseEntry();
+                }, true);
+            }
+
+            if (addMilestone) addMilestone.addEventListener('click', addSource);
+            if (addExpense) addExpense.addEventListener('click', addExpenseEntry);
+
+            if (globalBudget) {
+                globalBudget.addEventListener('change', function () {
+                    const state = loadState();
+                    state.globalBudget = Math.max(0, Number(this.value || 0));
+                    saveState(state);
+                    renderAll(state);
+                });
+            }
+
+            if (btnExport) btnExport.addEventListener('click', exportCsv);
+            if (btnImport) btnImport.addEventListener('click', importFromProject);
+
+            window.addEventListener('resize', function () {
+                drawChart(loadState());
+            });
+
+            renderAll(loadState());
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+    </script>
 </body>
 </html>
 
