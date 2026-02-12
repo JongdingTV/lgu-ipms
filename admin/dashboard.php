@@ -47,7 +47,6 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/dashboard-redesign-enhanced.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
-    <link rel="stylesheet" href="../assets/css/footer-shared.css">
     </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -278,12 +277,10 @@ $db->close();
         </div>
     </section>
 
-    <?php include('../includes/footer.php'); ?>
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <!-- Component Utilities: Dropdowns, Modals, Toast, Sidebar Toggle -->
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
-    <script src="../assets/js/smart-footer.js"></script>
 </body>
 </html>
 

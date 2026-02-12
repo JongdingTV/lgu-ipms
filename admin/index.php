@@ -233,7 +233,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
     <link rel="stylesheet" href="../assets/css/shared/admin-auth.css">
-    <link rel="stylesheet" href="../assets/css/footer-shared.css">
     <style>
         :root {
             --page-navy: #0f2a4a;
@@ -593,10 +592,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 </div>
 
-<?php include('../includes/footer.php'); ?>
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
-    <script src="../assets/js/smart-footer.js"></script>
 </body>
 
 
