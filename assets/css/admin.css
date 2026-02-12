@@ -5675,3 +5675,115 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer {
         width: 100% !important;
     }
 }
+
+/* Visual refresh for authenticated admin pages */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) {
+    background:
+        radial-gradient(1200px 500px at 20% -10%, rgba(59, 130, 246, 0.14), transparent 60%),
+        radial-gradient(900px 420px at 100% 0%, rgba(14, 116, 144, 0.1), transparent 55%),
+        linear-gradient(180deg, #f3f7fd 0%, #edf3fa 45%, #eaf0f8 100%) !important;
+    color: #12253f;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav {
+    background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%) !important;
+    border-right: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-logo {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .logo-text {
+    color: #0f2746;
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .logo-subtitle {
+    color: #64748b;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links a,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item {
+    color: #334155;
+    border: 1px solid transparent;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links a:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item:hover {
+    background: #eef5ff;
+    color: #1e3a8a;
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links a.active,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item.active {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff !important;
+    box-shadow: 0 10px 18px rgba(37, 99, 235, 0.25);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
+    padding-top: 26px;
+    color: #12253f;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header h1 {
+    color: #0f2746;
+    letter-spacing: -0.02em;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header p {
+    color: #4b5d73;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .metric-card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .chart-box,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .recent-projects,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .quick-stats {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .metric-card:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .chart-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 34px rgba(15, 23, 42, 0.14);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) textarea {
+    background: #ffffff;
+    border: 1px solid #cdd8e6;
+    color: #1e293b;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) input:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) select:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-primary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) button[type="submit"] {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    border: none;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-primary:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) button[type="submit"]:hover {
+    box-shadow: 0 12px 22px rgba(37, 99, 235, 0.26);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003 {
+    color: #b91c1c;
+    border: 1px solid rgba(185, 28, 28, 0.12);
+    background: rgba(255, 255, 255, 0.72);
+}
