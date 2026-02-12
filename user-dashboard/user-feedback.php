@@ -180,9 +180,7 @@ $db->close();
             <a href="user-settings.php"><img src="settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </nav>
         <div class="sidebar-logout-container">
-            <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
-        </div>
-    </aside>
+
         <!-- Profile section, centered -->
         <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">
             <?php
