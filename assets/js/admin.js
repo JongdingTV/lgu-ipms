@@ -3051,6 +3051,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (typeof window.showProjectNotice === 'function') {
                 const popupType = /successfully|added|updated/i.test(text) ? 'success' : 'error';
                 window.showProjectNotice(text, popupType);
+            } else if (typeof window.showConfirmation === 'function') {
+                const isSuccess = /successfully|added|updated/i.test(text);
+                showConfirmation({
+                    title: isSuccess ? 'Success' : 'Notice',
+                    message: text,
+                    icon: isSuccess ? 'Success' : 'Info',
+                    confirmText: 'OK',
+                    cancelText: 'Close',
+                    onConfirm: function () {},
+                    onCancel: function () {}
+                });
             } else {
                 window.alert(text);
             }

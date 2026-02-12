@@ -145,7 +145,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $executed = $stmt->execute();
             if ($executed) {
                 $savedId = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : (int)$db->insert_id;
-                respond_project_registration(true, 'Project saved successfully', ['project_id' => $savedId]);
+                $isUpdate = isset($_POST['id']) && !empty($_POST['id']);
+                $okMessage = $isUpdate ? 'Project has been updated successfully.' : 'Project has been added successfully.';
+                respond_project_registration(true, $okMessage, ['project_id' => $savedId]);
             } else {
                 $debugError = build_db_debug_error($db, 'Failed to save project', $stmt->error);
                 error_log('[project_registration] ' . $debugError);
@@ -546,7 +548,19 @@ $db->close();
 
         function showProjectNotice(message, type) {
             if (!noticeModal || !noticeCard || !noticeText || !noticeTitle || !noticeIcon) {
-                alert(message);
+                if (typeof window.showConfirmation === 'function') {
+                    showConfirmation({
+                        title: type === 'success' ? 'Success' : 'Notice',
+                        message: message || '',
+                        icon: type === 'success' ? 'Success' : 'Info',
+                        confirmText: 'OK',
+                        cancelText: 'Close',
+                        onConfirm: function () {},
+                        onCancel: function () {}
+                    });
+                } else {
+                    alert(message);
+                }
                 return;
             }
             noticeCard.classList.remove('success', 'error');
