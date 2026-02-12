@@ -389,7 +389,18 @@ $db->close();
         const countEl = document.getElementById('contractorsCount');
         const formMessage = document.getElementById('formMessage');
 
+        const assignmentModal = document.getElementById('assignmentModal');
+        const projectsViewModal = document.getElementById('projectsViewModal');
+        const assignmentTitle = document.getElementById('assignmentTitle');
+        const projectsListEl = document.getElementById('projectsList');
+        const projectsViewTitle = document.getElementById('projectsViewTitle');
+        const projectsViewList = document.getElementById('projectsViewList');
+        const assignContractorId = document.getElementById('assignContractorId');
+        const saveAssignmentsBtn = document.getElementById('saveAssignments');
+
         let contractorsCache = [];
+        let projectsCache = [];
+        let currentAssignedIds = [];
 
         function esc(v) {
             return String(v ?? '')
@@ -408,6 +419,14 @@ $db->close();
             return Array.from(new Set(list));
         }
 
+        function postApiCandidates() {
+            const list = ['registered_contractors.php', '/admin/registered_contractors.php'];
+            if (typeof window.getApiUrl === 'function') {
+                list.unshift(window.getApiUrl('admin/registered_contractors.php'));
+            }
+            return Array.from(new Set(list));
+        }
+
         async function fetchJsonWithFallback(query) {
             const urls = apiCandidates(query);
             for (const url of urls) {
@@ -419,6 +438,23 @@ $db->close();
                 } catch (_) {}
             }
             throw new Error('Unable to load data from API');
+        }
+
+        async function postJsonWithFallback(formBody) {
+            const urls = postApiCandidates();
+            for (const url of urls) {
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: formBody,
+                        credentials: 'same-origin'
+                    });
+                    if (!res.ok) continue;
+                    return await res.json();
+                } catch (_) {}
+            }
+            throw new Error('Unable to save data to API');
         }
 
         function renderContractors(rows) {
@@ -475,6 +511,120 @@ $db->close();
             }
         }
 
+        function setMessage(text, isError) {
+            if (!formMessage) return;
+            formMessage.style.display = 'block';
+            formMessage.style.color = isError ? '#c00' : '#166534';
+            formMessage.textContent = text;
+            setTimeout(() => { formMessage.style.display = 'none'; }, 3000);
+        }
+
+        function openAssignModal(contractorId, contractorName) {
+            if (!assignmentModal) return;
+            assignContractorId.value = contractorId;
+            assignmentTitle.textContent = `Assign "${contractorName}" to Projects`;
+            projectsListEl.innerHTML = '<p style="text-align:center; color:#6b7280;">Loading projects...</p>';
+            assignmentModal.style.display = 'flex';
+            loadProjectsForAssignment(contractorId);
+        }
+
+        function closeAssignModal() {
+            if (assignmentModal) assignmentModal.style.display = 'none';
+        }
+
+        function openProjectsModal(contractorId, contractorName) {
+            if (!projectsViewModal) return;
+            projectsViewTitle.textContent = `Projects Assigned to ${contractorName}`;
+            projectsViewList.innerHTML = '<p style="text-align:center; color:#6b7280;">Loading projects...</p>';
+            projectsViewModal.style.display = 'flex';
+
+            fetchJsonWithFallback(`action=get_assigned_projects&contractor_id=${encodeURIComponent(contractorId)}&_=${Date.now()}`)
+                .then((rows) => {
+                    const list = Array.isArray(rows) ? rows : [];
+                    if (!list.length) {
+                        projectsViewList.innerHTML = '<p style="text-align:center; color:#6b7280; padding:12px 0;">No Projects Assigned</p>';
+                        return;
+                    }
+                    projectsViewList.innerHTML = list.map((p) => `
+                        <div style="padding:12px 14px; margin:8px 0; background:#f0f9ff; border-left:4px solid #3b82f6; border-radius:8px;">
+                            <strong>${esc(p.code || '')}</strong> - ${esc(p.name || '')}
+                        </div>
+                    `).join('');
+                })
+                .catch(() => {
+                    projectsViewList.innerHTML = '<p style="color:#c00;">Failed to load assigned projects.</p>';
+                });
+        }
+
+        function closeProjectsModal() {
+            if (projectsViewModal) projectsViewModal.style.display = 'none';
+        }
+
+        async function loadProjectsForAssignment(contractorId) {
+            try {
+                const [assigned, allProjects] = await Promise.all([
+                    fetchJsonWithFallback(`action=get_assigned_projects&contractor_id=${encodeURIComponent(contractorId)}&_=${Date.now()}`),
+                    fetchJsonWithFallback(`action=load_projects&_=${Date.now()}`)
+                ]);
+                const assignedSet = new Set((Array.isArray(assigned) ? assigned : []).map((p) => String(p.id)));
+                currentAssignedIds = Array.from(assignedSet);
+                projectsCache = Array.isArray(allProjects) ? allProjects : [];
+
+                if (!projectsCache.length) {
+                    projectsListEl.innerHTML = '<p style="text-align:center; color:#6b7280;">No projects available.</p>';
+                    return;
+                }
+
+                projectsListEl.innerHTML = projectsCache.map((p) => {
+                    const pid = String(p.id);
+                    const checked = assignedSet.has(pid) ? 'checked' : '';
+                    return `
+                        <label style="display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid #dbe6f3; border-radius:8px; margin:8px 0; background:#fff;">
+                            <input type="checkbox" class="project-checkbox" value="${esc(pid)}" ${checked} style="margin-top:3px;">
+                            <span>
+                                <strong>${esc(p.code || '')}</strong> - ${esc(p.name || '')}
+                                <br><small style="color:#64748b;">${esc(p.type || 'N/A')} • ${esc(p.sector || 'N/A')}</small>
+                            </span>
+                        </label>
+                    `;
+                }).join('');
+            } catch (_) {
+                projectsListEl.innerHTML = '<p style="color:#c00;">Failed to load projects for assignment.</p>';
+            }
+        }
+
+        async function saveAssignmentsHandler() {
+            const contractorId = assignContractorId?.value;
+            if (!contractorId) return;
+            if (!saveAssignmentsBtn) return;
+
+            saveAssignmentsBtn.disabled = true;
+            saveAssignmentsBtn.textContent = 'Saving...';
+
+            try {
+                const checkedNow = Array.from(document.querySelectorAll('.project-checkbox:checked')).map((el) => String(el.value));
+                const prevSet = new Set(currentAssignedIds);
+                const nextSet = new Set(checkedNow);
+                const toAssign = checkedNow.filter((id) => !prevSet.has(id));
+                const toUnassign = currentAssignedIds.filter((id) => !nextSet.has(id));
+
+                for (const id of toAssign) {
+                    await postJsonWithFallback(`action=assign_contractor&contractor_id=${encodeURIComponent(contractorId)}&project_id=${encodeURIComponent(id)}`);
+                }
+                for (const id of toUnassign) {
+                    await postJsonWithFallback(`action=unassign_contractor&contractor_id=${encodeURIComponent(contractorId)}&project_id=${encodeURIComponent(id)}`);
+                }
+
+                closeAssignModal();
+                setMessage('Assignments updated successfully.', false);
+            } catch (e) {
+                setMessage(e.message || 'Failed to update assignments.', true);
+            } finally {
+                saveAssignmentsBtn.disabled = false;
+                saveAssignmentsBtn.textContent = 'Save Assignments';
+            }
+        }
+
         function applyFilters() {
             const q = (searchInput?.value || '').trim().toLowerCase();
             const s = (statusFilter?.value || '').trim();
@@ -496,8 +646,9 @@ $db->close();
                     fetchJsonWithFallback('action=load_projects&_=' + Date.now())
                 ]);
                 contractorsCache = Array.isArray(contractors) ? contractors : [];
+                projectsCache = Array.isArray(projects) ? projects : [];
                 renderContractors(contractorsCache);
-                renderProjects(Array.isArray(projects) ? projects : []);
+                renderProjects(projectsCache);
             } catch (err) {
                 if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#c00;">Failed to load contractors data.</td></tr>';
                 if (projectsTbody) projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#c00;">Failed to load projects data.</td></tr>';
@@ -511,6 +662,58 @@ $db->close();
 
         searchInput?.addEventListener('input', applyFilters);
         statusFilter?.addEventListener('change', applyFilters);
+        contractorsTbody?.addEventListener('click', async (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            const contractorId = btn.getAttribute('data-id');
+            const row = btn.closest('tr');
+            const contractorName = row ? row.querySelector('td:first-child')?.textContent.trim() : 'Contractor';
+            if (!contractorId) return;
+
+            if (btn.classList.contains('btn-view-projects')) {
+                openProjectsModal(contractorId, contractorName || 'Contractor');
+                return;
+            }
+            if (btn.classList.contains('btn-assign')) {
+                openAssignModal(contractorId, contractorName || 'Contractor');
+                return;
+            }
+            if (btn.classList.contains('btn-delete')) {
+                const proceed = typeof window.showConfirmation === 'function'
+                    ? await new Promise((resolve) => {
+                        window.showConfirmation({
+                            title: 'Delete Contractor',
+                            message: 'This contractor and related assignments will be permanently deleted.',
+                            itemName: contractorName,
+                            confirmText: 'Delete Permanently',
+                            cancelText: 'Cancel',
+                            onConfirm: () => resolve(true),
+                            onCancel: () => resolve(false)
+                        });
+                    })
+                    : window.confirm(`Delete ${contractorName}? This cannot be undone.`);
+                if (!proceed) return;
+
+                try {
+                    const result = await postJsonWithFallback(`action=delete_contractor&id=${encodeURIComponent(contractorId)}`);
+                    if (!result || result.success === false) throw new Error((result && result.message) || 'Delete failed');
+                    contractorsCache = contractorsCache.filter((c) => String(c.id) !== String(contractorId));
+                    applyFilters();
+                    setMessage('Contractor deleted successfully.', false);
+                } catch (err) {
+                    setMessage(err.message || 'Failed to delete contractor.', true);
+                }
+            }
+        });
+
+        saveAssignmentsBtn?.addEventListener('click', saveAssignmentsHandler);
+        assignmentModal?.addEventListener('click', (e) => { if (e.target === assignmentModal) closeAssignModal(); });
+        projectsViewModal?.addEventListener('click', (e) => { if (e.target === projectsViewModal) closeProjectsModal(); });
+
+        window.closeAssignModal = closeAssignModal;
+        window.closeProjectsModal = closeProjectsModal;
+        window.saveAssignmentsHandler = saveAssignmentsHandler;
+
         document.addEventListener('DOMContentLoaded', boot);
         if (document.readyState !== 'loading') boot();
     })();
