@@ -89,10 +89,22 @@ $totalInputs = count($feedbacks);
 $criticalInputs = 0;
 $highInputs = 0;
 $pendingInputs = 0;
+$reviewedInputs = 0;
+$addressedInputs = 0;
+$oldestPendingDays = 0;
 foreach ($feedbacks as $fb) {
     if (isset($fb['category']) && strtolower($fb['category']) === 'critical') $criticalInputs++;
     if (isset($fb['category']) && strtolower($fb['category']) === 'high') $highInputs++;
     if (isset($fb['status']) && strtolower($fb['status']) === 'pending') $pendingInputs++;
+    if (isset($fb['status']) && strtolower($fb['status']) === 'reviewed') $reviewedInputs++;
+    if (isset($fb['status']) && strtolower($fb['status']) === 'addressed') $addressedInputs++;
+    if (isset($fb['status']) && strtolower($fb['status']) === 'pending' && !empty($fb['date_submitted'])) {
+        $ts = strtotime($fb['date_submitted']);
+        if ($ts) {
+            $age = (int) floor((time() - $ts) / 86400);
+            if ($age > $oldestPendingDays) $oldestPendingDays = $age;
+        }
+    }
 }
 
 $db->close();
@@ -210,10 +222,56 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                     <label for="fbSearch">Search by Control Number or Name</label>
                     <input id="fbSearch" type="search" placeholder="e.g., CTL-001 or John Doe">
                 </div>
+                <div class="search-group">
+                    <label for="fbStatusFilter">Status</label>
+                    <select id="fbStatusFilter">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="reviewed">Reviewed</option>
+                        <option value="addressed">Addressed</option>
+                    </select>
+                </div>
+                <div class="search-group">
+                    <label for="fbCategoryFilter">Category</label>
+                    <select id="fbCategoryFilter">
+                        <option value="">All Categories</option>
+                        <?php
+                        $catSeen = [];
+                        foreach ($feedbacks as $fb) {
+                            $category = trim((string)($fb['category'] ?? ''));
+                            if ($category === '') continue;
+                            $key = strtolower($category);
+                            if (isset($catSeen[$key])) continue;
+                            $catSeen[$key] = true;
+                            echo '<option value="' . htmlspecialchars($key) . '">' . htmlspecialchars($category) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
                 <div class="feedback-actions">
                     <button id="clearSearch" class="secondary">Clear</button>
                     <button id="exportData">Export CSV</button>
+                    <span id="fbVisibleCount" class="feedback-visible-count">Showing 0 of 0</span>
                 </div>
+            </div>
+
+            <div class="prioritization-insights">
+                <article class="priority-kpi pending">
+                    <span>Pending Queue</span>
+                    <strong><?= (int)$pendingInputs ?></strong>
+                </article>
+                <article class="priority-kpi reviewed">
+                    <span>Reviewed</span>
+                    <strong><?= (int)$reviewedInputs ?></strong>
+                </article>
+                <article class="priority-kpi addressed">
+                    <span>Addressed</span>
+                    <strong><?= (int)$addressedInputs ?></strong>
+                </article>
+                <article class="priority-kpi aging">
+                    <span>Oldest Pending</span>
+                    <strong><?= (int)$oldestPendingDays ?> day<?= ((int)$oldestPendingDays === 1 ? '' : 's') ?></strong>
+                </article>
             </div>
 
             <!-- Feedback Table -->
@@ -230,13 +288,14 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 <th>Category</th>
                                 <th>Location</th>
                                 <th>Status</th>
+                                <th>Age</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                         <?php if (empty($feedbacks)): ?>
                             <tr>
-                                <td colspan="8">
+                                <td colspan="9">
                                     <div class="no-results">
                                         <div class="no-results-icon">📋</div>
                                         <div class="no-results-title">No Feedback Found</div>
@@ -246,8 +305,27 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                             </tr>
                         <?php else: ?>
                             <?php $count = 1; foreach ($feedbacks as $fb): ?>
-                                <?php $fb_lc = array_change_key_case($fb, CASE_LOWER); ?>
-                                <tr class="<?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ? 'pending-row' : '' ?>">
+                                <?php
+                                $fb_lc = array_change_key_case($fb, CASE_LOWER);
+                                $rowStatus = strtolower(trim((string)($fb_lc['status'] ?? '')));
+                                $rowCategory = strtolower(trim((string)($fb_lc['category'] ?? '')));
+                                $rowDays = null;
+                                if (!empty($fb_lc['date_submitted'])) {
+                                    $rowTs = strtotime((string)$fb_lc['date_submitted']);
+                                    if ($rowTs) {
+                                        $rowDays = max(0, (int) floor((time() - $rowTs) / 86400));
+                                    }
+                                }
+                                $ageClass = 'fresh';
+                                if ($rowDays !== null && $rowDays >= 14) {
+                                    $ageClass = 'critical';
+                                } elseif ($rowDays !== null && $rowDays >= 7) {
+                                    $ageClass = 'warning';
+                                }
+                                ?>
+                                <tr class="<?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ? 'pending-row' : '' ?>"
+                                    data-status="<?= htmlspecialchars($rowStatus) ?>"
+                                    data-category="<?= htmlspecialchars($rowCategory) ?>">
                                     <td><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></td>
                                     <td><?= isset($fb_lc['date_submitted']) ? htmlspecialchars($fb_lc['date_submitted']) : '-' ?></td>
                                     <td><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></td>
@@ -260,6 +338,14 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                         </span>
                                     </td>
                                     <td>
+                                        <?php if ($rowDays !== null): ?>
+                                            <span class="age-badge <?= $ageClass ?>"><?= (int)$rowDays ?> day<?= ((int)$rowDays === 1 ? '' : 's') ?></span>
+                                        <?php else: ?>
+                                            <span class="age-badge fresh">Today</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="copy-btn" data-copy-control="CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?>">Copy #</button>
                                         <button type="button" class="edit-btn" data-edit-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Edit</button>
                                         <button type="button" class="view-btn" data-view-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Details</button>
                                     </td>
@@ -454,6 +540,47 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
         window.openEditModal = openModalById;
         window.closeEditModal = closeModalById;
 
+        const searchInput = document.getElementById('fbSearch');
+        const statusFilter = document.getElementById('fbStatusFilter');
+        const categoryFilter = document.getElementById('fbCategoryFilter');
+        const visibleCount = document.getElementById('fbVisibleCount');
+        const rows = Array.from(document.querySelectorAll('#inputsTable tbody tr')).filter((row) => !row.querySelector('.no-results'));
+
+        function showTinyToast(title, text, isError) {
+            const toast = document.createElement('div');
+            toast.className = 'prioritization-toast ' + (isError ? 'is-error' : 'is-success');
+            toast.innerHTML = '<strong>' + title + '</strong><span>' + text + '</span>';
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 220);
+            }, 2000);
+        }
+
+        function applyFeedbackFilters() {
+            const query = (searchInput?.value || '').trim().toLowerCase();
+            const status = (statusFilter?.value || '').trim().toLowerCase();
+            const category = (categoryFilter?.value || '').trim().toLowerCase();
+            let shown = 0;
+
+            rows.forEach((row) => {
+                const haystack = row.textContent.toLowerCase();
+                const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
+                const rowCategory = (row.getAttribute('data-category') || '').toLowerCase();
+                const matchQuery = !query || haystack.includes(query);
+                const matchStatus = !status || rowStatus === status;
+                const matchCategory = !category || rowCategory === category;
+                const visible = matchQuery && matchStatus && matchCategory;
+                row.style.display = visible ? '' : 'none';
+                if (visible) shown++;
+            });
+
+            if (visibleCount) {
+                visibleCount.textContent = 'Showing ' + shown + ' of ' + rows.length;
+            }
+        }
+
         const statusFlash = <?php echo json_encode($status_flash); ?>;
         if (statusFlash) {
             const toast = document.createElement('div');
@@ -474,6 +601,37 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
             cleanUrl.searchParams.delete('status');
             history.replaceState({}, '', cleanUrl.toString());
         }
+
+        document.addEventListener('click', function (e) {
+            const copyBtn = e.target.closest('[data-copy-control]');
+            if (!copyBtn) return;
+            const controlNumber = copyBtn.getAttribute('data-copy-control');
+            if (!controlNumber) return;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(controlNumber).then(() => {
+                    showTinyToast('Control Number Copied', controlNumber, false);
+                }).catch(() => {
+                    showTinyToast('Copy Failed', 'Please copy manually.', true);
+                });
+            } else {
+                showTinyToast('Copy Not Supported', 'Your browser does not support clipboard.', true);
+            }
+        });
+
+        searchInput?.addEventListener('input', applyFeedbackFilters);
+        statusFilter?.addEventListener('change', applyFeedbackFilters);
+        categoryFilter?.addEventListener('change', applyFeedbackFilters);
+
+        const clearBtn = document.getElementById('clearSearch');
+        clearBtn?.addEventListener('click', function () {
+            if (searchInput) searchInput.value = '';
+            if (statusFilter) statusFilter.value = '';
+            if (categoryFilter) categoryFilter.value = '';
+            applyFeedbackFilters();
+        });
+
+        applyFeedbackFilters();
     })();
     </script>
 </body>
