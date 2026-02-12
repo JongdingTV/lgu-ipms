@@ -678,6 +678,55 @@ $db->close();
             display: block;
         }
 
+        .br-toast-stack {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: min(92vw, 360px);
+        }
+
+        .br-toast {
+            border-radius: 12px;
+            border: 1px solid #cfddee;
+            background: #fff;
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+            padding: 10px 12px;
+            animation: brToastIn 0.2s ease;
+        }
+
+        .br-toast-title {
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: #1f3f65;
+            margin-bottom: 2px;
+        }
+
+        .br-toast-message {
+            font-size: 0.78rem;
+            color: #4e6784;
+        }
+
+        .br-toast.success {
+            border-left: 4px solid #16a34a;
+        }
+
+        .br-toast.error {
+            border-left: 4px solid #dc2626;
+        }
+
+        .br-toast.info {
+            border-left: 4px solid #2563eb;
+        }
+
+        @keyframes brToastIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         @media (max-width: 1080px) {
             .main-content .summary {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -739,6 +788,30 @@ $db->close();
         const API_BASE = 'budget_resources.php';
 
         function byId(id) { return document.getElementById(id); }
+
+        function notify(title, message, type) {
+            const kind = type || 'info';
+            let stack = document.querySelector('.br-toast-stack');
+            if (!stack) {
+                stack = document.createElement('div');
+                stack.className = 'br-toast-stack';
+                document.body.appendChild(stack);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'br-toast ' + kind;
+            toast.innerHTML = '<div class="br-toast-title"></div><div class="br-toast-message"></div>';
+            toast.querySelector('.br-toast-title').textContent = title;
+            toast.querySelector('.br-toast-message').textContent = message;
+            stack.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(6px)';
+                toast.style.transition = 'all 0.2s ease';
+                setTimeout(() => toast.remove(), 220);
+            }, 2600);
+        }
 
         function switchPanel(panelKey) {
             const tabs = document.querySelectorAll('.br-tab[data-panel]');
@@ -852,7 +925,7 @@ $db->close();
                         await renderAllFromServer();
                     } catch (err) {
                         console.error(err);
-                        alert('Failed to update source allocation.');
+                        notify('Update Failed', 'Failed to update source allocation.', 'error');
                     }
                 });
             });
@@ -865,7 +938,7 @@ $db->close();
                         await renderAllFromServer();
                     } catch (err) {
                         console.error(err);
-                        alert('Failed to delete source.');
+                        notify('Delete Failed', 'Failed to delete source.', 'error');
                     }
                 });
             });
@@ -897,7 +970,7 @@ $db->close();
                         await renderAllFromServer();
                     } catch (err) {
                         console.error(err);
-                        alert('Failed to delete expense.');
+                        notify('Delete Failed', 'Failed to delete expense.', 'error');
                     }
                 });
             });
@@ -1023,7 +1096,7 @@ $db->close();
                 await renderAllFromServer();
             } catch (err) {
                 console.error(err);
-                alert('Failed to add source fund.');
+                notify('Add Failed', 'Failed to add source fund.', 'error');
             }
         }
 
@@ -1048,7 +1121,7 @@ $db->close();
                 await renderAllFromServer();
             } catch (err) {
                 console.error(err);
-                alert('Failed to add expense.');
+                notify('Add Failed', 'Failed to add expense.', 'error');
             }
         }
 
@@ -1100,19 +1173,19 @@ $db->close();
             tryFetch(0)
                 .then((projects) => {
                     if (!Array.isArray(projects) || !projects.length) {
-                        alert('No projects available to import.');
+                        notify('No Projects', 'No projects available to import.', 'info');
                         return;
                     }
                     const project = projects[0];
                     return apiPost('set_global_budget', { budget: Number(project.budget || 0) })
                         .then(() => renderAllFromServer())
                         .then(() => {
-                            alert('Imported budget from project: ' + (project.name || project.code || 'Project'));
+                            notify('Import Success', 'Imported budget from project: ' + (project.name || project.code || 'Project'), 'success');
                         });
                 })
                 .catch((error) => {
                     console.error(error);
-                    alert('Failed to import budget from project list.');
+                    notify('Import Failed', 'Failed to import budget from project list.', 'error');
                 });
         }
 
@@ -1161,7 +1234,7 @@ $db->close();
                         await renderAllFromServer();
                     } catch (err) {
                         console.error(err);
-                        alert('Failed to save global budget.');
+                        notify('Save Failed', 'Failed to save global budget.', 'error');
                     }
                 });
             }
@@ -1176,7 +1249,7 @@ $db->close();
             initSectionTabs();
             renderAllFromServer().catch((err) => {
                 console.error(err);
-                alert('Failed to load budget data from database.');
+                notify('Load Failed', 'Failed to load budget data from database.', 'error');
             });
         }
 
