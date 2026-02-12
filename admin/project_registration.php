@@ -119,7 +119,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Project saved successfully']);
+            $savedId = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : (int)$db->insert_id;
+            echo json_encode(['success' => true, 'message' => 'Project saved successfully', 'project_id' => $savedId]);
         } else {
             $debugError = build_db_debug_error($db, 'Failed to save project', $stmt->error);
             error_log('[project_registration] ' . $debugError);
