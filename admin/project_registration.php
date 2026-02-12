@@ -118,13 +118,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
         
-        if ($stmt->execute()) {
-            $savedId = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : (int)$db->insert_id;
-            echo json_encode(['success' => true, 'message' => 'Project saved successfully', 'project_id' => $savedId]);
-        } else {
-            $debugError = build_db_debug_error($db, 'Failed to save project', $stmt->error);
-            error_log('[project_registration] ' . $debugError);
-            echo json_encode(['success' => false, 'message' => $debugError]);
+        try {
+            $executed = $stmt->execute();
+            if ($executed) {
+                $savedId = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : (int)$db->insert_id;
+                echo json_encode(['success' => true, 'message' => 'Project saved successfully', 'project_id' => $savedId]);
+            } else {
+                $debugError = build_db_debug_error($db, 'Failed to save project', $stmt->error);
+                error_log('[project_registration] ' . $debugError);
+                echo json_encode(['success' => false, 'message' => $debugError]);
+            }
+        } catch (mysqli_sql_exception $e) {
+            if ((int)$e->getCode() === 1062) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Project code already exists. Please use a different Project Code.'
+                ]);
+            } else {
+                $debugError = build_db_debug_error($db, 'Failed to save project (exception)', $e->getMessage());
+                error_log('[project_registration] ' . $debugError);
+                echo json_encode(['success' => false, 'message' => $debugError]);
+            }
         }
         if ($stmt) $stmt->close();
         exit;
