@@ -1,0 +1,268 @@
+'use strict';
+
+(function () {
+  const path = (window.location.pathname || '').replace(/\\/g, '/');
+  const isAdmin = path.includes('/admin/') && !/\/admin\/(index|forgot-password|change-password|logout)\.php$/i.test(path);
+  if (!isAdmin) return;
+
+  function $(sel, root = document) { return root.querySelector(sel); }
+  function $$(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
+  function isFn(fn) { return typeof fn === 'function'; }
+
+  // Fallback API resolver for legacy scripts
+  if (!isFn(window.getApiUrl)) {
+    const base = path.replace(/\/admin\/.*$/, '/');
+    window.APP_ROOT = base;
+    window.getApiUrl = function getApiUrl(endpoint) {
+      const cleaned = String(endpoint || '').replace(/^\/+/, '');
+      return base + cleaned;
+    };
+  }
+
+  function initTopSidebarToggle() {
+    if ($('.top-sidebar-toggle')) return;
+    const btn = document.createElement('button');
+    btn.className = 'top-sidebar-toggle';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Toggle sidebar');
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>';
+    document.body.appendChild(btn);
+
+    const saved = localStorage.getItem('ipms_admin_sidebar_hidden');
+    if (saved === '1') document.body.classList.add('sidebar-hidden');
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const hidden = document.body.classList.toggle('sidebar-hidden');
+      localStorage.setItem('ipms_admin_sidebar_hidden', hidden ? '1' : '0');
+      $$('.nav-item-group.open').forEach((g) => g.classList.remove('open'));
+    });
+  }
+
+  function initUnifiedDropdowns() {
+    $$('.nav-item-group').forEach((group) => {
+      const trigger = $('.nav-main-item', group);
+      if (!trigger || trigger.dataset.enterpriseBound === '1') return;
+      trigger.dataset.enterpriseBound = '1';
+
+      trigger.setAttribute('role', 'button');
+      trigger.setAttribute('aria-haspopup', 'true');
+      trigger.setAttribute('aria-expanded', group.classList.contains('open') ? 'true' : 'false');
+
+      trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const willOpen = !group.classList.contains('open');
+        $$('.nav-item-group.open').forEach((other) => {
+          if (other !== group) other.classList.remove('open');
+        });
+        group.classList.toggle('open', willOpen);
+        trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      }, true);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.nav-item-group')) return;
+      $$('.nav-item-group.open').forEach((g) => g.classList.remove('open'));
+    });
+  }
+
+  function initLogoutModal() {
+    let modal = $('#enterpriseLogoutModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'enterpriseLogoutModal';
+      modal.className = 'admin-logout-modal';
+      modal.innerHTML = `
+        <div class="admin-logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle">
+          <h3 id="logoutModalTitle">Confirm Logout</h3>
+          <p>You are about to end your session. Continue?</p>
+          <div class="admin-logout-actions">
+            <button type="button" class="btn-cancel">Cancel</button>
+            <button type="button" class="btn-logout">Logout</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+    }
+
+    let nextUrl = '/admin/logout.php';
+    const close = () => modal.classList.remove('show');
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) close();
+    });
+    $('.btn-cancel', modal).addEventListener('click', close);
+    $('.btn-logout', modal).addEventListener('click', () => { window.location.href = nextUrl; });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') close();
+    });
+
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a[href*="logout.php"]');
+      if (!link) return;
+      e.preventDefault();
+      nextUrl = link.getAttribute('href') || '/admin/logout.php';
+      modal.classList.add('show');
+      $('.btn-logout', modal).focus();
+    }, true);
+  }
+
+  function initDashboardBudgetHoldReveal() {
+    if (!/\/admin\/dashboard\.php$/i.test(path)) return;
+    const budgetCard = $('#budgetCard');
+    const budgetValue = $('#budgetValue');
+    const budgetBtn = $('#budgetVisibilityToggle');
+    if (!budgetCard || !budgetValue || !budgetBtn) return;
+
+    const masked = '●●●●●●●●';
+    const actual = '₱' + (budgetCard.getAttribute('data-budget') || '0.00');
+    let holding = false;
+    budgetValue.textContent = masked;
+
+    const show = () => {
+      if (holding) return;
+      holding = true;
+      budgetValue.textContent = actual;
+      budgetBtn.style.opacity = '1';
+    };
+    const hide = () => {
+      if (!holding) return;
+      holding = false;
+      budgetValue.textContent = masked;
+      budgetBtn.style.opacity = '0.8';
+    };
+
+    budgetBtn.addEventListener('mousedown', (e) => { e.preventDefault(); show(); });
+    budgetBtn.addEventListener('touchstart', (e) => { e.preventDefault(); show(); }, { passive: false });
+    ['mouseup', 'mouseleave', 'touchend', 'touchcancel', 'blur'].forEach((ev) => {
+      budgetBtn.addEventListener(ev, hide);
+    });
+    document.addEventListener('mouseup', hide);
+    document.addEventListener('touchend', hide);
+  }
+
+  function statusClass(status) {
+    return String(status || 'Draft').toLowerCase().replace(/\s+/g, '-');
+  }
+
+  function renderProgressCards(projects) {
+    const list = $('#projectsList');
+    const empty = $('#pmEmpty');
+    if (!list) return;
+
+    if (!projects.length) {
+      list.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    const html = projects.map((p) => {
+      const progress = Math.max(0, Math.min(100, Number(p.progress || 0)));
+      const contractors = Array.isArray(p.assigned_contractors) ? p.assigned_contractors : [];
+      return `
+        <article class="project-card" data-project-id="${p.id || ''}" tabindex="0" role="button" aria-label="Open project ${String(p.name || 'project')}">
+          <div class="project-header">
+            <div class="project-title-section">
+              <h4>${p.code || 'N/A'} - ${p.name || 'Unnamed Project'}</h4>
+              <span class="project-status ${statusClass(p.status)}">${p.status || 'Draft'}</span>
+            </div>
+          </div>
+          <div class="project-meta">
+            <div class="project-meta-item"><span class="project-meta-label">Location:</span><span class="project-meta-value">${p.location || '-'}</span></div>
+            <div class="project-meta-item"><span class="project-meta-label">Sector:</span><span class="project-meta-value">${p.sector || '-'}</span></div>
+            <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value">₱${Number(p.budget || 0).toLocaleString()}</span></div>
+            <div class="project-meta-item"><span class="project-meta-label">Contractors:</span><span class="project-meta-value">${contractors.length}</span></div>
+          </div>
+          <div class="progress-container">
+            <div class="progress-label"><span>Completion</span><span style="font-weight:700;">${progress}%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${progress}%;"></div></div>
+          </div>
+          <div class="project-click-hint">Click to view details</div>
+        </article>`;
+    }).join('');
+
+    list.innerHTML = html;
+    $$('.project-card', list).forEach((card) => {
+      const open = () => {
+        if (isFn(window.showToast)) window.showToast('Project Selected', 'Project details panel can be attached here.', 'info');
+      };
+      card.addEventListener('click', open);
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+      });
+    });
+  }
+
+  function applyProgressFilters(all) {
+    const q = ($('#pmSearch')?.value || '').trim().toLowerCase();
+    const status = ($('#pmStatusFilter')?.value || '').trim();
+    const sector = ($('#pmSectorFilter')?.value || '').trim();
+    const contractorMode = ($('#pmContractorFilter')?.value || '').trim();
+    return all.filter((p) => {
+      if (status && String(p.status || '').trim() !== status) return false;
+      if (sector && String(p.sector || '').trim() !== sector) return false;
+      const hasContractors = Array.isArray(p.assigned_contractors) && p.assigned_contractors.length > 0;
+      if (contractorMode === 'assigned' && !hasContractors) return false;
+      if (contractorMode === 'unassigned' && hasContractors) return false;
+      if (!q) return true;
+      const text = `${p.code || ''} ${p.name || ''} ${p.location || ''}`.toLowerCase();
+      return text.includes(q);
+    });
+  }
+
+  function updateProgressStats(all) {
+    const total = all.length;
+    const approved = all.filter((p) => p.status === 'Approved').length;
+    const inProgress = all.filter((p) => Number(p.progress || 0) > 0 && Number(p.progress || 0) < 100).length;
+    const completed = all.filter((p) => Number(p.progress || 0) >= 100 || p.status === 'Completed').length;
+    const contractors = all.reduce((sum, p) => sum + ((p.assigned_contractors || []).length), 0);
+    if ($('#statTotal')) $('#statTotal').textContent = String(total);
+    if ($('#statApproved')) $('#statApproved').textContent = String(approved);
+    if ($('#statInProgress')) $('#statInProgress').textContent = String(inProgress);
+    if ($('#statCompleted')) $('#statCompleted').textContent = String(completed);
+    if ($('#statContractors')) $('#statContractors').textContent = String(contractors);
+  }
+
+  function initProgressMonitoringFix() {
+    if (!/\/admin\/progress_monitoring\.php$/i.test(path)) return;
+    const list = $('#projectsList');
+    if (!list) return;
+
+    let all = [];
+    const load = () => {
+      list.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading projects...</p></div>';
+      const url = `progress_monitoring.php?action=load_projects&_=${Date.now()}`;
+      fetch(url, { credentials: 'same-origin' })
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          all = Array.isArray(data) ? data : [];
+          updateProgressStats(all);
+          renderProgressCards(applyProgressFilters(all));
+        })
+        .catch((err) => {
+          list.innerHTML = `<div class="admin-empty-state"><span class="title">Unable to load projects</span><span>${String(err.message || 'Unknown error')}</span></div>`;
+        });
+    };
+
+    ['pmSearch', 'pmStatusFilter', 'pmSectorFilter', 'pmContractorFilter'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', () => renderProgressCards(applyProgressFilters(all)));
+    });
+
+    load();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initTopSidebarToggle();
+    initUnifiedDropdowns();
+    initLogoutModal();
+    initDashboardBudgetHoldReveal();
+    initProgressMonitoringFix();
+  });
+})();

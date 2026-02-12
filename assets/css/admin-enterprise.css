@@ -1,0 +1,214 @@
+/* LGU IPMS Admin Enterprise Layer
+   Load this after legacy admin styles. */
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) {
+    --ipms-primary: #1d4ed8;
+    --ipms-primary-600: #1e40af;
+    --ipms-text: #1f3552;
+    --ipms-muted: #60758f;
+    --ipms-surface: rgba(255, 255, 255, 0.92);
+    --ipms-border: #d8e4f2;
+    --ipms-radius: 14px;
+    --ipms-shadow: 0 16px 30px rgba(15, 30, 56, 0.16);
+}
+
+/* Top sidebar toggle */
+.top-sidebar-toggle {
+    position: fixed;
+    top: 14px;
+    left: 286px;
+    z-index: 1300;
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    border: 1px solid #c8d8eb;
+    background: linear-gradient(145deg, #ffffff, #f1f7ff);
+    color: #264a75;
+    box-shadow: 0 12px 22px rgba(17, 35, 61, 0.22);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.top-sidebar-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 15px 26px rgba(17, 35, 61, 0.28);
+}
+
+body.sidebar-hidden .top-sidebar-toggle {
+    left: 114px;
+}
+
+/* Hide legacy duplicated toggles */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .sidebar-toggle-wrapper,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .toggle-btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #navbarMenuIcon {
+    display: none !important;
+}
+
+/* Unified dropdown style */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group {
+    width: 100%;
+    display: block;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item {
+    min-height: 42px;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    padding: 10px 12px !important;
+    color: #314d6f !important;
+    background: transparent;
+    font-weight: 600;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group.open .nav-main-item {
+    border-color: #d5e3f3;
+    background: #edf4ff !important;
+    color: #1e406d !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dropdown-arrow {
+    margin-left: auto;
+    color: #587aa6;
+    font-size: 0.7rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu {
+    border: 1px solid #d9e5f2;
+    border-radius: 11px;
+    box-shadow: 0 12px 20px rgba(17, 35, 61, 0.18);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item {
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+/* Icon-only collapsed sidebar */
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-links > a,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-main-item {
+    justify-content: center !important;
+    font-size: 0 !important;
+    gap: 0 !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-icon {
+    margin: 0 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .dropdown-arrow,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .nav-submenu {
+    display: none !important;
+}
+
+/* Shared surface/table/form consistency */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractors-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .budget-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .allocation-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .expense-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .summary-section {
+    background: var(--ipms-surface) !important;
+    border: 1px solid var(--ipms-border) !important;
+    border-radius: var(--ipms-radius) !important;
+    box-shadow: var(--ipms-shadow) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .table-wrap {
+    border: 1px solid #dce7f4 !important;
+    border-radius: 12px !important;
+    overflow: auto !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Prevent dashboard table overflow */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap .projects-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap th,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Inputs/buttons */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) textarea {
+    border: 1px solid #c8d9ec !important;
+    border-radius: 10px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) button,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-export,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .export-btn {
+    border-radius: 10px !important;
+}
+
+/* Unified logout */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-logout.nav-logout,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003 {
+    border: 1px solid #efbcbc !important;
+    background: linear-gradient(135deg, #fff5f5, #ffeaea) !important;
+    color: #b42318 !important;
+    font-weight: 700 !important;
+}
+
+/* Progress monitoring project cards */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-list {
+    display: grid;
+    gap: 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .project-card {
+    border: 1px solid #d8e5f2;
+    border-radius: 14px;
+    background: linear-gradient(160deg, #ffffff, #f6fbff);
+    box-shadow: 0 12px 24px rgba(15, 30, 56, 0.12);
+    padding: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .project-card:hover {
+    transform: translateY(-2px);
+    border-color: #b7d2ee;
+    box-shadow: 0 16px 28px rgba(15, 30, 56, 0.18);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .project-click-hint {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #d7e4f2;
+    color: #5e7490;
+    font-size: 0.82rem;
+}
+
+/* Focus/accessibility */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) a:focus-visible,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) button:focus-visible,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) input:focus-visible,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) select:focus-visible {
+    outline: 3px solid rgba(29, 78, 216, 0.28);
+    outline-offset: 2px;
+}
+
+@media (max-width: 992px) {
+    .top-sidebar-toggle,
+    body.sidebar-hidden .top-sidebar-toggle {
+        left: 12px;
+        top: 10px;
+    }
+}
