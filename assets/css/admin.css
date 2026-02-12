@@ -35,7 +35,7 @@
 }
 
 html {
-    overflow-y: scroll;
+    overflow-y: auto;
     font-family: 'Poppins', sans-serif;
 }
 
@@ -219,7 +219,7 @@ body.sidebar-hidden .sidebar-toggle-btn {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    overflow-y: auto;
+    overflow-y: hidden;
     overflow-x: hidden;
     padding: 12px 12px;
     margin: 0;
