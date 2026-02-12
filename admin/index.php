@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Start session first
 session_start();
 
@@ -233,6 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
     <link rel="stylesheet" href="../assets/css/shared/admin-auth.css">
+    <link rel="stylesheet" href="../assets/css/footer-shared.css">
     <style>
         :root {
             --page-navy: #0f2a4a;
@@ -592,19 +593,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 </div>
 
-<footer class="footer">
-
-    <div class="footer-links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">About</a>
-        <a href="#">Help</a>
-    </div>
-
-    <div class="footer-logo">
-        &copy; 2026 LGU Citizen Portal &middot; All Rights Reserved
-    </div>
-
-</footer>
+<?php include('../includes/footer.php'); ?>
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>

@@ -325,6 +325,7 @@ if (isset($db)) {
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
+    <link rel="stylesheet" href="../assets/css/footer-shared.css">
 </head>
 
 <body>
@@ -405,17 +406,7 @@ if (isset($db)) {
     </div>
 </div>
 
-<footer class="footer">
-    <div class="footer-links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">About</a>
-        <a href="#">Help</a>
-    </div>
-
-    <div class="footer-logo">
-        © 2026 LGU Citizen Portal · All Rights Reserved
-    </div>
-</footer>
+<?php include('../includes/footer.php'); ?>
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>

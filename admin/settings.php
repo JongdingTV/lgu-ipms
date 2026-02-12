@@ -122,7 +122,8 @@ if (isset($db) && !$db->connect_error) {
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/form-redesign-base.css">
-    <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>"
+    <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/footer-shared.css">
 </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -304,16 +305,7 @@ if (isset($db) && !$db->connect_error) {
         </div>
     </section>
 
-    <footer class="footer">
-        <div class="footer-links">
-            <a href="#">Privacy Policy</a>
-            <a href="#">About</a>
-            <a href="#">Help</a>
-        </div>
-        <div class="footer-logo">
-            © 2026 LGU Citizen Portal · All Rights Reserved
-        </div>
-    </footer>
+    <?php include('../includes/footer.php'); ?>
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>

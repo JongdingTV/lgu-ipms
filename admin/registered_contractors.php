@@ -173,7 +173,8 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/table-redesign-base.css">
-    <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>"
+    <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/footer-shared.css">
 </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -329,9 +330,7 @@ $db->close();
         </div>
     </section>
 
-    <footer class="footer">
-        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
-    </footer>
+    <?php include('../includes/footer.php'); ?>
 <!-- Assignment Modal -->
     <div id="assignmentModal" class="ac-5b39cf12">
         <div class="ac-c6f8fef1">

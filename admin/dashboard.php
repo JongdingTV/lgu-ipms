@@ -47,6 +47,7 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/dashboard-redesign-enhanced.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/footer-shared.css">
 </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -277,18 +278,7 @@ $db->close();
         </div>
     </section>
 
-    <footer class="footer">
-        <p><strong>LGU Infrastructure Project Management System (IPMS)</strong></p>
-        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
-        <div class="footer-divider"></div>
-        <div class="footer-links">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
-            <a href="#">Contact Support</a>
-            <a href="#">Documentation</a>
-        </div>
-        <p style="font-size: 12px; margin-top: 12px; opacity: 0.9;">Version 1.0 | Last Updated: 2026</p>
-    </footer>
+    <?php include('../includes/footer.php'); ?>
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <!-- Component Utilities: Dropdowns, Modals, Toast, Sidebar Toggle -->
     
