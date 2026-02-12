@@ -532,6 +532,10 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .co
     gap: 14px;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-page > * {
+    min-width: 0;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-page-head {
     display: flex;
     flex-wrap: wrap;
@@ -551,6 +555,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .co
     margin: 0;
     color: #5a7595;
     font-size: 0.92rem;
+    overflow-wrap: anywhere;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-form {
@@ -667,13 +672,15 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .co
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-toolbar {
     display: grid;
-    grid-template-columns: minmax(260px, 1.2fr) minmax(180px, 0.7fr) auto;
+    grid-template-columns: minmax(0, 1fr) minmax(160px, 0.55fr) auto;
     align-items: center;
     gap: 10px;
     padding: 10px;
     border: 1px solid #d7e4f2;
     border-radius: 12px;
     background: linear-gradient(180deg, #ffffff, #f8fbff);
+    max-width: 100%;
+    overflow: hidden;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-count-pill {
@@ -685,6 +692,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .co
     color: #1c457d;
     font-size: 0.82rem;
     font-weight: 700;
+    white-space: nowrap;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable,
@@ -693,6 +701,14 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #pr
     border-collapse: separate;
     border-spacing: 0;
     min-width: 960px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractors-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-project-bank,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .table-wrap {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable thead th,
