@@ -6504,22 +6504,24 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .n
 
 /* Global logout modal */
 .admin-logout-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 1300;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1300 !important;
     display: none !important;
-    align-items: center;
-    justify-content: center;
-    background: rgba(7, 18, 33, 0.52);
-    backdrop-filter: blur(4px);
-    visibility: hidden;
-    pointer-events: none;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(7, 18, 33, 0.52) !important;
+    backdrop-filter: blur(4px) !important;
 }
 
 .admin-logout-modal.show {
     display: flex !important;
-    visibility: visible;
-    pointer-events: auto;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
 .admin-logout-dialog {

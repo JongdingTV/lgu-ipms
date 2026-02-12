@@ -68,11 +68,39 @@
   }
 
   function initLogoutModal() {
+    const hiddenModalStyle = [
+      'position: fixed !important',
+      'inset: 0 !important',
+      'z-index: 1300 !important',
+      'display: none !important',
+      'visibility: hidden !important',
+      'opacity: 0 !important',
+      'pointer-events: none !important',
+      'align-items: center !important',
+      'justify-content: center !important',
+      'background: rgba(7, 18, 33, 0.52) !important',
+      'backdrop-filter: blur(4px) !important'
+    ].join('; ');
+    const shownModalStyle = [
+      'position: fixed !important',
+      'inset: 0 !important',
+      'z-index: 1300 !important',
+      'display: flex !important',
+      'visibility: visible !important',
+      'opacity: 1 !important',
+      'pointer-events: auto !important',
+      'align-items: center !important',
+      'justify-content: center !important',
+      'background: rgba(7, 18, 33, 0.52) !important',
+      'backdrop-filter: blur(4px) !important'
+    ].join('; ');
+
     let modal = $('#enterpriseLogoutModal');
     if (!modal) {
       modal = document.createElement('div');
       modal.id = 'enterpriseLogoutModal';
       modal.className = 'admin-logout-modal';
+      modal.style.cssText = hiddenModalStyle;
       modal.innerHTML = `
         <div class="admin-logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle">
           <h3 id="logoutModalTitle">Confirm Logout</h3>
@@ -85,11 +113,14 @@
       document.body.appendChild(modal);
     }
 
-    // Ensure modal is hidden by default
-    modal.classList.remove('show');
-
     let nextUrl = '/admin/logout.php';
-    const close = () => modal.classList.remove('show');
+    const close = () => {
+      modal.classList.remove('show');
+      modal.style.cssText = hiddenModalStyle;
+    };
+
+    // Enforce hidden state on init to avoid showing modal content inline.
+    close();
 
     modal.addEventListener('click', (e) => {
       if (e.target === modal) close();
@@ -114,6 +145,7 @@
       
       nextUrl = link.getAttribute('href') || '/admin/logout.php';
       modal.classList.add('show');
+      modal.style.cssText = shownModalStyle;
       $('.btn-logout', modal).focus();
     }, true);
   }

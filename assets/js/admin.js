@@ -276,10 +276,12 @@ window.closeConfirmationModal = closeConfirmationModal;
 window.initializeConfirmationModal = initializeConfirmationModal;
 
 /* ============================================
-   LOGOUT CONFIRMATION
+   LOGOUT CONFIRMATION - DISABLED (using admin-logout-modal instead)
    ============================================ */
 
 // Setup logout confirmation on all pages
+// COMMENTED OUT - using admin-logout-modal.show class instead
+/*
 function setupLogoutConfirmation() {
     const logoutLinks = document.querySelectorAll('.nav-logout');
     logoutLinks.forEach(link => {
@@ -306,6 +308,8 @@ function setupLogoutConfirmation() {
 document.addEventListener('DOMContentLoaded', () => {
     setupLogoutConfirmation();
 });
+*/
+
 
 
 
@@ -3885,6 +3889,9 @@ document.addEventListener('click', function (event) {
         </div>
       </div>`;
     document.body.appendChild(modal);
+    
+    // Ensure modal starts hidden
+    modal.classList.remove('show');
 
     q('.btn-cancel', modal).addEventListener('click', () => modal.classList.remove('show'));
     modal.addEventListener('click', (e) => {
@@ -3897,7 +3904,8 @@ document.addEventListener('click', function (event) {
     const modal = ensureLogoutModal();
     let pendingUrl = '/admin/logout.php';
 
-    // Ensure modal is hidden by default
+    // Explicitly hide modal
+    modal.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
     modal.classList.remove('show');
 
     document.addEventListener('click', (e) => {
@@ -3913,6 +3921,7 @@ document.addEventListener('click', function (event) {
       
       pendingUrl = link.getAttribute('href') || '/admin/logout.php';
       modal.classList.add('show');
+      modal.style.cssText = '';
       q('.btn-logout', modal).focus();
     }, true);
 
