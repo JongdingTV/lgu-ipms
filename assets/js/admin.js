@@ -30,7 +30,16 @@
         appRoot: appRoot,
         currentPath: currentPagePath,
         getApiUrl: function(endpoint) {
-            return this.appRoot + endpoint;
+            const clean = String(endpoint || '').replace(/^\/+/, '');
+            let base = String(this.appRoot || '/');
+            if (!base.endsWith('/')) base += '/';
+
+            // Prevent duplicate "/admin/admin/..." when app is hosted at "/admin".
+            if (base === '/admin/' && clean.startsWith('admin/')) {
+                return '/' + clean;
+            }
+
+            return base + clean;
         },
         getCurrentDirUrl: function(endpoint) {
             return endpoint;
@@ -42,7 +51,13 @@
         window.getApiUrl = function(endpoint) {
             const clean = String(endpoint || '').replace(/^\/+/, '');
             const base = window.CONFIG && window.CONFIG.appRoot ? window.CONFIG.appRoot : '/';
-            return base + clean;
+            const normalizedBase = String(base).endsWith('/') ? String(base) : String(base) + '/';
+
+            if (normalizedBase === '/admin/' && clean.startsWith('admin/')) {
+                return '/' + clean;
+            }
+
+            return normalizedBase + clean;
         };
     }
 })();
@@ -3324,15 +3339,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            fetch(getApiUrl('admin/registered_projects.php?action=load_projects&_=' + Date.now()))
-                .then(res => {
-                    console.log('Response status:', res.status);
-                    return res.json();
-                })
+            const nonce = Date.now();
+            const urls = [
+                getApiUrl('admin/registered_projects.php?action=load_projects&_=' + nonce),
+                'registered_projects.php?action=load_projects&_=' + nonce,
+                '/admin/registered_projects.php?action=load_projects&_=' + nonce
+            ];
+
+            const tryFetch = (idx) => {
+                if (idx >= urls.length) throw new Error('All project API endpoints failed');
+                return fetch(urls[idx], { credentials: 'same-origin' })
+                    .then((res) => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status + ' @ ' + urls[idx]);
+                        return res.json();
+                    })
+                    .catch((err) => {
+                        console.warn('Projects API failed, trying fallback:', err.message);
+                        return tryFetch(idx + 1);
+                    });
+            };
+
+            tryFetch(0)
                 .then(projects => {
                     console.log('Projects loaded:', projects);
-                    allProjects = projects;
-                    renderProjects(projects);
+                    allProjects = Array.isArray(projects) ? projects : [];
+                    renderProjects(allProjects);
                 })
                 .catch(error => {
                     console.error('Error loading projects:', error);
