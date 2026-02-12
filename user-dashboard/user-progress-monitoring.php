@@ -47,11 +47,11 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
     <!-- Burger button (always visible on mobile, top left) -->
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <aside class="nav sidebar-animated" id="navbar">
-        <div class="nav-logo admin-sidebar-logo">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" />
-            <span class="logo-text">IPMS</span>
+        <div class="nav-logo admin-sidebar-logo" style="display:flex;flex-direction:row;align-items:center;justify-content:center;padding:18px 0 8px 0;gap:10px;">
+            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
+            <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
         </div>
-        <div class="nav-user">
+        <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">
             <?php
             $profile_img = '';
             $user_email = isset($user['email']) ? $user['email'] : '';
@@ -94,7 +94,7 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
         <nav class="nav-links">
             <a href="user-dashboard.php"><img src="/assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
             <a href="user-progress-monitoring.php" class="active"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
-            <a href="user-feedback.php"><img src="/user-dashboard/feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
+            <a href="/admin/project-prioritization.php"><img src="/user-dashboard/feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
             <a href="user-settings.php"><img src="/user-dashboard/settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </nav>
         <div class="sidebar-logout-container">
