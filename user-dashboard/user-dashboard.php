@@ -49,21 +49,23 @@ $db->close();
 </head>
 <body>
 
-    <!-- Burger button (always visible on mobile, top left) -->
-    <button id="sidebarBurgerBtn" class="sidebar-burger-btn" aria-label="Open sidebar" type="button">
-        <span class="burger-bar"></span>
-        <span class="burger-bar"></span>
-        <span class="burger-bar"></span>
-    </button>
 
     <!-- Sidebar with overlay for mobile -->
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <aside class="nav sidebar-animated" id="navbar">
-        <div class="nav-logo admin-sidebar-logo">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" />
-            <span class="logo-text">IPMS</span>
+        <!-- Burger button beside sidebar (admin style) -->
+        <button id="sidebarBurgerBtn" class="sidebar-burger-btn beside-sidebar" aria-label="Open sidebar" type="button">
+            <span class="burger-bar"></span>
+            <span class="burger-bar"></span>
+            <span class="burger-bar"></span>
+        </button>
+        <!-- Logo and IPMS side by side at top -->
+        <div class="nav-logo admin-sidebar-logo" style="display:flex;flex-direction:row;align-items:center;justify-content:center;padding:18px 0 8px 0;gap:10px;">
+            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
+            <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
         </div>
-        <div class="nav-user">
+        <!-- Profile section, centered -->
+        <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">
             <?php
             $profile_img = '';
             $user_email = isset($user['email']) ? $user['email'] : '';
@@ -92,17 +94,15 @@ $db->close();
             }
             $bgcolor = stringToColor($user_name);
             ?>
-            <div class="user-profile">
-                <?php if ($profile_img): ?>
-                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon" />
-                <?php else: ?>
-                    <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;">
-                        <?php echo $initials; ?>
-                    </div>
-                <?php endif; ?>
-                <div class="user-name"> <?php echo htmlspecialchars($user_name); ?> </div>
-                <div class="user-email"> <?php echo htmlspecialchars($user_email); ?> </div>
-            </div>
+            <?php if ($profile_img): ?>
+                <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon" style="width:48px;height:48px;" />
+            <?php else: ?>
+                <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    <?php echo $initials; ?>
+                </div>
+            <?php endif; ?>
+            <div class="user-name" style="font-weight:700;font-size:1.08em;line-height:1.2;margin-top:2px;text-align:center;"> <?php echo htmlspecialchars($user_name); ?> </div>
+            <div class="user-email" style="font-size:0.97em;color:#64748b;line-height:1.1;text-align:center;"> <?php echo htmlspecialchars($user_email); ?> </div>
         </div>
         <hr class="sidebar-divider" />
         <nav class="nav-links">
