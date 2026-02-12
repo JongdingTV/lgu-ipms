@@ -2339,7 +2339,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ===== Inline scripts extracted from contractors/contractors.php ===== */
 (function(){
   var p = (window.location.pathname || "").replace(/\\\\/g, "/");
-  if (!p.endsWith('/admin/contractors.php')) return;
+  if (!p.endsWith('/admin/contractors.php') && !p.endsWith('/contractors.php')) return;
 // ============================================
         // LOGOUT CONFIRMATION
         // ============================================
@@ -2420,7 +2420,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ===== Inline scripts extracted from contractors/registered_contractors.php ===== */
 (function(){
   var p = (window.location.pathname || "").replace(/\\\\/g, "/");
-  if (!p.endsWith('/admin/registered_contractors.php')) return;
+  if (!p.endsWith('/admin/registered_contractors.php') && !p.endsWith('/registered_contractors.php')) return;
 // ============================================
         // LOGOUT CONFIRMATION
         // ============================================
@@ -2465,13 +2465,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Load contractors from database
         function loadContractors() {
             console.log('loadContractors called');
-            const url = getApiUrl('admin/registered_contractors.php?action=load_contractors&_=' + Date.now());
+            const url = 'registered_contractors.php?action=load_contractors&_=' + Date.now();
             console.log('Fetching from:', url);
             
             fetch(url)
                 .then(res => {
                     console.log('Response received, status:', res.status);
                     console.log('Response ok:', res.ok);
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
                     return res.text();
                 })
                 .then(text => {
@@ -2483,24 +2484,29 @@ document.addEventListener('DOMContentLoaded', function() {
                         renderContractors(contractors);
                     } catch (e) {
                         console.error('JSON parse error:', e, 'Text was:', text);
+                        const tbody = document.querySelector('#contractorsTable tbody');
+                        if (tbody) {
+                            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#c00;">Failed to parse contractor data. Please refresh.</td></tr>';
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('Error loading contractors:', error);
                     const tbody = document.querySelector('#contractorsTable tbody');
-                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#c00;">Error: ' + error.message + '</td></tr>';
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#c00;">Error: ' + error.message + '</td></tr>';
                 });
         }
 
         // Load projects from database
         function loadProjects() {
             console.log('loadProjects called');
-            const url = getApiUrl('admin/registered_contractors.php?action=load_projects&_=' + Date.now());
+            const url = 'registered_contractors.php?action=load_projects&_=' + Date.now();
             console.log('Fetching projects from:', url);
             
             fetch(url)
                 .then(res => {
                     console.log('Projects response status:', res.status);
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
                     return res.text();
                 })
                 .then(text => {
@@ -2512,9 +2518,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         renderProjects(projects);
                     } catch (e) {
                         console.error('Projects JSON parse error:', e);
+                        const tbody = document.querySelector('#projectsTable tbody');
+                        if (tbody) {
+                            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#c00;">Failed to parse projects data. Please refresh.</td></tr>';
+                        }
                     }
                 })
-                .catch(error => console.error('Error loading projects:', error));
+                .catch(error => {
+                    console.error('Error loading projects:', error);
+                    const tbody = document.querySelector('#projectsTable tbody');
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#c00;">Error: ' + error.message + '</td></tr>';
+                });
         }
 
         // Search and filter functionality
@@ -2621,7 +2635,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         confirmText: 'Delete Permanently',
                         cancelText: 'Cancel',
                         onConfirm: () => {
-                            fetch(getApiUrl('admin/registered_contractors.php'), {
+                            fetch('registered_contractors.php', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                                 body: `action=delete_contractor&id=${encodeURIComponent(id)}`
@@ -2721,7 +2735,7 @@ document.addEventListener('DOMContentLoaded', function() {
             projectsList.innerHTML = '<p style="text-align: center; color: #999;">Loading projects...</p>';
             
             // Get assigned projects
-            fetch(getApiUrl(`admin/registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`))
+            fetch(`registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`)
                 .then(res => res.text())
                 .then(text => {
                     try {
@@ -2770,7 +2784,7 @@ document.addEventListener('DOMContentLoaded', function() {
             projectsList.innerHTML = '<p style="text-align: center; color: #999;">Loading projects...</p>';
             
             // Get already assigned projects
-            fetch(getApiUrl(`admin/registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`))
+            fetch(`registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`)
                 .then(res => res.text())
                 .then(text => {
                     console.log('Assigned projects response:', text);
@@ -2780,7 +2794,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('Assigned IDs:', assignedIds);
                         
                         // Get all available projects
-                        return fetch(getApiUrl('admin/registered_contractors.php?action=load_projects'))
+                        return fetch('registered_contractors.php?action=load_projects')
                             .then(res => res.text())
                             .then(text => {
                                 console.log('All projects response:', text);
@@ -2884,7 +2898,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`Sending request: ${action}`, body);
                 
                 try {
-                    const response = await fetch(getApiUrl('admin/registered_contractors.php'), {
+                    const response = await fetch('registered_contractors.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: body
