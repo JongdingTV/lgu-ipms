@@ -416,24 +416,27 @@ $db->close();
             border-radius: 14px;
             padding: 12px;
             margin-bottom: 14px;
+            overflow: hidden;
         }
 
         .main-content .pm-controls {
             display: grid;
-            grid-template-columns: minmax(260px, 1.2fr) minmax(0, 3fr);
+            grid-template-columns: minmax(220px, 1.15fr) minmax(0, 2.85fr);
             align-items: end;
             gap: 12px;
+            min-width: 0;
         }
 
         .main-content .pm-left {
-            min-width: 240px;
+            min-width: 0;
         }
 
         .main-content .pm-right {
             display: grid;
-            grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 10px;
             align-items: end;
+            min-width: 0;
         }
 
         .main-content .filter-group {
@@ -482,6 +485,7 @@ $db->close();
             letter-spacing: 0.2px;
             white-space: nowrap;
             box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+            width: 100%;
         }
 
         .main-content .btn-export:hover {
