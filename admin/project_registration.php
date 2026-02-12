@@ -445,6 +445,41 @@ $db->close();
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script>
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        const saved = params.get('saved');
+        const error = params.get('error');
+        const savedMsg = params.get('msg') || 'Project has been added successfully.';
+        const formMsg = document.getElementById('formMessage');
+
+        if (saved === '1') {
+            if (formMsg) {
+                formMsg.textContent = savedMsg;
+                formMsg.style.display = 'block';
+                formMsg.style.color = '#0b5';
+            }
+            if (!window.__projectRegPopupShown) {
+                window.__projectRegPopupShown = true;
+                alert(savedMsg);
+            }
+        } else if (error) {
+            let errText = decodeURIComponent(error);
+            if (/already exists|duplicate/i.test(errText)) {
+                errText = 'Project already exists. Please try again with a different Project Code.';
+            }
+            if (formMsg) {
+                formMsg.textContent = errText;
+                formMsg.style.display = 'block';
+                formMsg.style.color = '#f00';
+            }
+            if (!window.__projectRegPopupShown) {
+                window.__projectRegPopupShown = true;
+                alert(errText);
+            }
+        }
+    })();
+    </script>
 </body>
 </html>
 

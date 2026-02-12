@@ -3001,7 +3001,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ===== Inline scripts extracted from admin/project_registration.php ===== */
 (function(){
   var p = (window.location.pathname || "").replace(/\\\\/g, "/");
-  if (!p.endsWith('/admin/project_registration.php')) return;
+  if (!/\/admin\/project_registration(?:\.php)?\/?$/.test(p)) return;
 // ============================================
         // LOGOUT CONFIRMATION
         // ============================================
