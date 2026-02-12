@@ -7,6 +7,7 @@ require dirname(__DIR__) . '/config-path.php';
 if ($db->connect_error) {
     die('Database connection failed: ' . $db->connect_error);
 }
+// Get user info from database
 $user_id = $_SESSION['user_id'];
 $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->bind_param('i', $user_id);
@@ -14,9 +15,11 @@ $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 $stmt->close();
+// Get user name from session
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
 $gender_display = isset($user['gender']) ? $user['gender'] : '';
 $civil_status_display = isset($user['civil_status']) ? $user['civil_status'] : '';
+$user_email = isset($user['email']) ? $user['email'] : '';
 $errors = $errors ?? [];
 $success = $success ?? '';
 $db->close();
@@ -109,9 +112,15 @@ $db->close();
                 <h2>Account Information</h2>
                 <table class="user-info-table">
                     <tr><th>Name:</th><td><?php echo htmlspecialchars($user_name); ?></td></tr>
+                    <tr><th>Username:</th><td><?php echo htmlspecialchars($user['username'] ?? ''); ?></td></tr>
                     <tr><th>Email:</th><td><?php echo htmlspecialchars($user['email']); ?></td></tr>
+                    <tr><th>Contact No.:</th><td><?php echo htmlspecialchars($user['contact_number'] ?? ''); ?></td></tr>
+                    <tr><th>Address:</th><td><?php echo htmlspecialchars($user['address'] ?? ''); ?></td></tr>
+                    <tr><th>Barangay:</th><td><?php echo htmlspecialchars($user['barangay'] ?? ''); ?></td></tr>
                     <tr><th>Gender:</th><td><?php echo htmlspecialchars($gender_display); ?></td></tr>
                     <tr><th>Civil Status:</th><td><?php echo htmlspecialchars($civil_status_display); ?></td></tr>
+                    <tr><th>Registration Date:</th><td><?php echo isset($user['created_at']) ? date('M d, Y', strtotime($user['created_at'])) : ''; ?></td></tr>
+                    <tr><th>User Type:</th><td><?php echo htmlspecialchars($user['user_type'] ?? ''); ?></td></tr>
                 </table>
             </div>
             <div class="password-change-box">
