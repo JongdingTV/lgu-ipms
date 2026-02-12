@@ -75,14 +75,19 @@ $db->close();
 </head>
 <body>
 <!DOCTYPE html>
-    <aside class="nav" id="navbar">
-        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 0 16px 24px;">
+        <button id="sidebarBurgerBtn" class="navbar-menu-icon" title="Toggle sidebar" style="background:none;border:none;padding:0;margin-right:16px;cursor:pointer;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
         </button>
+        <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
+        <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
+    </div>
+    <aside class="nav" id="navbar">
+        
         <div class="nav-logo">
             <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;margin-bottom:4px;" />
             <span class="logo-text">IPMS</span>
@@ -136,7 +141,7 @@ $db->close();
             <a href="user-settings.php" class="active"><img src="settings.png" class="nav-icon"> Settings</a>
         </nav>
         <div style="margin-top:auto;padding:18px 0 0 0;display:flex;justify-content:center;">
-            <a href="#" class="nav-logout logout-btn" id="logoutLink">Logout</a>
+            <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
         </div>
         <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -144,127 +149,28 @@ $db->close();
         });
         </script>
     </aside>
-    // ...existing code...
-
-
-
-    <section class="main-content">
-        <div class="dash-header">
-            <h1>Settings</h1>
-            <p>Manage your account information</p>
-        </div>
-
-        <div class="settings-form">
-            <form id="userSettingsForm" method="post">
-                <div class="form-section">
-                    <h3>Basic Information</h3>
-                    <div class="form-row">
-                        <div class="input-box">
-                            <label for="firstName">First Name</label>
-                            <input id="firstName" name="firstName" type="text" readonly value="<?php echo htmlspecialchars($user['first_name']); ?>">
-                        </div>
-                        <div class="input-box">
-                            <label for="middleName">Middle Name</label>
-                            <input id="middleName" name="middleName" type="text" readonly value="<?php echo htmlspecialchars($user['middle_name']); ?>">
-                        </div>
-                        <div class="input-box">
-                            <label for="lastName">Last Name</label>
-                            <input id="lastName" name="lastName" type="text" readonly value="<?php echo htmlspecialchars($user['last_name']); ?>">
-                        </div>
-                        <div class="input-box">
-                            <label for="suffix">Suffix</label>
-                            <input id="suffix" name="suffix" type="text" readonly value="<?php echo htmlspecialchars($user['suffix']); ?>">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h3>Contact Information</h3>
-                    <div class="form-row">
-                        <div class="input-box">
-                            <label for="email">Email Address</label>
-                            <input id="email" name="email" type="email" readonly value="<?php echo htmlspecialchars($user['email']); ?>">
-                        </div>
-                        <div class="input-box">
-                            <label for="mobile">Mobile Number</label>
-                            <input id="mobile" name="mobile" type="tel" readonly value="<?php echo htmlspecialchars($user['mobile']); ?>">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h3>Personal Details</h3>
-                    <div class="form-row">
-                        <div class="input-box">
-                            <label for="birthdate">Birthdate</label>
-                            <input id="birthdate" name="birthdate" type="date" readonly value="<?php echo htmlspecialchars($user['birthdate']); ?>">
-                        </div>
-                        <div class="input-box">
-                            <label for="gender">Gender</label>
-                            <input id="gender" name="gender" type="text" readonly value="<?php echo htmlspecialchars($gender_display); ?>">
-                        </div>
-                        <div class="input-box">
-                            <label for="civilStatus">Civil Status</label>
-                            <input id="civilStatus" name="civilStatus" type="text" readonly value="<?php echo htmlspecialchars($civil_status_display); ?>">
-                        </div>
-                    </div>
-                    <div class="input-box full-width">
-                        <label for="address">Address / Barangay</label>
-                        <input id="address" name="address" type="text" readonly value="<?php echo htmlspecialchars($user['address']); ?>">
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h3>Change Password</h3>
-                    <div class="input-box">
-                        <label for="currentPassword">Current Password</label>
-                        <input id="currentPassword" name="currentPassword" type="password" required autocomplete="current-password">
-                    </div>
-                    <div class="input-box">
-                        <label for="newPassword">New Password</label>
-                        <input id="newPassword" name="newPassword" type="password" required autocomplete="new-password">
-                    </div>
-                    <div class="input-box">
-                        <label for="confirmPassword">Confirm New Password</label>
-                        <input id="confirmPassword" name="confirmPassword" type="password" required autocomplete="new-password">
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="submit-btn">Change Password</button>
-                    <button type="button" class="cancel-btn" onclick="window.location.href='user-dashboard.php'">Cancel</button>
-                </div>
-            </form>
-            <div id="settingsMessage" class="message" style="display: none;"></div>
-            <?php if (!empty($errors)): ?>
-            <div class="message" style="color: red; margin-top: 10px;">
-                <?php foreach ($errors as $error): ?>
-                <p><?php echo $error; ?></p>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-            <?php if (isset($success)): ?>
-            <div class="message" style="color: green; margin-top: 10px;">
-                <p><?php echo $success; ?></p>
-            </div>
-            <?php endif; ?>
-        </div>
-    </section>
-
-    <footer class="footer">
-        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
-    </footer>
-
-
-
-    <script src="/assets/js/shared/shared-data.js"></script>
-    <script src="/assets/js/shared/shared-toggle.js"></script>
-    <script src="user-settings.js"></script>
     <script>
-    (function() {
-        // Remove duplicate logout modal if present
-        // ...existing code...
-    })();
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('navbar');
+        const burgerBtn = document.getElementById('sidebarBurgerBtn');
+        if (sidebar && burgerBtn) {
+            burgerBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('sidebar-open');
+                if (sidebar.classList.contains('sidebar-open')) {
+                    sidebar.style.transform = 'translateX(0)';
+                } else {
+                    sidebar.style.transform = 'translateX(-110%)';
+                }
+            });
+            document.addEventListener('click', function(e) {
+                if (!sidebar.contains(e.target) && !burgerBtn.contains(e.target)) {
+                    sidebar.classList.remove('sidebar-open');
+                    sidebar.style.transform = 'translateX(-110%)';
+                }
+            });
+        }
+        sidebar && (sidebar.style.transform = 'translateX(0)');
+    });
     </script>
 </body>
 </html>
