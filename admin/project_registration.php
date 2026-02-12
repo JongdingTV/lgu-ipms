@@ -56,16 +56,40 @@ function build_db_debug_error(mysqli $db, string $context, string $stmtError = '
     return implode(' | ', $parts);
 }
 
+function is_ajax_request(): bool
+{
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        return true;
+    }
+    if (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+        return true;
+    }
+    return false;
+}
+
+function respond_project_registration(bool $success, string $message, array $extra = []): void
+{
+    $payload = array_merge(['success' => $success, 'message' => $message], $extra);
+    if (is_ajax_request()) {
+        header('Content-Type: application/json');
+        echo json_encode($payload);
+        exit;
+    }
+
+    // Fallback for normal form POST: redirect back to the form page.
+    $query = $success ? 'saved=1' : 'error=' . rawurlencode($message);
+    header('Location: project_registration.php?' . $query);
+    exit;
+}
+
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    header('Content-Type: application/json');
     error_reporting(E_ALL);
     
     if ($_POST['action'] === 'save_project') {
         // Validate required fields
         if (empty($_POST['code']) || empty($_POST['name'])) {
-            echo json_encode(['success' => false, 'message' => 'Project Code and Name are required']);
-            exit;
+            respond_project_registration(false, 'Project Code and Name are required');
         }
         
         $code = trim($_POST['code']);
@@ -91,8 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if (!$stmt) {
                 $debugError = build_db_debug_error($db, 'Failed to prepare project update');
                 error_log('[project_registration] ' . $debugError);
-                echo json_encode(['success' => false, 'message' => $debugError]);
-                exit;
+                respond_project_registration(false, $debugError);
             }
             $stmt->bind_param('sssssssssssidssi', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status, $id);
         } else {
@@ -102,8 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if (!$stmt) {
                     $debugError = build_db_debug_error($db, 'Failed to prepare project insert (with created_at)');
                     error_log('[project_registration] ' . $debugError);
-                    echo json_encode(['success' => false, 'message' => $debugError]);
-                    exit;
+                    respond_project_registration(false, $debugError);
                 }
                 $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
             } else {
@@ -111,8 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if (!$stmt) {
                     $debugError = build_db_debug_error($db, 'Failed to prepare project insert (without created_at)');
                     error_log('[project_registration] ' . $debugError);
-                    echo json_encode(['success' => false, 'message' => $debugError]);
-                    exit;
+                    respond_project_registration(false, $debugError);
                 }
                 $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
             }
@@ -122,22 +143,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $executed = $stmt->execute();
             if ($executed) {
                 $savedId = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : (int)$db->insert_id;
-                echo json_encode(['success' => true, 'message' => 'Project saved successfully', 'project_id' => $savedId]);
+                respond_project_registration(true, 'Project saved successfully', ['project_id' => $savedId]);
             } else {
                 $debugError = build_db_debug_error($db, 'Failed to save project', $stmt->error);
                 error_log('[project_registration] ' . $debugError);
-                echo json_encode(['success' => false, 'message' => $debugError]);
+                respond_project_registration(false, $debugError);
             }
         } catch (mysqli_sql_exception $e) {
             if ((int)$e->getCode() === 1062) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Project code already exists. Please use a different Project Code.'
-                ]);
+                respond_project_registration(false, 'Project code already exists. Please use a different Project Code.');
             } else {
                 $debugError = build_db_debug_error($db, 'Failed to save project (exception)', $e->getMessage());
                 error_log('[project_registration] ' . $debugError);
-                echo json_encode(['success' => false, 'message' => $debugError]);
+                respond_project_registration(false, $debugError);
             }
         }
         if ($stmt) $stmt->close();
@@ -150,9 +168,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt->bind_param('i', $id);
         
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Project deleted successfully']);
+            respond_project_registration(true, 'Project deleted successfully');
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to delete project: ' . $db->error]);
+            respond_project_registration(false, 'Failed to delete project: ' . $db->error);
         }
         $stmt->close();
         exit;

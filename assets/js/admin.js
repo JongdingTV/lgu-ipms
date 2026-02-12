@@ -3055,9 +3055,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function fetchJsonWithFallback(urls, options = {}) {
+            const requestOptions = Object.assign({}, options);
+            requestOptions.headers = Object.assign({}, requestOptions.headers, { 'X-Requested-With': 'XMLHttpRequest' });
+
             const tryFetch = (idx) => {
                 if (idx >= urls.length) throw new Error('All project registration endpoints failed');
-                return fetch(urls[idx], options)
+                return fetch(urls[idx], requestOptions)
                     .then((res) => {
                         if (!res.ok) throw new Error('HTTP ' + res.status + ' @ ' + urls[idx]);
                         return res.json();
