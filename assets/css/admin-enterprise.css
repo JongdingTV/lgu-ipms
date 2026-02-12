@@ -79,9 +79,29 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .dropdown-arrow {
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu {
+    position: absolute !important;
+    top: calc(100% + 6px);
+    left: 0;
+    right: auto;
+    min-width: 220px;
+    margin-top: 0;
     border: 1px solid #d9e5f2;
     border-radius: 11px;
     box-shadow: 0 12px 20px rgba(17, 35, 61, 0.18);
+    background: #ffffff;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translateY(-6px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    z-index: 1400;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group.open .nav-submenu {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translateY(0);
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item {
@@ -523,6 +543,203 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .bt
 @media (max-width: 920px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .projects-filter .ac-c59ce897 {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Project Prioritization page refresh */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .prioritization-page {
+    display: grid;
+    gap: 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-controls {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) auto;
+    gap: 10px;
+    align-items: end;
+    padding: 12px;
+    border: 1px solid #d7e4f2;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff, #f7fbff);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .search-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #45648b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #fbSearch {
+    width: 100%;
+    min-height: 42px;
+    border-radius: 10px;
+    border: 1px solid #c9d9eb;
+    background: #fbfdff;
+    color: #1f3653;
+    padding: 0 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #clearSearch,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #exportData {
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    padding: 0 14px;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #clearSearch {
+    color: #27496f;
+    background: #eef4fb;
+    border-color: #c8d7e8;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #exportData {
+    color: #ffffff;
+    background: linear-gradient(135deg, #1f56bd, #2f6fdd);
+    border-color: #2a61bf;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 980px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: linear-gradient(135deg, #1f4ca8, #21427d);
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 11px 10px;
+    border: 0;
+    white-space: nowrap;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-table tbody td {
+    padding: 10px 10px;
+    font-size: 0.9rem;
+    color: #264362;
+    border-bottom: 1px solid #e2eaf4;
+    background: rgba(255, 255, 255, 0.96);
+    vertical-align: top;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-table tbody tr:nth-child(even) td {
+    background: #f8fbff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-table tbody tr:hover td {
+    background: #edf4ff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-table .edit-btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-table .view-btn {
+    min-height: 34px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    padding: 0 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-table .edit-btn {
+    color: #1f4a88;
+    background: #eef5ff;
+    border-color: #bfd4f2;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-table .view-btn {
+    color: #0f766e;
+    background: #ecfdf5;
+    border-color: #99f6e4;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .prioritization-summary .summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .prioritization-summary .stat {
+    border: 1px solid #d9e4f2;
+    border-radius: 12px;
+    background: linear-gradient(160deg, #ffffff, #f7fbff);
+    padding: 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .prioritization-summary .stat > div {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #183d6a;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .prioritization-summary .stat small {
+    color: #567390;
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-content {
+    width: min(720px, 94vw);
+    border-radius: 16px;
+    border: 1px solid #d3dff0;
+    background: linear-gradient(180deg, #ffffff, #f8fbff);
+    box-shadow: 0 22px 54px rgba(11, 28, 56, 0.3);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-header h2 {
+    color: #123a6d;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-btn {
+    min-height: 38px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    padding: 0 12px;
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-btn-action {
+    color: #fff;
+    background: linear-gradient(135deg, #1f56bd, #2f6fdd);
+    border-color: #2a61bf;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal .modal-btn-close {
+    color: #27496f;
+    background: #edf4fb;
+    border-color: #c8d8ea;
+}
+
+@media (max-width: 980px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-controls {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .prioritization-summary .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 

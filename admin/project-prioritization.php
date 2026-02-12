@@ -196,7 +196,7 @@ $db->close();
             <p>Review and prioritize citizen inputs for infrastructure project planning</p>
         </div>
 
-        <div class="inputs-section">
+        <div class="inputs-section prioritization-page">
             <!-- Search & Filter Controls -->
             <div class="feedback-controls">
                 <div class="search-group">
@@ -355,7 +355,7 @@ $db->close();
             </div>
         </div>
 
-        <div class="summary-section">
+        <div class="summary-section prioritization-summary">
             <div class="card">
                 <h2>Feedback Summary</h2>
                 <div class="summary">

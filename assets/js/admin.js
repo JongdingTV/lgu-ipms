@@ -3698,7 +3698,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ===== Inline scripts extracted from project-prioritization/project-prioritization.php ===== */
 (function(){
   var p = (window.location.pathname || "").replace(/\\\\/g, "/");
-  if (!p.endsWith('/admin/project-prioritization.php')) return;
+  if (!p.endsWith('/admin/project-prioritization.php') && !p.endsWith('/project-prioritization.php')) return;
 // ============================================
         // LOGOUT CONFIRMATION
         // ============================================
@@ -3770,6 +3770,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Expose for data-onclick handlers
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+
         // Close modal when clicking outside (only on the overlay, not the content)
         window.addEventListener('click', function(event) {
             // Only close if clicking on the modal overlay itself, not on content
@@ -3800,7 +3806,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('fbSearch');
         const clearBtn = document.getElementById('clearSearch');
         const table = document.getElementById('inputsTable');
-        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        const rows = table ? table.getElementsByTagName('tbody')[0].getElementsByTagName('tr') : [];
 
         function filterTable() {
             const searchTerm = searchInput.value.toLowerCase().trim();
@@ -3827,16 +3833,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        searchInput.addEventListener('input', filterTable);
+        if (searchInput) searchInput.addEventListener('input', filterTable);
 
-        clearBtn.addEventListener('click', function() {
-            searchInput.value = '';
-            filterTable();
-            searchInput.focus();
-        });
+        if (clearBtn && searchInput) {
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                filterTable();
+                searchInput.focus();
+            });
+        }
 
         // Export CSV function
-        document.getElementById('exportData').addEventListener('click', function() {
+        const exportDataBtn = document.getElementById('exportData');
+        if (exportDataBtn) exportDataBtn.addEventListener('click', function() {
             let csv = 'Control Number,Date,Name,Subject,Category,Location,Status\n';
             
             Array.from(rows).forEach((row, index) => {
@@ -3871,6 +3880,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectRegGroup = projectRegToggle ? projectRegToggle.closest('.nav-item-group') : null;
         const contractorsToggle = document.getElementById('contractorsToggle');
         const contractorsGroup = contractorsToggle ? contractorsToggle.closest('.nav-item-group') : null;
+
+        // Ensure groups are closed by default unless explicitly opened by user
+        document.querySelectorAll('.nav-item-group.open').forEach((g) => g.classList.remove('open'));
         
         if (projectRegToggle && projectRegGroup) {
             projectRegToggle.addEventListener('click', function(e) {
