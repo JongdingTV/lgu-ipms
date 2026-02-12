@@ -211,7 +211,31 @@
   }
 
   function statusClass(status) {
-    return String(status || 'Draft').toLowerCase().replace(/\s+/g, '-');
+    return String(status || 'Draft')
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+  }
+
+  function formatShortDate(value) {
+    if (!value) return '-';
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return '-';
+    return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function riskClassFromProject(p, progress) {
+    const status = String(p.status || '').toLowerCase();
+    if (status === 'cancelled') return 'risk-low';
+    if (status === 'on-hold') return 'risk-high';
+    if (status === 'completed' || progress >= 100) return 'risk-low';
+    if (!p.end_date) return 'risk-medium';
+    const end = new Date(p.end_date);
+    if (Number.isNaN(end.getTime())) return 'risk-medium';
+    const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
+    if (daysLeft < 0 && progress < 100) return 'risk-critical';
+    if (daysLeft <= 21 && progress < 60) return 'risk-high';
+    return 'risk-medium';
   }
 
   function renderProgressCards(projects) {
@@ -229,8 +253,9 @@
     const html = projects.map((p) => {
       const progress = Math.max(0, Math.min(100, Number(p.progress || 0)));
       const contractors = Array.isArray(p.assigned_contractors) ? p.assigned_contractors : [];
+      const riskClass = riskClassFromProject(p, progress);
       return `
-        <article class="project-card" data-project-id="${p.id || ''}" tabindex="0" role="button" aria-label="Open project ${String(p.name || 'project')}">
+        <article class="project-card ${riskClass}" data-project-id="${p.id || ''}" tabindex="0" role="button" aria-label="Open project ${String(p.name || 'project')}">
           <div class="project-header">
             <div class="project-title-section">
               <h4>${p.code || 'N/A'} - ${p.name || 'Unnamed Project'}</h4>

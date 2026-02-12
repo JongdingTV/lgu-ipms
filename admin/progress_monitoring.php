@@ -517,44 +517,167 @@ $db->close();
 
         .main-content .project-card {
             border: 1px solid #d8e5f4;
-            border-radius: 14px;
+            border-radius: 16px;
             background: linear-gradient(165deg, #ffffff, #f7fbff);
-            padding: 14px;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+            padding: 14px 14px 12px;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
 
         .main-content .project-card:hover {
             transform: translateY(-2px);
-            border-color: #bfd6ef;
-            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+            border-color: #8bb8e5;
+            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14);
         }
 
-        .main-content .project-card.risk-critical { border-left: 4px solid #dc2626; }
-        .main-content .project-card.risk-high { border-left: 4px solid #f97316; }
-        .main-content .project-card.risk-medium { border-left: 4px solid #f59e0b; }
-        .main-content .project-card.risk-low { border-left: 4px solid #16a34a; }
+        .main-content .project-card.risk-critical { border-left: 5px solid #dc2626; }
+        .main-content .project-card.risk-high { border-left: 5px solid #f97316; }
+        .main-content .project-card.risk-medium { border-left: 5px solid #f59e0b; }
+        .main-content .project-card.risk-low { border-left: 5px solid #16a34a; }
+
+        .main-content .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .main-content .project-title-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .main-content .project-code-badge {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid #c6dbf1;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.25px;
+            color: #355c86;
+            background: #edf5ff;
+            margin-bottom: 6px;
+        }
 
         .main-content .project-title-section h4 {
             color: #14385c;
-            margin-bottom: 8px;
+            margin: 0;
+            font-size: 1.2rem;
+            line-height: 1.15;
+        }
+
+        .main-content .project-description {
+            margin: 8px 0 12px;
+            color: #516783;
+            font-size: 0.86rem;
+            line-height: 1.45;
+            min-height: 38px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .main-content .project-meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px 12px;
+        }
+
+        .main-content .project-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            background: rgba(237, 245, 255, 0.45);
+            border: 1px solid #d8e7f8;
+            border-radius: 10px;
+            padding: 8px 10px;
+        }
+
+        .main-content .project-meta-label {
+            font-size: 0.68rem;
+            letter-spacing: 0.45px;
+            text-transform: uppercase;
+            color: #6a819d;
+            font-weight: 700;
+        }
+
+        .main-content .project-meta-value {
+            color: #1f3f65;
+            font-weight: 600;
+            line-height: 1.25;
         }
 
         .main-content .project-status {
             border-radius: 999px;
-            padding: 4px 10px;
+            padding: 5px 11px;
             font-weight: 700;
             font-size: 0.72rem;
-            border: 1px solid #d7e3f2;
+            border: 1px solid #c8d7ea;
             background: #f8fbff;
-            color: #315274;
+            color: #29496d;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .main-content .project-status.draft {
+            background: #eef2f7;
+            border-color: #d4dee9;
+            color: #4a5d75;
+        }
+
+        .main-content .project-status.for-approval {
+            background: #fff7e6;
+            border-color: #f5d28a;
+            color: #8a5a08;
+        }
+
+        .main-content .project-status.approved {
+            background: #e9f8ef;
+            border-color: #9edbb6;
+            color: #136b3a;
+        }
+
+        .main-content .project-status.on-hold {
+            background: #fff1f2;
+            border-color: #f7b4be;
+            color: #9f1239;
+        }
+
+        .main-content .project-status.cancelled {
+            background: #f3f4f6;
+            border-color: #d2d6dc;
+            color: #4b5563;
+        }
+
+        .main-content .project-status.completed {
+            background: #e8f4ff;
+            border-color: #9bc8f6;
+            color: #0b4c8c;
         }
 
         .main-content .progress-container {
-            margin-top: 10px;
+            margin-top: 12px;
             border: 1px solid #e0eaf5;
             background: #fbfdff;
             border-radius: 11px;
             padding: 10px;
+        }
+
+        .main-content .progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            color: #3f5f83;
+            font-size: 0.82rem;
         }
 
         .main-content .progress-bar {
@@ -565,6 +688,16 @@ $db->close();
 
         .main-content .progress-fill {
             border-radius: 999px;
+            background: linear-gradient(90deg, #22c55e 0%, #3b82f6 55%, #2563eb 100%);
+        }
+
+        .main-content .project-click-hint {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #d8e6f4;
+            color: #5b7697;
+            font-size: 0.82rem;
+            font-weight: 600;
         }
 
         .main-content .contractors-section {
@@ -639,6 +772,10 @@ $db->close();
             }
 
             .main-content .pm-right {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content .project-meta {
                 grid-template-columns: 1fr;
             }
 
