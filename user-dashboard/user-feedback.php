@@ -114,31 +114,44 @@ $db->close();
         }
             transform: translateY(-9px) rotate(-45deg);
         }
-        @media (max-width: 991px) {
-            .sidebar-burger-btn.mobile-only {
-                display: flex !important;
+            @media (max-width: 991px) {
+                .sidebar-burger-btn.mobile-only {
+                    display: flex !important;
+                }
+                #navbar {
+                    width: 260px;
+                    min-width: 220px;
+                    max-width: 90vw;
+                    transform: translateX(-110%);
+                    transition: transform 0.3s cubic-bezier(.4,2,.6,1);
+                    position: fixed;
+                    left: 0;
+                    top: 0;
+                    height: 100vh;
+                    z-index: 1003;
+                    box-shadow: 2px 0 16px rgba(30,58,138,0.10);
+                    background: #fff;
+                }
+                #navbar.sidebar-open {
+                    transform: translateX(0);
+                }
             }
-            #navbar {
-                transform: translateX(-110%);
-                transition: transform 0.3s cubic-bezier(.4,2,.6,1);
-                position: fixed;
-                left: 0;
-                top: 0;
-                height: 100vh;
-                z-index: 1003;
+            @media (min-width: 992px) {
+                .sidebar-burger-btn.mobile-only {
+                    display: none !important;
+                }
+                #navbar {
+                    width: 260px;
+                    min-width: 220px;
+                    max-width: 320px;
+                    position: static !important;
+                    transform: none !important;
+                    height: auto !important;
+                    z-index: 1001;
+                    box-shadow: none !important;
+                    background: none !important;
+                }
             }
-            #navbar.sidebar-open {
-                transform: translateX(0);
-            }
-        }
-        @media (min-width: 992px) {
-            #navbar {
-                transform: none !important;
-                position: static !important;
-                height: auto !important;
-                z-index: 1001;
-            }
-        }
         </style>
         <!-- Profile section, centered -->
         <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">

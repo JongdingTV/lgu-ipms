@@ -112,6 +112,9 @@ $db->close();
                     display: flex !important;
                 }
                 #navbar {
+                    width: 260px;
+                    min-width: 220px;
+                    max-width: 90vw;
                     transform: translateX(-110%);
                     transition: transform 0.3s cubic-bezier(.4,2,.6,1);
                     position: fixed;
@@ -119,17 +122,27 @@ $db->close();
                     top: 0;
                     height: 100vh;
                     z-index: 1003;
+                    box-shadow: 2px 0 16px rgba(30,58,138,0.10);
+                    background: #fff;
                 }
                 #navbar.sidebar-open {
                     transform: translateX(0);
                 }
             }
             @media (min-width: 992px) {
+                .sidebar-burger-btn.mobile-only {
+                    display: none !important;
+                }
                 #navbar {
-                    transform: none !important;
+                    width: 260px;
+                    min-width: 220px;
+                    max-width: 320px;
                     position: static !important;
+                    transform: none !important;
                     height: auto !important;
                     z-index: 1001;
+                    box-shadow: none !important;
+                    background: none !important;
                 }
             }
             </style>
