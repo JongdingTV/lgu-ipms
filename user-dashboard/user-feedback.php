@@ -4,33 +4,24 @@ require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
 
-// AJAX handler for feedback submission
-if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-    header('Content-Type: application/json');
-    ini_set('display_errors', 0);
-    error_reporting(E_ERROR | E_PARSE);
-    
-    // Check authentication
+// Feedback submission logic: All user feedbacks are inserted into the feedback table.
+// The admin Project Prioritization page reads from this table, so all user concerns are sent to the admin side automatically.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
+    set_no_cache_headers();
     check_auth();
-    
     if (!isset($_SESSION['user_id'])) {
-        echo json_encode(['success' => false, 'message' => 'Not logged in']);
-        exit;
-    }
-    // Get user info from database
-    $user_id = $_SESSION['user_id'];
-    $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
-    $stmt->bind_param('i', $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-    $stmt->close();
-    $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
-        if ($db->connect_error) {
-            echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
-            exit;
-        }
+        $msg = 'Not logged in.';
+    } else if ($db->connect_error) {
+        $msg = 'Database connection failed.';
+    } else {
+        $user_id = $_SESSION['user_id'];
+        $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->bind_param('i', $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
+        $stmt->close();
+        $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
         $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
         $category = $_POST['category'];
         $location = $_POST['street'] . ', ' . $_POST['barangay'];
@@ -39,16 +30,13 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
         $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Feedback submitted!']);
+            $msg = 'Feedback submitted!';
         } else {
-            echo json_encode(['success' => false, 'message' => 'Error submitting feedback.']);
+            $msg = 'Error submitting feedback.';
         }
         $stmt->close();
-        $db->close();
-        exit;
     }
-    echo json_encode(['success' => false, 'message' => 'Invalid request']);
-    exit;
+    $db->close();
 }
 
 // Normal page load
