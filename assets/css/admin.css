@@ -5807,118 +5807,12 @@ body { font-family: monospace; padding: 2rem; background: #f5f5f5; }
   padding-left: 18px;
 }
 
-/* ============================================
-   ADMIN APP OVERRIDES (NON-LOGIN PAGES)
-   Prevent global blur overlays from legacy extracted styles
-   ============================================ */
-:root {
-    --admin-bg-start: #edf4ff;
-    --admin-bg-end: #f8fafc;
-    --admin-ink: #0f172a;
-    --admin-muted: #475569;
-    --admin-panel: rgba(255, 255, 255, 0.96);
-    --admin-border: rgba(15, 23, 42, 0.1);
-    --admin-primary: #1d4ed8;
-    --admin-primary-soft: #dbeafe;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) {
-    background:
-        radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.12), transparent 38%),
-        radial-gradient(circle at 100% 100%, rgba(14, 116, 144, 0.1), transparent 42%),
-        linear-gradient(180deg, var(--admin-bg-start), var(--admin-bg-end)) !important;
-    background-attachment: fixed;
-    color: var(--admin-ink);
-    min-height: 100vh;
-}
-
+/* Neutralize legacy global blur overlays on authenticated admin pages */
 body:not(.admin-login-page):not(.login-page):not(.signup-page)::before {
     content: none !important;
     display: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98)) !important;
-    border-right: 1px solid var(--admin-border);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .logo-text {
-    color: #0b1f3a;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
-    color: var(--admin-ink);
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .card,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .metric-card,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .chart-box,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .recent-projects {
-    background: var(--admin-panel) !important;
-    border: 1px solid var(--admin-border);
-    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .metric-card:hover,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .chart-box:hover,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .recent-projects:hover {
-    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header h1,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) h1,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) h2,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) h3 {
-    color: #0b1f3a;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) p,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) label,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .small-text {
-    color: var(--admin-muted);
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) input,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) select,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) textarea {
-    border: 1px solid rgba(148, 163, 184, 0.38);
-    background: #ffffff;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) input:focus,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) select:focus,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) textarea:focus {
-    border-color: var(--admin-primary);
-    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-primary,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) button[type="submit"] {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    border-color: transparent;
-    color: #ffffff;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-primary:hover,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) button[type="submit"]:hover {
-    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links a.active,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item.active {
-    background: linear-gradient(135deg, #1e40af, #2563eb);
-    color: #ffffff !important;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links a:hover,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item:hover,
-body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-submenu-item:hover {
-    background: var(--admin-primary-soft);
 }
 
 /* Force layout reset for authenticated admin pages.
