@@ -6507,15 +6507,19 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .n
     position: fixed;
     inset: 0;
     z-index: 1300;
-    display: none;
+    display: none !important;
     align-items: center;
     justify-content: center;
     background: rgba(7, 18, 33, 0.52);
     backdrop-filter: blur(4px);
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .admin-logout-modal.show {
-    display: flex;
+    display: flex !important;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .admin-logout-dialog {

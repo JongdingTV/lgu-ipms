@@ -85,6 +85,9 @@
       document.body.appendChild(modal);
     }
 
+    // Ensure modal is hidden by default
+    modal.classList.remove('show');
+
     let nextUrl = '/admin/logout.php';
     const close = () => modal.classList.remove('show');
 
@@ -101,7 +104,14 @@
     document.addEventListener('click', (e) => {
       const link = e.target.closest('a[href*="logout.php"]');
       if (!link) return;
+      
+      // Check if link is in admin nav or main content areas
+      const inAdmin = link.closest('.nav') || link.closest('.sidebar') || link.closest('.main-content');
+      if (!inAdmin) return;
+      
       e.preventDefault();
+      e.stopPropagation();
+      
       nextUrl = link.getAttribute('href') || '/admin/logout.php';
       modal.classList.add('show');
       $('.btn-logout', modal).focus();
