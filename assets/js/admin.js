@@ -2051,7 +2051,8 @@ document.addEventListener('DOMContentLoaded', function() {
             let budgetRevealTimer;
             let isRevealing = false;
 
-            if (budgetBtn && budgetValue && budgetCard) {
+            // Keep legacy fallback only for browsers without Pointer Events.
+            if (budgetBtn && budgetValue && budgetCard && !window.PointerEvent) {
                 // Add hover styles
                 budgetBtn.addEventListener('mouseenter', function() {
                     this.style.color = '#333';
