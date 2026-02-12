@@ -1,6 +1,6 @@
 /**
  * Smart Footer Script
- * Hide footer at top of page, show when scrolling down
+ * Hide footer at top of page, show when scrolling down with smooth animation
  * Applied to all admin pages
  */
 
@@ -11,25 +11,39 @@
     if (!footer) return;
 
     // State tracking
-    let isFooterVisible = true;
+    let isFooterVisible = false;
     let lastScrollTop = 0;
+    let scrollTimeout = null;
 
     function showFooter() {
         if (!isFooterVisible) {
+            footer.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
             footer.style.display = 'flex';
-            footer.style.opacity = '1';
-            footer.style.visibility = 'visible';
-            footer.style.pointerEvents = 'auto';
+            // Small delay for smooth animation sequence
+            setTimeout(() => {
+                footer.style.opacity = '1';
+                footer.style.visibility = 'visible';
+                footer.style.pointerEvents = 'auto';
+                footer.style.transform = 'translateY(0)';
+            }, 10);
             isFooterVisible = true;
         }
     }
 
     function hideFooter() {
         if (isFooterVisible) {
-            footer.style.display = 'none';
+            footer.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
             footer.style.opacity = '0';
             footer.style.visibility = 'hidden';
             footer.style.pointerEvents = 'none';
+            footer.style.transform = 'translateY(100%)';
+            
+            // Hide display after animation completes
+            setTimeout(() => {
+                if (footer.style.opacity === '0') {
+                    footer.style.display = 'none';
+                }
+            }, 400);
             isFooterVisible = false;
         }
     }
@@ -40,24 +54,38 @@
         console.log('Initial scroll top:', scrollTop);
         
         if (scrollTop > 50) {
-            showFooter();
+            // Show immediately without animation on page load
+            footer.style.display = 'flex';
+            footer.style.opacity = '1';
+            footer.style.visibility = 'visible';
+            footer.style.pointerEvents = 'auto';
+            footer.style.transform = 'translateY(0)';
+            isFooterVisible = true;
         } else {
-            hideFooter();
+            footer.style.display = 'none';
+            footer.style.transform = 'translateY(100%)';
+            isFooterVisible = false;
         }
     }
 
-    // Handle scroll events
+    // Handle scroll events with throttling for performance
     window.addEventListener('scroll', function() {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         
-        // Show footer when scrolling down past 50px
-        if (scrollTop > 50 && !isFooterVisible) {
-            showFooter();
-        } 
-        // Hide footer when scrolling back to top
-        else if (scrollTop <= 50 && isFooterVisible) {
-            hideFooter();
-        }
+        // Throttle scroll events to ~60fps
+        if (scrollTimeout) return;
+        
+        scrollTimeout = setTimeout(() => {
+            // Show footer when scrolling down past 50px
+            if (scrollTop > 50 && !isFooterVisible) {
+                showFooter();
+            } 
+            // Hide footer when scrolling back to top
+            else if (scrollTop <= 50 && isFooterVisible) {
+                hideFooter();
+            }
+            scrollTimeout = null;
+        }, 16);
     }, { passive: true });
 
     // Initialize on DOM ready
