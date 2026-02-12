@@ -158,10 +158,10 @@ $db->close();
         </div>
         <hr class="sidebar-divider" />
         <nav class="nav-links">
-            <a href="user-dashboard.php"><img src="/assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
-            <a href="user-feedback.php" class="active"><img src="/user-dashboard/feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php"><img src="/user-dashboard/settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
+            <a href="user-dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+            <a href="user-progress-monitoring.php"><img src="../assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-feedback.php" class="active"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
+            <a href="user-settings.php"><img src="settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </nav>
         <div class="sidebar-logout-container">
             <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
