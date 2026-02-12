@@ -32,6 +32,7 @@ footer,
     visibility: hidden !important;
     pointer-events: none !important;
     transform: translateY(100%) !important;
+    line-height: 20px !important;
 }
 
 /* Show footer when smart-footer.js triggers display: flex */
@@ -53,52 +54,6 @@ footer.show,
     transform: translateY(0) !important;
 }
 
-/* Move all content up to make room for compact footer */
-html {
-    padding-bottom: 30px !important;
-}
-
-body {
-    padding-bottom: 30px !important;
-    margin-bottom: 0 !important;
-    overflow-x: hidden !important;
-}
-
-/* Ensure main content doesn't overlap footer */
-.main-content,
-section.main-content,
-main,
-.page-content,
-.content-wrapper {
-    margin-bottom: 30px !important;
-    padding-bottom: 0 !important;
-}
-
-/* Make sure all containers below nav/sidebar account for footer */
-.container,
-.wrapper,
-.form-container,
-.page-container {
-    margin-bottom: 30px !important;
-    padding-bottom: 0 !important;
-}
-
-/* Sections and cards */
-section,
-.card,
-.modal,
-.dialog {
-    margin-bottom: 0 !important;
-}
-
-/* Tables */
-table,
-.table,
-.table-wrapper,
-.table-container {
-    margin-bottom: 20px !important;
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
     footer,
@@ -106,20 +61,7 @@ table,
         height: 28px !important;
         padding: 4px 10px !important;
         font-size: 8px !important;
-    }
-    
-    html {
-        padding-bottom: 28px !important;
-    }
-    
-    body {
-        padding-bottom: 28px !important;
-    }
-    
-    .main-content,
-    section.main-content,
-    main {
-        margin-bottom: 28px !important;
+        line-height: 20px !important;
     }
 }
 
@@ -129,20 +71,7 @@ table,
         height: 26px !important;
         padding: 3px 8px !important;
         font-size: 7px !important;
-    }
-    
-    html {
-        padding-bottom: 26px !important;
-    }
-    
-    body {
-        padding-bottom: 26px !important;
-    }
-    
-    .main-content,
-    section.main-content,
-    main {
-        margin-bottom: 26px !important;
+        line-height: 20px !important;
     }
 }
 
@@ -152,45 +81,8 @@ table,
         height: 24px !important;
         padding: 2px 6px !important;
         font-size: 6px !important;
+        line-height: 20px !important;
     }
-    
-    html {
-        padding-bottom: 24px !important;
-    }
-    
-    body {
-        padding-bottom: 24px !important;
-    }
-    
-    .main-content,
-    section.main-content,
-    main {
-        margin-bottom: 24px !important;
-    }
-}
-
-/* Ensure no element goes behind footer */
-* {
-    backface-visibility: hidden !important;
-}
-
-/* Sidebar should be behind footer */
-.nav,
-.sidebar,
-.navbar {
-    z-index: 1000 !important;
-}
-
-/* Footer is on top */
-.footer,
-footer {
-    z-index: 999 !important;
-}
-
-/* Main content below both */
-.main-content,
-section.main-content {
-    z-index: 1 !important;
 }
 
 /* Print styles */
@@ -206,6 +98,7 @@ section.main-content {
         padding: 12px 16px !important;
     }
 }
+
 
 
 /* Move all content up to make room for footer */
