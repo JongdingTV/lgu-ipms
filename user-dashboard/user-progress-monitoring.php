@@ -39,13 +39,25 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
-
-    <!-- Burger button (always visible on mobile, top left) -->
-    <button id="sidebarBurgerBtn" class="sidebar-burger-btn" aria-label="Open sidebar" type="button">
+    <!-- Mobile burger button (top left, only visible on mobile) -->
+    <button id="sidebarBurgerBtn" class="sidebar-burger-btn mobile-only" aria-label="Open sidebar" type="button" style="position:fixed;top:18px;left:18px;z-index:1002;display:none;">
         <span class="burger-bar"></span>
         <span class="burger-bar"></span>
         <span class="burger-bar"></span>
     </button>
+    <style>
+    /* Show burger only on mobile */
+    .sidebar-burger-btn.mobile-only {
+        display: none;
+    }
+    @media (max-width: 991px) {
+        .sidebar-burger-btn.mobile-only {
+            display: block !important;
+        }
+    }
+    </style>
+
+    <!-- Burger button (always visible on mobile, top left) -->
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <aside class="nav sidebar-animated" id="navbar">
         <div class="nav-logo admin-sidebar-logo">
@@ -267,6 +279,58 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
     <script src="/assets/js/shared/shared-data.js"></script>
     <script src="/assets/js/shared/shared-toggle.js"></script>
     <script src="user-progress-monitoring.js"></script>
+        <script>
+        // Sidebar burger and overlay logic (mobile burger only)
+        (function() {
+            const sidebar = document.getElementById('navbar');
+            const burger = document.getElementById('sidebarBurgerBtn');
+            const overlay = document.getElementById('sidebarOverlay');
+            // Show/hide burger only on mobile
+            function updateBurgerVisibility() {
+                if (window.innerWidth <= 991) {
+                    burger.style.display = 'block';
+                } else {
+                    burger.style.display = 'none';
+                    closeSidebar();
+                }
+            }
+            function openSidebar() {
+                sidebar.classList.add('sidebar-open');
+                overlay.classList.add('sidebar-overlay-active');
+                document.body.classList.add('sidebar-opened');
+            }
+            function closeSidebar() {
+                sidebar.classList.remove('sidebar-open');
+                overlay.classList.remove('sidebar-overlay-active');
+                document.body.classList.remove('sidebar-opened');
+            }
+            burger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (sidebar.classList.contains('sidebar-open')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+            overlay.addEventListener('click', closeSidebar);
+            window.addEventListener('resize', updateBurgerVisibility);
+            document.addEventListener('DOMContentLoaded', updateBurgerVisibility);
+            // Also close sidebar if clicking outside sidebar and burger (for extra safety)
+            document.addEventListener('click', function(e) {
+                if (
+                    sidebar.classList.contains('sidebar-open') &&
+                    !sidebar.contains(e.target) &&
+                    !burger.contains(e.target)
+                ) {
+                    closeSidebar();
+                }
+            });
+        })();
+        // Logout confirmation (if needed)
+        document.addEventListener('DOMContentLoaded', function() {
+            window.setupLogoutConfirmation && window.setupLogoutConfirmation();
+        });
+        </script>
     <script>
     (function() {
         // Remove duplicate logout modal if present
