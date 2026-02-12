@@ -124,10 +124,7 @@ $db->close();
 
     <!-- Burger button (always visible on mobile, top left) -->
     <button id="sidebarBurgerBtn" class="sidebar-burger-btn" aria-label="Open sidebar" type="button">
-        <span class="burger-bar"></span>
-        <span class="burger-bar"></span>
-        <span class="burger-bar"></span>
-    </button>
+
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <aside class="nav sidebar-animated" id="navbar">
         <div class="nav-logo admin-sidebar-logo">
@@ -186,20 +183,6 @@ $db->close();
             <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
         </div>
     </aside>
-
-    <div id="sidebarOverlay" class="sidebar-overlay"></div>
-    <aside class="nav sidebar-animated" id="navbar">
-        <!-- Burger button beside sidebar (admin style) -->
-        <button id="sidebarBurgerBtn" class="sidebar-burger-btn beside-sidebar" aria-label="Open sidebar" type="button">
-            <span class="burger-bar"></span>
-            <span class="burger-bar"></span>
-            <span class="burger-bar"></span>
-        </button>
-        <!-- Logo and IPMS side by side at top -->
-        <div class="nav-logo admin-sidebar-logo" style="display:flex;flex-direction:row;align-items:center;justify-content:center;padding:18px 0 8px 0;gap:10px;">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
-            <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
-        </div>
         <!-- Profile section, centered -->
         <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">
             <?php
