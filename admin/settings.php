@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
         $error = 'New passwords do not match.';
     } else {
         // Get current password from database
-        $stmt = $db->prepare("SELECT password FROM employees WHERE id = ?");
+        $stmt = $db->prepare("SELECT password, email FROM employees WHERE id = ?");
         if ($stmt) {
             $stmt->bind_param('i', $employee_id);
             $stmt->execute();
@@ -69,10 +69,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
                     if ($update_stmt->execute()) {
                         $success = 'Password changed successfully!';
                         // Log the change
-                        $log_stmt = $db->prepare("INSERT INTO login_logs (employee_id, ip_address, user_agent, status, reason) VALUES (?, ?, ?, 'success', 'Password changed')");
+                        $employee_email = (string)($employee['email'] ?? ($_SESSION['email'] ?? ''));
+                        $log_stmt = $db->prepare("INSERT INTO login_logs (employee_id, email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, ?, 'success', 'Password changed')");
                         if ($log_stmt) {
-                            $log_stmt->bind_param('iss', $employee_id, $client_ip, $user_agent);
-                            $log_stmt->execute();
+                            $log_stmt->bind_param('isss', $employee_id, $employee_email, $client_ip, $user_agent);
+                            try {
+                                $log_stmt->execute();
+                            } catch (Throwable $e) {
+                                // Do not fail password updates if audit log insert fails.
+                            }
                             $log_stmt->close();
                         }
                     } else {
