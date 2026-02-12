@@ -5679,10 +5679,28 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer {
 /* Visual refresh for authenticated admin pages */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) {
     background:
-        radial-gradient(1200px 500px at 20% -10%, rgba(59, 130, 246, 0.14), transparent 60%),
-        radial-gradient(900px 420px at 100% 0%, rgba(14, 116, 144, 0.1), transparent 55%),
-        linear-gradient(180deg, #f3f7fd 0%, #edf3fa 45%, #eaf0f8 100%) !important;
+        linear-gradient(120deg, rgba(13, 33, 56, 0.68), rgba(23, 74, 120, 0.55)),
+        radial-gradient(1200px 500px at 20% -10%, rgba(59, 130, 246, 0.2), transparent 60%),
+        radial-gradient(900px 420px at 100% 0%, rgba(14, 116, 144, 0.14), transparent 55%),
+        url("../cityhall.jpeg") center/cover no-repeat fixed !important;
+    background-attachment: fixed !important;
     color: #12253f;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page)::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(242, 247, 254, 0.82), rgba(236, 244, 252, 0.9));
+    z-index: 0;
+    pointer-events: none;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .toggle-btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .footer {
+    position: relative;
+    z-index: 1;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav {
@@ -5744,9 +5762,11 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .metric-card,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .chart-box,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .recent-projects,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .quick-stats {
-    background: rgba(255, 255, 255, 0.96) !important;
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+    background: rgba(255, 255, 255, 0.86) !important;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.13);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .metric-card:hover,
