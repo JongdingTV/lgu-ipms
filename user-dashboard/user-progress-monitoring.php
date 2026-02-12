@@ -35,8 +35,7 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/style.css">
-    <link rel="stylesheet" href="user-dashboard.css">
+    <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
@@ -110,7 +109,6 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
         </script>
     </aside>
 
-    <!-- Toggle button to show sidebar -->
     <div class="toggle-btn" id="showSidebarBtn">
         <a href="#" id="toggleSidebarShow" title="Show sidebar">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -118,6 +116,7 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['fi
             </svg>
         </a>
     </div>
+
 
     <section class="main-content">
         <div class="dash-header">
