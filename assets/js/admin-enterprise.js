@@ -211,7 +211,31 @@
   }
 
   function statusClass(status) {
-    return String(status || 'Draft').toLowerCase().replace(/\s+/g, '-');
+    return String(status || 'Draft')
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+  }
+
+  function formatShortDate(value) {
+    if (!value) return '-';
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return '-';
+    return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function riskClassFromProject(p, progress) {
+    const status = String(p.status || '').toLowerCase();
+    if (status === 'cancelled') return 'risk-low';
+    if (status === 'on-hold') return 'risk-high';
+    if (status === 'completed' || progress >= 100) return 'risk-low';
+    if (!p.end_date) return 'risk-medium';
+    const end = new Date(p.end_date);
+    if (Number.isNaN(end.getTime())) return 'risk-medium';
+    const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
+    if (daysLeft < 0 && progress < 100) return 'risk-critical';
+    if (daysLeft <= 21 && progress < 60) return 'risk-high';
+    return 'risk-medium';
   }
 
   function renderProgressCards(projects) {
@@ -229,8 +253,9 @@
     const html = projects.map((p) => {
       const progress = Math.max(0, Math.min(100, Number(p.progress || 0)));
       const contractors = Array.isArray(p.assigned_contractors) ? p.assigned_contractors : [];
+      const riskClass = riskClassFromProject(p, progress);
       return `
-        <article class="project-card" data-project-id="${p.id || ''}" tabindex="0" role="button" aria-label="Open project ${String(p.name || 'project')}">
+        <article class="project-card ${riskClass}" data-project-id="${p.id || ''}" tabindex="0" role="button" aria-label="Open project ${String(p.name || 'project')}">
           <div class="project-header">
             <div class="project-title-section">
               <h4>${p.code || 'N/A'} - ${p.name || 'Unnamed Project'}</h4>
@@ -267,10 +292,17 @@
     const q = ($('#pmSearch')?.value || '').trim().toLowerCase();
     const status = ($('#pmStatusFilter')?.value || '').trim();
     const sector = ($('#pmSectorFilter')?.value || '').trim();
+    const progressBand = ($('#pmProgressFilter')?.value || '').trim();
     const contractorMode = ($('#pmContractorFilter')?.value || '').trim();
-    return all.filter((p) => {
+    const sortBy = ($('#pmSort')?.value || 'createdAt_desc').trim();
+    const filtered = all.filter((p) => {
       if (status && String(p.status || '').trim() !== status) return false;
       if (sector && String(p.sector || '').trim() !== sector) return false;
+      if (progressBand) {
+        const [min, max] = progressBand.split('-').map((v) => Number(v));
+        const value = Number(p.progress || 0);
+        if (!Number.isFinite(min) || !Number.isFinite(max) || value < min || value > max) return false;
+      }
       const hasContractors = Array.isArray(p.assigned_contractors) && p.assigned_contractors.length > 0;
       if (contractorMode === 'assigned' && !hasContractors) return false;
       if (contractorMode === 'unassigned' && hasContractors) return false;
@@ -278,6 +310,28 @@
       const text = `${p.code || ''} ${p.name || ''} ${p.location || ''}`.toLowerCase();
       return text.includes(q);
     });
+    const timeValue = (p) => {
+      const raw = p.created_at || p.createdAt || p.start_date || '';
+      const t = new Date(raw).getTime();
+      return Number.isNaN(t) ? 0 : t;
+    };
+    filtered.sort((a, b) => {
+      const ap = Number(a.progress || 0);
+      const bp = Number(b.progress || 0);
+      if (sortBy === 'progress_desc') return bp - ap;
+      if (sortBy === 'progress_asc') return ap - bp;
+      const at = timeValue(a);
+      const bt = timeValue(b);
+      if (sortBy === 'createdAt_asc') return at - bt;
+      return bt - at;
+    });
+    return filtered;
+  }
+
+  function updateProgressSummary(visible, total) {
+    const el = document.getElementById('pmResultSummary');
+    if (!el) return;
+    el.textContent = `Showing ${visible} of ${total} projects`;
   }
 
   function updateProgressStats(all) {
@@ -299,6 +353,19 @@
     if (!list) return;
 
     let all = [];
+    const rerender = () => {
+      const visible = applyProgressFilters(all);
+      renderProgressCards(visible);
+      updateProgressSummary(visible.length, all.length);
+      const statusValue = ($('#pmStatusFilter')?.value || '').trim();
+      const quick = document.getElementById('pmQuickFilters');
+      if (quick) {
+        $$('button[data-status]', quick).forEach((btn) => {
+          const isActive = statusValue === String(btn.dataset.status || '');
+          btn.classList.toggle('active', isActive);
+        });
+      }
+    };
     const load = () => {
       list.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading projects...</p></div>';
       const url = `progress_monitoring.php?action=load_projects&_=${Date.now()}`;
@@ -310,18 +377,82 @@
         .then((data) => {
           all = Array.isArray(data) ? data : [];
           updateProgressStats(all);
-          renderProgressCards(applyProgressFilters(all));
+          rerender();
         })
         .catch((err) => {
           list.innerHTML = `<div class="admin-empty-state"><span class="title">Unable to load projects</span><span>${String(err.message || 'Unknown error')}</span></div>`;
         });
     };
 
-    ['pmSearch', 'pmStatusFilter', 'pmSectorFilter', 'pmContractorFilter'].forEach((id) => {
+    ['pmSearch', 'pmStatusFilter', 'pmSectorFilter', 'pmProgressFilter', 'pmContractorFilter', 'pmSort'].forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', () => renderProgressCards(applyProgressFilters(all)));
+      el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', rerender);
     });
+
+    const quick = document.getElementById('pmQuickFilters');
+    if (quick) {
+      quick.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-status]');
+        if (!btn) return;
+        const statusFilter = document.getElementById('pmStatusFilter');
+        if (!statusFilter) return;
+        statusFilter.value = btn.dataset.status || '';
+        rerender();
+      });
+    }
+
+    const clearBtn = document.getElementById('pmClearFilters');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        ['pmSearch', 'pmStatusFilter', 'pmSectorFilter', 'pmProgressFilter', 'pmContractorFilter', 'pmSort'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (el.tagName === 'INPUT') el.value = '';
+          if (el.tagName === 'SELECT' && id !== 'pmSort') el.value = '';
+        });
+        const sortEl = document.getElementById('pmSort');
+        if (sortEl) sortEl.value = 'createdAt_desc';
+        rerender();
+      });
+    }
+
+    const exportBtn = document.getElementById('exportCsv');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const rows = applyProgressFilters(all);
+        if (!rows.length) {
+          if (isFn(window.showToast)) window.showToast('No Data', 'No projects to export with current filters.', 'warning');
+          return;
+        }
+        const escapeCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+        const header = ['Code', 'Project Name', 'Status', 'Sector', 'Location', 'Budget', 'Progress', 'Contractors', 'Start Date', 'End Date'];
+        const csv = [
+          header.map(escapeCsv).join(','),
+          ...rows.map((p) => ([
+            p.code || '',
+            p.name || '',
+            p.status || '',
+            p.sector || '',
+            p.location || '',
+            Number(p.budget || 0),
+            `${Number(p.progress || 0)}%`,
+            Array.isArray(p.assigned_contractors) ? p.assigned_contractors.length : 0,
+            p.start_date || '',
+            p.end_date || ''
+          ]).map(escapeCsv).join(','))
+        ].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const href = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = href;
+        a.download = `progress-monitoring-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(href);
+      });
+    }
 
     load();
   }
