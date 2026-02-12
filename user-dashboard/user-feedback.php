@@ -1,3 +1,4 @@
+<?php
 // Import security functions
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
@@ -103,7 +104,7 @@ $db->close();
     <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
 </head>
 <body>
-    <div style="display:flex;align-items:center;gap:12px;padding:16px 0 16px 24px;">
+    <div id="dashboardHeader" style="position:fixed;top:0;left:0;width:100vw;z-index:1000;background:#fff;display:flex;align-items:center;gap:12px;padding:16px 0 16px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
         <button id="sidebarBurgerBtn" class="navbar-menu-icon" title="Toggle sidebar" style="background:none;border:none;padding:0;margin-right:16px;cursor:pointer;">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -116,10 +117,31 @@ $db->close();
     </div>
     <aside class="nav" id="navbar">
         
-        <div class="nav-logo">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;margin-bottom:4px;" />
-            <span class="logo-text">IPMS</span>
-        </div>
+        <!-- Removed duplicate logo/IPMS from sidebar -->
+            <script>
+            // Sidebar toggle logic
+            document.addEventListener('DOMContentLoaded', function() {
+                const sidebar = document.getElementById('navbar');
+                const burgerBtn = document.getElementById('sidebarBurgerBtn');
+                let sidebarOpen = true;
+                function openSidebar() {
+                    sidebar.classList.add('open');
+                    sidebarOpen = true;
+                }
+                function closeSidebar() {
+                    sidebar.classList.remove('open');
+                    sidebarOpen = false;
+                }
+                burgerBtn.addEventListener('click', function() {
+                    if (sidebarOpen) {
+                        closeSidebar();
+                    } else {
+                        openSidebar();
+                    }
+                });
+                openSidebar();
+            });
+            </script>
         <div class="nav-user" style="border-top:none;padding-top:0;margin-bottom:8px;">
             <?php
             $profile_img = '';

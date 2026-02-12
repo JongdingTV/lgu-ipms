@@ -1,149 +1,50 @@
-<?php
-// Import security functions
-require dirname(__DIR__) . '/session-auth.php';
-
-// Protect page
-set_no_cache_headers();
-check_auth();
-check_suspicious_activity();
-
-require dirname(__DIR__) . '/database.php';
-require dirname(__DIR__) . '/config-path.php';
-if ($db->connect_error) {
-    die('Database connection failed: ' . $db->connect_error);
-}
-
-$user_id = $_SESSION['user_id'];
-$stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->bind_param('i', $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
-$stmt->close();
-
-// Get user name from session
-$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
-
-// Format gender and civil status for display
-$gender_display = ucfirst(str_replace('_', ' ', $user['gender'] ?? ''));
-$civil_status_display = ucfirst(str_replace('_', ' ', $user['civil_status'] ?? ''));
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $current_password = trim($_POST['currentPassword']);
-    $new_password = trim($_POST['newPassword']);
-    $confirm_password = trim($_POST['confirmPassword']);
-
-    $errors = [];
-    if (!password_verify($current_password, $user['password'])) {
-        $errors[] = 'Current password is incorrect.';
-    }
-    if (strlen($new_password) < 8) {
-        $errors[] = 'New password must be at least 8 characters.';
-    }
-    if ($new_password !== $confirm_password) {
-        $errors[] = 'New passwords do not match.';
-    }
-
-    if (empty($errors)) {
-        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-        $stmt = $db->prepare("UPDATE users SET password = ? WHERE id = ?");
-        $stmt->bind_param('si', $hashed_password, $user_id);
-        if ($stmt->execute()) {
-            $success = 'Password changed successfully. You will be logged out for security.';
-            session_destroy();
-            header('refresh:3;url=../login.php');
-        } else {
-            $errors[] = 'Failed to update password.';
-        }
-        $stmt->close();
-    }
-}
-
-$db->close();
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Settings</title>
-    <link rel="icon" type="image/png" href="/logocityhall.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
-</head>
-<body>
-<!DOCTYPE html>
-    <div style="display:flex;align-items:center;gap:12px;padding:16px 0 16px 24px;">
-        <button id="sidebarBurgerBtn" class="navbar-menu-icon" title="Toggle sidebar" style="background:none;border:none;padding:0;margin-right:16px;cursor:pointer;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-        </button>
-        <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
-        <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
-    </div>
-    <aside class="nav" id="navbar">
-        
-        <div class="nav-logo">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;margin-bottom:4px;" />
-            <span class="logo-text">IPMS</span>
+    <section class="main-content">
+        <div class="dash-header">
+            <h1>User Settings</h1>
+            <p>Manage your account information and change your password.</p>
         </div>
-        <div class="nav-user" style="border-top:none;padding-top:0;margin-bottom:8px;">
-            <?php
-            $profile_img = '';
-            $user_email = isset($user['email']) ? $user['email'] : '';
-            $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : (isset($user['first_name']) ? $user['first_name'] . ' ' . $user['last_name'] : 'User');
-            $initials = '';
-            if ($user_name) {
-                $parts = explode(' ', $user_name);
-                foreach ($parts as $p) {
-                    if ($p) $initials .= strtoupper($p[0]);
-                }
-            }
-            if (!function_exists('stringToColor')) {
-                function stringToColor($str) {
-                    $colors = [
-                        '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-                        '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
-                        '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#607D8B'
-                    ];
-                    $hash = 0;
-                    for ($i = 0; $i < strlen($str); $i++) {
-                        $hash = ord($str[$i]) + (($hash << 5) - $hash);
-                    }
-                    $index = abs($hash) % count($colors);
-                    return $colors[$index];
-                }
-            }
-            $bgcolor = stringToColor($user_name);
-            ?>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                <?php if ($profile_img): ?>
-                    <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon" style="width:48px;height:48px;" />
-                <?php else: ?>
-                    <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                        <?php echo $initials; ?>
+        <div class="settings-container">
+            <div class="user-info-box">
+                <h2>Account Information</h2>
+                <table class="user-info-table">
+                    <tr><th>Name:</th><td><?php echo htmlspecialchars($user_name); ?></td></tr>
+                    <tr><th>Email:</th><td><?php echo htmlspecialchars($user['email']); ?></td></tr>
+                    <tr><th>Gender:</th><td><?php echo htmlspecialchars($gender_display); ?></td></tr>
+                    <tr><th>Civil Status:</th><td><?php echo htmlspecialchars($civil_status_display); ?></td></tr>
+                </table>
+            </div>
+            <div class="password-change-box">
+                <h2>Change Password</h2>
+                <form method="post" action="">
+                    <div class="input-box">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" name="currentPassword" required>
+                    </div>
+                    <div class="input-box">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" name="newPassword" required>
+                    </div>
+                    <div class="input-box">
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Change Password</button>
+                </form>
+                <?php if (!empty($errors)): ?>
+                    <div class="error-message">
+                        <?php foreach ($errors as $err): ?>
+                            <div><?php echo htmlspecialchars($err); ?></div>
+                        <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
-                <div style="font-weight:700;font-size:1.08em;line-height:1.2;margin-top:2px;text-align:center;"> <?php echo htmlspecialchars($user_name); ?> </div>
-                <div style="font-size:0.97em;color:#64748b;line-height:1.1;text-align:center;"> <?php echo htmlspecialchars($user_email); ?> </div>
+                <?php if (!empty($success)): ?>
+                    <div class="success-message">
+                        <?php echo htmlspecialchars($success); ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
-        <hr style="width:80%;margin:10px auto 16px auto;border:0;border-top:1.5px solid #e5e7eb;" />
-        <nav class="nav-links">
-            <a href="user-dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="../assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
-            <a href="user-feedback.php"><img src="feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php" class="active"><img src="settings.png" class="nav-icon"> Settings</a>
-        </nav>
-        <div style="margin-top:auto;padding:18px 0 0 0;display:flex;justify-content:center;">
-            <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
-        </div>
-        <script>
+    </section>
         document.addEventListener('DOMContentLoaded', function() {
             window.setupLogoutConfirmation && window.setupLogoutConfirmation();
         });
