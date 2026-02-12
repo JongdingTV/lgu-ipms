@@ -2465,7 +2465,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Load contractors from database
         function loadContractors() {
             console.log('loadContractors called');
-            const url = getApiUrl('contractors/registered_contractors.php?action=load_contractors&_=' + Date.now());
+            const url = getApiUrl('admin/registered_contractors.php?action=load_contractors&_=' + Date.now());
             console.log('Fetching from:', url);
             
             fetch(url)
@@ -2495,7 +2495,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Load projects from database
         function loadProjects() {
             console.log('loadProjects called');
-            const url = getApiUrl('contractors/registered_contractors.php?action=load_projects&_=' + Date.now());
+            const url = getApiUrl('admin/registered_contractors.php?action=load_projects&_=' + Date.now());
             console.log('Fetching projects from:', url);
             
             fetch(url)
@@ -2621,7 +2621,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         confirmText: 'Delete Permanently',
                         cancelText: 'Cancel',
                         onConfirm: () => {
-                            fetch(getApiUrl('contractors/registered_contractors.php'), {
+                            fetch(getApiUrl('admin/registered_contractors.php'), {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                                 body: `action=delete_contractor&id=${encodeURIComponent(id)}`
@@ -2721,7 +2721,7 @@ document.addEventListener('DOMContentLoaded', function() {
             projectsList.innerHTML = '<p style="text-align: center; color: #999;">Loading projects...</p>';
             
             // Get assigned projects
-            fetch(getApiUrl(`contractors/registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`))
+            fetch(getApiUrl(`admin/registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`))
                 .then(res => res.text())
                 .then(text => {
                     try {
@@ -2770,7 +2770,7 @@ document.addEventListener('DOMContentLoaded', function() {
             projectsList.innerHTML = '<p style="text-align: center; color: #999;">Loading projects...</p>';
             
             // Get already assigned projects
-            fetch(getApiUrl(`contractors/registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`))
+            fetch(getApiUrl(`admin/registered_contractors.php?action=get_assigned_projects&contractor_id=${contractorId}`))
                 .then(res => res.text())
                 .then(text => {
                     console.log('Assigned projects response:', text);
@@ -2780,7 +2780,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('Assigned IDs:', assignedIds);
                         
                         // Get all available projects
-                        return fetch(getApiUrl('contractors/registered_contractors.php?action=load_projects'))
+                        return fetch(getApiUrl('admin/registered_contractors.php?action=load_projects'))
                             .then(res => res.text())
                             .then(text => {
                                 console.log('All projects response:', text);
@@ -2884,7 +2884,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`Sending request: ${action}`, body);
                 
                 try {
-                    const response = await fetch(getApiUrl('contractors/registered_contractors.php'), {
+                    const response = await fetch(getApiUrl('admin/registered_contractors.php'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: body
