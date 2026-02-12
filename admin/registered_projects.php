@@ -621,6 +621,287 @@ $db->close();
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script>
+    (function () {
+        const table = document.getElementById('projectsTable');
+        const tbody = table ? table.querySelector('tbody') : null;
+        const msg = document.getElementById('formMessage');
+        const searchInput = document.getElementById('searchProjects');
+        const statusFilter = document.getElementById('filterStatus');
+        const exportCsvBtn = document.getElementById('exportCsv');
+
+        const editModal = document.getElementById('editProjectModal');
+        const editForm = document.getElementById('editProjectForm');
+        const editSaveBtn = document.querySelector('.btn-save');
+
+        if (!table || !tbody) return;
+
+        let allProjects = [];
+
+        function showMsg(text, ok) {
+            if (!msg) return;
+            msg.textContent = text || '';
+            msg.style.color = ok ? '#16a34a' : '#dc2626';
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3000);
+        }
+
+        function apiUrls(suffix) {
+            const urls = [];
+            if (typeof window.getApiUrl === 'function') {
+                urls.push(getApiUrl('admin/registered_projects.php' + suffix));
+            }
+            urls.push('registered_projects.php' + suffix);
+            urls.push('/admin/registered_projects.php' + suffix);
+            return urls;
+        }
+
+        function fetchJsonWithFallback(urls, options) {
+            const tryFetch = (idx) => {
+                if (idx >= urls.length) throw new Error('All API endpoints failed');
+                return fetch(urls[idx], options)
+                    .then((res) => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .catch(() => tryFetch(idx + 1));
+            };
+            return tryFetch(0);
+        }
+
+        function esc(v) {
+            return String(v ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function toKey(v) {
+            return String(v || 'draft').toLowerCase().replace(/\s+/g, '');
+        }
+
+        function renderProjects(projects) {
+            tbody.innerHTML = '';
+            if (!projects.length) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#6b7280;">No projects found.</td></tr>';
+                return;
+            }
+
+            projects.forEach((p) => {
+                const row = document.createElement('tr');
+                const createdDate = p.created_at ? new Date(p.created_at).toLocaleDateString() : 'N/A';
+                const priority = p.priority || 'Medium';
+                const status = p.status || 'Draft';
+                row.innerHTML = `
+                    <td>${esc(p.code)}</td>
+                    <td>${esc(p.name)}</td>
+                    <td>${esc(p.type)}</td>
+                    <td>${esc(p.sector)}</td>
+                    <td><span class="priority-badge ${toKey(priority)}">${esc(priority)}</span></td>
+                    <td><span class="status-badge ${toKey(status)}">${esc(status)}</span></td>
+                    <td>${esc(createdDate)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-edit" data-id="${esc(p.id)}" type="button">Edit</button>
+                            <button class="btn-delete" data-id="${esc(p.id)}" type="button">Delete</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function fillEditModal(project) {
+            if (!editModal || !editForm) return;
+            const setVal = (selector, value) => {
+                const el = document.querySelector(selector);
+                if (el) el.value = value || '';
+            };
+            setVal('#projectId', project.id);
+            setVal('#projectCode', project.code);
+            setVal('#projectName', project.name);
+            setVal('#projectType', project.type);
+            setVal('#projectSector', project.sector);
+            setVal('#projectPriority', project.priority || 'Medium');
+            setVal('#projectStatus', project.status || 'Draft');
+            setVal('#projectDescription', project.description);
+            editModal.classList.add('show');
+        }
+
+        function openEditProjectModal(id) {
+            const project = allProjects.find((x) => Number(x.id) === Number(id));
+            if (project) {
+                fillEditModal(project);
+                return;
+            }
+
+            const nonce = Date.now();
+            const urls = apiUrls('?action=get_project&id=' + encodeURIComponent(id) + '&_=' + nonce);
+            fetchJsonWithFallback(urls, { credentials: 'same-origin' })
+                .then((data) => {
+                    if (!data || data.success === false) throw new Error('Project not found');
+                    fillEditModal(data);
+                })
+                .catch(() => showMsg('Project data not found. Please refresh.', false));
+        }
+
+        function closeEditProjectModal() {
+            if (editModal) editModal.classList.remove('show');
+        }
+
+        function saveEditedProject() {
+            if (!editForm) return;
+            const formData = new FormData(editForm);
+            formData.append('action', 'update_project');
+
+            if (editSaveBtn) {
+                editSaveBtn.disabled = true;
+                editSaveBtn.textContent = 'Saving...';
+            }
+
+            fetchJsonWithFallback(apiUrls(''), { method: 'POST', body: formData })
+                .then((data) => {
+                    showMsg(data.message || (data.success ? 'Project updated.' : 'Update failed.'), !!data.success);
+                    if (data.success) {
+                        closeEditProjectModal();
+                        loadProjects();
+                    }
+                })
+                .catch(() => showMsg('Error saving project.', false))
+                .finally(() => {
+                    if (editSaveBtn) {
+                        editSaveBtn.disabled = false;
+                        editSaveBtn.textContent = 'Save Changes';
+                    }
+                });
+        }
+
+        function performDelete(id) {
+            fetchJsonWithFallback(apiUrls(''), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=delete_project&id=' + encodeURIComponent(id)
+            })
+            .then((data) => {
+                showMsg(data.message || (data.success ? 'Project deleted.' : 'Delete failed.'), !!data.success);
+                if (data.success) loadProjects();
+            })
+            .catch(() => showMsg('Error deleting project.', false));
+        }
+
+        function confirmDeleteProject(id, projectName) {
+            const safeName = projectName || 'this project';
+            if (typeof window.showConfirmation === 'function') {
+                showConfirmation({
+                    title: 'Delete Project',
+                    message: 'This project and all associated data will be permanently deleted. This action cannot be undone.',
+                    itemName: `Project: ${safeName}`,
+                    icon: 'Delete',
+                    confirmText: 'Delete Permanently',
+                    cancelText: 'Cancel',
+                    onConfirm: () => performDelete(id)
+                });
+                return;
+            }
+
+            if (window.confirm(`Delete "${safeName}" permanently? This cannot be undone.`)) {
+                performDelete(id);
+            }
+        }
+
+        function filterProjects() {
+            const searchTerm = (searchInput ? searchInput.value : '').toLowerCase();
+            const statusTerm = statusFilter ? statusFilter.value : '';
+            const filtered = allProjects.filter((p) => {
+                const matchesSearch = !searchTerm ||
+                    (p.code || '').toLowerCase().includes(searchTerm) ||
+                    (p.name || '').toLowerCase().includes(searchTerm) ||
+                    (p.sector || '').toLowerCase().includes(searchTerm);
+                const matchesStatus = !statusTerm || p.status === statusTerm;
+                return matchesSearch && matchesStatus;
+            });
+            renderProjects(filtered);
+        }
+
+        function loadProjects() {
+            const nonce = Date.now();
+            fetchJsonWithFallback(apiUrls('?action=load_projects&_=' + nonce), { credentials: 'same-origin' })
+                .then((projects) => {
+                    if (!Array.isArray(projects)) throw new Error('Invalid payload');
+                    allProjects = projects;
+                    renderProjects(allProjects);
+                })
+                .catch(() => {
+                    if (!tbody.querySelector('tr')) {
+                        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#c00;">Error loading projects. Check console.</td></tr>';
+                    }
+                });
+        }
+
+        table.addEventListener('click', function (event) {
+            const editBtn = event.target.closest('.btn-edit');
+            if (editBtn) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                openEditProjectModal(editBtn.dataset.id);
+                return;
+            }
+
+            const deleteBtn = event.target.closest('.btn-delete');
+            if (deleteBtn) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                const row = deleteBtn.closest('tr');
+                const projectName = row ? (row.querySelector('td:nth-child(2)')?.textContent || '').trim() : '';
+                confirmDeleteProject(deleteBtn.dataset.id, projectName);
+            }
+        }, true);
+
+        if (searchInput) searchInput.addEventListener('input', filterProjects);
+        if (statusFilter) statusFilter.addEventListener('change', filterProjects);
+
+        if (exportCsvBtn) {
+            exportCsvBtn.addEventListener('click', function () {
+                if (!allProjects.length) {
+                    alert('No projects to export');
+                    return;
+                }
+                const keys = ['code', 'name', 'type', 'sector', 'priority', 'status'];
+                const headers = keys.map((k) => k.charAt(0).toUpperCase() + k.slice(1)).join(',');
+                const rows = allProjects.map((p) =>
+                    keys.map((k) => `"${String(p[k] || '').replace(/"/g, '""')}"`).join(',')
+                );
+                const csv = [headers, ...rows].join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `projects_${new Date().toISOString().slice(0, 10)}.csv`;
+                link.click();
+            });
+        }
+
+        window.openEditModal = openEditProjectModal;
+        window.closeEditModal = closeEditProjectModal;
+        window.saveProject = saveEditedProject;
+        window.confirmDeleteProject = confirmDeleteProject;
+
+        if (editModal) {
+            window.addEventListener('click', function (event) {
+                if (event.target === editModal) closeEditProjectModal();
+            });
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && editModal && editModal.classList.contains('show')) {
+                closeEditProjectModal();
+            }
+        });
+
+        loadProjects();
+    })();
+    </script>
 </body>
 </html>
 
