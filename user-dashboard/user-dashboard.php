@@ -48,6 +48,17 @@ $db->close();
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 0 16px 24px;">
+        <button id="sidebarBurgerBtn" class="navbar-menu-icon" title="Toggle sidebar" style="background:none;border:none;padding:0;margin-right:16px;cursor:pointer;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+        <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
+        <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
+    </div>
     <aside class="nav" id="navbar">
         <!-- Hamburger toggle at top-left -->
         <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
@@ -57,11 +68,6 @@ $db->close();
                 <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
         </button>
-        <!-- Logo at the top, small and neat -->
-        <div class="nav-logo">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;margin-bottom:4px;" />
-            <span class="logo-text">IPMS</span>
-        </div>
         <!-- Profile section -->
         <div class="nav-user" style="border-top:none;padding-top:0;margin-bottom:8px;">
             <?php
@@ -115,7 +121,7 @@ $db->close();
         </nav>
         <!-- Logout button at bottom -->
         <div style="margin-top:auto;padding:18px 0 0 0;display:flex;justify-content:center;">
-            <a href="#" class="nav-logout logout-btn" id="logoutLink">Logout</a>
+            <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
         </div>
         <script>
         document.addEventListener('DOMContentLoaded', function() {
