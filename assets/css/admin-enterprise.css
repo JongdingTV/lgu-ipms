@@ -477,6 +477,17 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .bt
     cursor: pointer;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-edit {
+    min-height: 32px;
+    border-radius: 8px;
+    border: 1px solid #bfd4f2;
+    background: #eef5ff;
+    color: #1f4a88;
+    font-weight: 700;
+    padding: 0 10px;
+    cursor: pointer;
+}
+
 @media (max-width: 920px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .projects-filter .ac-c59ce897 {
         grid-template-columns: 1fr;

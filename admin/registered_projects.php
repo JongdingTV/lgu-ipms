@@ -24,7 +24,7 @@ if ($db->connect_error) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    $result = $db->query("SELECT id, code, name, type, sector, priority, status, created_at FROM projects ORDER BY created_at DESC");
+    $result = $db->query("SELECT id, code, name, type, sector, priority, status, description, created_at FROM projects ORDER BY created_at DESC");
     $projects = [];
     
     if ($result) {
@@ -35,6 +35,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     }
     
     echo json_encode($projects);
+    exit;
+}
+
+// Handle GET request for single project (edit)
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_project') {
+    header('Content-Type: application/json');
+    
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    
+    if ($id > 0) {
+        $stmt = $db->prepare("SELECT * FROM projects WHERE id=?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result && $result->num_rows > 0) {
+            echo json_encode($result->fetch_assoc());
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Project not found']);
+        }
+        $stmt->close();
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid project ID']);
+    }
+    exit;
+}
+
+// Handle UPDATE request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_project') {
+    header('Content-Type: application/json');
+    
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    $name = isset($_POST['name']) ? $_POST['name'] : '';
+    $code = isset($_POST['code']) ? $_POST['code'] : '';
+    $type = isset($_POST['type']) ? $_POST['type'] : '';
+    $sector = isset($_POST['sector']) ? $_POST['sector'] : '';
+    $priority = isset($_POST['priority']) ? $_POST['priority'] : '';
+    $status = isset($_POST['status']) ? $_POST['status'] : '';
+    $description = isset($_POST['description']) ? $_POST['description'] : '';
+    
+    if ($id > 0 && !empty($name)) {
+        $stmt = $db->prepare("UPDATE projects SET name=?, code=?, type=?, sector=?, priority=?, status=?, description=? WHERE id=?");
+        $stmt->bind_param("sssssssi", $name, $code, $type, $sector, $priority, $status, $description, $id);
+        
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Project updated successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update project: ' . $db->error]);
+        }
+        $stmt->close();
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid project data']);
+    }
     exit;
 }
 
@@ -245,86 +298,248 @@ $db->close();
         </div>
     </section>
 
+    <!-- Edit Project Modal -->
+    <div id="editProjectModal" class="edit-project-modal">
+        <div class="edit-project-modal-content">
+            <div class="edit-project-modal-header">
+                <h2>Edit Project</h2>
+                <button class="close-modal" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="edit-project-modal-body">
+                <form id="editProjectForm">
+                    <input type="hidden" id="projectId" name="id">
+                    
+                    <div class="form-group">
+                        <label for="projectCode">Project Code</label>
+                        <input type="text" id="projectCode" name="code" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="projectName">Project Name</label>
+                        <input type="text" id="projectName" name="name" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="projectType">Type</label>
+                            <input type="text" id="projectType" name="type">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectSector">Sector</label>
+                            <input type="text" id="projectSector" name="sector">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="projectPriority">Priority</label>
+                            <select id="projectPriority" name="priority">
+                                <option value="">-- Select Priority --</option>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="projectStatus">Status</label>
+                            <select id="projectStatus" name="status">
+                                <option value="">-- Select Status --</option>
+                                <option value="Draft">Draft</option>
+                                <option value="For Approval">For Approval</option>
+                                <option value="Approved">Approved</option>
+                                <option value="On-hold">On-hold</option>
+                                <option value="Cancelled">Cancelled</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="projectDescription">Description</label>
+                        <textarea id="projectDescription" name="description" rows="4"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="edit-project-modal-footer">
+                <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-save" onclick="saveProject()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .edit-project-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .edit-project-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .edit-project-modal-content {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease-in-out;
+        }
+
+        .edit-project-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .edit-project-modal-header h2 {
+            margin: 0;
+            color: #1e3a8a;
+            font-size: 20px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-modal:hover {
+            color: #000;
+        }
+
+        .edit-project-modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #325071;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d4e2f2;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3762c8;
+            box-shadow: 0 0 0 3px rgba(55, 98, 200, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .edit-project-modal-content {
+                width: 95%;
+            }
+        }
+
+        .edit-project-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+        }
+
+        .btn-cancel,
+        .btn-save {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel {
+            background-color: #e2e8f0;
+            color: #325071;
+        }
+
+        .btn-cancel:hover {
+            background-color: #cbd5e1;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2c5282 100%);
+            color: white;
+        }
+
+        .btn-save:hover {
+            box-shadow: 0 4px 12px rgba(30, 58, 130, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
-    
-    <?php include('../includes/footer.php'); ?>
-    <script src="../assets/js/smart-footer.js"></script>
-    
-    <script>
-        // Load registered projects on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadRegisteredProjects();
-        });
-
-        function loadRegisteredProjects() {
-            fetch('?action=load_projects')
-                .then(response => response.json())
-                .then(data => {
-                    const tbody = document.querySelector('#projectsTable tbody');
-                    tbody.innerHTML = '';
-                    
-                    if (data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No projects found</td></tr>';
-                        return;
-                    }
-                    
-                    data.forEach(project => {
-                        const row = document.createElement('tr');
-                        const statusClass = project.status.toLowerCase().replace(/\s+/g, '-');
-                        const createdDate = new Date(project.created_at).toLocaleDateString();
-                        
-                        row.innerHTML = `
-                            <td>${escapeHtml(project.code || '-')}</td>
-                            <td>${escapeHtml(project.name)}</td>
-                            <td>${escapeHtml(project.type || '-')}</td>
-                            <td>${escapeHtml(project.sector || '-')}</td>
-                            <td>${escapeHtml(project.priority || '-')}</td>
-                            <td><span class="status-badge ${statusClass}">${project.status}</span></td>
-                            <td>${createdDate}</td>
-                            <td>
-                                <a href="project_registration.php?id=${project.id}" class="btn-edit">Edit</a>
-                                <button class="btn-delete" onclick="deleteProject(${project.id})">Delete</button>
-                            </td>
-                        `;
-                        tbody.appendChild(row);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error loading projects:', error);
-                    document.querySelector('#projectsTable tbody').innerHTML = '<tr><td colspan="8" style="text-align: center; color: red;">Error loading projects</td></tr>';
-                });
-        }
-
-        function deleteProject(id) {
-            if (!confirm('Are you sure you want to delete this project?')) return;
-            
-            const formData = new FormData();
-            formData.append('action', 'delete_project');
-            formData.append('id', id);
-            
-            fetch('<?php echo $_SERVER['PHP_SELF']; ?>', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadRegisteredProjects();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-    </script>
 </body>
 </html>
 
