@@ -246,6 +246,24 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .ac-bb30b003 svg 
     color: #c0342b;
 }
 
+/* Hard clamp: prevent sidebar logout overflow on all screen widths */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-action-footer {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-action-footer > .btn-logout.nav-logout {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 10px 12px !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+}
+
 /* Unified logout confirmation modal */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-logout-modal {
     background: rgba(7, 17, 32, 0.58) !important;
