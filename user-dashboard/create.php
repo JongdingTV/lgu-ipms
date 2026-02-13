@@ -358,10 +358,19 @@ body.user-signup-page .subtitle {
     border-color: #16a34a;
 }
 .form-step {
-    display: none;
+    display: block;
+    opacity: 0;
+    transform: translateY(12px);
+    max-height: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition: opacity 0.28s ease, transform 0.28s ease, max-height 0.32s ease;
 }
 .form-step.active {
-    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 900px;
+    pointer-events: auto;
 }
 .step-title {
     font-size: 0.95rem;
@@ -464,6 +473,30 @@ body.user-signup-page .subtitle {
     font-size: 0.86rem;
     border: 1px solid rgba(185, 28, 28, 0.2);
     display: none;
+}
+.password-strength-wrap {
+    grid-column: 1 / -1;
+    margin-top: 2px;
+}
+.password-strength-track {
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+}
+.password-strength-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: #ef4444;
+    transition: width 0.28s ease, background-color 0.28s ease;
+}
+.password-strength-label {
+    margin-top: 6px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #475569;
 }
 .meta-links {
     margin-top: 12px;
@@ -648,6 +681,12 @@ body.user-signup-page .subtitle {
                         <label for="confirmPassword">Confirm Password *</label>
                         <input id="confirmPassword" name="confirmPassword" type="password" required autocomplete="new-password">
                     </div>
+                    <div class="password-strength-wrap" aria-live="polite">
+                        <div class="password-strength-track">
+                            <div class="password-strength-fill" id="passwordStrengthFill"></div>
+                        </div>
+                        <div class="password-strength-label" id="passwordStrengthLabel">Password strength: Weak</div>
+                    </div>
                 </div>
             </div>
 
@@ -686,6 +725,9 @@ body.user-signup-page .subtitle {
     var prevBtn = document.getElementById('prevStepBtn');
     var submitBtn = document.getElementById('submitStepBtn');
     var errorBox = document.getElementById('stepErrorBox');
+    var passwordInput = document.getElementById('password');
+    var strengthFill = document.getElementById('passwordStrengthFill');
+    var strengthLabel = document.getElementById('passwordStrengthLabel');
 
     if (!form || !nextBtn || !prevBtn || !submitBtn) return;
 
@@ -716,6 +758,41 @@ body.user-signup-page .subtitle {
         nextBtn.style.display = currentStep === totalSteps ? 'none' : 'inline-flex';
         submitBtn.style.display = currentStep === totalSteps ? 'inline-flex' : 'none';
         clearError();
+    }
+
+    function computeStrength(value) {
+        var score = 0;
+        if (value.length >= 8) score += 1;
+        if (/[A-Z]/.test(value)) score += 1;
+        if (/[a-z]/.test(value)) score += 1;
+        if (/[0-9]/.test(value)) score += 1;
+        if (/[^A-Za-z0-9]/.test(value)) score += 1;
+
+        var pct = Math.min(100, score * 20);
+        var text = 'Weak';
+        var color = '#ef4444';
+
+        if (score >= 5) {
+            text = 'Strong';
+            color = '#16a34a';
+        } else if (score >= 4) {
+            text = 'Good';
+            color = '#22c55e';
+        } else if (score >= 3) {
+            text = 'Medium';
+            color = '#f59e0b';
+        }
+
+        return { pct: pct, text: text, color: color };
+    }
+
+    function updateStrengthMeter() {
+        if (!passwordInput || !strengthFill || !strengthLabel) return;
+        var level = computeStrength(passwordInput.value || '');
+        strengthFill.style.width = level.pct + '%';
+        strengthFill.style.backgroundColor = level.color;
+        strengthLabel.textContent = 'Password strength: ' + level.text;
+        strengthLabel.style.color = level.color;
     }
 
     function isStepValid(step) {
@@ -777,6 +854,11 @@ body.user-signup-page .subtitle {
             e.preventDefault();
         }
     });
+
+    if (passwordInput) {
+        passwordInput.addEventListener('input', updateStrengthMeter);
+        updateStrengthMeter();
+    }
 
     showStep(1);
 })();

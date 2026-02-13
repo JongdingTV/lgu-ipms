@@ -253,16 +253,34 @@ function record_attempt($action_type = 'login') {
  * Check for suspicious activity
  */
 function check_suspicious_activity() {
-    // Check User-Agent consistency
-    if (isset($_SESSION['user_agent'])) {
-        if ($_SESSION['user_agent'] !== $_SERVER['HTTP_USER_AGENT']) {
-            log_security_event('SUSPICIOUS_ACTIVITY', 'User-Agent changed during session');
-            destroy_session();
-            die('Session security check failed. Please login again.');
-        }
-    } else {
-        $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'];
+    $currentUserAgent = trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+
+    // Some requests/proxies can omit user-agent; do not hard-fail the session for this.
+    if ($currentUserAgent === '') {
+        return;
     }
+
+    $currentHash = hash('sha256', $currentUserAgent);
+    $storedHash = $_SESSION['user_agent_hash'] ?? null;
+
+    // Backward compatibility with older sessions that stored raw user-agent.
+    if ($storedHash === null && isset($_SESSION['user_agent']) && is_string($_SESSION['user_agent']) && $_SESSION['user_agent'] !== '') {
+        $storedHash = hash('sha256', $_SESSION['user_agent']);
+    }
+
+    if ($storedHash === null) {
+        $_SESSION['user_agent_hash'] = $currentHash;
+        $_SESSION['user_agent'] = $currentUserAgent;
+        return;
+    }
+
+    if (!hash_equals((string) $storedHash, $currentHash)) {
+        // Log and refresh fingerprint instead of forcing logout on transient browser/network variation.
+        log_security_event('SUSPICIOUS_ACTIVITY', 'User-Agent changed during session (tolerated fingerprint refresh)');
+    }
+
+    $_SESSION['user_agent_hash'] = $currentHash;
+    $_SESSION['user_agent'] = $currentUserAgent;
 }
 ?>
 
