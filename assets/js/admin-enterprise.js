@@ -25,7 +25,7 @@
     btn.className = 'top-sidebar-toggle';
     btn.type = 'button';
     btn.setAttribute('aria-label', 'Toggle sidebar');
-    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>';
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="7" y1="4" x2="7" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line><line x1="17" y1="4" x2="17" y2="20"></line></svg>';
     document.body.appendChild(btn);
 
     const isMobileViewport = () => window.matchMedia('(max-width: 992px)').matches;

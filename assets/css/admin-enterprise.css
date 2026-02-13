@@ -529,30 +529,37 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
 /* Top sidebar toggle */
 .top-sidebar-toggle {
     position: fixed;
-    top: 14px;
-    left: 286px;
+    top: 112px;
+    left: 250px;
     z-index: 1300;
-    width: 42px;
-    height: 42px;
-    border-radius: 11px;
-    border: 1px solid #c8d8eb;
-    background: linear-gradient(145deg, #ffffff, #f1f7ff);
-    color: #264a75;
-    box-shadow: 0 12px 22px rgba(17, 35, 61, 0.22);
+    width: 34px;
+    height: 64px;
+    border-radius: 0 12px 12px 0;
+    border: 1px solid #d8e4f2;
+    border-left: none;
+    background: #ffffff;
+    color: #1f3653;
+    box-shadow: 10px 10px 22px rgba(15, 30, 56, 0.2);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .top-sidebar-toggle:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 15px 26px rgba(17, 35, 61, 0.28);
+    transform: translateX(2px);
+    box-shadow: 12px 12px 24px rgba(15, 30, 56, 0.24);
 }
 
 body.sidebar-hidden .top-sidebar-toggle {
-    left: 114px;
+    left: 100px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .top-sidebar-toggle {
+    background: #f8fafc;
+    color: #1e293b;
+    border-color: #d4dde8;
 }
 
 /* Hide legacy duplicated toggles */
