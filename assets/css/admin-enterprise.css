@@ -19,22 +19,25 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilit
     top: 14px;
     right: 16px;
     z-index: 1320;
-    display: grid;
+    display: flex;
+    align-items: stretch;
     gap: 8px;
-    justify-items: end;
+    justify-content: flex-end;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
     display: inline-flex;
     flex-direction: column;
+    justify-content: center;
     align-items: flex-end;
     gap: 2px;
     min-width: 190px;
+    min-height: 38px;
     border: 1px solid #d4e2f2;
     border-radius: 12px;
     background: linear-gradient(160deg, #ffffff, #f6fbff);
     box-shadow: 0 10px 24px rgba(14, 33, 58, 0.18);
-    padding: 8px 10px;
+    padding: 6px 10px;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-time {
@@ -52,6 +55,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip 
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-group {
     display: inline-flex;
+    align-items: stretch;
     gap: 8px;
 }
 
@@ -91,12 +95,102 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-ba
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
     width: min(340px, 86vw);
     border: 1px solid #d7e4f2;
     border-radius: 12px;
     background: #ffffff;
     box-shadow: 0 16px 30px rgba(11, 28, 54, 0.22);
     overflow: hidden;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(320px, 86vw);
+    border: 1px solid #d7e4f2;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 16px 30px rgba(11, 28, 54, 0.22);
+    overflow: hidden;
+    padding: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-head {
+    display: grid;
+    grid-template-columns: 32px 1fr 32px;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-head strong {
+    text-align: center;
+    color: #1a3f6d;
+    font-size: 0.9rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-head button,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-foot button {
+    border: 1px solid #c9d9eb;
+    border-radius: 8px;
+    background: #f2f7ff;
+    color: #31557f;
+    font-size: 0.8rem;
+    font-weight: 700;
+    min-height: 30px;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-weekdays,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-weekdays {
+    margin-bottom: 4px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-weekdays span {
+    text-align: center;
+    color: #5a7697;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-grid span {
+    min-height: 30px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    color: #28496f;
+    background: #f8fbff;
+    border: 1px solid #e2ebf5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-grid span.is-outside {
+    color: #93a7bf;
+    background: #f4f7fb;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-grid span.is-today {
+    color: #ffffff;
+    background: linear-gradient(135deg, #1f56bd, #2f6fdd);
+    border-color: #2f6fdd;
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-calendar-foot {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-head {
@@ -266,7 +360,8 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .modal
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-time-chip,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-utility-btn,
-body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-panel {
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-panel,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-calendar-panel {
     background: #14243a;
     border-color: #2c4463;
     color: #d6e3f5;
@@ -285,6 +380,32 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-item span small,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-item span em {
     color: #a8bed8;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-calendar-head strong {
+    color: #e9f2ff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-calendar-head button,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-calendar-foot button {
+    background: #102236;
+    border-color: #2f4767;
+    color: #d6e3f5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-calendar-weekdays span {
+    color: #9fb7d3;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-calendar-grid span {
+    background: #102236;
+    border-color: #2f4767;
+    color: #d6e3f5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-calendar-grid span.is-outside {
+    color: #7f96b4;
+    background: #0e1f31;
 }
 
 @media (max-width: 860px) {
@@ -394,6 +515,15 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-date {
         font-size: 0.68rem;
     }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
+        gap: 6px;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-btn {
+        min-height: 34px;
+        padding: 0 8px;
+    }
 }
 
 /* Top sidebar toggle */
@@ -413,7 +543,8 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transform: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .top-sidebar-toggle:hover {
@@ -423,6 +554,12 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
 
 body.sidebar-hidden .top-sidebar-toggle {
     left: 114px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .top-sidebar-toggle {
+    background: linear-gradient(145deg, #ffffff, #f1f7ff);
+    color: #264a75;
+    border-color: #c8d8eb;
 }
 
 /* Hide legacy duplicated toggles */
@@ -991,6 +1128,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) select:focus-visi
     body.sidebar-hidden .top-sidebar-toggle {
         left: 12px;
         top: 10px;
+        transform: none;
     }
 }
 
@@ -1480,6 +1618,40 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .da
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .dash-header p {
     color: #4f6f93 !important;
+}
+
+/* Dashboard readability and status percentage coloring */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .metric-card .metric-content h3 {
+    color: #475569 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .metric-card .metric-value {
+    color: #1e3a8a !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .metric-card .metric-status {
+    color: #64748b !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box .status-legend .legend-item span:last-child {
+    font-weight: 600;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box .status-legend .legend-item:nth-child(1) span:last-child {
+    color: #047857 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box .status-legend .legend-item:nth-child(2) span:last-child {
+    color: #b45309 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box .status-legend .legend-item:nth-child(3) span:last-child {
+    color: #b91c1c !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box .ac-39f9429c {
+    color: #334155 !important;
+    font-weight: 600;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-controls {
@@ -2481,4 +2653,126 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #co
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-form-actions > button {
         flex: 1;
     }
+}
+
+/* Registered Projects dark mode polish */
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .projects-filter input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .projects-filter select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #searchProjects,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #filterStatus {
+    background: #132943 !important;
+    border-color: #3a5678 !important;
+    color: #e6f0ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .projects-filter input::placeholder,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #searchProjects::placeholder {
+    color: #9bb2ce !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #exportCsv {
+    background: linear-gradient(135deg, #1e4fa0, #2f73df) !important;
+    border-color: #3d7ee3 !important;
+    color: #f6f9ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .projects-section .table-wrap {
+    background: linear-gradient(180deg, rgba(11, 24, 39, 0.96), rgba(9, 21, 34, 0.96)) !important;
+    border-color: #314b6e !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #projectsTable tbody td {
+    color: #dbe8fb !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #projectsTable tbody tr:hover td {
+    background: rgba(24, 45, 70, 0.96) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #projectsTable tbody td[style*="color:#6b7280"],
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #projectsTable tbody td[style*="color:#c00"] {
+    color: #b8cbe5 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #projectsTable .btn-edit {
+    background: linear-gradient(135deg, #1d4d95, #2766bf) !important;
+    border-color: #3879d3 !important;
+    color: #f8fbff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #projectsTable .btn-delete {
+    background: linear-gradient(135deg, #7f1d1d, #991b1b) !important;
+    border-color: #b91c1c !important;
+    color: #fff !important;
+    box-shadow: 0 8px 18px rgba(127, 29, 29, 0.28) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .edit-project-modal {
+    background-color: rgba(2, 8, 17, 0.72) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .edit-project-modal-content {
+    background: linear-gradient(180deg, #10243c, #0f2035) !important;
+    border: 1px solid #30496a !important;
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.52) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .edit-project-modal-header,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .edit-project-modal-footer {
+    border-color: #2f4767 !important;
+    background: rgba(12, 27, 45, 0.9) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .edit-project-modal-header h2,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .edit-project-modal-body label {
+    color: #e4efff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .edit-project-modal .close-modal {
+    color: #a9c0dc !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .edit-project-modal .close-modal:hover {
+    color: #f3f8ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .edit-project-modal .btn-cancel {
+    background: #1a334f !important;
+    color: #d9e8fb !important;
+    border: 1px solid #375276 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .edit-project-modal .btn-save {
+    background: linear-gradient(135deg, #1e4fa0 0%, #2f73df 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #3f80e4 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .delete-confirm-modal {
+    background: rgba(3, 10, 20, 0.72) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .delete-confirm-content {
+    background: linear-gradient(180deg, #2a1316 0%, #170d11 100%) !important;
+    border-color: #7f1d1d !important;
+    box-shadow: 0 20px 46px rgba(0, 0, 0, 0.58) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .delete-confirm-header h2 {
+    color: #fecaca !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .delete-confirm-body {
+    color: #f5d0d5 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .delete-confirm-project {
+    background: rgba(60, 18, 24, 0.75) !important;
+    border-color: #9f1239 !important;
+    color: #fecdd3 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .delete-confirm-footer {
+    border-top-color: #7f1d1d !important;
+    background: rgba(25, 11, 15, 0.9) !important;
 }

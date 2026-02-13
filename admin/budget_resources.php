@@ -33,12 +33,96 @@ function budget_sync_spent(mysqli $db): void {
     $db->query($sql);
 }
 
+function budget_projects_order_sql(mysqli $db): string {
+    static $hasCreatedAt = null;
+    if ($hasCreatedAt === null) {
+        $hasCreatedAt = false;
+        $check = $db->prepare(
+            "SELECT 1
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'projects'
+               AND COLUMN_NAME = 'created_at'
+             LIMIT 1"
+        );
+        if ($check) {
+            $check->execute();
+            $res = $check->get_result();
+            $hasCreatedAt = $res && $res->num_rows > 0;
+            if ($res) {
+                $res->free();
+            }
+            $check->close();
+        }
+    }
+    return $hasCreatedAt ? 'created_at DESC' : 'id DESC';
+}
+
+function budget_sync_projects_to_milestones(mysqli $db): void {
+    $projects = [];
+    $orderBy = budget_projects_order_sql($db);
+    $res = $db->query("SELECT id, name, COALESCE(budget, 0) AS budget FROM projects ORDER BY {$orderBy}");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $name = trim((string)($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $projects[] = [
+                'name' => $name,
+                'budget' => max(0, (float)($row['budget'] ?? 0)),
+            ];
+        }
+        $res->free();
+    }
+
+    $milestoneByName = [];
+    $msRes = $db->query("SELECT id, name FROM milestones ORDER BY id ASC");
+    if ($msRes) {
+        while ($row = $msRes->fetch_assoc()) {
+            $name = trim((string)($row['name'] ?? ''));
+            if ($name !== '' && !isset($milestoneByName[$name])) {
+                $milestoneByName[$name] = (int)$row['id'];
+            }
+        }
+        $msRes->free();
+    }
+
+    $insertStmt = $db->prepare("INSERT INTO milestones (name, allocated, spent) VALUES (?, ?, 0)");
+    $updateStmt = $db->prepare("UPDATE milestones SET allocated = ? WHERE id = ?");
+
+    foreach ($projects as $project) {
+        $name = $project['name'];
+        $allocated = $project['budget'];
+        if (isset($milestoneByName[$name])) {
+            $id = (int)$milestoneByName[$name];
+            if ($updateStmt) {
+                $updateStmt->bind_param('di', $allocated, $id);
+                $updateStmt->execute();
+            }
+            continue;
+        }
+        if ($insertStmt) {
+            $insertStmt->bind_param('sd', $name, $allocated);
+            $insertStmt->execute();
+        }
+    }
+
+    if ($insertStmt) {
+        $insertStmt->close();
+    }
+    if ($updateStmt) {
+        $updateStmt->close();
+    }
+}
+
 // Handle API requests first (before rendering HTML)
 $action = $_REQUEST['action'] ?? null;
 if ($action) {
     try {
         if ($action === 'load_projects') {
-            $result = $db->query("SELECT id, code, name, budget FROM projects ORDER BY created_at DESC");
+            $orderBy = budget_projects_order_sql($db);
+            $result = $db->query("SELECT id, code, name, status, COALESCE(budget, 0) AS budget FROM projects ORDER BY {$orderBy}");
             $projects = [];
             if ($result) {
                 while ($row = $result->fetch_assoc()) {
@@ -52,17 +136,23 @@ if ($action) {
         }
 
         if ($action === 'load_budget_state') {
+            budget_sync_projects_to_milestones($db);
             budget_sync_spent($db);
 
             $globalBudget = 0.0;
-            $settingsRes = $db->query("SELECT total_budget FROM project_settings ORDER BY id ASC LIMIT 1");
-            if ($settingsRes && ($settings = $settingsRes->fetch_assoc())) {
-                $globalBudget = (float) ($settings['total_budget'] ?? 0);
-                $settingsRes->free();
+            $totalRes = $db->query("SELECT COALESCE(SUM(budget), 0) AS total_budget FROM projects");
+            if ($totalRes && ($totals = $totalRes->fetch_assoc())) {
+                $globalBudget = (float)($totals['total_budget'] ?? 0);
+                $totalRes->free();
             }
 
             $milestones = [];
-            $milestoneRes = $db->query("SELECT id, name, allocated, spent FROM milestones ORDER BY id ASC");
+            $milestoneRes = $db->query(
+                "SELECT m.id, m.name, m.allocated, m.spent
+                 FROM milestones m
+                 INNER JOIN (SELECT DISTINCT name FROM projects WHERE TRIM(name) <> '') p ON p.name = m.name
+                 ORDER BY m.id ASC"
+            );
             if ($milestoneRes) {
                 while ($row = $milestoneRes->fetch_assoc()) {
                     $milestones[] = [
@@ -76,7 +166,13 @@ if ($action) {
             }
 
             $expenses = [];
-            $expenseRes = $db->query("SELECT id, milestoneId, amount, description, date FROM expenses ORDER BY date DESC, id DESC");
+            $expenseRes = $db->query(
+                "SELECT e.id, e.milestoneId, e.amount, e.description, e.date
+                 FROM expenses e
+                 INNER JOIN milestones m ON m.id = e.milestoneId
+                 INNER JOIN (SELECT DISTINCT name FROM projects WHERE TRIM(name) <> '') p ON p.name = m.name
+                 ORDER BY e.date DESC, e.id DESC"
+            );
             if ($expenseRes) {
                 while ($row = $expenseRes->fetch_assoc()) {
                     $expenses[] = [
@@ -168,6 +264,34 @@ if ($action) {
                 budget_json_response(['success' => false, 'message' => 'Invalid expense data.'], 422);
                 $db->close();
                 exit;
+            }
+
+            budget_sync_spent($db);
+            $checkStmt = $db->prepare("SELECT allocated, spent FROM milestones WHERE id = ? LIMIT 1");
+            if ($checkStmt) {
+                $checkStmt->bind_param('i', $milestoneId);
+                $checkStmt->execute();
+                $checkRes = $checkStmt->get_result();
+                if (!$checkRes || $checkRes->num_rows === 0) {
+                    if ($checkRes) {
+                        $checkRes->free();
+                    }
+                    $checkStmt->close();
+                    budget_json_response(['success' => false, 'message' => 'Selected project budget does not exist.'], 422);
+                    $db->close();
+                    exit;
+                }
+                $row = $checkRes->fetch_assoc();
+                $allocated = (float)($row['allocated'] ?? 0);
+                $spent = (float)($row['spent'] ?? 0);
+                $remaining = max(0, $allocated - $spent);
+                $checkRes->free();
+                $checkStmt->close();
+                if ($amount > $remaining) {
+                    budget_json_response(['success' => false, 'message' => 'Expense exceeds remaining project budget.'], 422);
+                    $db->close();
+                    exit;
+                }
             }
 
             $stmt = $db->prepare("INSERT INTO expenses (milestoneId, amount, description, date) VALUES (?, ?, ?, NOW())");
@@ -306,52 +430,29 @@ $db->close();
     <section class="main-content">
         <div class="dash-header">
             <h1>Budget & Resources</h1>
-            <p>Manage your project budget efficiently: set total budget, define source funds for departments, track expenses, and monitor consumption.</p>
+            <p>Budgets are synced from registered projects. Track expenses per project and monitor remaining funds.</p>
         </div>
 
         <div class="br-tabs" role="tablist" aria-label="Budget module sections">
-            <button type="button" class="br-tab active" data-panel="budget" role="tab" aria-selected="true">Set Project Budget</button>
-            <button type="button" class="br-tab" data-panel="sources" role="tab" aria-selected="false">Source Funds</button>
+            <button type="button" class="br-tab active" data-panel="sources" role="tab" aria-selected="true">Project Budgets</button>
             <button type="button" class="br-tab" data-panel="expenses" role="tab" aria-selected="false">Track Expenses</button>
         </div>
 
-        <div id="panel-budget" class="br-panel active">
-        <div class="budget-section">
-            <h2>Set Project Budget</h2>
-            <div class="controls-bar">
-                <div class="left">
-                    <label for="globalBudget"><strong>Project Total Budget (₱)</strong></label>
-                    <input id="globalBudget" type="number" min="0" step="0.01" placeholder="Enter total project budget">
-                </div>
-                <div class="right">
-                    <button id="btnImport" class="export-btn" type="button">Import from Project</button>
-                    <button id="btnExportBudget" class="export-btn" type="button">Export CSV</button>
-                </div>
-            </div>
-        </div>
-        </div>
-
-        <div id="panel-sources" class="br-panel">
+        <div id="panel-sources" class="br-panel active">
         <div class="allocation-section">
-            <h2>Source Funds</h2>
-            <form id="milestoneForm" class="inline-form">
-                <input id="milestoneName" type="text" placeholder="Source name (e.g., National Grant)" required>
-                <input id="milestoneAlloc" type="number" min="0" step="0.01" placeholder="Amount ₱" required>
-                <button type="button" id="addMilestone">Add Source</button>
-            </form>
+            <h2>Project Budget Allocation</h2>
             <div class="br-table-tools">
-                <input id="searchSources" type="search" placeholder="Search source funds...">
+                <input id="searchSources" type="search" placeholder="Search registered projects...">
             </div>
             <div class="table-wrap">
                 <table id="milestonesTable" class="table">
                     <thead>
                         <tr>
-                            <th>Source</th>
-                            <th>Amount (₱)</th>
-                            <th>Used (₱)</th>
-                            <th>Remaining (₱)</th>
+                            <th>Project</th>
+                            <th>Amount (&#8369;)</th>
+                            <th>Used (&#8369;)</th>
+                            <th>Remaining (&#8369;)</th>
                             <th>% Consumed</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -365,19 +466,19 @@ $db->close();
             <h2>Track Expenses</h2>
             <form id="expenseForm" class="inline-form">
                 <select id="expenseMilestone" required>
-                    <option value="">Select source</option>
+                    <option value="">Select project</option>
                 </select>
                 <input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount ₱" required>
                 <input id="expenseDesc" type="text" placeholder="Description (optional)">
                 <button type="button" id="addExpense">Add Expense</button>
             </form>
             <div class="br-table-tools">
-                <input id="searchExpenses" type="search" placeholder="Search expenses by source or description...">
+                <input id="searchExpenses" type="search" placeholder="Search expenses by project or description...">
             </div>
             <div class="table-wrap">
                 <table id="expensesTable" class="table">
                     <thead>
-                        <tr><th>Date</th><th>Milestone</th><th>Description</th><th>Amount (₱)</th><th>Actions</th></tr>
+                        <tr><th>Date</th><th>Project</th><th>Description</th><th>Amount (₱)</th><th>Actions</th></tr>
                     </thead>
                     <tbody></tbody>
                 </table>
@@ -1005,8 +1106,8 @@ $db->close();
         if (!path.endsWith('/admin/budget_resources.php')) return;
 
         let booted = false;
-        let activePanel = 'budget';
-        let stateCache = { globalBudget: 0, milestones: [], expenses: [] };
+        let activePanel = 'sources';
+        let stateCache = { milestones: [], expenses: [] };
         const API_BASE = 'budget_resources.php';
 
         function byId(id) { return document.getElementById(id); }
@@ -1112,7 +1213,7 @@ $db->close();
             if (!tabs.length) return;
             tabs.forEach((tab) => {
                 tab.addEventListener('click', function () {
-                    switchPanel(this.getAttribute('data-panel') || 'budget');
+                    switchPanel(this.getAttribute('data-panel') || 'sources');
                 });
             });
             switchPanel(activePanel);
@@ -1159,7 +1260,6 @@ $db->close();
                 throw new Error((json && json.message) ? json.message : 'Failed to load budget state');
             }
             stateCache = {
-                globalBudget: Number(json.data.globalBudget || 0),
                 milestones: Array.isArray(json.data.milestones) ? json.data.milestones : [],
                 expenses: Array.isArray(json.data.expenses) ? json.data.expenses : []
             };
@@ -1188,44 +1288,12 @@ $db->close();
                 const tr = document.createElement('tr');
                 tr.innerHTML = [
                     '<td>' + String(ms.name || '') + '</td>',
-                    '<td><input class="allocInput" data-id="' + ms.id + '" type="number" min="0" step="0.01" value="' + allocated + '"></td>',
+                    '<td>' + currency(allocated) + '</td>',
                     '<td>' + currency(spent) + '</td>',
                     '<td>' + currency(remaining) + '</td>',
-                    '<td>' + consumed + '%</td>',
-                    '<td><button class="br-btn-delete btnDeleteSource" type="button" data-id="' + ms.id + '" data-name="' + String(ms.name || '').replace(/"/g, '&quot;') + '">Delete</button></td>'
+                    '<td>' + consumed + '%</td>'
                 ].join('');
                 tbody.appendChild(tr);
-            });
-
-            tbody.querySelectorAll('.allocInput').forEach((input) => {
-                input.addEventListener('change', async function () {
-                    const id = this.getAttribute('data-id');
-                    const value = Math.max(0, Number(this.value || 0));
-                    try {
-                        await apiPost('update_milestone_alloc', { id: id, allocated: value });
-                        await renderAllFromServer();
-                    } catch (err) {
-                        console.error(err);
-                        notify('Update Failed', 'Failed to update source allocation.', 'error');
-                    }
-                });
-            });
-
-            tbody.querySelectorAll('.btnDeleteSource').forEach((btn) => {
-                btn.addEventListener('click', async function () {
-                    const id = this.getAttribute('data-id');
-                    const name = this.getAttribute('data-name') || 'Source';
-                    const ok = await confirmDelete(name, 'Delete this source fund and all its related expenses?');
-                    if (!ok) return;
-                    try {
-                        await apiPost('delete_milestone', { id: id });
-                        await renderAllFromServer();
-                        notify('Deleted', 'Source fund removed successfully.', 'success');
-                    } catch (err) {
-                        console.error(err);
-                        notify('Delete Failed', 'Failed to delete source.', 'error');
-                    }
-                });
             });
         }
 
@@ -1242,7 +1310,7 @@ $db->close();
                 const tr = document.createElement('tr');
                 tr.innerHTML = [
                     '<td>' + new Date(exp.date || Date.now()).toLocaleString() + '</td>',
-                    '<td>' + (ms ? ms.name : '(source removed)') + '</td>',
+                    '<td>' + (ms ? ms.name : '(project removed)') + '</td>',
                     '<td>' + String(exp.description || '') + '</td>',
                     '<td>' + currency(exp.amount) + '</td>',
                     '<td><button class="br-btn-delete btnDeleteExpense" type="button" data-id="' + exp.id + '" data-desc="' + String(exp.description || '').replace(/"/g, '&quot;') + '">Delete</button></td>'
@@ -1272,7 +1340,7 @@ $db->close();
         function populateSourceSelect(state) {
             const select = byId('expenseMilestone');
             if (!select) return;
-            select.innerHTML = '<option value="">Select source</option>';
+            select.innerHTML = '<option value="">Select project</option>';
             state.milestones.forEach((m) => {
                 const option = document.createElement('option');
                 option.value = m.id;
@@ -1284,8 +1352,8 @@ $db->close();
         function renderSummary(state) {
             const allocated = state.milestones.reduce((sum, m) => sum + Number(m.allocated || 0), 0);
             const spent = state.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-            const remaining = Math.max(0, Number(state.globalBudget || 0) - spent);
-            const base = Number(state.globalBudget || 0) || allocated || 0;
+            const remaining = Math.max(0, allocated - spent);
+            const base = allocated || 0;
             const consumption = base ? Math.round((spent / base) * 100) : 0;
 
             const allocatedEl = byId('summaryAllocated');
@@ -1349,7 +1417,7 @@ $db->close();
             if (!ms.length) {
                 ctx.fillStyle = '#6b7280';
                 ctx.font = '14px Poppins, sans-serif';
-                ctx.fillText('Add source funds to generate the consumption graph.', padding, padding + 20);
+                ctx.fillText('Register projects with estimated budget to generate the graph.', padding, padding + 20);
                 return;
             }
 
@@ -1386,8 +1454,6 @@ $db->close();
 
         function renderAll(stateArg) {
             const state = stateArg || stateCache;
-            const globalBudget = byId('globalBudget');
-            if (globalBudget) globalBudget.value = state.globalBudget || '';
             renderMilestones(state);
             renderExpenses(state);
             populateSourceSelect(state);
@@ -1400,24 +1466,6 @@ $db->close();
             renderAll(state);
         }
 
-        async function addSource() {
-            const nameEl = byId('milestoneName');
-            const allocEl = byId('milestoneAlloc');
-            if (!nameEl || !allocEl) return;
-            const name = nameEl.value.trim();
-            const allocated = Math.max(0, Number(allocEl.value || 0));
-            if (!name) return;
-            try {
-                await apiPost('add_milestone', { name: name, allocated: allocated });
-                nameEl.value = '';
-                allocEl.value = '';
-                await renderAllFromServer();
-            } catch (err) {
-                console.error(err);
-                notify('Add Failed', 'Failed to add source fund.', 'error');
-            }
-        }
-
         async function addExpenseEntry() {
             const sourceEl = byId('expenseMilestone');
             const amountEl = byId('expenseAmount');
@@ -1427,6 +1475,18 @@ $db->close();
             const amount = Math.max(0, Number(amountEl.value || 0));
             const description = descEl.value.trim();
             if (!milestoneId || !amount) return;
+            const selected = stateCache.milestones.find((m) => String(m.id) === String(milestoneId));
+            if (!selected) {
+                notify('Invalid Project', 'Selected project budget is not available.', 'error');
+                return;
+            }
+            const allocated = Number(selected.allocated || 0);
+            const spent = getSpentForMilestone(stateCache, selected.id);
+            const remaining = Math.max(0, allocated - spent);
+            if (amount > remaining) {
+                notify('Budget Exceeded', 'Expense exceeds remaining budget for this project.', 'error');
+                return;
+            }
             try {
                 await apiPost('add_expense', {
                     milestoneId: milestoneId,
@@ -1446,11 +1506,11 @@ $db->close();
         function exportCsv() {
             const state = stateCache;
             const rows = [];
-            rows.push(['type', 'source_id', 'source_name', 'allocated', 'expense_id', 'expense_amount', 'description', 'date'].join(','));
+            rows.push(['type', 'project_id', 'project_name', 'allocated', 'expense_id', 'expense_amount', 'description', 'date'].join(','));
             state.milestones.forEach((m) => {
                 const expenses = state.expenses.filter((e) => e.milestoneId === m.id);
                 if (!expenses.length) {
-                    rows.push(['source', m.id, '"' + String(m.name).replace(/"/g, '""') + '"', m.allocated, '', '', '', ''].join(','));
+                    rows.push(['project', m.id, '"' + String(m.name).replace(/"/g, '""') + '"', m.allocated, '', '', '', ''].join(','));
                     return;
                 }
                 expenses.forEach((e) => {
@@ -1468,50 +1528,11 @@ $db->close();
             URL.revokeObjectURL(href);
         }
 
-        function importFromProject() {
-            const urlCandidates = [];
-            if (typeof window.getApiUrl === 'function') {
-                urlCandidates.push(window.getApiUrl('admin/budget_resources.php?action=load_projects'));
-            }
-            urlCandidates.push('budget_resources.php?action=load_projects');
-            urlCandidates.push('/admin/budget_resources.php?action=load_projects');
-
-            const tryFetch = function (idx) {
-                if (idx >= urlCandidates.length) {
-                    return Promise.reject(new Error('Unable to reach project API.'));
-                }
-                return fetch(urlCandidates[idx], { credentials: 'same-origin' })
-                    .then((res) => {
-                        if (!res.ok) throw new Error('HTTP ' + res.status);
-                        return res.json();
-                    })
-                    .catch(() => tryFetch(idx + 1));
-            };
-
-            tryFetch(0)
-                .then((projects) => {
-                    if (!Array.isArray(projects) || !projects.length) {
-                        notify('No Projects', 'No projects available to import.', 'info');
-                        return;
-                    }
-                    const project = projects[0];
-                    return apiPost('set_global_budget', { budget: Number(project.budget || 0) })
-                        .then(() => renderAllFromServer())
-                        .then(() => {
-                            notify('Import Success', 'Imported budget from project: ' + (project.name || project.code || 'Project'), 'success');
-                        });
-                })
-                .catch((error) => {
-                    console.error(error);
-                    notify('Import Failed', 'Failed to import budget from project list.', 'error');
-                });
-        }
-
         function init() {
             if (booted) return;
             booted = true;
 
-            const required = ['milestoneForm', 'expenseForm', 'milestonesTable', 'expensesTable', 'consumptionChart'];
+            const required = ['expenseForm', 'milestonesTable', 'expensesTable', 'consumptionChart'];
             for (let i = 0; i < required.length; i++) {
                 if (!byId(required[i])) {
                     console.warn('Budget module missing element:', required[i]);
@@ -1519,23 +1540,12 @@ $db->close();
                 }
             }
 
-            const milestoneForm = byId('milestoneForm');
             const expenseForm = byId('expenseForm');
-            const addMilestone = byId('addMilestone');
             const addExpense = byId('addExpense');
-            const globalBudget = byId('globalBudget');
             const btnExport = byId('btnExportBudget');
-            const btnImport = byId('btnImport');
             const searchSources = byId('searchSources');
             const searchExpenses = byId('searchExpenses');
 
-            if (milestoneForm) {
-                milestoneForm.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    addSource();
-                }, true);
-            }
             if (expenseForm) {
                 expenseForm.addEventListener('submit', function (e) {
                     e.preventDefault();
@@ -1544,23 +1554,9 @@ $db->close();
                 }, true);
             }
 
-            if (addMilestone) addMilestone.addEventListener('click', addSource);
             if (addExpense) addExpense.addEventListener('click', addExpenseEntry);
 
-            if (globalBudget) {
-                globalBudget.addEventListener('change', async function () {
-                    try {
-                        await apiPost('set_global_budget', { budget: Math.max(0, Number(this.value || 0)) });
-                        await renderAllFromServer();
-                    } catch (err) {
-                        console.error(err);
-                        notify('Save Failed', 'Failed to save global budget.', 'error');
-                    }
-                });
-            }
-
             if (btnExport) btnExport.addEventListener('click', exportCsv);
-            if (btnImport) btnImport.addEventListener('click', importFromProject);
             if (searchSources) searchSources.addEventListener('input', function () { renderMilestones(stateCache); });
             if (searchExpenses) searchExpenses.addEventListener('input', function () { renderExpenses(stateCache); });
 
@@ -1584,21 +1580,4 @@ $db->close();
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

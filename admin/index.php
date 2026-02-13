@@ -249,11 +249,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         body.admin-login-page {
-            min-height: 100vh;
+            min-height: 100dvh;
+            height: 100dvh;
+            box-sizing: border-box;
             margin: 0;
             display: flex;
             flex-direction: column;
             padding-top: 88px;
+            overflow: hidden;
             color: var(--page-text);
             background:
                 radial-gradient(circle at 15% 15%, rgba(63, 131, 201, 0.28), transparent 40%),
@@ -325,6 +328,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         body.admin-login-page .wrapper {
             width: 100%;
             flex: 1;
+            min-height: 0;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -583,7 +587,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <!-- Removed 'For citizens, click here' button as requested -->
 
-            <?php if (isset($error)): ?>
+            <?php if (!empty($error)): ?>
             <div class="ac-aabba7cf"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
 
