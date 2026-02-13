@@ -6,6 +6,71 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('X-XSS-Protection: 1; mode=block');
 header('Referrer-Policy: strict-origin-when-cross-origin');
+
+$feedbackNotice = ['type' => '', 'text' => ''];
+$feedbackForm = [
+    'full_name' => '',
+    'subject' => '',
+    'category' => '',
+    'location' => '',
+    'message' => ''
+];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_submit'])) {
+    $feedbackForm['full_name'] = trim((string) ($_POST['full_name'] ?? ''));
+    $feedbackForm['subject'] = trim((string) ($_POST['subject'] ?? ''));
+    $feedbackForm['category'] = trim((string) ($_POST['category'] ?? ''));
+    $feedbackForm['location'] = trim((string) ($_POST['location'] ?? ''));
+    $feedbackForm['message'] = trim((string) ($_POST['message'] ?? ''));
+
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $feedbackNotice = ['type' => 'error', 'text' => 'Invalid request token. Please refresh and try again.'];
+    } elseif (
+        $feedbackForm['full_name'] === '' ||
+        $feedbackForm['subject'] === '' ||
+        $feedbackForm['category'] === '' ||
+        $feedbackForm['location'] === '' ||
+        $feedbackForm['message'] === ''
+    ) {
+        $feedbackNotice = ['type' => 'error', 'text' => 'Please complete all fields before sending your recommendation.'];
+    } else {
+        require dirname(__DIR__) . '/database.php';
+
+        if (!isset($db) || $db->connect_error) {
+            $feedbackNotice = ['type' => 'error', 'text' => 'Unable to connect right now. Please try again later.'];
+        } else {
+            $status = 'Pending';
+            $userName = $feedbackForm['full_name'] . ' (Guest)';
+            $stmt = $db->prepare('INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)');
+            if ($stmt) {
+                $stmt->bind_param(
+                    'ssssss',
+                    $userName,
+                    $feedbackForm['subject'],
+                    $feedbackForm['category'],
+                    $feedbackForm['location'],
+                    $feedbackForm['message'],
+                    $status
+                );
+                $ok = $stmt->execute();
+                $stmt->close();
+
+                if ($ok) {
+                    $feedbackNotice = ['type' => 'success', 'text' => 'Thank you. Your recommendation has been submitted to the LGU review queue.'];
+                    $feedbackForm = ['full_name' => '', 'subject' => '', 'category' => '', 'location' => '', 'message' => ''];
+                } else {
+                    $feedbackNotice = ['type' => 'error', 'text' => 'Submission failed. Please try again after a few minutes.'];
+                }
+            } else {
+                $feedbackNotice = ['type' => 'error', 'text' => 'Submission service is unavailable right now.'];
+            }
+
+            $db->close();
+        }
+    }
+}
+
+$csrfToken = generate_csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -364,6 +429,160 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             line-height: 1.65;
         }
 
+        .welcome-strip {
+            background: linear-gradient(135deg, #173e70, #2b66ac);
+            color: #f5f9ff;
+            border-radius: 18px;
+            padding: 1.1rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.7rem;
+        }
+
+        .welcome-strip i {
+            margin-top: 0.15rem;
+            color: #ffd58f;
+        }
+
+        .welcome-strip strong {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .contact-wrap {
+            display: grid;
+            grid-template-columns: 1fr 1.15fr;
+            gap: 1rem;
+            align-items: start;
+        }
+
+        .contact-cards {
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .contact-card {
+            background: #fff;
+            border: 1px solid #d8e5f5;
+            border-radius: 14px;
+            padding: 1rem;
+            box-shadow: 0 8px 18px rgba(17, 41, 71, 0.06);
+        }
+
+        .contact-card h4 {
+            font-size: 1rem;
+            color: #143252;
+            margin-bottom: 0.35rem;
+        }
+
+        .contact-card p,
+        .contact-card a {
+            color: #4d6482;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            text-decoration: none;
+        }
+
+        .contact-card a:hover {
+            color: #1f4c87;
+        }
+
+        .feedback-form {
+            background: #fff;
+            border: 1px solid #d8e5f5;
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: 0 10px 22px rgba(10, 33, 64, 0.08);
+        }
+
+        .feedback-form h3 {
+            margin-bottom: 0.35rem;
+            font-size: 1.08rem;
+            color: #123154;
+        }
+
+        .feedback-form .desc {
+            color: #4e6787;
+            font-size: 0.9rem;
+            margin-bottom: 0.9rem;
+        }
+
+        .feedback-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .form-group {
+            display: grid;
+            gap: 0.35rem;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: #26476c;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            border: 1px solid #cfe0f5;
+            border-radius: 10px;
+            padding: 0.62rem 0.7rem;
+            font: inherit;
+            font-size: 0.9rem;
+            color: #1e3d61;
+            background: #fbfdff;
+        }
+
+        .form-group textarea {
+            min-height: 115px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4e84c7;
+            box-shadow: 0 0 0 3px rgba(78, 132, 199, 0.15);
+        }
+
+        .feedback-msg {
+            border-radius: 10px;
+            padding: 0.6rem 0.7rem;
+            font-size: 0.86rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .feedback-msg.success {
+            background: #e8f8ef;
+            color: #17613f;
+            border: 1px solid #b8e7ca;
+        }
+
+        .feedback-msg.error {
+            background: #fff0f0;
+            color: #922c2c;
+            border: 1px solid #f6c6c6;
+        }
+
+        .btn-submit-feedback {
+            width: 100%;
+            justify-content: center;
+            background: linear-gradient(135deg, #1f4c87, #2f6bb8);
+            color: #fff;
+            padding: 0.78rem;
+            border-radius: 10px;
+        }
+
         .footer {
             background: #0f2f57;
             color: rgba(245, 250, 255, 0.92);
@@ -484,6 +703,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             .grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+
+            .contact-wrap {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 768px) {
@@ -517,6 +740,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 grid-template-columns: 1fr;
             }
 
+            .feedback-grid {
+                grid-template-columns: 1fr;
+            }
+
             .employee-login-widget {
                 right: 0.75rem;
                 bottom: 0.75rem;
@@ -540,6 +767,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             <div class="nav-links">
                 <a href="#features"><i class="fa-solid fa-star"></i> Features</a>
                 <a href="#process"><i class="fa-solid fa-route"></i> Workflow</a>
+                <a href="#contact"><i class="fa-solid fa-envelope"></i> Contact</a>
                 <a href="/user-dashboard/user-login.php"><i class="fa-solid fa-users"></i> Citizen Login</a>
             </div>
         </div>
@@ -549,10 +777,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         <div class="hero-wrap">
             <div class="hero-copy">
                 <span class="hero-pill"><i class="fa-solid fa-circle-check"></i> Digital LGU Service Platform</span>
-                <h1>Build trust with transparent and trackable public projects.</h1>
+                <h1>Welcome, citizens. Track projects that matter to your community.</h1>
                 <p>
-                    The Infrastructure & Project Management System helps your LGU register projects, monitor progress,
-                    control budgets, and keep citizens informed using one clean and reliable dashboard.
+                    This portal keeps you informed on local infrastructure plans, progress, and budget use.
+                    You can follow updates and share recommendations so projects reflect real community needs.
                 </p>
                 <div class="hero-actions">
                     <a class="btn btn-citizen" href="/user-dashboard/user-login.php">
@@ -561,6 +789,13 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     <a class="btn btn-ghost" href="#features">
                         <i class="fa-solid fa-circle-info"></i> Explore Features
                     </a>
+                </div>
+                <div class="welcome-strip">
+                    <i class="fa-solid fa-hand-holding-heart"></i>
+                    <div>
+                        <strong>Citizen-first experience</strong>
+                        We designed this system so residents can clearly see project status and submit suggestions for better prioritization.
+                    </div>
                 </div>
             </div>
 
@@ -625,6 +860,76 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         </div>
     </section>
 
+    <section id="contact" class="section">
+        <h2 class="section-title">Contact Us & Send Recommendations</h2>
+        <p class="section-sub">Have a concern, suggestion, or project idea for your area? Send it below and it will be logged for review.</p>
+        <div class="contact-wrap">
+            <div class="contact-cards">
+                <article class="contact-card">
+                    <h4><i class="fa-solid fa-circle-info"></i> How We Use Your Input</h4>
+                    <p>Your submission goes to the LGU feedback queue and can be reviewed in project prioritization discussions.</p>
+                </article>
+                <article class="contact-card">
+                    <h4><i class="fa-solid fa-location-dot"></i> Office Information</h4>
+                    <p>LGU Infrastructure Office<br>City Hall Complex, Caloocan City</p>
+                </article>
+                <article class="contact-card">
+                    <h4><i class="fa-solid fa-envelope-open-text"></i> Alternative Contact</h4>
+                    <p>
+                        <a href="mailto:lgu.ipms.support@example.com">lgu.ipms.support@example.com</a><br>
+                        For urgent follow-ups, include your full name and location details.
+                    </p>
+                </article>
+            </div>
+
+            <form class="feedback-form" method="post" action="/public/index.php#contact">
+                <h3>Citizen Recommendation Form</h3>
+                <p class="desc">All fields are required. Please provide complete and clear details.</p>
+                <?php if ($feedbackNotice['text'] !== ''): ?>
+                    <div class="feedback-msg <?php echo $feedbackNotice['type'] === 'success' ? 'success' : 'error'; ?>" role="status" aria-live="polite">
+                        <?php echo htmlspecialchars($feedbackNotice['text'], ENT_QUOTES, 'UTF-8'); ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="feedback-grid">
+                    <div class="form-group">
+                        <label for="full_name">Full Name</label>
+                        <input type="text" id="full_name" name="full_name" maxlength="120" required value="<?php echo htmlspecialchars($feedbackForm['full_name'], ENT_QUOTES, 'UTF-8'); ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject" maxlength="150" required value="<?php echo htmlspecialchars($feedbackForm['subject'], ENT_QUOTES, 'UTF-8'); ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category" required>
+                            <option value="">Select category</option>
+                            <?php
+                            $categories = ['Road', 'Drainage', 'Water Supply', 'Public Building', 'Health Facility', 'Education Facility', 'Others'];
+                            foreach ($categories as $categoryOption):
+                                $selected = ($feedbackForm['category'] === $categoryOption) ? ' selected' : '';
+                            ?>
+                                <option value="<?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $selected; ?>><?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location / Barangay</label>
+                        <input type="text" id="location" name="location" maxlength="150" required value="<?php echo htmlspecialchars($feedbackForm['location'], ENT_QUOTES, 'UTF-8'); ?>">
+                    </div>
+                    <div class="form-group full">
+                        <label for="message">Recommendation / Concern</label>
+                        <textarea id="message" name="message" required><?php echo htmlspecialchars($feedbackForm['message'], ENT_QUOTES, 'UTF-8'); ?></textarea>
+                    </div>
+                </div>
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                <button type="submit" name="landing_feedback_submit" value="1" class="btn btn-submit-feedback">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Recommendation
+                </button>
+            </form>
+        </div>
+    </section>
+
     <div class="employee-login-widget" id="employeeLoginWidget">
         <button type="button" class="employee-login-toggle" id="employeeLoginToggle" aria-label="Toggle employee login panel" aria-expanded="false" aria-controls="employeeLoginPanel">
             <i class="fa-solid fa-user-shield"></i>
@@ -672,6 +977,17 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 if (event.key === 'Escape') setOpen(false);
             });
         })();
+
+        document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
+            anchor.addEventListener('click', function (e) {
+                var targetId = this.getAttribute('href');
+                if (!targetId || targetId.length < 2) return;
+                var target = document.querySelector(targetId);
+                if (!target) return;
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
     </script>
 </body>
 </html>
