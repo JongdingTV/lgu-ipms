@@ -680,6 +680,56 @@ $csrfToken = landing_generate_csrf_token();
             font-size: 0.9rem;
         }
 
+        .site-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(7, 18, 34, 0.7);
+            backdrop-filter: blur(2px);
+            transition: opacity .2s ease, visibility .2s ease;
+        }
+
+        .site-loader.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .site-loader-card {
+            min-width: 150px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 16px 34px rgba(2, 6, 23, 0.32);
+            padding: 14px 16px;
+            display: grid;
+            place-items: center;
+            gap: 8px;
+        }
+
+        .site-loader-spinner {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid #cfe0f5;
+            border-top-color: #1d4e89;
+            animation: siteLoaderSpin .85s linear infinite;
+        }
+
+        .site-loader-text {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #1e3a5f;
+            letter-spacing: 0.25px;
+        }
+
+        @keyframes siteLoaderSpin {
+            to { transform: rotate(360deg); }
+        }
+
         .employee-login-widget {
             position: fixed;
             right: 1.1rem;
@@ -847,6 +897,12 @@ $csrfToken = landing_generate_csrf_token();
     </style>
 </head>
 <body>
+    <div class="site-loader" id="siteLoader" aria-live="polite">
+        <div class="site-loader-card">
+            <div class="site-loader-spinner"></div>
+            <div class="site-loader-text">Loading...</div>
+        </div>
+    </div>
     <nav class="top-nav">
         <div class="nav-wrap">
             <a class="brand" href="/">
@@ -1025,6 +1081,36 @@ $csrfToken = landing_generate_csrf_token();
     </footer>
     <script>
         (function () {
+            var pageLoader = document.getElementById('siteLoader');
+            function showPageLoader() {
+                if (!pageLoader) return;
+                pageLoader.classList.remove('is-hidden');
+            }
+            function hidePageLoader() {
+                if (!pageLoader) return;
+                pageLoader.classList.add('is-hidden');
+            }
+
+            window.addEventListener('load', function () {
+                setTimeout(hidePageLoader, 140);
+            }, { once: true });
+
+            document.addEventListener('click', function (event) {
+                var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+                if (!link) return;
+                if (link.hasAttribute('download')) return;
+                if ((link.getAttribute('target') || '').toLowerCase() === '_blank') return;
+                var href = (link.getAttribute('href') || '').trim();
+                if (href === '' || href.charAt(0) === '#' || href.toLowerCase().indexOf('javascript:') === 0) return;
+                showPageLoader();
+            }, true);
+
+            document.addEventListener('submit', function (event) {
+                if (event.target && event.target.matches && event.target.matches('form')) {
+                    showPageLoader();
+                }
+            }, true);
+
             var widget = document.getElementById('employeeLoginWidget');
             var toggle = document.getElementById('employeeLoginToggle');
             var panel = document.getElementById('employeeLoginPanel');
