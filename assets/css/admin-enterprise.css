@@ -538,7 +538,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     border: none;
     background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
     color: #24486f;
-    box-shadow: 0 10px 22px rgba(15, 30, 56, 0.18);
+    box-shadow: 0 8px 18px rgba(15, 30, 56, 0.14);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -556,13 +556,13 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     height: calc(100% - 12px);
     background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 100%);
     border-radius: 10px 0 0 10px;
-    box-shadow: inset -1px 0 0 rgba(18, 44, 76, 0.08);
+    box-shadow: none;
     pointer-events: none;
 }
 
 .top-sidebar-toggle:hover {
     transform: translateX(2px);
-    box-shadow: 0 12px 24px rgba(15, 30, 56, 0.22);
+    box-shadow: 0 10px 20px rgba(15, 30, 56, 0.16);
     background: linear-gradient(180deg, #ffffff 0%, #eef5ff 100%);
 }
 
@@ -583,7 +583,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .top-s
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .top-sidebar-toggle::before {
     background: linear-gradient(180deg, #f8fbff 0%, #edf4fb 100%);
-    box-shadow: inset -1px 0 0 rgba(18, 44, 76, 0.06);
+    box-shadow: none;
 }
 
 /* Hide legacy duplicated toggles */
