@@ -7,6 +7,25 @@ header('X-Frame-Options: SAMEORIGIN');
 header('X-XSS-Protection: 1; mode=block');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+function landing_generate_csrf_token(): string
+{
+    if (empty($_SESSION['landing_csrf_token'])) {
+        $_SESSION['landing_csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return (string) $_SESSION['landing_csrf_token'];
+}
+
+function landing_verify_csrf_token($token): bool
+{
+    $given = is_string($token) ? $token : '';
+    $stored = isset($_SESSION['landing_csrf_token']) ? (string) $_SESSION['landing_csrf_token'] : '';
+    return $stored !== '' && $given !== '' && hash_equals($stored, $given);
+}
+
 $feedbackNotice = ['type' => '', 'text' => ''];
 $feedbackForm = [
     'full_name' => '',
@@ -23,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_subm
     $feedbackForm['location'] = trim((string) ($_POST['location'] ?? ''));
     $feedbackForm['message'] = trim((string) ($_POST['message'] ?? ''));
 
-    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+    if (!landing_verify_csrf_token($_POST['csrf_token'] ?? '')) {
         $feedbackNotice = ['type' => 'error', 'text' => 'Invalid request token. Please refresh and try again.'];
     } elseif (
         $feedbackForm['full_name'] === '' ||
@@ -70,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_subm
     }
 }
 
-$csrfToken = generate_csrf_token();
+$csrfToken = landing_generate_csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en">
