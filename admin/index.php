@@ -345,6 +345,20 @@ $show_gate_wall = !$gate_passed;
             font-weight: 800;
         }
 
+        .id-gate-warning {
+            margin: 0 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #b91c1c;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+
+        .id-gate-warning i {
+            font-size: 0.98rem;
+        }
+
         .id-gate-modal p {
             margin: 0 0 14px 0;
             color: #334b6f;
@@ -734,6 +748,7 @@ $show_gate_wall = !$gate_passed;
 <div class="id-gate-overlay" role="dialog" aria-modal="true" aria-labelledby="employeeGateTitle">
     <form class="id-gate-modal" method="post">
         <h3 id="employeeGateTitle">STOP! Private Admin Page</h3>
+        <div class="id-gate-warning"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Warning: Unauthorized access is prohibited.</div>
         <p>For authorized LGU personnel only. Enter your Employee ID before proceeding to employee login.</p>
         <input class="id-gate-input" type="number" min="1" step="1" inputmode="numeric" name="employee_gate_id" placeholder="Enter Employee ID" required value="<?php echo htmlspecialchars($employee_id_input, ENT_QUOTES, 'UTF-8'); ?>">
         <div class="id-gate-actions">
