@@ -240,8 +240,12 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-gr
 
 .top-sidebar-toggle,
 body.sidebar-hidden .top-sidebar-toggle {
-    left: 14px !important;
-    top: 18px !important;
+    left: 286px !important;
+    top: 14px !important;
+}
+
+body.sidebar-hidden .top-sidebar-toggle {
+    left: 114px !important;
 }
 
 .pm-section.card {
@@ -345,6 +349,40 @@ button:focus-visible,
     font-weight: 600;
 }
 
+.settings-page .settings-panel .settings-info-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.settings-page .settings-panel .settings-info-field {
+    border: 1px solid #dbe7f3;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #f8fbff;
+    display: grid;
+    gap: 3px;
+}
+
+.settings-page .settings-panel .settings-info-field label {
+    font-size: 0.74rem;
+    color: #475569;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.settings-page .settings-panel .settings-info-value {
+    color: #0f172a;
+    font-weight: 600;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.settings-page .settings-panel .settings-info-field-full {
+    grid-column: 1 / -1;
+}
+
 .admin-logout-modal {
     position: fixed !important;
     inset: 0 !important;
@@ -389,8 +427,8 @@ button:focus-visible,
 @media (max-width: 992px) {
     .top-sidebar-toggle,
     body.sidebar-hidden .top-sidebar-toggle {
-        left: 10px !important;
-        top: 14px !important;
+        left: 12px !important;
+        top: 10px !important;
     }
 }
 
@@ -404,5 +442,9 @@ button:focus-visible,
         left: 10px;
         width: auto;
         justify-content: space-between;
+    }
+
+    .settings-page .settings-panel .settings-info-form {
+        grid-template-columns: 1fr;
     }
 }

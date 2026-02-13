@@ -219,26 +219,27 @@ $csrfToken = generate_csrf_token();
                     <div class="settings-view">
                         <div class="settings-panel">
                             <h3 class="ac-b75fad00">Account Information</h3>
-                            <div class="table-wrap">
-                                <table class="projects-table"><tbody>
-                                    <tr><td><strong>First Name</strong></td><td><?php echo htmlspecialchars((string) ($user['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>Middle Name</strong></td><td><?php echo htmlspecialchars((string) ($user['middle_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>Last Name</strong></td><td><?php echo htmlspecialchars((string) ($user['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>Suffix</strong></td><td><?php echo htmlspecialchars((string) ($user['suffix'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>Full Name</strong></td><td><?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>Email</strong></td><td><?php echo htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>Contact</strong></td><td><?php echo htmlspecialchars((string) ($user['mobile'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>Birthdate</strong></td><td><?php echo !empty($user['birthdate']) ? date('M d, Y', strtotime((string) $user['birthdate'])) : '-'; ?></td></tr>
-                                    <tr><td><strong>Address</strong></td><td><?php echo htmlspecialchars((string) ($user['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>Gender</strong></td><td><?php echo htmlspecialchars((string) ($user['gender'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>Civil Status</strong></td><td><?php echo htmlspecialchars((string) ($user['civil_status'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>ID Type</strong></td><td><?php echo htmlspecialchars((string) ($user['id_type'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>ID Number</strong></td><td><?php echo htmlspecialchars((string) ($user['id_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>ID Upload</strong></td><td><?php if (!empty($user['id_upload'])): ?><a href="<?php echo htmlspecialchars((string) $user['id_upload'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer">View Uploaded File</a><?php else: ?>-<?php endif; ?></td></tr>
-                                    <tr><td><strong>Registered On</strong></td><td><?php echo !empty($user['created_at']) ? date('M d, Y', strtotime((string) $user['created_at'])) : '-'; ?></td></tr>
-                                    <tr><td><strong>Feedback Submitted</strong></td><td><?php echo (int) ($feedbackStats['total'] ?? 0); ?></td></tr>
-                                    <tr><td><strong>Pending Feedback</strong></td><td><?php echo (int) ($feedbackStats['pending'] ?? 0); ?></td></tr>
-                                </tbody></table>
+                            <div class="settings-info-form" role="group" aria-label="Account information">
+                                <div class="settings-info-field"><label>First Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Middle Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['middle_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Last Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Suffix</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['suffix'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Full Name</label><div class="settings-info-value"><?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Email</label><div class="settings-info-value"><?php echo htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Contact</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['mobile'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Birthdate</label><div class="settings-info-value"><?php echo !empty($user['birthdate']) ? date('M d, Y', strtotime((string) $user['birthdate'])) : '-'; ?></div></div>
+                                <div class="settings-info-field settings-info-field-full"><label>Address</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Gender</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['gender'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Civil Status</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['civil_status'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>ID Type</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['id_type'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>ID Number</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['id_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field settings-info-field-full">
+                                    <label>ID Upload</label>
+                                    <div class="settings-info-value"><?php if (!empty($user['id_upload'])): ?><a href="<?php echo htmlspecialchars((string) $user['id_upload'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer">View Uploaded File</a><?php else: ?>-<?php endif; ?></div>
+                                </div>
+                                <div class="settings-info-field"><label>Registered On</label><div class="settings-info-value"><?php echo !empty($user['created_at']) ? date('M d, Y', strtotime((string) $user['created_at'])) : '-'; ?></div></div>
+                                <div class="settings-info-field"><label>Feedback Submitted</label><div class="settings-info-value"><?php echo (int) ($feedbackStats['total'] ?? 0); ?></div></div>
+                                <div class="settings-info-field"><label>Pending Feedback</label><div class="settings-info-value"><?php echo (int) ($feedbackStats['pending'] ?? 0); ?></div></div>
                             </div>
                             <div style="margin-top:14px;">
                                 <form method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">

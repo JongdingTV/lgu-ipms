@@ -406,12 +406,22 @@ body.user-signup-page .subtitle {
 }
 .actions {
     margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+}
+.actions-left {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
+}
+.actions-right {
+    display: flex;
+    justify-content: flex-end;
     gap: 10px;
 }
 .btn-primary {
-    min-width: 180px;
+    min-width: 170px;
     height: 46px;
     border: 0;
     border-radius: 11px;
@@ -485,9 +495,20 @@ body.user-signup-page .subtitle {
         grid-template-columns: 1fr;
     }
     .actions {
-        justify-content: stretch;
+        grid-template-columns: 1fr;
+        gap: 10px;
     }
+    .actions-left,
+    .actions-right {
+        width: 100%;
+    }
+    .actions-right { justify-content: stretch; }
+    .actions-right .btn-primary,
+    .actions-left .btn-secondary,
     .btn-primary {
+        width: 100%;
+    }
+    .btn-secondary {
         width: 100%;
     }
 }
@@ -632,9 +653,13 @@ body.user-signup-page .subtitle {
 
             <div class="step-error" id="stepErrorBox"></div>
             <div class="actions">
-                <button class="btn-secondary" type="button" id="prevStepBtn" style="visibility:hidden;">Previous</button>
-                <button class="btn-primary" type="button" id="nextStepBtn">Next</button>
-                <button class="btn-primary" type="submit" name="register_submit" id="submitStepBtn" style="display:none;">Create Account</button>
+                <div class="actions-left">
+                    <button class="btn-secondary" type="button" id="prevStepBtn" style="visibility:hidden;">Previous</button>
+                </div>
+                <div class="actions-right">
+                    <button class="btn-primary" type="button" id="nextStepBtn">Next</button>
+                    <button class="btn-primary" type="submit" name="register_submit" id="submitStepBtn" style="display:none;">Create Account</button>
+                </div>
             </div>
 
             <div class="meta-links">
