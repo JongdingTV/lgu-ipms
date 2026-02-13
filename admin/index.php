@@ -24,6 +24,54 @@ function get_client_ip() {
 $client_ip = get_client_ip();
 $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
+function get_employee_id_by_email($db, $email) {
+    if (!isset($db) || $db->connect_error || $email === '') {
+        return null;
+    }
+    $stmt = $db->prepare("SELECT id FROM employees WHERE email = ? LIMIT 1");
+    if (!$stmt) {
+        return null;
+    }
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+    return $row ? (int) $row['id'] : null;
+}
+
+function safe_log_login($db, $email, $ip, $agent, $status, $reason = null, $employeeId = null) {
+    if (!isset($db) || $db->connect_error || $email === '') {
+        return;
+    }
+    if ($employeeId === null) {
+        $employeeId = get_employee_id_by_email($db, $email);
+    }
+    if ($employeeId === null) {
+        return;
+    }
+
+    try {
+        if ($reason !== null && $reason !== '') {
+            $stmt = $db->prepare("INSERT INTO login_logs (employee_id, email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param('isssss', $employeeId, $email, $ip, $agent, $status, $reason);
+                $stmt->execute();
+                $stmt->close();
+            }
+        } else {
+            $stmt = $db->prepare("INSERT INTO login_logs (employee_id, email, ip_address, user_agent, status) VALUES (?, ?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param('issss', $employeeId, $email, $ip, $agent, $status);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('safe_log_login failed: ' . $e->getMessage());
+    }
+}
+
 // Session timeout (30 minutes)
 $session_timeout = 1800;
 if (isset($_SESSION['employee_id'])) {
@@ -63,6 +111,7 @@ if (!isset($_SESSION['employee_id'])) {
 // If verified but not logged in, show login form (admin_verified persists)
 
 $error = '';
+$email_input = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Check database connection before processing
@@ -71,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         $email = isset($_POST['email']) ? trim($_POST['email']) : '';
         $password = isset($_POST['password']) ? trim($_POST['password']) : '';
+        $email_input = $email;
         
         if (!empty($email) && !empty($password)) {
             // Check if account is locked
@@ -87,13 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     
                     $error = "Account locked due to too many failed login attempts. Try again in $minutes minute" . ($minutes > 1 ? 's' : '') . ".";
                     
-                    // Log failed attempt
-                    $log_stmt = $db->prepare("INSERT INTO login_logs (email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, 'locked', 'Account locked')");
-                    if ($log_stmt) {
-                        $log_stmt->bind_param('sss', $email, $client_ip, $user_agent);
-                        $log_stmt->execute();
-                        $log_stmt->close();
-                    }
+                    safe_log_login($db, $email, $client_ip, $user_agent, 'locked', 'Account locked');
                     
                     $lock_stmt->close();
                 } else {
@@ -128,12 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 }
                                 
                                 // Log successful login
-                                $log_stmt = $db->prepare("INSERT INTO login_logs (employee_id, email, ip_address, user_agent, status) VALUES (?, ?, ?, ?, 'success')");
-                                if ($log_stmt) {
-                                    $log_stmt->bind_param('isss', $employee['id'], $email, $client_ip, $user_agent);
-                                    $log_stmt->execute();
-                                    $log_stmt->close();
-                                }
+                                safe_log_login($db, $email, $client_ip, $user_agent, 'success', null, (int) $employee['id']);
                                 
                                 // Log session
                                 $session_id = session_id();
@@ -156,13 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 // Failed login - track attempt
                                 $error = 'Invalid email or password.';
                                 
-                                // Log failed attempt
-                                $log_stmt = $db->prepare("INSERT INTO login_logs (email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, 'failed', 'Invalid credentials')");
-                                if ($log_stmt) {
-                                    $log_stmt->bind_param('sss', $email, $client_ip, $user_agent);
-                                    $log_stmt->execute();
-                                    $log_stmt->close();
-                                }
+                                safe_log_login($db, $email, $client_ip, $user_agent, 'failed', 'Invalid credentials', (int) $employee['id']);
                                 
                                 // Track failed attempt
                                 $attempt_stmt = $db->prepare("INSERT INTO login_attempts (email, ip_address, success) VALUES (?, ?, FALSE)");
@@ -196,14 +229,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 }
                             }
                         } else {
-                            $error = 'Invalid email or password.';
-                            
-                            // Log failed attempt
-                            $log_stmt = $db->prepare("INSERT INTO login_logs (email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, 'failed', 'User not found')");
-                            if ($log_stmt) {
-                                $log_stmt->bind_param('sss', $email, $client_ip, $user_agent);
-                                $log_stmt->execute();
-                                $log_stmt->close();
+                            $error = 'This email is not registered for employee/admin access.';
+                            safe_log_login($db, $email, $client_ip, $user_agent, 'failed', 'User not found');
+                            $attempt_stmt = $db->prepare("INSERT INTO login_attempts (email, ip_address, success) VALUES (?, ?, FALSE)");
+                            if ($attempt_stmt) {
+                                $attempt_stmt->bind_param('ss', $email, $client_ip);
+                                $attempt_stmt->execute();
+                                $attempt_stmt->close();
                             }
                         }
                         $stmt->close();
@@ -569,7 +601,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <div class="input-box">
                 <label>Email Address</label>
-                <input type="email" name="email" id="loginEmail" placeholder="employee@lgu.gov.ph" required autocomplete="email">
+                <input type="email" name="email" id="loginEmail" placeholder="employee@lgu.gov.ph" required autocomplete="email" value="<?php echo htmlspecialchars($email_input, ENT_QUOTES, 'UTF-8'); ?>">
                 <span class="icon">@</span>
             </div>
 
