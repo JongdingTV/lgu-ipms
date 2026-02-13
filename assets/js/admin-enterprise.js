@@ -281,6 +281,15 @@
         <span class="admin-date" id="adminLiveDate">----</span>
       </div>
       <div class="admin-utility-group">
+        <button type="button" class="admin-utility-btn" id="adminCalendarBtn" aria-expanded="false" aria-controls="adminCalendarPanel" title="Calendar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span class="admin-utility-label" id="adminCalendarLabel">Calendar</span>
+        </button>
         <button type="button" class="admin-utility-btn" id="adminNotifBtn" aria-expanded="false" aria-controls="adminNotifPanel" title="Notifications">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path>
@@ -310,11 +319,33 @@
           <button type="button" id="adminNotifMarkRead">Mark all read</button>
         </div>
         <ul class="admin-notif-list" id="adminNotifList"></ul>
+      </div>
+      <div class="admin-calendar-panel" id="adminCalendarPanel" hidden>
+        <div class="admin-calendar-head">
+          <button type="button" id="adminCalPrev" aria-label="Previous month">&#8249;</button>
+          <strong id="adminCalTitle">Month Year</strong>
+          <button type="button" id="adminCalNext" aria-label="Next month">&#8250;</button>
+        </div>
+        <div class="admin-calendar-weekdays">
+          <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+        <div class="admin-calendar-grid" id="adminCalendarGrid" aria-live="polite"></div>
+        <div class="admin-calendar-foot">
+          <button type="button" id="adminCalToday">Today</button>
+        </div>
       </div>`;
     document.body.appendChild(bar);
 
     const timeEl = document.getElementById('adminLiveTime');
     const dateEl = document.getElementById('adminLiveDate');
+    const calendarBtn = document.getElementById('adminCalendarBtn');
+    const calendarLabel = document.getElementById('adminCalendarLabel');
+    const calendarPanel = document.getElementById('adminCalendarPanel');
+    const calTitle = document.getElementById('adminCalTitle');
+    const calGrid = document.getElementById('adminCalendarGrid');
+    const calPrev = document.getElementById('adminCalPrev');
+    const calNext = document.getElementById('adminCalNext');
+    const calToday = document.getElementById('adminCalToday');
     const notifBtn = document.getElementById('adminNotifBtn');
     const notifPanel = document.getElementById('adminNotifPanel');
     const notifList = document.getElementById('adminNotifList');
@@ -328,6 +359,40 @@
     document.body.classList.toggle('theme-dark', persistedTheme === 'dark');
     if (themeLabel) themeLabel.textContent = persistedTheme === 'dark' ? 'Light' : 'Dark';
 
+    const today = new Date();
+    let calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const updateCalendarLabel = (now) => {
+      if (!calendarLabel) return;
+      calendarLabel.textContent = now.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    };
+
+    const renderCalendar = () => {
+      if (!calTitle || !calGrid) return;
+      const year = calendarCursor.getFullYear();
+      const month = calendarCursor.getMonth();
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const prevMonthDays = new Date(year, month, 0).getDate();
+      const isCurrentMonth = (today.getFullYear() === year && today.getMonth() === month);
+
+      calTitle.textContent = calendarCursor.toLocaleDateString([], { month: 'long', year: 'numeric' });
+
+      const cells = [];
+      for (let i = firstDay - 1; i >= 0; i--) {
+        cells.push(`<span class="is-outside">${prevMonthDays - i}</span>`);
+      }
+      for (let day = 1; day <= daysInMonth; day++) {
+        const isToday = isCurrentMonth && day === today.getDate();
+        cells.push(`<span${isToday ? ' class="is-today"' : ''}>${day}</span>`);
+      }
+      let nextMonthDay = 1;
+      while (cells.length % 7 !== 0) {
+        cells.push(`<span class="is-outside">${nextMonthDay++}</span>`);
+      }
+      calGrid.innerHTML = cells.join('');
+    };
+
     const clockTick = () => {
       const now = new Date();
       if (timeEl) {
@@ -336,9 +401,11 @@
       if (dateEl) {
         dateEl.textContent = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
       }
+      updateCalendarLabel(now);
     };
     clockTick();
     setInterval(clockTick, 1000);
+    renderCalendar();
 
     const getSeenId = () => Number(localStorage.getItem(seenKey) || 0) || 0;
     const setSeenId = (id) => localStorage.setItem(seenKey, String(Number(id) || 0));
@@ -407,8 +474,40 @@
         const open = notifPanel.hasAttribute('hidden');
         notifPanel.toggleAttribute('hidden', !open);
         notifBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open && calendarPanel) {
+          calendarPanel.setAttribute('hidden', 'hidden');
+          calendarBtn?.setAttribute('aria-expanded', 'false');
+        }
       });
     }
+
+    if (calendarBtn && calendarPanel) {
+      calendarBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const open = calendarPanel.hasAttribute('hidden');
+        calendarPanel.toggleAttribute('hidden', !open);
+        calendarBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) {
+          notifPanel?.setAttribute('hidden', 'hidden');
+          notifBtn?.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    calPrev?.addEventListener('click', () => {
+      calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1);
+      renderCalendar();
+    });
+
+    calNext?.addEventListener('click', () => {
+      calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
+      renderCalendar();
+    });
+
+    calToday?.addEventListener('click', () => {
+      calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);
+      renderCalendar();
+    });
 
     if (markReadBtn) {
       markReadBtn.addEventListener('click', () => {
@@ -418,9 +517,15 @@
     }
 
     document.addEventListener('click', (e) => {
-      if (!bar.contains(e.target) && notifPanel && !notifPanel.hasAttribute('hidden')) {
-        notifPanel.setAttribute('hidden', 'hidden');
-        notifBtn?.setAttribute('aria-expanded', 'false');
+      if (!bar.contains(e.target)) {
+        if (notifPanel && !notifPanel.hasAttribute('hidden')) {
+          notifPanel.setAttribute('hidden', 'hidden');
+          notifBtn?.setAttribute('aria-expanded', 'false');
+        }
+        if (calendarPanel && !calendarPanel.hasAttribute('hidden')) {
+          calendarPanel.setAttribute('hidden', 'hidden');
+          calendarBtn?.setAttribute('aria-expanded', 'false');
+        }
       }
     });
 
