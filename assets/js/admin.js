@@ -1,6 +1,130 @@
 'use strict';
 /* ===== Consolidated Admin JS ===== */
 
+/* ===== Global Page Loader ===== */
+(function () {
+    if (window.__ipmsLoaderInitialized) return;
+    window.__ipmsLoaderInitialized = true;
+
+    const LOADER_ID = 'ipmsGlobalLoader';
+    const HIDE_CLASS = 'is-hidden';
+    const ACTIVE_CLASS = 'is-active';
+
+    const style = document.createElement('style');
+    style.id = 'ipmsGlobalLoaderStyle';
+    style.textContent = `
+        #${LOADER_ID} {
+            position: fixed;
+            inset: 0;
+            z-index: 10050;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(7, 18, 34, 0.72);
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .2s ease, visibility .2s ease;
+        }
+        #${LOADER_ID}.${ACTIVE_CLASS} {
+            opacity: 1;
+            visibility: visible;
+        }
+        #${LOADER_ID}.${HIDE_CLASS} {
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
+        #${LOADER_ID} .ipms-loader-card {
+            min-width: 150px;
+            background: rgba(255, 255, 255, .98);
+            border: 1px solid rgba(148, 163, 184, .35);
+            border-radius: 14px;
+            padding: 14px 16px;
+            display: grid;
+            place-items: center;
+            gap: 8px;
+            box-shadow: 0 16px 34px rgba(2, 6, 23, .32);
+        }
+        #${LOADER_ID} .ipms-loader-spinner {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid #cfe0f5;
+            border-top-color: #1d4e89;
+            animation: ipmsLoaderSpin .85s linear infinite;
+        }
+        #${LOADER_ID} .ipms-loader-text {
+            font: 700 12px/1.2 "Poppins", sans-serif;
+            color: #1e3a5f;
+            letter-spacing: .25px;
+        }
+        @keyframes ipmsLoaderSpin {
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+
+    const loader = document.createElement('div');
+    loader.id = LOADER_ID;
+    loader.setAttribute('aria-live', 'polite');
+    loader.innerHTML = '<div class="ipms-loader-card"><div class="ipms-loader-spinner"></div><div class="ipms-loader-text">Loading...</div></div>';
+
+    function ensureLoader() {
+        if (!document.body.contains(loader)) {
+            document.body.appendChild(loader);
+        }
+    }
+
+    function showLoader() {
+        ensureLoader();
+        loader.classList.remove(HIDE_CLASS);
+        loader.classList.add(ACTIVE_CLASS);
+    }
+
+    function hideLoader() {
+        if (!document.body.contains(loader)) return;
+        loader.classList.remove(ACTIVE_CLASS);
+        loader.classList.add(HIDE_CLASS);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showLoader, { once: true });
+    } else {
+        showLoader();
+    }
+
+    window.addEventListener('load', function () {
+        setTimeout(hideLoader, 140);
+    }, { once: true });
+
+    document.addEventListener('submit', function (event) {
+        if (event.target && !event.defaultPrevented && event.target.matches('form')) {
+            showLoader();
+        }
+    }, true);
+
+    document.addEventListener('click', function (event) {
+        const link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+        if (!link) return;
+        if (link.hasAttribute('download')) return;
+        if ((link.getAttribute('target') || '').toLowerCase() === '_blank') return;
+
+        const href = (link.getAttribute('href') || '').trim();
+        if (href === '' || href.startsWith('#') || href.toLowerCase().startsWith('javascript:')) return;
+
+        try {
+            const nextUrl = new URL(link.href, window.location.href);
+            if (nextUrl.origin === window.location.origin) {
+                showLoader();
+            }
+        } catch (e) {
+            // Ignore malformed links.
+        }
+    }, true);
+
+    window.IPMSPageLoader = { show: showLoader, hide: hideLoader };
+})();
+
 /* ===== File: assets/js/shared/shared-config.js ===== */
 // Shared configuration for API paths - works for both local and production
 (function() {

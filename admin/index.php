@@ -24,6 +24,54 @@ function get_client_ip() {
 $client_ip = get_client_ip();
 $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
+function get_employee_id_by_email($db, $email) {
+    if (!isset($db) || $db->connect_error || $email === '') {
+        return null;
+    }
+    $stmt = $db->prepare("SELECT id FROM employees WHERE email = ? LIMIT 1");
+    if (!$stmt) {
+        return null;
+    }
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+    return $row ? (int) $row['id'] : null;
+}
+
+function safe_log_login($db, $email, $ip, $agent, $status, $reason = null, $employeeId = null) {
+    if (!isset($db) || $db->connect_error || $email === '') {
+        return;
+    }
+    if ($employeeId === null) {
+        $employeeId = get_employee_id_by_email($db, $email);
+    }
+    if ($employeeId === null) {
+        return;
+    }
+
+    try {
+        if ($reason !== null && $reason !== '') {
+            $stmt = $db->prepare("INSERT INTO login_logs (employee_id, email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param('isssss', $employeeId, $email, $ip, $agent, $status, $reason);
+                $stmt->execute();
+                $stmt->close();
+            }
+        } else {
+            $stmt = $db->prepare("INSERT INTO login_logs (employee_id, email, ip_address, user_agent, status) VALUES (?, ?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param('issss', $employeeId, $email, $ip, $agent, $status);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('safe_log_login failed: ' . $e->getMessage());
+    }
+}
+
 // Session timeout (30 minutes)
 $session_timeout = 1800;
 if (isset($_SESSION['employee_id'])) {
@@ -63,162 +111,183 @@ if (!isset($_SESSION['employee_id'])) {
 // If verified but not logged in, show login form (admin_verified persists)
 
 $error = '';
+$email_input = '';
+$gate_error = '';
+$employee_id_input = '';
+$gate_ok_flash = $_SESSION['admin_gate_notice'] ?? '';
+if (isset($_SESSION['admin_gate_notice'])) {
+    unset($_SESSION['admin_gate_notice']);
+}
+$gate_passed = !empty($_SESSION['admin_gate_passed']);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Check database connection before processing
     if (!isset($db) || $db->connect_error) {
         $error = 'Database connection error. Please try again later.';
     } else {
-        $email = isset($_POST['email']) ? trim($_POST['email']) : '';
-        $password = isset($_POST['password']) ? trim($_POST['password']) : '';
-        
-        if (!empty($email) && !empty($password)) {
-            // Check if account is locked
-            $lock_stmt = $db->prepare("SELECT locked_until FROM locked_accounts WHERE email = ? AND locked_until > NOW()");
-            if ($lock_stmt) {
-                $lock_stmt->bind_param('s', $email);
-                $lock_stmt->execute();
-                $lock_result = $lock_stmt->get_result();
-                
-                if ($lock_result->num_rows > 0) {
-                    $lock_data = $lock_result->fetch_assoc();
-                    $time_remaining = strtotime($lock_data['locked_until']) - time();
-                    $minutes = ceil($time_remaining / 60);
-                    
-                    $error = "Account locked due to too many failed login attempts. Try again in $minutes minute" . ($minutes > 1 ? 's' : '') . ".";
-                    
-                    // Log failed attempt
-                    $log_stmt = $db->prepare("INSERT INTO login_logs (email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, 'locked', 'Account locked')");
-                    if ($log_stmt) {
-                        $log_stmt->bind_param('sss', $email, $client_ip, $user_agent);
-                        $log_stmt->execute();
-                        $log_stmt->close();
+        if (isset($_POST['admin_gate_submit'])) {
+            $employee_id_input = trim((string)($_POST['employee_gate_id'] ?? ''));
+            if ($employee_id_input === '' || !ctype_digit($employee_id_input) || (int)$employee_id_input <= 0) {
+                $gate_error = 'Please enter a valid Employee ID number.';
+            } else {
+                $gate_id = (int)$employee_id_input;
+                $gate_stmt = $db->prepare("SELECT id FROM employees WHERE id = ? LIMIT 1");
+                if ($gate_stmt) {
+                    $gate_stmt->bind_param('i', $gate_id);
+                    $gate_stmt->execute();
+                    $gate_result = $gate_stmt->get_result();
+                    if ($gate_result && $gate_result->num_rows > 0) {
+                        $_SESSION['admin_gate_passed'] = true;
+                        $_SESSION['admin_gate_verified_id'] = $gate_id;
+                        $_SESSION['admin_gate_notice'] = 'Employee ID matched. You may now sign in.';
+                        header('Location: /admin/index.php');
+                        exit;
                     }
-                    
-                    $lock_stmt->close();
+                    $gate_error = 'Employee ID not recognized. Access to this page is restricted to authorized LGU employees.';
+                    $gate_stmt->close();
                 } else {
-                    // Account not locked, proceed with login
-                    $lock_stmt->close();
+                    $gate_error = 'Unable to validate Employee ID right now. Please try again.';
+                }
+            }
+        } elseif (!$gate_passed) {
+            $gate_error = 'Enter your Employee ID first before continuing to admin login.';
+        } else {
+            $email = isset($_POST['email']) ? trim($_POST['email']) : '';
+            $password = isset($_POST['password']) ? trim($_POST['password']) : '';
+            $email_input = $email;
+            
+            if (!empty($email) && !empty($password)) {
+                // Check if account is locked
+                $lock_stmt = $db->prepare("SELECT locked_until FROM locked_accounts WHERE email = ? AND locked_until > NOW()");
+                if ($lock_stmt) {
+                    $lock_stmt->bind_param('s', $email);
+                    $lock_stmt->execute();
+                    $lock_result = $lock_stmt->get_result();
                     
-                    $stmt = $db->prepare("SELECT id, password, first_name, last_name FROM employees WHERE email = ?");
-                    if ($stmt) {
-                        $stmt->bind_param('s', $email);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
+                    if ($lock_result->num_rows > 0) {
+                        $lock_data = $lock_result->fetch_assoc();
+                        $time_remaining = strtotime($lock_data['locked_until']) - time();
+                        $minutes = ceil($time_remaining / 60);
                         
-                        if ($result->num_rows > 0) {
-                            $employee = $result->fetch_assoc();
-                            $isAdmin = ($email === 'admin@lgu.gov.ph');
-                            $valid = false;
+                        $error = "Account locked due to too many failed login attempts. Try again in $minutes minute" . ($minutes > 1 ? 's' : '') . ".";
+                        
+                        safe_log_login($db, $email, $client_ip, $user_agent, 'locked', 'Account locked');
+                        
+                        $lock_stmt->close();
+                    } else {
+                        // Account not locked, proceed with login
+                        $lock_stmt->close();
+                        
+                        $stmt = $db->prepare("SELECT id, password, first_name, last_name FROM employees WHERE email = ?");
+                        if ($stmt) {
+                            $stmt->bind_param('s', $email);
+                            $stmt->execute();
+                            $result = $stmt->get_result();
                             
-                            if ($isAdmin) {
-                                // Allow plain password for admin test account
-                                $valid = ($password === 'admin123' || password_verify($password, $employee['password']));
+                            if ($result->num_rows > 0) {
+                                $employee = $result->fetch_assoc();
+                                $isAdmin = ($email === 'admin@lgu.gov.ph');
+                                $valid = false;
+                                
+                                if ($isAdmin) {
+                                    // Allow plain password for admin test account
+                                    $valid = ($password === 'admin123' || password_verify($password, $employee['password']));
+                                } else {
+                                    $valid = password_verify($password, $employee['password']);
+                                }
+                                
+                                if ($valid) {
+                                    // Reset failed login attempts
+                                    $reset_stmt = $db->prepare("DELETE FROM login_attempts WHERE email = ? AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+                                    if ($reset_stmt) {
+                                        $reset_stmt->bind_param('s', $email);
+                                        $reset_stmt->execute();
+                                        $reset_stmt->close();
+                                    }
+                                    
+                                    // Log successful login
+                                    safe_log_login($db, $email, $client_ip, $user_agent, 'success', null, (int) $employee['id']);
+                                    
+                                    // Log session
+                                    $session_id = session_id();
+                                    $session_stmt = $db->prepare("INSERT INTO session_logs (employee_id, session_id, ip_address, user_agent, last_activity) VALUES (?, ?, ?, ?, NOW())");
+                                    if ($session_stmt) {
+                                        $session_stmt->bind_param('isss', $employee['id'], $session_id, $client_ip, $user_agent);
+                                        $session_stmt->execute();
+                                        $session_stmt->close();
+                                    }
+                                    
+                                    unset($_SESSION['admin_gate_passed'], $_SESSION['admin_gate_verified_id']);
+                                    $_SESSION['employee_id'] = $employee['id'];
+                                    $_SESSION['employee_name'] = $isAdmin ? 'Admin' : ($employee['first_name'] . ' ' . $employee['last_name']);
+                                    $_SESSION['user_type'] = 'employee';
+                                    $_SESSION['last_activity'] = time();
+                                    $_SESSION['login_time'] = time();
+                                    
+                                    header('Location: /admin/dashboard.php');
+                                    exit;
+                                } else {
+                                    // Failed login - track attempt
+                                    $error = 'Invalid email or password.';
+                                    
+                                    safe_log_login($db, $email, $client_ip, $user_agent, 'failed', 'Invalid credentials', (int) $employee['id']);
+                                    
+                                    // Track failed attempt
+                                    $attempt_stmt = $db->prepare("INSERT INTO login_attempts (email, ip_address, success) VALUES (?, ?, FALSE)");
+                                    if ($attempt_stmt) {
+                                        $attempt_stmt->bind_param('ss', $email, $client_ip);
+                                        $attempt_stmt->execute();
+                                        $attempt_stmt->close();
+                                    }
+                                    
+                                    // Check failed attempts in last 30 minutes
+                                    $check_stmt = $db->prepare("SELECT COUNT(*) as count FROM login_attempts WHERE email = ? AND success = FALSE AND attempt_time > DATE_SUB(NOW(), INTERVAL 30 MINUTE)");
+                                    if ($check_stmt) {
+                                        $check_stmt->bind_param('s', $email);
+                                        $check_stmt->execute();
+                                        $check_result = $check_stmt->get_result();
+                                        $count_data = $check_result->fetch_assoc();
+                                        
+                                        // Lock account after 5 failed attempts
+                                        if ($count_data['count'] >= 5) {
+                                            $locked_until = date('Y-m-d H:i:s', strtotime('+30 minutes'));
+                                            $lock_insert = $db->prepare("INSERT INTO locked_accounts (email, locked_until, reason) VALUES (?, ?, 'Too many failed login attempts') ON DUPLICATE KEY UPDATE locked_until = ?");
+                                            if ($lock_insert) {
+                                                $lock_insert->bind_param('sss', $email, $locked_until, $locked_until);
+                                                $lock_insert->execute();
+                                                $lock_insert->close();
+                                            }
+                                            $error = "Account has been locked for 30 minutes due to too many failed attempts. Please try again later.";
+                                        }
+                                        
+                                        $check_stmt->close();
+                                    }
+                                }
                             } else {
-                                $valid = password_verify($password, $employee['password']);
-                            }
-                            
-                            if ($valid) {
-                                // Reset failed login attempts
-                                $reset_stmt = $db->prepare("DELETE FROM login_attempts WHERE email = ? AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
-                                if ($reset_stmt) {
-                                    $reset_stmt->bind_param('s', $email);
-                                    $reset_stmt->execute();
-                                    $reset_stmt->close();
-                                }
-                                
-                                // Log successful login
-                                $log_stmt = $db->prepare("INSERT INTO login_logs (employee_id, email, ip_address, user_agent, status) VALUES (?, ?, ?, ?, 'success')");
-                                if ($log_stmt) {
-                                    $log_stmt->bind_param('isss', $employee['id'], $email, $client_ip, $user_agent);
-                                    $log_stmt->execute();
-                                    $log_stmt->close();
-                                }
-                                
-                                // Log session
-                                $session_id = session_id();
-                                $session_stmt = $db->prepare("INSERT INTO session_logs (employee_id, session_id, ip_address, user_agent, last_activity) VALUES (?, ?, ?, ?, NOW())");
-                                if ($session_stmt) {
-                                    $session_stmt->bind_param('isss', $employee['id'], $session_id, $client_ip, $user_agent);
-                                    $session_stmt->execute();
-                                    $session_stmt->close();
-                                }
-                                
-                                $_SESSION['employee_id'] = $employee['id'];
-                                $_SESSION['employee_name'] = $isAdmin ? 'Admin' : ($employee['first_name'] . ' ' . $employee['last_name']);
-                                $_SESSION['user_type'] = 'employee';
-                                $_SESSION['last_activity'] = time();
-                                $_SESSION['login_time'] = time();
-                                
-                                header('Location: /admin/dashboard.php');
-                                exit;
-                            } else {
-                                // Failed login - track attempt
-                                $error = 'Invalid email or password.';
-                                
-                                // Log failed attempt
-                                $log_stmt = $db->prepare("INSERT INTO login_logs (email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, 'failed', 'Invalid credentials')");
-                                if ($log_stmt) {
-                                    $log_stmt->bind_param('sss', $email, $client_ip, $user_agent);
-                                    $log_stmt->execute();
-                                    $log_stmt->close();
-                                }
-                                
-                                // Track failed attempt
+                                $error = 'This email is not registered for employee/admin access.';
+                                safe_log_login($db, $email, $client_ip, $user_agent, 'failed', 'User not found');
                                 $attempt_stmt = $db->prepare("INSERT INTO login_attempts (email, ip_address, success) VALUES (?, ?, FALSE)");
                                 if ($attempt_stmt) {
                                     $attempt_stmt->bind_param('ss', $email, $client_ip);
                                     $attempt_stmt->execute();
                                     $attempt_stmt->close();
                                 }
-                                
-                                // Check failed attempts in last 30 minutes
-                                $check_stmt = $db->prepare("SELECT COUNT(*) as count FROM login_attempts WHERE email = ? AND success = FALSE AND attempt_time > DATE_SUB(NOW(), INTERVAL 30 MINUTE)");
-                                if ($check_stmt) {
-                                    $check_stmt->bind_param('s', $email);
-                                    $check_stmt->execute();
-                                    $check_result = $check_stmt->get_result();
-                                    $count_data = $check_result->fetch_assoc();
-                                    
-                                    // Lock account after 5 failed attempts
-                                    if ($count_data['count'] >= 5) {
-                                        $locked_until = date('Y-m-d H:i:s', strtotime('+30 minutes'));
-                                        $lock_insert = $db->prepare("INSERT INTO locked_accounts (email, locked_until, reason) VALUES (?, ?, 'Too many failed login attempts') ON DUPLICATE KEY UPDATE locked_until = ?");
-                                        if ($lock_insert) {
-                                            $lock_insert->bind_param('sss', $email, $locked_until, $locked_until);
-                                            $lock_insert->execute();
-                                            $lock_insert->close();
-                                        }
-                                        $error = "Account has been locked for 30 minutes due to too many failed attempts. Please try again later.";
-                                    }
-                                    
-                                    $check_stmt->close();
-                                }
                             }
+                            $stmt->close();
                         } else {
-                            $error = 'Invalid email or password.';
-                            
-                            // Log failed attempt
-                            $log_stmt = $db->prepare("INSERT INTO login_logs (email, ip_address, user_agent, status, reason) VALUES (?, ?, ?, 'failed', 'User not found')");
-                            if ($log_stmt) {
-                                $log_stmt->bind_param('sss', $email, $client_ip, $user_agent);
-                                $log_stmt->execute();
-                                $log_stmt->close();
-                            }
+                            $error = 'Database error. Please try again later.';
                         }
-                        $stmt->close();
-                    } else {
-                        $error = 'Database error. Please try again later.';
                     }
+                } else {
+                    $error = 'Database error. Please try again later.';
                 }
             } else {
-                $error = 'Database error. Please try again later.';
+                $error = 'Please enter both email and password.';
             }
-        } else {
-            $error = 'Please enter both email and password.';
         }
     }
 }
+
+$show_gate_wall = !$gate_passed;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -246,6 +315,132 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             --page-success: #166534;
             --page-success-bg: #dcfce7;
             --page-border: rgba(15, 23, 42, 0.12);
+        }
+
+        .id-gate-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            backdrop-filter: blur(2px) grayscale(0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            z-index: 9999;
+        }
+
+        .id-gate-modal {
+            width: min(92vw, 460px);
+            background: #f8fbff;
+            border: 1px solid rgba(66, 95, 136, 0.28);
+            border-radius: 16px;
+            box-shadow: 0 18px 38px rgba(0, 0, 0, 0.38);
+            padding: 18px;
+        }
+
+        .id-gate-modal h3 {
+            margin: 0 0 8px 0;
+            color: #0f2a4a;
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        .id-gate-warning {
+            margin: 0 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #b91c1c;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+
+        .id-gate-warning i {
+            font-size: 0.98rem;
+        }
+
+        .id-gate-modal p {
+            margin: 0 0 14px 0;
+            color: #334b6f;
+            line-height: 1.6;
+            font-size: 0.94rem;
+        }
+
+        .id-gate-input {
+            width: 100%;
+            border: 1px solid #c3d4eb;
+            border-radius: 10px;
+            padding: 11px 12px;
+            font-size: 1rem;
+            color: #0f2a4a;
+            margin-bottom: 10px;
+        }
+
+        .id-gate-input:focus {
+            outline: none;
+            border-color: #2d61a8;
+            box-shadow: 0 0 0 3px rgba(45, 97, 168, 0.18);
+        }
+
+        .id-gate-btn {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            padding: 11px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #1b4f92, #2f6db8);
+            cursor: pointer;
+        }
+
+        .id-gate-actions {
+            display: grid;
+            gap: 8px;
+        }
+
+        .id-gate-home {
+            width: 100%;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 700;
+            color: #1b4f92;
+            background: #eef4fd;
+            border: 1px solid #c7d8ef;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .id-gate-home:hover {
+            background: #e6effc;
+            border-color: #aac5e8;
+        }
+
+        .id-gate-error {
+            margin-top: 10px;
+            padding: 9px 10px;
+            border-radius: 9px;
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+            font-size: 0.9rem;
+        }
+
+        .gate-ok {
+            margin: 12px 0 0;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: var(--page-success-bg);
+            border: 1px solid #86efac;
+            color: var(--page-success);
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        .login-blocked {
+            filter: grayscale(0.28) blur(1px);
+            pointer-events: none;
+            user-select: none;
         }
 
         body.admin-login-page {
@@ -549,13 +744,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <a href="../public/index.php" class="home-btn" aria-label="Go to Home">Home</a>
 </header>
 
-<div class="wrapper">
+<?php if ($show_gate_wall): ?>
+<div class="id-gate-overlay" role="dialog" aria-modal="true" aria-labelledby="employeeGateTitle">
+    <form class="id-gate-modal" method="post">
+        <h3 id="employeeGateTitle">STOP! Private Admin Page</h3>
+        <div class="id-gate-warning"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Warning: Unauthorized access is prohibited.</div>
+        <p>For authorized LGU personnel only. Enter your Employee ID before proceeding to employee login.</p>
+        <input class="id-gate-input" type="number" min="1" step="1" inputmode="numeric" name="employee_gate_id" placeholder="Enter Employee ID" required value="<?php echo htmlspecialchars($employee_id_input, ENT_QUOTES, 'UTF-8'); ?>">
+        <div class="id-gate-actions">
+            <button class="id-gate-btn" type="submit" name="admin_gate_submit" value="1">Verify Employee ID</button>
+            <a class="id-gate-home" href="/public/index.php">Home</a>
+        </div>
+        <?php if ($gate_error !== ''): ?>
+        <div class="id-gate-error"><?php echo htmlspecialchars($gate_error, ENT_QUOTES, 'UTF-8'); ?></div>
+        <?php endif; ?>
+    </form>
+</div>
+<?php endif; ?>
+
+<div class="wrapper<?php echo $show_gate_wall ? ' login-blocked' : ''; ?>">
     <div class="card">
 
         <img src="../logocityhall.png" class="icon-top">
 
         <h2 class="title">Employee Login</h2>
         <p class="subtitle">Secure access for LGU employees.</p>
+        <?php if ($gate_ok_flash !== ''): ?>
+        <div class="gate-ok"><?php echo htmlspecialchars($gate_ok_flash, ENT_QUOTES, 'UTF-8'); ?></div>
+        <?php endif; ?>
 
         <?php if (isset($_SESSION['admin_verified'])): ?>
         <div class="ac-0b2b14a3">
@@ -569,7 +785,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <div class="input-box">
                 <label>Email Address</label>
-                <input type="email" name="email" id="loginEmail" placeholder="employee@lgu.gov.ph" required autocomplete="email">
+                <input type="email" name="email" id="loginEmail" placeholder="employee@lgu.gov.ph" required autocomplete="email" value="<?php echo htmlspecialchars($email_input, ENT_QUOTES, 'UTF-8'); ?>">
                 <span class="icon">@</span>
             </div>
 

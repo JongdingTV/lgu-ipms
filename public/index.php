@@ -26,15 +26,74 @@ function landing_verify_csrf_token($token): bool
     return $stored !== '' && $given !== '' && hash_equals($stored, $given);
 }
 
+function landing_send_recommendation_email(string $senderName, string $senderEmail, string $subject, string $message): bool
+{
+    try {
+        require_once dirname(__DIR__) . '/config/email.php';
+        require_once dirname(__DIR__) . '/vendor/PHPMailer/PHPMailer.php';
+        require_once dirname(__DIR__) . '/vendor/PHPMailer/SMTP.php';
+        require_once dirname(__DIR__) . '/vendor/PHPMailer/Exception.php';
+
+        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+        $mail->SMTPDebug = 0;
+        $mail->isSMTP();
+        $mail->Host = MAIL_HOST;
+        $mail->SMTPAuth = true;
+        $mail->Username = MAIL_USERNAME;
+        $mail->Password = MAIL_PASSWORD;
+        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = MAIL_PORT;
+        $mail->Timeout = 20;
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            ]
+        ];
+
+        $mail->setFrom(MAIL_FROM_EMAIL, MAIL_FROM_NAME);
+        $mail->addAddress('ipms.systemlgu@gmail.com', 'LGU IPMS');
+        $mail->addReplyTo($senderEmail, $senderName);
+        $mail->isHTML(true);
+        $mail->Subject = 'Landing Recommendation: ' . $subject;
+
+        $safeName = htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8');
+        $safeEmail = htmlspecialchars($senderEmail, ENT_QUOTES, 'UTF-8');
+        $safeSubject = htmlspecialchars($subject, ENT_QUOTES, 'UTF-8');
+        $safeMessage = nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'));
+        $mail->Body = "
+            <div style='font-family:Arial,sans-serif;background:#f7fbff;padding:16px;'>
+                <div style='max-width:680px;margin:0 auto;background:#fff;border:1px solid #d7e6f8;border-radius:10px;padding:18px;'>
+                    <h2 style='margin:0 0 10px 0;color:#153a69;'>Citizen System Recommendation</h2>
+                    <p style='margin:0 0 6px 0;color:#314b6f;'><strong>From:</strong> {$safeName}</p>
+                    <p style='margin:0 0 6px 0;color:#314b6f;'><strong>Email:</strong> {$safeEmail}</p>
+                    <p style='margin:0 0 12px 0;color:#314b6f;'><strong>Subject:</strong> {$safeSubject}</p>
+                    <div style='margin-top:8px;padding:12px;border:1px solid #e2ecfa;border-radius:8px;background:#f9fcff;color:#1f3f67;line-height:1.6;'>
+                        {$safeMessage}
+                    </div>
+                </div>
+            </div>
+        ";
+
+        return $mail->send();
+    } catch (\Throwable $e) {
+        error_log('Landing recommendation email error: ' . $e->getMessage());
+        return false;
+    }
+}
+
 $feedbackNotice = ['type' => '', 'text' => ''];
 $feedbackForm = [
     'full_name' => '',
+    'email' => '',
     'subject' => '',
     'message' => ''
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_submit'])) {
     $feedbackForm['full_name'] = trim((string) ($_POST['full_name'] ?? ''));
+    $feedbackForm['email'] = trim((string) ($_POST['email'] ?? ''));
     $feedbackForm['subject'] = trim((string) ($_POST['subject'] ?? ''));
     $feedbackForm['message'] = trim((string) ($_POST['message'] ?? ''));
 
@@ -42,10 +101,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_subm
         $feedbackNotice = ['type' => 'error', 'text' => 'Invalid request token. Please refresh and try again.'];
     } elseif (
         $feedbackForm['full_name'] === '' ||
+        $feedbackForm['email'] === '' ||
         $feedbackForm['subject'] === '' ||
         $feedbackForm['message'] === ''
     ) {
         $feedbackNotice = ['type' => 'error', 'text' => 'Please complete all fields before sending your recommendation.'];
+    } elseif (!is_valid_email($feedbackForm['email'])) {
+        $feedbackNotice = ['type' => 'error', 'text' => 'Please provide a valid email address.'];
     } else {
         require dirname(__DIR__) . '/database.php';
 
@@ -56,6 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_subm
             $userName = $feedbackForm['full_name'] . ' (Guest)';
             $category = 'System Recommendation';
             $location = 'Landing Page';
+            $description = "Sender Email: " . $feedbackForm['email'] . "\n\n" . $feedbackForm['message'];
             $stmt = $db->prepare('INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)');
             if ($stmt) {
                 $stmt->bind_param(
@@ -64,15 +127,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_subm
                     $feedbackForm['subject'],
                     $category,
                     $location,
-                    $feedbackForm['message'],
+                    $description,
                     $status
                 );
                 $ok = $stmt->execute();
                 $stmt->close();
 
                 if ($ok) {
-                    $feedbackNotice = ['type' => 'success', 'text' => 'Thank you. Your recommendation has been submitted to the LGU review queue.'];
-                    $feedbackForm = ['full_name' => '', 'subject' => '', 'message' => ''];
+                    $mailSent = landing_send_recommendation_email(
+                        $feedbackForm['full_name'],
+                        $feedbackForm['email'],
+                        $feedbackForm['subject'],
+                        $feedbackForm['message']
+                    );
+                    if ($mailSent) {
+                        $feedbackNotice = ['type' => 'success', 'text' => 'Thank you. Your recommendation has been submitted and emailed to LGU IPMS.'];
+                    } else {
+                        $feedbackNotice = ['type' => 'success', 'text' => 'Recommendation saved successfully. Email notification was not sent, but your message is in the review queue.'];
+                    }
+                    $feedbackForm = ['full_name' => '', 'email' => '', 'subject' => '', 'message' => ''];
                 } else {
                     $feedbackNotice = ['type' => 'error', 'text' => 'Submission failed. Please try again after a few minutes.'];
                 }
@@ -596,6 +669,7 @@ $csrfToken = landing_generate_csrf_token();
             color: #fff;
             padding: 0.78rem;
             border-radius: 10px;
+            margin-top: 0.8rem;
         }
 
         .footer {
@@ -604,6 +678,56 @@ $csrfToken = landing_generate_csrf_token();
             padding: 1.2rem 1rem 1.4rem;
             text-align: center;
             font-size: 0.9rem;
+        }
+
+        .site-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(7, 18, 34, 0.7);
+            backdrop-filter: blur(2px);
+            transition: opacity .2s ease, visibility .2s ease;
+        }
+
+        .site-loader.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .site-loader-card {
+            min-width: 150px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 16px 34px rgba(2, 6, 23, 0.32);
+            padding: 14px 16px;
+            display: grid;
+            place-items: center;
+            gap: 8px;
+        }
+
+        .site-loader-spinner {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid #cfe0f5;
+            border-top-color: #1d4e89;
+            animation: siteLoaderSpin .85s linear infinite;
+        }
+
+        .site-loader-text {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #1e3a5f;
+            letter-spacing: 0.25px;
+        }
+
+        @keyframes siteLoaderSpin {
+            to { transform: rotate(360deg); }
         }
 
         .employee-login-widget {
@@ -773,6 +897,12 @@ $csrfToken = landing_generate_csrf_token();
     </style>
 </head>
 <body>
+    <div class="site-loader" id="siteLoader" aria-live="polite">
+        <div class="site-loader-card">
+            <div class="site-loader-spinner"></div>
+            <div class="site-loader-text">Loading...</div>
+        </div>
+    </div>
     <nav class="top-nav">
         <div class="nav-wrap">
             <a class="brand" href="/">
@@ -877,16 +1007,12 @@ $csrfToken = landing_generate_csrf_token();
 
     <section id="contact" class="section">
         <h2 class="section-title">Contact Us & Send Recommendations</h2>
-        <p class="section-sub">Have a concern, suggestion, or project idea for your area? Send it below and it will be logged for review.</p>
+        <p class="section-sub">Use this form only for system suggestions or recommendations (UI, features, usability, or improvements). Concerns and project ideas should be submitted inside the citizen portal.</p>
         <div class="contact-wrap">
             <div class="contact-cards">
                 <article class="contact-card">
                     <h4><i class="fa-solid fa-circle-info"></i> How We Use Your Input</h4>
                     <p>Your submission goes to the LGU feedback queue and can be reviewed in project prioritization discussions.</p>
-                </article>
-                <article class="contact-card">
-                    <h4><i class="fa-solid fa-location-dot"></i> Office Information</h4>
-                    <p>LGU Infrastructure Office<br>City Hall Complex, Caloocan City</p>
                 </article>
                 <article class="contact-card">
                     <h4><i class="fa-solid fa-envelope-open-text"></i> Alternative Contact</h4>
@@ -912,6 +1038,10 @@ $csrfToken = landing_generate_csrf_token();
                         <input type="text" id="full_name" name="full_name" maxlength="120" required value="<?php echo htmlspecialchars($feedbackForm['full_name'], ENT_QUOTES, 'UTF-8'); ?>">
                     </div>
                     <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" maxlength="190" required value="<?php echo htmlspecialchars($feedbackForm['email'], ENT_QUOTES, 'UTF-8'); ?>">
+                    </div>
+                    <div class="form-group full">
                         <label for="subject">Subject</label>
                         <input type="text" id="subject" name="subject" maxlength="150" required value="<?php echo htmlspecialchars($feedbackForm['subject'], ENT_QUOTES, 'UTF-8'); ?>">
                     </div>
@@ -951,6 +1081,36 @@ $csrfToken = landing_generate_csrf_token();
     </footer>
     <script>
         (function () {
+            var pageLoader = document.getElementById('siteLoader');
+            function showPageLoader() {
+                if (!pageLoader) return;
+                pageLoader.classList.remove('is-hidden');
+            }
+            function hidePageLoader() {
+                if (!pageLoader) return;
+                pageLoader.classList.add('is-hidden');
+            }
+
+            window.addEventListener('load', function () {
+                setTimeout(hidePageLoader, 140);
+            }, { once: true });
+
+            document.addEventListener('click', function (event) {
+                var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+                if (!link) return;
+                if (link.hasAttribute('download')) return;
+                if ((link.getAttribute('target') || '').toLowerCase() === '_blank') return;
+                var href = (link.getAttribute('href') || '').trim();
+                if (href === '' || href.charAt(0) === '#' || href.toLowerCase().indexOf('javascript:') === 0) return;
+                showPageLoader();
+            }, true);
+
+            document.addEventListener('submit', function (event) {
+                if (event.target && event.target.matches && event.target.matches('form')) {
+                    showPageLoader();
+                }
+            }, true);
+
             var widget = document.getElementById('employeeLoginWidget');
             var toggle = document.getElementById('employeeLoginToggle');
             var panel = document.getElementById('employeeLoginPanel');
