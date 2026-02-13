@@ -551,11 +551,11 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     content: "";
     position: absolute;
     right: 100%;
-    top: 6px;
-    width: 10px;
-    height: calc(100% - 12px);
+    top: 2px;
+    width: 18px;
+    height: calc(100% - 4px);
     background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 100%);
-    border-radius: 10px 0 0 10px;
+    border-radius: 12px 0 0 12px;
     box-shadow: none;
     pointer-events: none;
 }
