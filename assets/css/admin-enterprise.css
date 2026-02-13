@@ -529,7 +529,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
 /* Top sidebar toggle */
 .top-sidebar-toggle {
     position: fixed;
-    top: 112px;
+    top: 50%;
     left: 250px;
     z-index: 1300;
     width: 34px;
@@ -544,11 +544,12 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transform: translateY(-50%);
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .top-sidebar-toggle:hover {
-    transform: translateX(2px);
+    transform: translateY(-50%) translateX(2px);
     box-shadow: 12px 12px 24px rgba(15, 30, 56, 0.24);
 }
 
@@ -1128,6 +1129,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) select:focus-visi
     body.sidebar-hidden .top-sidebar-toggle {
         left: 12px;
         top: 10px;
+        transform: none;
     }
 }
 
