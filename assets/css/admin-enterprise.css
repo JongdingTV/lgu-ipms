@@ -1482,6 +1482,40 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .da
     color: #4f6f93 !important;
 }
 
+/* Dashboard readability and status percentage coloring */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .metric-card .metric-content h3 {
+    color: #475569 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .metric-card .metric-value {
+    color: #1e3a8a !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .metric-card .metric-status {
+    color: #64748b !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box .status-legend .legend-item span:last-child {
+    font-weight: 600;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box .status-legend .legend-item:nth-child(1) span:last-child {
+    color: #047857 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box .status-legend .legend-item:nth-child(2) span:last-child {
+    color: #b45309 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box .status-legend .legend-item:nth-child(3) span:last-child {
+    color: #b91c1c !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box .ac-39f9429c {
+    color: #334155 !important;
+    font-weight: 600;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .feedback-controls {
     display: grid;
     grid-template-columns: minmax(280px, 1fr) auto;
