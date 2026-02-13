@@ -76,7 +76,7 @@
 .metric-card h3 {
     font-size: 14px;
     font-weight: 600;
-    color: var(--color-text-light);
+    color: var(--color-text-secondary);
     margin: 0 0 4px 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -92,7 +92,7 @@
 
 .metric-status {
     font-size: 12px;
-    color: var(--color-text-light);
+    color: var(--color-text-secondary);
     display: block;
     margin-top: 4px;
 }
