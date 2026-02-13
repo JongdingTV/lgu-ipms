@@ -529,16 +529,16 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
 /* Top sidebar toggle */
 .top-sidebar-toggle {
     position: fixed;
-    top: 24px;
-    left: 250px;
+    top: 14px;
+    left: 286px;
     z-index: 1300;
-    width: 34px;
-    height: 64px;
-    border-radius: 0 12px 12px 0;
-    border: none;
-    background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
-    color: #24486f;
-    box-shadow: 0 8px 18px rgba(15, 30, 56, 0.14);
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    border: 1px solid #c8d8eb;
+    background: linear-gradient(145deg, #ffffff, #f1f7ff);
+    color: #264a75;
+    box-shadow: 0 12px 22px rgba(17, 35, 61, 0.22);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -547,43 +547,19 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.top-sidebar-toggle::before {
-    content: "";
-    position: absolute;
-    right: calc(100% - 1px);
-    top: 0;
-    width: 24px;
-    height: 100%;
-    background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 100%);
-    border-radius: 12px 0 0 12px;
-    box-shadow: none;
-    pointer-events: none;
-}
-
 .top-sidebar-toggle:hover {
-    transform: translateX(2px);
-    box-shadow: 0 10px 20px rgba(15, 30, 56, 0.16);
-    background: linear-gradient(180deg, #ffffff 0%, #eef5ff 100%);
-}
-
-.top-sidebar-toggle:focus,
-.top-sidebar-toggle:focus-visible {
-    outline: none !important;
+    transform: translateY(-1px);
+    box-shadow: 0 15px 26px rgba(17, 35, 61, 0.28);
 }
 
 body.sidebar-hidden .top-sidebar-toggle {
-    left: 100px;
+    left: 114px;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .top-sidebar-toggle {
-    background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
-    color: #1f3f69;
-    border: none;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .top-sidebar-toggle::before {
-    background: linear-gradient(180deg, #f8fbff 0%, #edf4fb 100%);
-    box-shadow: none;
+    background: linear-gradient(145deg, #ffffff, #f1f7ff);
+    color: #264a75;
+    border-color: #c8d8eb;
 }
 
 /* Hide legacy duplicated toggles */
