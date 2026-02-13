@@ -576,6 +576,8 @@
       const progress = Math.max(0, Math.min(100, Number(p.progress || 0)));
       const contractors = Array.isArray(p.assigned_contractors) ? p.assigned_contractors : [];
       const riskClass = riskClassFromProject(p, progress);
+      const updateDate = p.created_at || p.createdAt || p.start_date || '';
+      const processUpdate = p.process_update || `${p.status || 'Draft'} update (${formatShortDate(updateDate)})`;
       return `
         <article class="project-card ${riskClass}" data-project-id="${p.id || ''}" tabindex="0" role="button" aria-label="Open project ${String(p.name || 'project')}">
           <div class="project-header">
@@ -589,6 +591,7 @@
             <div class="project-meta-item"><span class="project-meta-label">Sector:</span><span class="project-meta-value">${p.sector || '-'}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value">₱${Number(p.budget || 0).toLocaleString()}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Contractors:</span><span class="project-meta-value">${contractors.length}</span></div>
+            <div class="project-meta-item"><span class="project-meta-label">Process Update:</span><span class="project-meta-value">${processUpdate}</span></div>
           </div>
           <div class="progress-container">
             <div class="progress-label"><span>Completion</span><span style="font-weight:700;">${progress}%</span></div>

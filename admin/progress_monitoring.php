@@ -69,8 +69,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     
     if ($result) {
         while ($row = $result->fetch_assoc()) {
-            // Add a default progress value (can be 0-100)
-            $row['progress'] = isset($row['progress']) ? $row['progress'] : 0;
+            // Derive process progress from current status when no explicit progress column exists.
+            $status = (string)($row['status'] ?? 'Draft');
+            $statusProgress = [
+                'Draft' => 10,
+                'For Approval' => 25,
+                'Approved' => 55,
+                'On-hold' => 40,
+                'Cancelled' => 0,
+                'Completed' => 100,
+            ];
+            $row['progress'] = isset($statusProgress[$status]) ? $statusProgress[$status] : 0;
+            $updateDate = $row['created_at'] ?? $row['start_date'] ?? null;
+            $row['process_update'] = $status . ($updateDate ? ' (' . date('M d, Y', strtotime((string)$updateDate)) . ')' : '');
             
             // Get assigned contractors for this project
             $contractorsQuery = $db->query("
@@ -891,20 +902,4 @@ $db->close();
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
