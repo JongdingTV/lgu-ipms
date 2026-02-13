@@ -1,28 +1,155 @@
 <?php
-// Import security functions
 require dirname(__DIR__) . '/session-auth.php';
-set_no_cache_headers();
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
-if ($db->connect_error) {
-    die('Database connection failed: ' . $db->connect_error);
+require __DIR__ . '/user-profile-helper.php';
+
+set_no_cache_headers();
+check_auth();
+check_suspicious_activity();
+
+if (!isset($db) || $db->connect_error) {
+    die('Database connection failed: ' . ($db->connect_error ?? 'Unknown error'));
 }
-// Get user info from database
-$user_id = $_SESSION['user_id'];
-$stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->bind_param('i', $user_id);
+
+$userId = (int) ($_SESSION['user_id'] ?? 0);
+$stmt = $db->prepare('SELECT id, first_name, last_name, email, contact_number, address, gender, civil_status, created_at, password FROM users WHERE id = ? LIMIT 1');
+$stmt->bind_param('i', $userId);
 $stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
+$res = $stmt->get_result();
+$user = $res ? $res->fetch_assoc() : null;
 $stmt->close();
-// Get user name from session
-$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
-$gender_display = isset($user['gender']) ? $user['gender'] : '';
-$civil_status_display = isset($user['civil_status']) ? $user['civil_status'] : '';
-$user_email = isset($user['email']) ? $user['email'] : '';
-$errors = $errors ?? [];
-$success = $success ?? '';
+
+if (!$user) {
+    $db->close();
+    destroy_session();
+    header('Location: /user-dashboard/user-login.php');
+    exit;
+}
+
+$userName = trim($_SESSION['user_name'] ?? (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
+$userEmail = $user['email'] ?? '';
+$userInitials = user_avatar_initials($userName);
+$avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
+$profileImageWebPath = user_profile_photo_web_path($userId);
+
+$activeTab = $_GET['tab'] ?? 'profile';
+if (!in_array($activeTab, ['profile', 'password'], true)) {
+    $activeTab = 'profile';
+}
+
+$errors = [];
+$success = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['photo_action'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $errors[] = 'Invalid request. Please refresh and try again.';
+    } else {
+        $uploadDir = dirname(__DIR__) . '/uploads/user-profile';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        if ($_POST['photo_action'] === 'remove') {
+            $existing = glob($uploadDir . '/user_' . $userId . '.*') ?: [];
+            foreach ($existing as $path) {
+                @unlink($path);
+            }
+            $profileImageWebPath = '';
+            $success = 'Profile photo removed.';
+            $activeTab = 'profile';
+        } elseif ($_POST['photo_action'] === 'upload') {
+            if (!isset($_FILES['profile_photo']) || $_FILES['profile_photo']['error'] !== UPLOAD_ERR_OK) {
+                $errors[] = 'Please select a valid image file.';
+            } else {
+                $tmpFile = $_FILES['profile_photo']['tmp_name'];
+                $fileSize = (int) ($_FILES['profile_photo']['size'] ?? 0);
+                if ($fileSize > 3 * 1024 * 1024) {
+                    $errors[] = 'Profile photo must be 3MB or less.';
+                } else {
+                    $imageInfo = @getimagesize($tmpFile);
+                    $mimeType = $imageInfo['mime'] ?? '';
+                    $mimeMap = [
+                        'image/jpeg' => 'jpg',
+                        'image/png' => 'png',
+                        'image/webp' => 'webp'
+                    ];
+
+                    if (!isset($mimeMap[$mimeType])) {
+                        $errors[] = 'Only JPG, PNG, or WEBP images are allowed.';
+                    } else {
+                        $existing = glob($uploadDir . '/user_' . $userId . '.*') ?: [];
+                        foreach ($existing as $path) {
+                            @unlink($path);
+                        }
+
+                        $ext = $mimeMap[$mimeType];
+                        $target = $uploadDir . '/user_' . $userId . '.' . $ext;
+                        if (!move_uploaded_file($tmpFile, $target)) {
+                            $errors[] = 'Unable to save the profile photo.';
+                        } else {
+                            $profileImageWebPath = '/uploads/user-profile/' . basename($target);
+                            $success = 'Profile photo updated successfully.';
+                            $activeTab = 'profile';
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $errors[] = 'Invalid request. Please refresh and try again.';
+    } else {
+        $currentPassword = $_POST['current_password'] ?? '';
+        $newPassword = $_POST['new_password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+
+        if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
+            $errors[] = 'All password fields are required.';
+        } elseif (!password_verify($currentPassword, (string) $user['password'])) {
+            $errors[] = 'Current password is incorrect.';
+        } elseif ($newPassword !== $confirmPassword) {
+            $errors[] = 'New password and confirmation do not match.';
+        } elseif (strlen($newPassword) < 8) {
+            $errors[] = 'New password must be at least 8 characters long.';
+        } elseif (!preg_match('/[A-Z]/', $newPassword)) {
+            $errors[] = 'New password must contain at least one uppercase letter.';
+        } elseif (!preg_match('/[0-9]/', $newPassword)) {
+            $errors[] = 'New password must contain at least one number.';
+        } elseif (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $newPassword)) {
+            $errors[] = 'New password must contain at least one special character.';
+        } else {
+            $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
+            $updateStmt = $db->prepare('UPDATE users SET password = ? WHERE id = ?');
+            $updateStmt->bind_param('si', $hashed, $userId);
+            $ok = $updateStmt->execute();
+            $updateStmt->close();
+
+            if ($ok) {
+                $success = 'Password updated successfully.';
+                $activeTab = 'password';
+            } else {
+                $errors[] = 'Failed to update password. Please try again.';
+            }
+        }
+    }
+}
+
+$feedbackStats = ['total' => 0, 'pending' => 0];
+$statsStmt = $db->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN status = "Pending" THEN 1 ELSE 0 END) as pending FROM feedback WHERE user_name = ?');
+$statsStmt->bind_param('s', $userName);
+$statsStmt->execute();
+$statsRes = $statsStmt->get_result();
+if ($statsRes && $statsRes->num_rows === 1) {
+    $feedbackStats = $statsRes->fetch_assoc();
+}
+$statsStmt->close();
+
 $db->close();
+$csrfToken = generate_csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,285 +158,119 @@ $db->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Settings - LGU IPMS</title>
     <link rel="icon" type="image/png" href="/logocityhall.png">
-    <link rel="stylesheet" href="/assets/style.css">
-    <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/design-system.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
+    <link rel="stylesheet" href="/assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
+    <link rel="stylesheet" href="/assets/css/admin-component-overrides.css">
+    <link rel="stylesheet" href="/assets/css/form-redesign-base.css">
+    <link rel="stylesheet" href="/assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="/user-dashboard/user-shell.css?v=<?php echo filemtime(__DIR__ . '/user-shell.css'); ?>">
     <?php echo get_app_config_script(); ?>
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
-        <!-- Mobile burger button (top left, only visible on mobile) -->
-        <style>
-        /* No burger button styles */
-        </style>
-        <script>
-        // Sidebar burger and overlay logic (mobile burger only)
-        (function() {
-            const sidebar = document.getElementById('navbar');
-            const burger = document.getElementById('sidebarBurgerBtn');
-            const overlay = document.getElementById('sidebarOverlay');
-            // Show/hide burger only on mobile
-            function updateBurgerVisibility() {
-                if (window.innerWidth <= 991) {
-                    burger.style.display = 'block';
-                } else {
-                    burger.style.display = 'none';
-                    closeSidebar();
-                }
-            }
-            function openSidebar() {
-                sidebar.classList.add('sidebar-open');
-                overlay.classList.add('sidebar-overlay-active');
-                document.body.classList.add('sidebar-opened');
-            }
-            function closeSidebar() {
-                sidebar.classList.remove('sidebar-open');
-                overlay.classList.remove('sidebar-overlay-active');
-                document.body.classList.remove('sidebar-opened');
-            }
-            burger.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (sidebar.classList.contains('sidebar-open')) {
-                    closeSidebar();
-                } else {
-                    openSidebar();
-                }
-            });
-            overlay.addEventListener('click', closeSidebar);
-            window.addEventListener('resize', updateBurgerVisibility);
-            document.addEventListener('DOMContentLoaded', updateBurgerVisibility);
-            // Also close sidebar if clicking outside sidebar and burger (for extra safety)
-            document.addEventListener('click', function(e) {
-                if (
-                    sidebar.classList.contains('sidebar-open') &&
-                    !sidebar.contains(e.target) &&
-                    !burger.contains(e.target)
-                ) {
-                    closeSidebar();
-                }
-            });
-        })();
-        // Logout confirmation (if needed)
-        document.addEventListener('DOMContentLoaded', function() {
-            window.setupLogoutConfirmation && window.setupLogoutConfirmation();
-        });
-        </script>
-    <!-- Sidebar with logo and IPMS at the top -->
+    <div class="sidebar-toggle-wrapper"><button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
 
-    <!-- Burger button (always visible on mobile, top left) -->
-    <div id="sidebarOverlay" class="sidebar-overlay"></div>
-    <aside class="nav sidebar-animated" id="navbar">
-        <div class="nav-logo admin-sidebar-logo" style="display:flex;flex-direction:row;align-items:center;justify-content:center;padding:18px 0 8px 0;gap:10px;">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
-            <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
-        </div>
-        <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">
-            <?php
-            $profile_img = '';
-            $user_email = isset($user['email']) ? $user['email'] : '';
-            $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : (isset($user['first_name']) ? $user['first_name'] . ' ' . $user['last_name'] : 'User');
-            $initials = '';
-            if ($user_name) {
-                $parts = explode(' ', $user_name);
-                foreach ($parts as $p) {
-                    if ($p) $initials .= strtoupper($p[0]);
-                }
-            }
-            if (!function_exists('stringToColor')) {
-                function stringToColor($str) {
-                    $colors = [
-                        '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-                        '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
-                        '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#607D8B'
-                    ];
-                    $hash = 0;
-                    for ($i = 0; $i < strlen($str); $i++) {
-                        $hash = ord($str[$i]) + (($hash << 5) - $hash);
-                    }
-                    $index = abs($hash) % count($colors);
-                    return $colors[$index];
-                }
-            }
-            $bgcolor = stringToColor($user_name);
-            ?>
-            <?php if ($profile_img): ?>
-                <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon" style="width:48px;height:48px;" />
+    <header class="nav" id="navbar">
+        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+        <div class="nav-logo"><img src="/logocityhall.png" alt="City Hall Logo" class="logo-img"><span class="logo-text">IPMS</span></div>
+        <div class="nav-user-profile">
+            <?php if ($profileImageWebPath !== ''): ?>
+                <img src="<?php echo htmlspecialchars($profileImageWebPath, ENT_QUOTES, 'UTF-8'); ?>" alt="Profile" class="user-profile-image">
             <?php else: ?>
-                <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                    <?php echo $initials; ?>
-                </div>
+                <div class="user-initial-badge" style="background: <?php echo htmlspecialchars($avatarColor, ENT_QUOTES, 'UTF-8'); ?>;"><?php echo htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
-            <div class="user-name" style="font-weight:700;font-size:1.08em;line-height:1.2;margin-top:2px;text-align:center;"> <?php echo htmlspecialchars($user_name); ?> </div>
-            <div class="user-email" style="font-size:0.97em;color:#64748b;line-height:1.1;text-align:center;"> <?php echo htmlspecialchars($user_email); ?> </div>
+            <div class="nav-user-name"><?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></div>
+            <div class="nav-user-email"><?php echo htmlspecialchars($userEmail ?: 'No email provided', ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
-        <hr class="sidebar-divider" />
-        <nav class="nav-links">
+        <div class="nav-links">
             <a href="user-dashboard.php"><img src="/assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
-            <a href="/admin/project-prioritization.php"><img src="/user-dashboard/feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php" class="active"><img src="/user-dashboard/settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
-        </nav>
-        <div class="sidebar-logout-container">
-            <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
+            <a href="user-progress-monitoring.php"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring Icon" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-feedback.php"><img src="/assets/images/admin/prioritization.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
+            <a href="user-settings.php" class="active"><img src="/assets/images/admin/person.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </div>
-    </aside>
+        <div class="nav-divider"></div>
+        <div class="nav-action-footer"><a href="/logout.php" class="btn-logout nav-logout"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span>Logout</span></a></div>
+        <a href="#" id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle sidebar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></a>
+    </header>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        window.setupLogoutConfirmation && window.setupLogoutConfirmation();
-    });
-    </script>
+    <div class="toggle-btn" id="showSidebarBtn"><a href="#" id="toggleSidebarShow" title="Show sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></a></div>
 
-    <section class="main-content">
-        <div class="dash-header">
-            <h1>User Settings</h1>
-            <p>Manage your account information and change your password.</p>
-        </div>
-        <div class="settings-container">
-            <div class="user-info-box">
-                <h2>Account Information</h2>
-                <form class="user-info-form" autocomplete="off" style="pointer-events:none;">
-                    <div class="input-box">
-                        <label>Name</label>
-                        <input type="text" value="<?php echo htmlspecialchars($user_name); ?>" readonly />
+    <section class="main-content settings-page">
+        <div class="dash-header"><h1>User Settings</h1><p>Manage your profile and password.</p></div>
+
+        <div class="settings-layout">
+            <div class="card ac-e9b6d4ca settings-card">
+                <div class="settings-tabs settings-switcher">
+                    <a href="user-settings.php?tab=profile" class="tab-btn <?php echo $activeTab === 'profile' ? 'active' : ''; ?>">Profile</a>
+                    <a href="user-settings.php?tab=password" class="tab-btn <?php echo $activeTab === 'password' ? 'active' : ''; ?>">Change Password</a>
+                </div>
+
+                <?php if (!empty($errors)): ?><div class="settings-alert settings-alert-error" style="margin-top:12px;"><?php foreach ($errors as $err): ?><div><?php echo htmlspecialchars($err, ENT_QUOTES, 'UTF-8'); ?></div><?php endforeach; ?></div><?php endif; ?>
+                <?php if (!empty($success)): ?><div class="settings-alert settings-alert-success" style="margin-top:12px;"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
+
+                <?php if ($activeTab === 'profile'): ?>
+                    <div class="settings-view">
+                        <div class="settings-panel">
+                            <h3 class="ac-b75fad00">Account Information</h3>
+                            <div class="table-wrap">
+                                <table class="projects-table"><tbody>
+                                    <tr><td><strong>Name</strong></td><td><?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Email</strong></td><td><?php echo htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Contact</strong></td><td><?php echo htmlspecialchars((string) ($user['contact_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Address</strong></td><td><?php echo htmlspecialchars((string) ($user['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Gender</strong></td><td><?php echo htmlspecialchars((string) ($user['gender'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Civil Status</strong></td><td><?php echo htmlspecialchars((string) ($user['civil_status'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Registered On</strong></td><td><?php echo !empty($user['created_at']) ? date('M d, Y', strtotime((string) $user['created_at'])) : '-'; ?></td></tr>
+                                    <tr><td><strong>Feedback Submitted</strong></td><td><?php echo (int) ($feedbackStats['total'] ?? 0); ?></td></tr>
+                                    <tr><td><strong>Pending Feedback</strong></td><td><?php echo (int) ($feedbackStats['pending'] ?? 0); ?></td></tr>
+                                </tbody></table>
+                            </div>
+                            <div style="margin-top:14px;">
+                                <form method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <input type="hidden" name="photo_action" value="upload">
+                                    <input type="file" name="profile_photo" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
+                                    <button type="submit" class="ac-f84d9680" style="min-height:36px;">Upload Photo</button>
+                                </form>
+                                <?php if ($profileImageWebPath !== ''): ?>
+                                    <form method="post" action="user-settings.php?tab=profile" style="margin-top:8px;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                                        <input type="hidden" name="photo_action" value="remove">
+                                        <button type="submit" class="btn-clear-filters" style="min-height:34px;">Remove Photo</button>
+                                    </form>
+                                <?php endif; ?>
+                                <small style="display:block;color:#64748b;margin-top:6px;">Allowed: JPG, PNG, WEBP. Max: 3MB.</small>
+                            </div>
+                        </div>
                     </div>
-                    <!-- Username removed -->
-                    <div class="input-box">
-                        <label>Email</label>
-                        <input type="email" value="<?php echo htmlspecialchars($user['email']); ?>" readonly />
-                    </div>
-                    <div class="input-box">
-                        <label>Contact No.</label>
-                        <input type="text" value="<?php echo htmlspecialchars($user['contact_number'] ?? ''); ?>" readonly />
-                    </div>
-                    <div class="input-box">
-                        <label>Address</label>
-                        <input type="text" value="<?php echo htmlspecialchars($user['address'] ?? ''); ?>" readonly />
-                    </div>
-                    <!-- Barangay removed -->
-                    <div class="input-box">
-                        <label>Gender</label>
-                        <input type="text" value="<?php echo htmlspecialchars($gender_display); ?>" readonly />
-                    </div>
-                    <div class="input-box">
-                        <label>Civil Status</label>
-                        <input type="text" value="<?php echo htmlspecialchars($civil_status_display); ?>" readonly />
-                    </div>
-                    <div class="input-box">
-                        <label>Registration Date</label>
-                        <input type="text" value="<?php echo isset($user['created_at']) ? date('M d, Y', strtotime($user['created_at'])) : ''; ?>" readonly />
-                    </div>
-                    <!-- User Type removed -->
-                </form>
-            </div>
-            <div class="password-change-box">
-                <h2>Change Password</h2>
-                <form method="post" action="">
-                    <div class="input-box">
-                        <label for="currentPassword">Current Password</label>
-                        <input type="password" id="currentPassword" name="currentPassword" required>
-                    </div>
-                    <div class="input-box">
-                        <label for="newPassword">New Password</label>
-                        <input type="password" id="newPassword" name="newPassword" required>
-                    </div>
-                    <div class="input-box">
-                        <label for="confirmPassword">Confirm New Password</label>
-                        <input type="password" id="confirmPassword" name="confirmPassword" required>
-                    </div>
-                    <button type="submit" class="submit-btn">Change Password</button>
-                </form>
-                <?php if (!empty($errors)): ?>
-                    <div class="error-message">
-                        <?php foreach ($errors as $err): ?>
-                            <div><?php echo htmlspecialchars($err); ?></div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-                <?php if (!empty($success)): ?>
-                    <div class="success-message">
-                        <?php echo htmlspecialchars($success); ?>
+                <?php else: ?>
+                    <div class="settings-view">
+                        <div class="settings-panel settings-password-panel">
+                            <h3 class="ac-b75fad00">Change Your Password</h3>
+                            <p class="settings-subtitle">Use at least 8 characters, including uppercase, number, and special symbol.</p>
+                            <form method="post" action="user-settings.php?tab=password" class="settings-form" id="passwordChangeForm">
+                                <input type="hidden" name="change_password" value="1">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                                <div class="ac-4a3180e2"><label class="ac-37c29296">Current Password</label><input class="ac-6f762f4a" type="password" name="current_password" required autocomplete="current-password"></div>
+                                <div class="ac-4a3180e2"><label class="ac-37c29296">New Password</label><input class="ac-6f762f4a" type="password" id="newPassword" name="new_password" required autocomplete="new-password"><small id="passwordStrength" style="display:block;margin-top:6px;color:#475569;">Password strength: -</small></div>
+                                <div class="ac-b75fad00"><label class="ac-37c29296">Confirm New Password</label><input class="ac-6f762f4a" type="password" name="confirm_password" required autocomplete="new-password"></div>
+                                <button type="submit" class="ac-f84d9680">Update Password</button>
+                            </form>
+                        </div>
                     </div>
                 <?php endif; ?>
             </div>
         </div>
     </section>
-    <footer class="footer">
-        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
-    </footer>
-    <script src="/assets/js/shared/shared-data.js"></script>
-    <script src="/assets/js/shared/shared-toggle.js"></script>
-    <script src="user-dashboard.js"></script>
-    <script>
-    (function() {
-        const logoutLink = document.getElementById('logoutLink');
-        const modal = document.getElementById('logoutModal');
-        const cancelBtn = document.getElementById('cancelLogout');
-        const confirmBtn = document.getElementById('confirmLogout');
-        if (!logoutLink || !modal || !cancelBtn || !confirmBtn) return;
 
-        logoutLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            modal.style.display = 'flex';
-        });
-
-        cancelBtn.addEventListener('click', function() {
-            modal.style.display = 'none';
-        });
-
-        confirmBtn.addEventListener('click', function() {
-            window.location.href = '../logout.php';
-        });
-
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-
-        // Remove duplicate logout modal if present
-        const modals = document.querySelectorAll('#logoutModal');
-        if (modals.length > 1) {
-            for (let i = 1; i < modals.length; i++) {
-                modals[i].remove();
-            }
-        }
-    })();
-    </script>
+    <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
+    <script src="/assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script src="/user-dashboard/user-shell.js?v=<?php echo filemtime(__DIR__ . '/user-shell.js'); ?>"></script>
+    <script src="/user-dashboard/user-settings.js?v=<?php echo filemtime(__DIR__ . '/user-settings.js'); ?>"></script>
 </body>
 </html>
-        document.addEventListener('DOMContentLoaded', function() {
-            window.setupLogoutConfirmation && window.setupLogoutConfirmation();
-        });
-        </script>
-    </aside>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const sidebar = document.getElementById('navbar');
-        const burgerBtn = document.getElementById('sidebarBurgerBtn');
-        if (sidebar && burgerBtn) {
-            burgerBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('sidebar-open');
-                if (sidebar.classList.contains('sidebar-open')) {
-                    sidebar.style.transform = 'translateX(0)';
-                } else {
-                    sidebar.style.transform = 'translateX(-110%)';
-                }
-            });
-            document.addEventListener('click', function(e) {
-                if (!sidebar.contains(e.target) && !burgerBtn.contains(e.target)) {
-                    sidebar.classList.remove('sidebar-open');
-                    sidebar.style.transform = 'translateX(-110%)';
-                }
-            });
-        }
-        sidebar && (sidebar.style.transform = 'translateX(0)');
-    });
-    </script>
-</body>
-</html>
-
-
-
-
-
-

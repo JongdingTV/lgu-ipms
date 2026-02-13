@@ -1,0 +1,81 @@
+.nav#navbar {
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 18px 12px;
+}
+
+.nav-user-profile {
+    margin: 0 14px 12px;
+    padding: 12px 10px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 12px;
+    background: rgba(248, 250, 252, 0.95);
+    text-align: center;
+}
+
+.user-initial-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #ffffff;
+    background: linear-gradient(145deg, #1d4ed8, #2563eb);
+}
+
+.user-profile-image {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    object-fit: cover;
+    margin: 0 auto 8px;
+    display: block;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.nav-user-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+.nav-user-email {
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: #64748b;
+    word-break: break-word;
+}
+
+.nav-divider {
+    margin: 0 14px 10px;
+}
+
+@media (max-width: 991px) {
+    body.sidebar-hidden #navbar {
+        transform: translateX(-100%);
+    }
+
+    body:not(.sidebar-hidden) #navbar {
+        transform: translateX(0);
+    }
+
+    #navbar {
+        transition: transform 0.28s ease;
+    }
+
+    .nav-user-profile {
+        margin-top: 2px;
+    }
+}
