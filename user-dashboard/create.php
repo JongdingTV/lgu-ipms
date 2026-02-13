@@ -1,81 +1,210 @@
 <?php
-// Include security functions
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
 
-// Add no-cache headers
 set_no_cache_headers();
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if ($db->connect_error) {
-        die('Database connection failed: ' . $db->connect_error);
-    }
+if (isset($_SESSION['user_id'])) {
+    header('Location: /user-dashboard/user-dashboard.php');
+    exit;
+}
 
-    // Get form data
-    $first_name = trim($_POST['firstName']);
-    $middle_name = trim($_POST['middleName']);
-    $last_name = trim($_POST['lastName']);
-    $suffix = $_POST['suffix'];
-    $email = trim($_POST['email']);
-    $mobile = trim($_POST['mobile']);
-    $birthdate = $_POST['birthdate'];
-    $gender = $_POST['gender'];
-    $civil_status = $_POST['civilStatus'];
-    $address = trim($_POST['address']);
-    $id_type = $_POST['idType'];
-    $id_number = trim($_POST['idNumber']);
-    $password = trim($_POST['password']);
-    $confirm_password = $_POST['confirmPassword'];
+$errors = [];
+$form = [
+    'firstName' => '',
+    'middleName' => '',
+    'lastName' => '',
+    'suffix' => '',
+    'email' => '',
+    'mobile' => '',
+    'birthdate' => '',
+    'gender' => '',
+    'civilStatus' => '',
+    'address' => '',
+    'idType' => '',
+    'idNumber' => ''
+];
 
-    // Validate
-    $errors = [];
-    if (empty($first_name) || empty($last_name) || empty($email) || empty($password)) {
-        $errors[] = 'Required fields missing.';
-    }
-    if ($password !== $confirm_password) {
-        $errors[] = 'Passwords do not match.';
-    }
-    if (strlen($password) < 8) {
-        $errors[] = 'Password too short.';
-    }
-    // Check if email exists
-    $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
-    $stmt->bind_param('s', $email);
-    $stmt->execute();
-    if ($stmt->get_result()->num_rows > 0) {
-        $errors[] = 'Email already registered.';
-    }
-    $stmt->close();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_submit'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $errors[] = 'Invalid request. Please refresh and try again.';
+    } elseif (!isset($db) || $db->connect_error) {
+        $errors[] = 'Database connection error. Please try again later.';
+    } elseif (is_rate_limited('user_register', 6, 600)) {
+        $errors[] = 'Too many registration attempts. Please wait a few minutes and try again.';
+    } else {
+        $form['firstName'] = trim((string) ($_POST['firstName'] ?? ''));
+        $form['middleName'] = trim((string) ($_POST['middleName'] ?? ''));
+        $form['lastName'] = trim((string) ($_POST['lastName'] ?? ''));
+        $form['suffix'] = trim((string) ($_POST['suffix'] ?? ''));
+        $form['email'] = sanitize_email((string) ($_POST['email'] ?? ''));
+        $form['mobile'] = trim((string) ($_POST['mobile'] ?? ''));
+        $form['birthdate'] = trim((string) ($_POST['birthdate'] ?? ''));
+        $form['gender'] = trim((string) ($_POST['gender'] ?? ''));
+        $form['civilStatus'] = trim((string) ($_POST['civilStatus'] ?? ''));
+        $form['address'] = trim((string) ($_POST['address'] ?? ''));
+        $form['idType'] = trim((string) ($_POST['idType'] ?? ''));
+        $form['idNumber'] = trim((string) ($_POST['idNumber'] ?? ''));
 
-    if (empty($errors)) {
-        // Handle file upload
-        $id_upload = '';
-        if (isset($_FILES['idUpload']) && $_FILES['idUpload']['error'] == 0) {
-            $upload_dir = 'uploads/';
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
-            $file_name = uniqid() . '_' . basename($_FILES['idUpload']['name']);
-            $file_path = $upload_dir . $file_name;
-            if (move_uploaded_file($_FILES['idUpload']['tmp_name'], $file_path)) {
-                $id_upload = $file_path;
+        $password = (string) ($_POST['password'] ?? '');
+        $confirmPassword = (string) ($_POST['confirmPassword'] ?? '');
+
+        if ($form['firstName'] === '' || $form['lastName'] === '') {
+            $errors[] = 'First name and last name are required.';
+        }
+
+        if (!filter_var($form['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Please enter a valid email address.';
+        }
+
+        if (!preg_match('/^\+?[0-9\s\-]{7,20}$/', $form['mobile'])) {
+            $errors[] = 'Please enter a valid mobile number.';
+        }
+
+        if ($form['gender'] === '' || !in_array($form['gender'], ['male', 'female', 'other', 'prefer_not'], true)) {
+            $errors[] = 'Please select a valid gender.';
+        }
+
+        if ($form['civilStatus'] === '' || !in_array($form['civilStatus'], ['single', 'married', 'widowed', 'separated'], true)) {
+            $errors[] = 'Please select a valid civil status.';
+        }
+
+        if ($form['address'] === '') {
+            $errors[] = 'Address is required.';
+        }
+
+        if ($form['birthdate'] !== '') {
+            $birthTs = strtotime($form['birthdate']);
+            if ($birthTs === false || $birthTs > time()) {
+                $errors[] = 'Please enter a valid birthdate.';
             }
         }
 
-        // Hash password
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-        // Insert
-        $stmt = $db->prepare("INSERT INTO users (first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param('ssssssssssssss', $first_name, $middle_name, $last_name, $suffix, $email, $mobile, $birthdate, $gender, $civil_status, $address, $id_type, $id_number, $id_upload, $hashed_password);
-        if ($stmt->execute()) {
-            $account_created = true;
-        } else {
-            $errors[] = 'Registration failed.';
+        if (strlen($password) < 8 ||
+            !preg_match('/[A-Z]/', $password) ||
+            !preg_match('/[a-z]/', $password) ||
+            !preg_match('/[0-9]/', $password) ||
+            !preg_match('/[^A-Za-z0-9]/', $password)) {
+            $errors[] = 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.';
         }
-        $stmt->close();
+
+        if ($password !== $confirmPassword) {
+            $errors[] = 'Passwords do not match.';
+        }
+
+        $idUploadPath = '';
+        if (!empty($_FILES['idUpload']['name'])) {
+            if (!isset($_FILES['idUpload']) || $_FILES['idUpload']['error'] !== UPLOAD_ERR_OK) {
+                $errors[] = 'Unable to upload ID file. Please try again.';
+            } else {
+                $tmpFile = (string) $_FILES['idUpload']['tmp_name'];
+                $fileSize = (int) ($_FILES['idUpload']['size'] ?? 0);
+                if ($fileSize > (5 * 1024 * 1024)) {
+                    $errors[] = 'ID upload must be 5MB or less.';
+                } else {
+                    $mime = (string) (mime_content_type($tmpFile) ?: '');
+                    $allowed = [
+                        'image/jpeg' => 'jpg',
+                        'image/png' => 'png',
+                        'application/pdf' => 'pdf'
+                    ];
+
+                    if (!isset($allowed[$mime])) {
+                        $errors[] = 'Only JPG, PNG, or PDF files are allowed for ID upload.';
+                    }
+                }
+            }
+        }
+
+        if (empty($errors)) {
+            $checkStmt = $db->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+            if (!$checkStmt) {
+                $errors[] = 'Unable to process your request right now.';
+            } else {
+                $checkStmt->bind_param('s', $form['email']);
+                $checkStmt->execute();
+                $checkRes = $checkStmt->get_result();
+                if ($checkRes && $checkRes->num_rows > 0) {
+                    $errors[] = 'This email is already registered.';
+                }
+                $checkStmt->close();
+            }
+        }
+
+        if (empty($errors) && !empty($_FILES['idUpload']['name'])) {
+            $uploadDir = dirname(__DIR__) . '/uploads/user-ids';
+            if (!is_dir($uploadDir) && !@mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                $errors[] = 'Unable to create upload directory.';
+            } else {
+                $tmpFile = (string) $_FILES['idUpload']['tmp_name'];
+                $mime = (string) (mime_content_type($tmpFile) ?: '');
+                $extMap = [
+                    'image/jpeg' => 'jpg',
+                    'image/png' => 'png',
+                    'application/pdf' => 'pdf'
+                ];
+                $ext = $extMap[$mime] ?? 'bin';
+                $fileName = 'id_' . bin2hex(random_bytes(8)) . '.' . $ext;
+                $targetPath = $uploadDir . '/' . $fileName;
+
+                if (!move_uploaded_file($tmpFile, $targetPath)) {
+                    $errors[] = 'Unable to save uploaded ID file.';
+                } else {
+                    $idUploadPath = '/uploads/user-ids/' . $fileName;
+                }
+            }
+        }
+
+        if (empty($errors)) {
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $insert = $db->prepare(
+                'INSERT INTO users (first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, password)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+
+            if (!$insert) {
+                $errors[] = 'Unable to create account right now. Please try again later.';
+            } else {
+                $insert->bind_param(
+                    'ssssssssssssss',
+                    $form['firstName'],
+                    $form['middleName'],
+                    $form['lastName'],
+                    $form['suffix'],
+                    $form['email'],
+                    $form['mobile'],
+                    $form['birthdate'],
+                    $form['gender'],
+                    $form['civilStatus'],
+                    $form['address'],
+                    $form['idType'],
+                    $form['idNumber'],
+                    $idUploadPath,
+                    $hashedPassword
+                );
+
+                if ($insert->execute()) {
+                    header('Location: /user-dashboard/user-login.php?success=1');
+                    exit;
+                }
+
+                $errors[] = 'Registration failed. Please try again.';
+                $insert->close();
+            }
+        }
+
+        if (!empty($errors)) {
+            record_attempt('user_register');
+        }
     }
+}
+
+if (isset($db) && $db instanceof mysqli) {
     $db->close();
 }
+
+$csrfToken = generate_csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -87,804 +216,337 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
-<!-- Removed <link rel="stylesheet" href="/assets/style.css"> -->
+<link rel="stylesheet" href="/assets/css/shared/admin-auth.css">
 <?php echo get_app_config_script(); ?>
 <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 <style>
-*, *::before, *::after {
-    box-sizing: border-box;
+:root {
+    --page-navy: #0f2a4a;
+    --page-blue: #1d4e89;
+    --page-sky: #3f83c9;
+    --page-light: #f7fbff;
+    --page-text: #0f172a;
+    --page-muted: #475569;
+    --page-danger: #b91c1c;
+    --page-danger-bg: #fee2e2;
+    --page-border: rgba(15, 23, 42, 0.12);
 }
-.nav, .wrapper, .footer { position: relative; z-index: 1; }
-.nav { width:100%;position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(255,255,255,0.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(30,58,95,0.04);overflow-x:visible; }
-.nav-logo { display:flex;align-items:center;gap:10px; }
-.nav-logo img { height:40px;width:auto;object-fit:contain; }
-.nav-links { display:flex;align-items:center;gap:24px;margin-left:32px; }
-.nav-links a { color:#1e293b;text-decoration:none;font-weight:500;font-size:1.08em;transition:color 0.2s; }
-.nav-links a:hover { color:#f39c12; }
-.footer {
-    position: fixed !important;
-    bottom: 0; left: 0; right: 0;
-    width: 100%;
-    background: rgba(255,255,255,0.85);
-    backdrop-filter: blur(8px);
-    color: #1e293b;
-    z-index: 100;
-    padding: 10px 0 4px 0;
+* { box-sizing: border-box; }
+body.user-signup-page {
+    min-height: 100vh;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    box-shadow: 0 -2px 12px rgba(30,58,95,0.04);
-    font-size: 0.93em;
+    padding-top: 88px;
+    color: var(--page-text);
+    background:
+        radial-gradient(circle at 15% 15%, rgba(63, 131, 201, 0.28), transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(29, 78, 137, 0.26), transparent 45%),
+        linear-gradient(125deg, rgba(7, 20, 36, 0.72), rgba(15, 42, 74, 0.68)),
+        url('/cityhall.jpeg') center/cover fixed no-repeat;
 }
-.footer-logo {
-    color: #0a4d8c; /* Change font color for copyright */
-    font-size: 0.91em;
-    opacity: 0.8;
-    text-align: center;
+body.user-signup-page .nav {
+    position: fixed;
+    inset: 0 0 auto 0;
     width: 100%;
-    max-width: 1200px;
-}
-.footer-links {
-    margin-bottom: 2px;
+    height: 78px;
+    padding: 14px 28px;
     display: flex;
     align-items: center;
-    gap: 18px;
-    justify-content: center;
+    justify-content: space-between;
+    background: linear-gradient(90deg, rgba(255,255,255,0.94), rgba(247,251,255,0.98));
+    border-bottom: 1px solid var(--page-border);
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.12);
+    z-index: 30;
 }
-.footer-links a {
-    color: #1e293b;
-    text-decoration: none;
-    font-size: 0.93em;
-    opacity: 0.9;
+body.user-signup-page .nav-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--page-navy);
 }
-.footer-links a:hover {
-    color: #f39c12;
-    transition: none;
-}
-.footer-logo {
-    font-size: 0.91em;
-    opacity: 0.8;
-    text-align: center;
-    width: 100%;
-    max-width: 1200px;
-}
-.card .icon-top {
-    display: block;
-    margin: 0 auto 10px auto;
-    height: 56px;
-    width: auto;
+body.user-signup-page .nav-logo img {
+    width: 44px;
+    height: 44px;
     object-fit: contain;
 }
-@media (max-width: 600px) {
-    .nav { padding: 0 10px; height: 56px; }
-    .nav-logo img { height: 32px; }
-    .nav-links a { font-size: 0.98em; }
-    .footer {
-        font-size: 0.91em;
-        padding: 8px 0 2px 0;
-    <!-- Removed embedded <style> block -->
-body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
-.wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
-html, body { height: 100%; margin: 0; overflow-x: hidden; }
-body { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
-.wrapper { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; }
-</style>
+body.user-signup-page .home-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(29, 78, 137, 0.22);
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--page-blue);
+    background: #ffffff;
+}
+body.user-signup-page .wrapper {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 30px 16px 36px;
+}
+body.user-signup-page .card {
+    width: 100%;
+    max-width: 920px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 20px;
+    padding: 30px 26px;
+    box-shadow: 0 24px 56px rgba(2, 6, 23, 0.3);
+}
+body.user-signup-page .card-header {
+    text-align: center;
+    margin-bottom: 18px;
+}
+body.user-signup-page .icon-top {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    margin: 2px auto 10px;
+    display: block;
+}
+body.user-signup-page .title {
+    margin: 0 0 6px;
+    font-size: 1.7rem;
+    line-height: 1.2;
+    color: var(--page-navy);
+}
+body.user-signup-page .subtitle {
+    margin: 0;
+    color: var(--page-muted);
+}
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+.form-grid .full {
+    grid-column: 1 / -1;
+}
+.input-box {
+    text-align: left;
+}
+.input-box label {
+    display: block;
+    font-size: 0.86rem;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+.input-box input,
+.input-box select,
+.input-box textarea {
+    width: 100%;
+    min-height: 46px;
+    border-radius: 11px;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    background: #ffffff;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    color: #0f172a;
+    outline: none;
+}
+.input-box textarea {
+    min-height: 88px;
+    resize: vertical;
+}
+.input-box input:focus,
+.input-box select:focus,
+.input-box textarea:focus {
+    border-color: var(--page-sky);
+    box-shadow: 0 0 0 4px rgba(63, 131, 201, 0.15);
+}
+.actions {
+    margin-top: 18px;
+    display: flex;
+    justify-content: flex-end;
+}
+.btn-primary {
+    min-width: 180px;
+    height: 46px;
+    border: 0;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #1d4e89, #3f83c9);
+    color: #ffffff;
+    font-size: 0.98rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.meta-links {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--page-muted);
+}
+.meta-links a {
+    color: var(--page-blue);
+    text-decoration: none;
+    font-weight: 600;
+}
+.meta-links a:hover { text-decoration: underline; }
+.error-box {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-align: left;
+    background: var(--page-danger-bg);
+    color: var(--page-danger);
+    font-size: 0.89rem;
+    border: 1px solid rgba(185, 28, 28, 0.2);
+}
+@media (max-width: 760px) {
+    body.user-signup-page .card {
+        padding: 24px 18px;
+    }
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    .actions {
+        justify-content: stretch;
+    }
+    .btn-primary {
+        width: 100%;
+    }
+}
 </style>
 </head>
-<body class="signup-page" style="min-height:100vh;display:flex;flex-direction:column;background:url('/cityhall.jpeg') center/cover no-repeat fixed;position:relative;padding-top:80px;">
-<body>
-<!-- Removed problematic blur overlay -->
-
+<body class="user-signup-page">
 <header class="nav">
-    <div class="nav-logo">
-        <img src="/logocityhall.png" alt="LGU Logo">
-        <span style="color:#1e293b;font-weight:600;font-size:1.15em;">Local Government Unit Portal</span>
-    </div>
-    <nav class="nav-links">
-        <a href="/public/index.php">Home</a>
-    </nav>
+    <div class="nav-logo"><img src="/logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
+    <a href="/public/index.php" class="home-btn" aria-label="Go to Home">Home</a>
 </header>
 
 <div class="wrapper">
     <div class="card">
-        <img src="/logocityhall.png" class="icon-top" alt="LGU City Hall Logo" style="margin-bottom: 10px;">
         <div class="card-header">
+            <img src="/logocityhall.png" class="icon-top" alt="LGU Logo">
             <h2 class="title">Create Account</h2>
-            <p class="subtitle">Register to access the LGU Portal</p>
+            <p class="subtitle">Set up your citizen account to access project updates and submit feedback.</p>
         </div>
 
-        <!-- Progress Indicator -->
-        <div class="progress-container">
-            <div class="progress-steps">
-                <div class="progress-step active" data-step="1">
-                    <div class="progress-step-circle">1</div>
-                    <div class="progress-step-label">Basic Info</div>
-                </div>
-                <div class="progress-step" data-step="2">
-                    <div class="progress-step-circle">2</div>
-                    <div class="progress-step-label">Contact</div>
-                </div>
-                <div class="progress-step" data-step="3">
-                    <div class="progress-step-circle">3</div>
-                    <div class="progress-step-label">Personal</div>
-                </div>
-                <div class="progress-step" data-step="4">
-                    <div class="progress-step-circle">4</div>
-                    <div class="progress-step-label">ID</div>
-                </div>
-                <div class="progress-step" data-step="5">
-                    <div class="progress-step-circle">5</div>
-                    <div class="progress-step-label">Security</div>
-                </div>
-            </div>
-            <div class="progress-bar-container">
-                <div class="progress-bar-fill" id="progressBar" style="width: 20%"></div>
-            </div>
-        </div>
+        <form method="post" enctype="multipart/form-data" autocomplete="on">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
-        <form method="post" enctype="multipart/form-data" id="registerForm" novalidate>
-            <div class="form-content">
-                <!-- Step 1: Basic Information -->
-                <div class="form-step active" data-step="1">
-                    <h3 class="step-title">Basic Information</h3>
-                    <p class="step-subtitle">Let's start with your name</p>
-                    
-                    <div class="form-grid">
-                        <div class="input-box">
-                            <label for="firstName">First Name *</label>
-                            <input id="firstName" name="firstName" type="text" required aria-required="true" placeholder="First name" />
-                        </div>
-
-                        <div class="input-box">
-                            <label for="middleName">Middle Name</label>
-                            <input id="middleName" name="middleName" type="text" placeholder="Middle name" />
-                        </div>
-
-                        <div class="input-box">
-                            <label for="lastName">Last Name *</label>
-                            <input id="lastName" name="lastName" type="text" required aria-required="true" placeholder="Last name" />
-                        </div>
-
-                        <div class="input-box">
-                            <label for="suffix">Suffix <small style="font-weight:normal;">(optional)</small></label>
-                            <select id="suffix" name="suffix" aria-label="Name suffix">
-                                <option value="">None</option>
-                                <option value="jr">Jr.</option>
-                                <option value="sr">Sr.</option>
-                                <option value="ii">II</option>
-                                <option value="iii">III</option>
-                                <option value="iv">IV</option>
-                            </select>
-                        </div>
-                    </div>
+            <div class="form-grid">
+                <div class="input-box">
+                    <label for="firstName">First Name *</label>
+                    <input id="firstName" name="firstName" type="text" required value="<?php echo htmlspecialchars($form['firstName'], ENT_QUOTES, 'UTF-8'); ?>">
+                </div>
+                <div class="input-box">
+                    <label for="middleName">Middle Name</label>
+                    <input id="middleName" name="middleName" type="text" value="<?php echo htmlspecialchars($form['middleName'], ENT_QUOTES, 'UTF-8'); ?>">
+                </div>
+                <div class="input-box">
+                    <label for="lastName">Last Name *</label>
+                    <input id="lastName" name="lastName" type="text" required value="<?php echo htmlspecialchars($form['lastName'], ENT_QUOTES, 'UTF-8'); ?>">
+                </div>
+                <div class="input-box">
+                    <label for="suffix">Suffix</label>
+                    <select id="suffix" name="suffix">
+                        <option value="" <?php echo $form['suffix'] === '' ? 'selected' : ''; ?>>None</option>
+                        <option value="jr" <?php echo $form['suffix'] === 'jr' ? 'selected' : ''; ?>>Jr.</option>
+                        <option value="sr" <?php echo $form['suffix'] === 'sr' ? 'selected' : ''; ?>>Sr.</option>
+                        <option value="ii" <?php echo $form['suffix'] === 'ii' ? 'selected' : ''; ?>>II</option>
+                        <option value="iii" <?php echo $form['suffix'] === 'iii' ? 'selected' : ''; ?>>III</option>
+                        <option value="iv" <?php echo $form['suffix'] === 'iv' ? 'selected' : ''; ?>>IV</option>
+                    </select>
                 </div>
 
-                <!-- Step 2: Contact Information -->
-                <div class="form-step" data-step="2">
-                    <h3 class="step-title">Contact Information</h3>
-                    <p class="step-subtitle">How can we reach you?</p>
-                    
-                    <div class="input-box">
-                        <label for="email">Email Address *</label>
-                        <input id="email" name="email" type="email" required aria-required="true" placeholder="you@example.com" />
-                    </div>
-
-                    <div class="input-box">
-                        <label for="mobile">Mobile Number *</label>
-                        <input id="mobile" name="mobile" type="tel" inputmode="tel" pattern="\+?[0-9\s-]{7,15}" required aria-required="true" placeholder="+63 9XX XXX XXXX" />
-                    </div>
+                <div class="input-box">
+                    <label for="email">Email Address *</label>
+                    <input id="email" name="email" type="email" required autocomplete="email" value="<?php echo htmlspecialchars($form['email'], ENT_QUOTES, 'UTF-8'); ?>">
+                </div>
+                <div class="input-box">
+                    <label for="mobile">Mobile Number *</label>
+                    <input id="mobile" name="mobile" type="text" required placeholder="+63 9XX XXX XXXX" value="<?php echo htmlspecialchars($form['mobile'], ENT_QUOTES, 'UTF-8'); ?>">
                 </div>
 
-                <!-- Step 3: Personal Details -->
-                <div class="form-step" data-step="3">
-                    <h3 class="step-title">Personal Details</h3>
-                    <p class="step-subtitle">Tell us more about yourself</p>
-                    
-                    <div class="form-grid">
-                        <div class="input-box">
-                            <label for="birthdate">Birthdate</label>
-                            <input id="birthdate" name="birthdate" type="date" />
-                        </div>
-
-                        <div class="input-box">
-                            <label for="gender">Gender *</label>
-                            <select id="gender" name="gender" required aria-required="true" aria-label="Gender">
-                                <option value="">Select</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
-                                <option value="prefer_not">Prefer not to say</option>
-                            </select>
-                        </div>
-
-                        <div class="input-box full-width">
-                            <label for="civilStatus">Civil Status *</label>
-                            <select id="civilStatus" name="civilStatus" required aria-required="true">
-                                <option value="">Select</option>
-                                <option value="single">Single</option>
-                                <option value="married">Married</option>
-                                <option value="widowed">Widowed</option>
-                                <option value="separated">Separated</option>
-                            </select>
-                        </div>
-
-                        <div class="input-box full-width">
-                            <label for="address">Address / Barangay *</label>
-                            <input id="address" name="address" type="text" required aria-required="true" placeholder="Street, Barangay, City" />
-                        </div>
-                    </div>
+                <div class="input-box">
+                    <label for="birthdate">Birthdate</label>
+                    <input id="birthdate" name="birthdate" type="date" value="<?php echo htmlspecialchars($form['birthdate'], ENT_QUOTES, 'UTF-8'); ?>">
+                </div>
+                <div class="input-box">
+                    <label for="gender">Gender *</label>
+                    <select id="gender" name="gender" required>
+                        <option value="" <?php echo $form['gender'] === '' ? 'selected' : ''; ?>>Select</option>
+                        <option value="male" <?php echo $form['gender'] === 'male' ? 'selected' : ''; ?>>Male</option>
+                        <option value="female" <?php echo $form['gender'] === 'female' ? 'selected' : ''; ?>>Female</option>
+                        <option value="other" <?php echo $form['gender'] === 'other' ? 'selected' : ''; ?>>Other</option>
+                        <option value="prefer_not" <?php echo $form['gender'] === 'prefer_not' ? 'selected' : ''; ?>>Prefer not to say</option>
+                    </select>
                 </div>
 
-                <!-- Step 4: Identification -->
-                <div class="form-step" data-step="4">
-                    <h3 class="step-title">Identification</h3>
-                    <p class="step-subtitle">Verify your identity (optional)</p>
-                    
-                    <div class="form-grid">
-                        <div class="input-box">
-                            <label for="idType">ID Type <small style="font-weight:normal;">(optional)</small></label>
-                            <select id="idType" name="idType" aria-label="ID Type">
-                                <option value="">Select ID Type</option>
-                                <option value="nbi">NBI Clearance</option>
-                                <option value="passport">Passport</option>
-                                <option value="drivinglicense">Driver's License</option>
-                                <option value="sss">SSS</option>
-                                <option value="tin">TIN</option>
-                                <option value="barangayid">Barangay ID</option>
-                                <option value="seniorid">Senior Citizen ID</option>
-                                <option value="pwdid">PWD ID</option>
-                            </select>
-                        </div>
-
-                        <div class="input-box">
-                            <label for="idNumber">ID Number <small style="font-weight:normal;">(optional)</small></label>
-                            <input id="idNumber" name="idNumber" type="text" placeholder="e.g., 12345678" />
-                        </div>
-
-                        <div class="input-box full-width">
-                            <label style="display: block; margin-bottom: 8px;">Upload ID Copy <small style="font-weight:normal;">(optional, JPG/PNG, max 5MB)</small></label>
-                            <div class="file-upload-wrapper">
-                                <input type="file" id="idUpload" name="idUpload" class="file-upload-input" accept=".jpg,.jpeg,.png" />
-                                <label for="idUpload" class="file-upload-label">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="height:28px;width:28px;vertical-align:middle;margin-right:8px;">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    <span id="uploadText">Click to upload or drag & drop</span>
-                                </label>
-                                <div class="file-name-display" id="fileDisplay">
-                                    <span class="check-icon">✓</span><span id="fileName"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="input-box">
+                    <label for="civilStatus">Civil Status *</label>
+                    <select id="civilStatus" name="civilStatus" required>
+                        <option value="" <?php echo $form['civilStatus'] === '' ? 'selected' : ''; ?>>Select</option>
+                        <option value="single" <?php echo $form['civilStatus'] === 'single' ? 'selected' : ''; ?>>Single</option>
+                        <option value="married" <?php echo $form['civilStatus'] === 'married' ? 'selected' : ''; ?>>Married</option>
+                        <option value="widowed" <?php echo $form['civilStatus'] === 'widowed' ? 'selected' : ''; ?>>Widowed</option>
+                        <option value="separated" <?php echo $form['civilStatus'] === 'separated' ? 'selected' : ''; ?>>Separated</option>
+                    </select>
+                </div>
+                <div class="input-box">
+                    <label for="idType">ID Type</label>
+                    <select id="idType" name="idType">
+                        <option value="" <?php echo $form['idType'] === '' ? 'selected' : ''; ?>>Select ID Type</option>
+                        <option value="nbi" <?php echo $form['idType'] === 'nbi' ? 'selected' : ''; ?>>NBI Clearance</option>
+                        <option value="passport" <?php echo $form['idType'] === 'passport' ? 'selected' : ''; ?>>Passport</option>
+                        <option value="drivinglicense" <?php echo $form['idType'] === 'drivinglicense' ? 'selected' : ''; ?>>Driver's License</option>
+                        <option value="sss" <?php echo $form['idType'] === 'sss' ? 'selected' : ''; ?>>SSS</option>
+                        <option value="tin" <?php echo $form['idType'] === 'tin' ? 'selected' : ''; ?>>TIN</option>
+                        <option value="barangayid" <?php echo $form['idType'] === 'barangayid' ? 'selected' : ''; ?>>Barangay ID</option>
+                    </select>
                 </div>
 
-                <!-- Step 5: Account Security -->
-                <div class="form-step" data-step="5">
-                    <h3 class="step-title">Account Security</h3>
-                    <p class="step-subtitle">Create a strong password</p>
-                    
-                    <div class="input-box">
-                        <label for="password">Password *</label>
-                        <input id="password" name="password" type="password" required aria-required="true" aria-describedby="pwdHelp pwdStrength" placeholder="Create a strong password" autocomplete="new-password" />
-                        <div id="pwdHelp" style="font-size:12px;color:#666;margin-top:8px;">Requirements: 8–12 characters, uppercase, lowercase, number, special character</div>
-                        <meter id="pwdStrength" min="0" max="4" low="2" high="3" optimum="4" value="0" style="width:100%;margin-top:8px; display:none;"></meter>
-                        <div class="pwd-bar" aria-hidden="true"><div class="pwd-fill" id="pwdFill"></div></div>
-                    </div>
+                <div class="input-box full">
+                    <label for="address">Address *</label>
+                    <textarea id="address" name="address" required><?php echo htmlspecialchars($form['address'], ENT_QUOTES, 'UTF-8'); ?></textarea>
+                </div>
 
-                    <div class="input-box">
-                        <label for="confirmPassword">Confirm Password *</label>
-                        <input id="confirmPassword" name="confirmPassword" type="password" required aria-required="true" placeholder="Re-enter your password" autocomplete="new-password" />
-                    </div>
+                <div class="input-box">
+                    <label for="idNumber">ID Number</label>
+                    <input id="idNumber" name="idNumber" type="text" value="<?php echo htmlspecialchars($form['idNumber'], ENT_QUOTES, 'UTF-8'); ?>">
+                </div>
+                <div class="input-box">
+                    <label for="idUpload">Upload ID (JPG/PNG/PDF, max 5MB)</label>
+                    <input id="idUpload" name="idUpload" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf">
+                </div>
 
-                    <div style="margin-top: 20px; text-align: center;">
-                        <label style="font-size:13px; display: block;">
-                            <input id="privacyAgree" type="checkbox" required aria-required="true" style="margin-right:6px;" />
-                            <span>I agree to the <a href="#" style="color:#2864ef;">Privacy Notice</a> and data usage policy</span>
-                        </label>
-                        <div style="font-size:12px; color:#666; margin-top:4px;">(Data Privacy Act of 2012)</div>
-                    </div>
+                <div class="input-box">
+                    <label for="password">Password *</label>
+                    <input id="password" name="password" type="password" required autocomplete="new-password">
+                </div>
+                <div class="input-box">
+                    <label for="confirmPassword">Confirm Password *</label>
+                    <input id="confirmPassword" name="confirmPassword" type="password" required autocomplete="new-password">
                 </div>
             </div>
 
-            <!-- Navigation Buttons -->
-            <div class="form-navigation">
-                <button type="button" class="btn-secondary" id="prevBtn" disabled>Previous</button>
-                <div id="regMessage" role="status" aria-live="polite" style="flex: 1; padding: 0 12px; font-size: 13px; display: none;"></div>
-                <button type="button" class="btn-primary" id="nextBtn">Next</button>
+            <div class="actions">
+                <button class="btn-primary" type="submit" name="register_submit">Create Account</button>
             </div>
-        </form>
 
+            <div class="meta-links">
+                Already have an account? <a href="/user-dashboard/user-login.php">Sign in</a>
+            </div>
 
-                <?php if (!empty($errors)): ?>
-                <div style="color:#b00; margin-top:12px;">
+            <?php if (!empty($errors)): ?>
+                <div class="error-box">
                     <?php foreach ($errors as $error): ?>
-                    <div><?php echo $error; ?></div>
+                        <div><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
                     <?php endforeach; ?>
                 </div>
-                <?php endif; ?>
-
-                <?php if (isset($account_created) && $account_created): ?>
-                <div id="successMessage" style="color:#155724;background:#d4edda;border:1px solid #c3e6cb;padding:18px 16px;margin:18px 0 0 0;border-radius:6px;text-align:center;font-size:1.1em;">
-                    <strong>Account created successfully!</strong><br>
-                    Redirecting to login in <span id="countdown">10</span> seconds...<br>
-                    <a href="user-login.php" style="color:#2864ef;text-decoration:underline;">Click here if not redirected</a>
-                </div>
-                <script>
-                // Remove any localStorage data related to registration (precaution)
-                try {
-                    localStorage.clear();
-                } catch(e){}
-                let seconds = 10;
-                const countdownEl = document.getElementById('countdown');
-                const interval = setInterval(function() {
-                    seconds--;
-                    if (countdownEl) countdownEl.textContent = seconds;
-                    if (seconds <= 0) {
-                        clearInterval(interval);
-                        window.location.href = 'user-login.php';
-                    }
-                }, 1000);
-                </script>
-                <?php endif; ?>
-
-        <p class="small-text">Already have an account? <a href="login.php">Sign in here</a></p>
+            <?php endif; ?>
+        </form>
     </div>
 </div>
-
-
-<footer class="footer">
-    <div class="footer-links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">About</a>
-        <a href="#">Help</a>
-    </div>
-    <div class="footer-logo">© 2025 LGU Citizen Portal · All Rights Reserved</div>
-</footer>
-
-<script>
-// Multi-step form state
-let currentStep = 1;
-const totalSteps = 5;
-
-// Password Policy Validator
-function validatePassword(p){
-    const errors = [];
-    if(p.length < 8) errors.push('Password must be at least 8 characters.');
-    if(!/[a-z]/.test(p)) errors.push('Include a lowercase letter.');
-    if(!/[A-Z]/.test(p)) errors.push('Include an uppercase letter.');
-    if(!/[0-9]/.test(p)) errors.push('Include a number.');
-    if(!/[!@#\$%\^&\*\(\)_\+\-=\[\]\{\};:\"\\|,.<>\/?]/.test(p)) errors.push('Include a special character.');
-    return { ok: errors.length===0, errors };
-}
-
-// Live Password Strength Meter + animated bar
-const pwdInput = document.getElementById('password');
-const meter = document.getElementById('pwdStrength');
-const pwdFill = document.getElementById('pwdFill');
-
-function setPwdFill(score){
-    const pct = Math.round((score / 4) * 100);
-    if(pwdFill){
-        pwdFill.style.width = pct + '%';
-        pwdFill.style.transition = 'width 0.3s, background 0.3s';
-        if(score <= 1) {
-            pwdFill.style.background = 'linear-gradient(90deg,#ff4d4f,#ff7a59)';
-            pwdFill.style.boxShadow = '0 0 8px 2px #ff4d4f55';
-            pwdFill.style.borderRadius = '8px';
-        } else if(score === 2) {
-            pwdFill.style.background = 'linear-gradient(90deg,#ffb86b,#ffd54a)';
-            pwdFill.style.boxShadow = '0 0 8px 2px #ffd54a55';
-            pwdFill.style.borderRadius = '8px';
-        } else if(score === 3) {
-            pwdFill.style.background = 'linear-gradient(90deg,#cddc39,#8bc34a)';
-            pwdFill.style.boxShadow = '0 0 8px 2px #8bc34a55';
-            pwdFill.style.borderRadius = '8px';
-        } else {
-            pwdFill.style.background = 'linear-gradient(90deg,#7be495,#4caf50)';
-            pwdFill.style.boxShadow = '0 0 16px 4px #4caf5099, 0 0 8px 2px #7be49599';
-            pwdFill.style.borderRadius = '8px';
-        }
-    }
-    if(meter){
-        meter.style.display = 'block';
-        meter.value = score;
-    }
-    // Animate bar shake if weak, pulse if strong
-    const bar = document.querySelector('.pwd-bar');
-    if(bar && score <= 1){
-        bar.classList.add('shake');
-        setTimeout(()=>bar.classList.remove('shake'),420);
-    } else if(bar && score === 4) {
-        bar.classList.add('pulse');
-        setTimeout(()=>bar.classList.remove('pulse'),600);
-    }
-}
-
-if(pwdInput){
-    pwdInput.addEventListener('input', function(){
-        const val = pwdInput.value || '';
-        let score = 0;
-        if(val.length >= 8) score++;
-        if(/[A-Z]/.test(val)) score++;
-        if(/[0-9]/.test(val)) score++;
-        if(/[^A-Za-z0-9]/.test(val)) score++;
-        setPwdFill(score);
-    });
-}
-
-// Helper functions
-function markInvalid(el){
-    if(!el) return;
-    try{ el.classList.add('invalid'); }catch(e){}
-    try{ el.focus({preventScroll:true}); }catch(e){}
-    try{ el.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){}
-}
-
-function markValid(el){ 
-    if(!el) return; 
-    try{ el.classList.remove('invalid'); }catch(e){} 
-}
-
-// Clear invalid marker when user types
-const emailInputField = document.getElementById('email');
-if(emailInputField){
-    emailInputField.addEventListener('input', () => { 
-        markValid(emailInputField); 
-        const m = document.getElementById('regMessage'); 
-        if(m) m.style.display = 'none'; 
-    });
-}
-
-// File Upload Handling
-const idUploadInput = document.getElementById('idUpload');
-const uploadLabel = document.querySelector('.file-upload-label');
-const fileDisplay = document.getElementById('fileDisplay');
-const fileName = document.getElementById('fileName');
-const uploadText = document.getElementById('uploadText');
-
-if(idUploadInput && uploadLabel){
-    idUploadInput.addEventListener('change', handleFileSelect);
-    
-    uploadLabel.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadLabel.classList.add('active');
-    });
-    
-    uploadLabel.addEventListener('dragleave', () => {
-        uploadLabel.classList.remove('active');
-    });
-    
-    uploadLabel.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadLabel.classList.remove('active');
-        const files = e.dataTransfer.files;
-        if(files.length > 0) idUploadInput.files = files;
-        handleFileSelect();
-    });
-}
-
-function handleFileSelect(){
-    const file = idUploadInput.files[0];
-    if(file){
-        fileName.textContent = file.name;
-        fileDisplay.classList.add('show');
-        uploadLabel.classList.add('active');
-        uploadText.textContent = '✓ File selected';
-    } else {
-        fileDisplay.classList.remove('show');
-        uploadLabel.classList.remove('active');
-        uploadText.textContent = 'Click to upload or drag & drop';
-    }
-}
-
-// Step Navigation
-function updateProgress() {
-    const progressBar = document.getElementById('progressBar');
-    const progressSteps = document.querySelectorAll('.progress-step');
-    const percentage = (currentStep / totalSteps) * 100;
-    
-    progressBar.style.width = percentage + '%';
-    
-    progressSteps.forEach((step, index) => {
-        const stepNum = index + 1;
-        if(stepNum < currentStep) {
-            step.classList.add('completed');
-            step.classList.remove('active');
-        } else if(stepNum === currentStep) {
-            step.classList.add('active');
-            step.classList.remove('completed');
-        } else {
-            step.classList.remove('active', 'completed');
-        }
-    });
-}
-
-function showStep(step) {
-    const formSteps = document.querySelectorAll('.form-step');
-    formSteps.forEach((formStep, index) => {
-        if(index + 1 === step) {
-            formStep.classList.add('active');
-        } else {
-            formStep.classList.remove('active');
-        }
-    });
-    
-    // Update buttons
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    
-    prevBtn.disabled = step === 1;
-    
-    if(step === totalSteps) {
-        nextBtn.textContent = 'Create Account';
-    } else {
-        nextBtn.textContent = 'Next';
-    }
-    
-    updateProgress();
-}
-
-// Validate current step
-function validateStep(step) {
-    const msgEl = document.getElementById('regMessage');
-    msgEl.style.display = 'none';
-    
-    if(step === 1) {
-        // Basic Information
-        const firstName = (document.getElementById('firstName').value || '').trim();
-        const lastName = (document.getElementById('lastName').value || '').trim();
-        
-        if(!firstName) {
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> First name is required.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('firstName'));
-            return false;
-        }
-        
-        if(!lastName) {
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Last name is required.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('lastName'));
-            return false;
-        }
-    }
-    
-    if(step === 2) {
-        // Contact Information
-        let email = (document.getElementById('email').value || '').trim().toLowerCase();
-        email = email.replace(/[\u200B-\u200D\uFEFF]/g, '');
-        const mobile = (document.getElementById('mobile').value || '').trim();
-        
-        if(!email) {
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Email is required.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('email'));
-            return false;
-        }
-        
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if(!emailRegex.test(email)){
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Enter a valid email address.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('email'));
-            return false;
-        }
-        
-        if(!mobile) {
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Mobile number is required.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('mobile'));
-            return false;
-        }
-        
-        const mobileRegex = /^\+?[0-9\s-]{7,15}$/;
-        if(!mobileRegex.test(mobile)){
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Enter a valid mobile number.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('mobile'));
-            return false;
-        }
-    }
-    
-    if(step === 3) {
-        // Personal Details
-        const address = (document.getElementById('address').value || '').trim();
-        const gender = document.getElementById('gender').value;
-        const civilStatus = document.getElementById('civilStatus').value;
-        
-        if(!address) {
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Address is required.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('address'));
-            return false;
-        }
-        
-        if(!gender) {
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Gender is required.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('gender'));
-            return false;
-        }
-        
-        if(!civilStatus) {
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Civil status is required.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('civilStatus'));
-            return false;
-        }
-    }
-    
-    if(step === 4) {
-        // File validation
-        const idUploadFile = document.getElementById('idUpload').files[0] || null;
-        // Only check if a file is selected
-        if(idUploadFile) {
-            if(idUploadFile.size > 5 * 1024 * 1024){
-                msgEl.style.backgroundColor = '#fee'; 
-                msgEl.style.color = '#c00';
-                msgEl.innerHTML = '<strong>⚠️</strong> ID file must be less than 5MB.';
-                msgEl.style.display = 'block';
-                markInvalid(uploadLabel);
-                return false;
-            }
-            if(!['image/jpeg', 'image/png'].includes(idUploadFile.type)){
-                msgEl.style.backgroundColor = '#fee'; 
-                msgEl.style.color = '#c00';
-                msgEl.innerHTML = '<strong>⚠️</strong> ID file must be JPG or PNG.';
-                msgEl.style.display = 'block';
-                markInvalid(uploadLabel);
-                return false;
-            }
-        }
-    }
-    
-    if(step === 5) {
-        // Password validation
-        const rawPassword = document.getElementById('password').value || '';
-        const rawConfirm = document.getElementById('confirmPassword').value || '';
-        const password = rawPassword.replace(/[\u200B-\u200D\uFEFF]/g, '');
-        const confirmPwd = rawConfirm.replace(/[\u200B-\u200D\uFEFF]/g, '');
-        const privacyAgree = document.getElementById('privacyAgree').checked;
-        
-        if(!password) {
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Password is required.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('password'));
-            return false;
-        }
-        
-        if(!confirmPwd) {
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Confirm password is required.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('confirmPassword'));
-            return false;
-        }
-        
-        if(password !== confirmPwd){
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> Passwords do not match.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('password'));
-            markInvalid(document.getElementById('confirmPassword'));
-            const bar = document.querySelector('.pwd-bar'); 
-            if(bar){ 
-                bar.classList.add('shake'); 
-                setTimeout(()=>bar.classList.remove('shake'),420); 
-            }
-            return false;
-        }
-        
-        const passCheck = validatePassword(password);
-        if(!passCheck.ok){
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️ Password Issues:</strong><br>' + passCheck.errors.join('<br>');
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('password'));
-            const bar2 = document.querySelector('.pwd-bar'); 
-            if(bar2){ 
-                bar2.classList.add('shake'); 
-                setTimeout(()=>bar2.classList.remove('shake'),420); 
-            }
-            return false;
-        }
-        
-        if(!privacyAgree){
-            msgEl.style.backgroundColor = '#fee'; 
-            msgEl.style.color = '#c00';
-            msgEl.innerHTML = '<strong>⚠️</strong> You must agree to the Privacy Notice.';
-            msgEl.style.display = 'block';
-            markInvalid(document.getElementById('privacyAgree'));
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-// Next button handler
-document.getElementById('nextBtn').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    if(currentStep === totalSteps) {
-        // This is the submit button on last step
-        handleSubmit(e);
-    } else {
-        // Validate current step
-        if(validateStep(currentStep)) {
-            currentStep++;
-            showStep(currentStep);
-        }
-    }
-});
-
-// Previous button handler
-document.getElementById('prevBtn').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    if(currentStep > 1) {
-        currentStep--;
-        showStep(currentStep);
-    }
-});
-
-// Form submission
-function handleSubmit(e) {
-    e.preventDefault();
-    
-    // Validate final step
-    if(!validateStep(currentStep)) {
-        return;
-    }
-    
-    // Submit the form
-    document.getElementById('registerForm').submit();
-}
-
-// Initialize
-showStep(currentStep);
-</script>
-<style>
-/* Add this to your CSS (or in a <style> block): */
-.pwd-bar.shake { animation: shake 0.42s cubic-bezier(.36,.07,.19,.97) both; }
-@keyframes shake {
-  10%, 90% { transform: translateX(-2px); }
-  20%, 80% { transform: translateX(4px); }
-  30%, 50%, 70% { transform: translateX(-8px); }
-  40%, 60% { transform: translateX(8px); }
-}
-.pwd-bar.pulse { animation: pulse 0.6s cubic-bezier(.4,0,.6,1) both; }
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 #4caf5099; }
-  70% { box-shadow: 0 0 16px 8px #4caf5099; }
-  100% { box-shadow: 0 0 0 0 #4caf5099; }
-}
-</style>
+<script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
-

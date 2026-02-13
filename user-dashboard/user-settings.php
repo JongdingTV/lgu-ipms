@@ -13,7 +13,7 @@ if (!isset($db) || $db->connect_error) {
 }
 
 $userId = (int) ($_SESSION['user_id'] ?? 0);
-$stmt = $db->prepare('SELECT id, first_name, last_name, email, contact_number, address, gender, civil_status, created_at, password FROM users WHERE id = ? LIMIT 1');
+$stmt = $db->prepare('SELECT id, first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, created_at, password FROM users WHERE id = ? LIMIT 1');
 $stmt->bind_param('i', $userId);
 $stmt->execute();
 $res = $stmt->get_result();
@@ -111,6 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
             $errors[] = 'All password fields are required.';
         } elseif (!password_verify($currentPassword, (string) $user['password'])) {
             $errors[] = 'Current password is incorrect.';
+        } elseif (password_verify($newPassword, (string) $user['password'])) {
+            $errors[] = 'New password must be different from your current password.';
         } elseif ($newPassword !== $confirmPassword) {
             $errors[] = 'New password and confirmation do not match.';
         } elseif (strlen($newPassword) < 8) {
@@ -219,12 +221,20 @@ $csrfToken = generate_csrf_token();
                             <h3 class="ac-b75fad00">Account Information</h3>
                             <div class="table-wrap">
                                 <table class="projects-table"><tbody>
-                                    <tr><td><strong>Name</strong></td><td><?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>First Name</strong></td><td><?php echo htmlspecialchars((string) ($user['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Middle Name</strong></td><td><?php echo htmlspecialchars((string) ($user['middle_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Last Name</strong></td><td><?php echo htmlspecialchars((string) ($user['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Suffix</strong></td><td><?php echo htmlspecialchars((string) ($user['suffix'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Full Name</strong></td><td><?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></td></tr>
                                     <tr><td><strong>Email</strong></td><td><?php echo htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                                    <tr><td><strong>Contact</strong></td><td><?php echo htmlspecialchars((string) ($user['contact_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Contact</strong></td><td><?php echo htmlspecialchars((string) ($user['mobile'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>Birthdate</strong></td><td><?php echo !empty($user['birthdate']) ? date('M d, Y', strtotime((string) $user['birthdate'])) : '-'; ?></td></tr>
                                     <tr><td><strong>Address</strong></td><td><?php echo htmlspecialchars((string) ($user['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
                                     <tr><td><strong>Gender</strong></td><td><?php echo htmlspecialchars((string) ($user['gender'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
                                     <tr><td><strong>Civil Status</strong></td><td><?php echo htmlspecialchars((string) ($user['civil_status'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>ID Type</strong></td><td><?php echo htmlspecialchars((string) ($user['id_type'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>ID Number</strong></td><td><?php echo htmlspecialchars((string) ($user['id_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                                    <tr><td><strong>ID Upload</strong></td><td><?php if (!empty($user['id_upload'])): ?><a href="<?php echo htmlspecialchars((string) $user['id_upload'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer">View Uploaded File</a><?php else: ?>-<?php endif; ?></td></tr>
                                     <tr><td><strong>Registered On</strong></td><td><?php echo !empty($user['created_at']) ? date('M d, Y', strtotime((string) $user['created_at'])) : '-'; ?></td></tr>
                                     <tr><td><strong>Feedback Submitted</strong></td><td><?php echo (int) ($feedbackStats['total'] ?? 0); ?></td></tr>
                                     <tr><td><strong>Pending Feedback</strong></td><td><?php echo (int) ($feedbackStats['pending'] ?? 0); ?></td></tr>
@@ -274,3 +284,4 @@ $csrfToken = generate_csrf_token();
     <script src="/user-dashboard/user-settings.js?v=<?php echo filemtime(__DIR__ . '/user-settings.js'); ?>"></script>
 </body>
 </html>
+
