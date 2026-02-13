@@ -52,14 +52,41 @@ function user_progress_has_created_at(mysqli $db): bool
     return $exists;
 }
 
+function user_progress_has_progress_column(mysqli $db): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'projects'
+           AND COLUMN_NAME = 'progress'
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+
+    return $exists;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'load_projects') {
     header('Content-Type: application/json');
 
     $hasCreatedAt = user_progress_has_created_at($db);
+    $hasProgress = user_progress_has_progress_column($db);
     $selectCreatedAt = $hasCreatedAt ? ', created_at' : '';
+    $selectProgress = $hasProgress ? ', COALESCE(progress, 0) AS progress' : ', 0 AS progress';
     $orderBy = $hasCreatedAt ? 'created_at DESC' : 'id DESC';
 
-    $result = $db->query("SELECT id, code, name, description, location, province, sector, budget, status, start_date, end_date, duration_months{$selectCreatedAt} FROM projects ORDER BY {$orderBy} LIMIT 500");
+    $result = $db->query("SELECT id, code, name, description, location, province, sector, budget, status, start_date, end_date, duration_months{$selectCreatedAt}{$selectProgress} FROM projects ORDER BY {$orderBy} LIMIT 500");
 
     $projects = [];
     if ($result) {
@@ -189,7 +216,6 @@ $db->close();
                             <label for="pmSearch">Search Projects</label>
                             <input id="pmSearch" type="search" placeholder="Search by code, name, or location...">
                         </div>
-                        <button id="exportCsv" type="button" class="btn-export">Export CSV</button>
                     </div>
 
                     <div class="pm-right">
@@ -240,6 +266,103 @@ $db->close();
             </div>
         </div>
     </section>
+
+    <style>
+        .main-content .pm-section.card {
+            border-radius: 16px;
+            border: 1px solid #d8e6f4;
+            background: linear-gradient(165deg, #ffffff 0%, #f8fbff 72%);
+            box-shadow: 0 18px 34px rgba(15, 23, 42, 0.1);
+            padding: 16px;
+        }
+
+        .main-content .pm-stats-wrapper {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .main-content .stat-box {
+            border-radius: 14px;
+            border: 1px solid #dae6f5;
+            background: #ffffff;
+            min-height: 88px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 14px 12px;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.07);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-content .stat-box::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 3px;
+            width: 100%;
+            background: #3b82f6;
+            opacity: 0.85;
+        }
+
+        .main-content .stat-box.stat-total::before { background: #2563eb; }
+        .main-content .stat-box.stat-approved::before { background: #16a34a; }
+        .main-content .stat-box.stat-progress::before { background: #f59e0b; }
+        .main-content .stat-box.stat-completed::before { background: #0ea5e9; }
+
+        .main-content .pm-controls-wrapper {
+            border: 1px solid #d8e6f4;
+            border-radius: 14px;
+            background: #ffffff;
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+
+        .main-content .pm-content {
+            border-radius: 14px;
+            border: 1px solid #d8e6f4;
+            background: #ffffff;
+            padding: 14px;
+        }
+
+        .main-content .projects-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 14px;
+        }
+
+        .main-content .project-card {
+            border-radius: 14px;
+            border: 1px solid #dbe7f3;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+            background: #ffffff;
+        }
+
+        .main-content .project-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+        }
+
+        .main-content .progress-bar {
+            height: 9px;
+            border-radius: 999px;
+            background: #e2e8f0;
+        }
+
+        .main-content .progress-fill {
+            border-radius: 999px;
+            background: linear-gradient(90deg, #0ea5e9, #2563eb);
+        }
+
+        @media (max-width: 768px) {
+            .main-content .pm-stats-wrapper {
+                grid-template-columns: repeat(2, minmax(140px, 1fr));
+            }
+        }
+    </style>
 
     <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <script src="/assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>

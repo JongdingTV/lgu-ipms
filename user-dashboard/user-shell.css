@@ -200,3 +200,209 @@ body.theme-dark .nav-user-name {
 body.theme-dark .nav-user-email {
     color: #9fb6d1;
 }
+
+/* ===== User dashboard fix pack (2026-02-13) ===== */
+body.sidebar-hidden .nav-user-profile {
+    margin: 8px auto 10px;
+    padding: 8px 6px;
+    width: 56px;
+    min-width: 56px;
+    max-width: 56px;
+    border-radius: 999px;
+    text-align: center;
+}
+
+body.sidebar-hidden .nav-user-profile .nav-user-name,
+body.sidebar-hidden .nav-user-profile .nav-user-email {
+    display: none;
+}
+
+body.sidebar-hidden .nav-user-profile .user-profile-image,
+body.sidebar-hidden .nav-user-profile .user-initial-badge {
+    margin: 0 auto;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
+    top: 16px !important;
+    right: 22px !important;
+    gap: 12px !important;
+    padding: 10px 12px !important;
+    border-radius: 14px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
+    min-width: 210px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-group {
+    gap: 10px;
+}
+
+.top-sidebar-toggle,
+body.sidebar-hidden .top-sidebar-toggle {
+    left: 14px !important;
+    top: 18px !important;
+}
+
+.pm-section.card {
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.96);
+}
+
+.pm-stats-wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.pm-content #projectsList {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 14px;
+}
+
+.pm-content .project-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.pm-content .project-card .project-status {
+    border-radius: 999px;
+    padding: 4px 10px;
+}
+
+.pm-content .project-card .progress-bar {
+    height: 9px;
+    border-radius: 999px;
+    background: #e2e8f0;
+}
+
+.pm-content .project-card .progress-fill {
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0ea5e9, #2563eb);
+}
+
+button,
+.btn-export,
+.btn-clear-filters,
+.ac-f84d9680,
+.tab-btn,
+.nav-links a,
+.nav-logout,
+.admin-utility-btn {
+    transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+button:hover,
+.btn-export:hover,
+.btn-clear-filters:hover,
+.ac-f84d9680:hover,
+.tab-btn:hover,
+.nav-logout:hover,
+.admin-utility-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(30, 64, 175, 0.18);
+}
+
+button:focus-visible,
+.btn-export:focus-visible,
+.btn-clear-filters:focus-visible,
+.ac-f84d9680:focus-visible,
+.tab-btn:focus-visible,
+.nav-logout:focus-visible,
+.admin-utility-btn:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.28);
+    outline-offset: 2px;
+}
+
+.settings-page .settings-panel .projects-table tbody tr {
+    display: block;
+    border: 1px solid #dbe7f3;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: #f8fbff;
+}
+
+.settings-page .settings-panel .projects-table tbody tr td {
+    display: block;
+    border: 0 !important;
+    padding: 2px 0 !important;
+}
+
+.settings-page .settings-panel .projects-table tbody tr td:first-child {
+    font-size: 0.8rem;
+    color: #475569;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.settings-page .settings-panel .projects-table tbody tr td:last-child {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.admin-logout-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    display: none;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px;
+    z-index: 9999 !important;
+}
+
+.admin-logout-modal.show {
+    display: flex !important;
+}
+
+.admin-logout-dialog {
+    width: min(460px, 96vw);
+    margin: 0 auto !important;
+}
+
+.metrics-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 280px));
+    gap: 18px;
+    justify-content: center;
+}
+
+.metric-card.card {
+    justify-content: center;
+    text-align: center;
+}
+
+.metric-card.card .metric-content {
+    width: 100%;
+}
+
+.metric-card.card .metric-content h3,
+.metric-card.card .metric-value,
+.metric-card.card .metric-status {
+    text-align: center;
+}
+
+@media (max-width: 992px) {
+    .top-sidebar-toggle,
+    body.sidebar-hidden .top-sidebar-toggle {
+        left: 10px !important;
+        top: 14px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding-top: 106px !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
+        right: 10px !important;
+        left: 10px;
+        width: auto;
+        justify-content: space-between;
+    }
+}

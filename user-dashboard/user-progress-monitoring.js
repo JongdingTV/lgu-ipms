@@ -198,32 +198,6 @@
             });
         }
 
-        const exportBtn = document.getElementById('exportCsv');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', function () {
-                const rows = applyFilters(allProjects);
-                if (!rows.length) return;
-
-                const headers = ['Code', 'Name', 'Location', 'Sector', 'Status', 'Progress', 'Budget'];
-                const csvRows = rows.map(r => [
-                    r.code || '',
-                    r.name || '',
-                    r.location || '',
-                    r.sector || '',
-                    r.status || '',
-                    `${getProgress(r)}%`,
-                    formatCurrency(r.budget)
-                ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
-
-                const csv = [headers.join(','), ...csvRows].join('\n');
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = 'user-project-monitoring.csv';
-                link.click();
-                URL.revokeObjectURL(link.href);
-            });
-        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
