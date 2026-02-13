@@ -62,6 +62,104 @@
     margin: 0 14px 10px;
 }
 
+.sidebar-toggle-wrapper,
+.toggle-btn {
+    display: none !important;
+}
+
+.main-content {
+    padding-top: 96px !important;
+}
+
+.pm-controls-wrapper,
+.pm-content,
+.recent-projects,
+.settings-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 14px;
+}
+
+.pm-controls {
+    display: grid;
+    gap: 14px;
+}
+
+.pm-top-row,
+.pm-bottom-row {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pm-right {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    min-width: 140px;
+}
+
+.filter-group label,
+.pm-left label {
+    display: block;
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.pm-left input,
+.pm-right select,
+.user-feedback-form input,
+.user-feedback-form select,
+.user-feedback-form textarea {
+    width: 100%;
+    border: 1px solid #d6e2f0;
+    border-radius: 10px;
+    min-height: 40px;
+    padding: 8px 11px;
+    background: #ffffff;
+}
+
+.user-feedback-form textarea {
+    min-height: 130px;
+    resize: vertical;
+}
+
+.btn-export,
+.btn-clear-filters,
+.ac-f84d9680 {
+    border-radius: 10px;
+}
+
+.user-feedback-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.user-feedback-form-grid .full {
+    grid-column: 1 / -1;
+}
+
+.feedback-submit-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.user-feedback-form label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.86rem;
+    color: #334155;
+    font-weight: 600;
+}
+
 @media (max-width: 991px) {
     body.sidebar-hidden #navbar {
         transform: translateX(-100%);
@@ -78,4 +176,27 @@
     .nav-user-profile {
         margin-top: 2px;
     }
+
+    .main-content {
+        padding-top: 88px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .user-feedback-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+body.theme-dark .nav-user-profile {
+    background: rgba(15, 30, 50, 0.95);
+    border-color: rgba(70, 98, 129, 0.55);
+}
+
+body.theme-dark .nav-user-name {
+    color: #dce9f9;
+}
+
+body.theme-dark .nav-user-email {
+    color: #9fb6d1;
 }

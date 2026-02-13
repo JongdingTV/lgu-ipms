@@ -159,7 +159,7 @@ $db->close();
     <section class="main-content">
         <div class="dash-header">
             <h1>User Dashboard</h1>
-            <p>Welcome, <?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?><?php echo $userEmail ? ' (' . htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8') . ')' : ''; ?></p>
+            <p>Transparent project updates from the admin side.</p>
         </div>
 
         <div class="metrics-container">
@@ -294,3 +294,4 @@ $db->close();
     <script src="/user-dashboard/user-dashboard.js?v=<?php echo filemtime(__DIR__ . '/user-dashboard.js'); ?>"></script>
 </body>
 </html>
+

@@ -154,43 +154,44 @@ $csrfToken = generate_csrf_token();
     <section class="main-content">
         <div class="dash-header">
             <h1>Submit Feedback</h1>
-            <p>Share concerns and suggestions for local projects.</p>
+            <p>Share concerns and suggestions that will be reviewed by the admin prioritization team.</p>
         </div>
 
         <div class="card" style="margin-bottom:18px;">
             <h3 style="margin-bottom:12px;">Feedback Form</h3>
-            <form id="userFeedbackForm" method="post" action="user-feedback.php" enctype="multipart/form-data">
+            <form id="userFeedbackForm" class="user-feedback-form" method="post" action="user-feedback.php">
                 <input type="hidden" name="feedback_submit" value="1">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
-                <div class="ac-a2374ef4">
-                    <label class="ac-37c29296" for="subject">Subject</label>
-                    <input class="ac-6f762f4a" type="text" id="subject" name="subject" maxlength="100" required>
+                <div class="user-feedback-form-grid">
+                    <div>
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject" maxlength="100" required>
+                    </div>
+                    <div>
+                        <label for="location">Location</label>
+                        <input type="text" id="location" name="location" required>
+                    </div>
+                    <div class="full">
+                        <label for="category">Category</label>
+                        <select id="category" name="category" required>
+                            <option value="">Select Category</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Energy">Energy</option>
+                            <option value="Water and Waste">Water and Waste</option>
+                            <option value="Social Infrastructure">Social Infrastructure</option>
+                            <option value="Public Buildings">Public Buildings</option>
+                        </select>
+                    </div>
+                    <div class="full">
+                        <label for="feedback">Suggestion / Concern</label>
+                        <textarea id="feedback" name="feedback" rows="5" required></textarea>
+                    </div>
                 </div>
 
-                <div class="ac-a2374ef4">
-                    <label class="ac-37c29296" for="location">Location</label>
-                    <input class="ac-6f762f4a" type="text" id="location" name="location" required>
+                <div class="feedback-submit-row">
+                    <button type="submit" class="ac-f84d9680">Submit Feedback</button>
                 </div>
-
-                <div class="ac-a2374ef4">
-                    <label class="ac-37c29296" for="category">Category</label>
-                    <select class="ac-6f762f4a" id="category" name="category" required>
-                        <option value="">Select Category</option>
-                        <option value="Transportation">Transportation</option>
-                        <option value="Energy">Energy</option>
-                        <option value="Water and Waste">Water and Waste</option>
-                        <option value="Social Infrastructure">Social Infrastructure</option>
-                        <option value="Public Buildings">Public Buildings</option>
-                    </select>
-                </div>
-
-                <div class="ac-a2374ef4">
-                    <label class="ac-37c29296" for="feedback">Suggestion / Concern</label>
-                    <textarea class="ac-6f762f4a" id="feedback" name="feedback" rows="5" required></textarea>
-                </div>
-
-                <button type="submit" class="ac-f84d9680">Submit Feedback</button>
                 <div id="message" style="display:none;margin-top:10px;"></div>
             </form>
         </div>
