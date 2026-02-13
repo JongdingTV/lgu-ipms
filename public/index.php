@@ -30,16 +30,12 @@ $feedbackNotice = ['type' => '', 'text' => ''];
 $feedbackForm = [
     'full_name' => '',
     'subject' => '',
-    'category' => '',
-    'location' => '',
     'message' => ''
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_submit'])) {
     $feedbackForm['full_name'] = trim((string) ($_POST['full_name'] ?? ''));
     $feedbackForm['subject'] = trim((string) ($_POST['subject'] ?? ''));
-    $feedbackForm['category'] = trim((string) ($_POST['category'] ?? ''));
-    $feedbackForm['location'] = trim((string) ($_POST['location'] ?? ''));
     $feedbackForm['message'] = trim((string) ($_POST['message'] ?? ''));
 
     if (!landing_verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -47,8 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_subm
     } elseif (
         $feedbackForm['full_name'] === '' ||
         $feedbackForm['subject'] === '' ||
-        $feedbackForm['category'] === '' ||
-        $feedbackForm['location'] === '' ||
         $feedbackForm['message'] === ''
     ) {
         $feedbackNotice = ['type' => 'error', 'text' => 'Please complete all fields before sending your recommendation.'];
@@ -60,14 +54,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_subm
         } else {
             $status = 'Pending';
             $userName = $feedbackForm['full_name'] . ' (Guest)';
+            $category = 'System Recommendation';
+            $location = 'Landing Page';
             $stmt = $db->prepare('INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)');
             if ($stmt) {
                 $stmt->bind_param(
                     'ssssss',
                     $userName,
                     $feedbackForm['subject'],
-                    $feedbackForm['category'],
-                    $feedbackForm['location'],
+                    $category,
+                    $location,
                     $feedbackForm['message'],
                     $status
                 );
@@ -76,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_subm
 
                 if ($ok) {
                     $feedbackNotice = ['type' => 'success', 'text' => 'Thank you. Your recommendation has been submitted to the LGU review queue.'];
-                    $feedbackForm = ['full_name' => '', 'subject' => '', 'category' => '', 'location' => '', 'message' => ''];
+                    $feedbackForm = ['full_name' => '', 'subject' => '', 'message' => ''];
                 } else {
                     $feedbackNotice = ['type' => 'error', 'text' => 'Submission failed. Please try again after a few minutes.'];
                 }
@@ -895,8 +891,8 @@ $csrfToken = landing_generate_csrf_token();
                 <article class="contact-card">
                     <h4><i class="fa-solid fa-envelope-open-text"></i> Alternative Contact</h4>
                     <p>
-                        <a href="mailto:lgu.ipms.support@example.com">lgu.ipms.support@example.com</a><br>
-                        For urgent follow-ups, include your full name and location details.
+                        <a href="mailto:ipms.systemlgu@gmail.com">ipms.systemlgu@gmail.com</a><br>
+                        For urgent follow-ups, include your full name and recommendation subject.
                     </p>
                 </article>
             </div>
@@ -919,25 +915,8 @@ $csrfToken = landing_generate_csrf_token();
                         <label for="subject">Subject</label>
                         <input type="text" id="subject" name="subject" maxlength="150" required value="<?php echo htmlspecialchars($feedbackForm['subject'], ENT_QUOTES, 'UTF-8'); ?>">
                     </div>
-                    <div class="form-group">
-                        <label for="category">Category</label>
-                        <select id="category" name="category" required>
-                            <option value="">Select category</option>
-                            <?php
-                            $categories = ['Road', 'Drainage', 'Water Supply', 'Public Building', 'Health Facility', 'Education Facility', 'Others'];
-                            foreach ($categories as $categoryOption):
-                                $selected = ($feedbackForm['category'] === $categoryOption) ? ' selected' : '';
-                            ?>
-                                <option value="<?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $selected; ?>><?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="location">Location / Barangay</label>
-                        <input type="text" id="location" name="location" maxlength="150" required value="<?php echo htmlspecialchars($feedbackForm['location'], ENT_QUOTES, 'UTF-8'); ?>">
-                    </div>
                     <div class="form-group full">
-                        <label for="message">Recommendation / Concern</label>
+                        <label for="message">Recommendation</label>
                         <textarea id="message" name="message" required><?php echo htmlspecialchars($feedbackForm['message'], ENT_QUOTES, 'UTF-8'); ?></textarea>
                     </div>
                 </div>
