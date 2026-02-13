@@ -379,6 +379,29 @@ $show_gate_wall = !$gate_passed;
             cursor: pointer;
         }
 
+        .id-gate-actions {
+            display: grid;
+            gap: 8px;
+        }
+
+        .id-gate-home {
+            width: 100%;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 700;
+            color: #1b4f92;
+            background: #eef4fd;
+            border: 1px solid #c7d8ef;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .id-gate-home:hover {
+            background: #e6effc;
+            border-color: #aac5e8;
+        }
+
         .id-gate-error {
             margin-top: 10px;
             padding: 9px 10px;
@@ -713,7 +736,10 @@ $show_gate_wall = !$gate_passed;
         <h3 id="employeeGateTitle">STOP! Private Admin Page</h3>
         <p>For authorized LGU personnel only. Enter your Employee ID before proceeding to employee login.</p>
         <input class="id-gate-input" type="number" min="1" step="1" inputmode="numeric" name="employee_gate_id" placeholder="Enter Employee ID" required value="<?php echo htmlspecialchars($employee_id_input, ENT_QUOTES, 'UTF-8'); ?>">
-        <button class="id-gate-btn" type="submit" name="admin_gate_submit" value="1">Verify Employee ID</button>
+        <div class="id-gate-actions">
+            <button class="id-gate-btn" type="submit" name="admin_gate_submit" value="1">Verify Employee ID</button>
+            <a class="id-gate-home" href="/public/index.php">Home</a>
+        </div>
         <?php if ($gate_error !== ''): ?>
         <div class="id-gate-error"><?php echo htmlspecialchars($gate_error, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
