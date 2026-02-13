@@ -566,6 +566,11 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     background: linear-gradient(180deg, #ffffff 0%, #eef5ff 100%);
 }
 
+.top-sidebar-toggle:focus,
+.top-sidebar-toggle:focus-visible {
+    outline: none !important;
+}
+
 body.sidebar-hidden .top-sidebar-toggle {
     left: 100px;
 }
