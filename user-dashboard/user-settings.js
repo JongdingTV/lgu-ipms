@@ -1,66 +1,29 @@
-// User Settings JavaScript
+document.addEventListener('DOMContentLoaded', function () {
+    const newPassword = document.getElementById('newPassword');
+    const strength = document.getElementById('passwordStrength');
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Sidebar toggle functionality
-    const toggleSidebar = document.getElementById('toggleSidebar');
-    const toggleSidebarShow = document.getElementById('toggleSidebarShow');
-    const navbar = document.getElementById('navbar');
-    const body = document.body;
-    const toggleBtn = document.getElementById('showSidebarBtn');
+    if (!newPassword || !strength) return;
 
-    function toggleSidebarVisibility() {
-        navbar.classList.toggle('hidden');
-        body.classList.toggle('sidebar-hidden');
-        toggleBtn.classList.toggle('show');
+    function scorePassword(value) {
+        let score = 0;
+        if (value.length >= 8) score += 1;
+        if (/[A-Z]/.test(value)) score += 1;
+        if (/[0-9]/.test(value)) score += 1;
+        if (/[!@#$%^&*(),.?":{}|<>]/.test(value)) score += 1;
+        return score;
     }
 
-    if (toggleSidebar) {
-        toggleSidebar.addEventListener('click', toggleSidebarVisibility);
-    }
-    if (toggleSidebarShow) {
-        toggleSidebarShow.addEventListener('click', toggleSidebarVisibility);
-    }
-
-    // Load user data - handled by PHP now
-    // loadUserData();
-
-    // Settings form submission - handled by PHP now
-    // const settingsForm = document.getElementById('userSettingsForm');
-    // const messageDiv = document.getElementById('settingsMessage');
-
-    // settingsForm.addEventListener('submit', function(e) {
-    //     e.preventDefault();
-
-    //     const formData = new FormData(settingsForm);
-    //     const data = Object.fromEntries(formData.entries());
-
-    //     // Save to localStorage
-    //     localStorage.setItem('currentUser', JSON.stringify(data));
-
-    //     // Show success message
-    //     showMessage('Your information has been updated successfully!', 'success');
-    // });
-
-    function showMessage(text, type) {
-        messageDiv.textContent = text;
-        messageDiv.className = `message ${type}`;
-        messageDiv.style.display = 'block';
-
-        // Hide after 3 seconds
-        setTimeout(() => {
-            messageDiv.style.display = 'none';
-        }, 3000);
-    }
-});
-
-function loadUserData() {
-    const userData = JSON.parse(localStorage.getItem('currentUser') || '{}');
-
-    // Populate form fields
-    Object.keys(userData).forEach(key => {
-        const element = document.getElementById(key);
-        if (element) {
-            element.value = userData[key];
+    newPassword.addEventListener('input', function () {
+        const score = scorePassword(newPassword.value);
+        if (score <= 1) {
+            strength.textContent = 'Password strength: Weak';
+            strength.style.color = '#b91c1c';
+        } else if (score <= 3) {
+            strength.textContent = 'Password strength: Medium';
+            strength.style.color = '#b45309';
+        } else {
+            strength.textContent = 'Password strength: Strong';
+            strength.style.color = '#166534';
         }
     });
-}
+});

@@ -1,272 +1,236 @@
 <?php
-// Import security functions
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
+require __DIR__ . '/user-profile-helper.php';
 
-// Feedback submission logic: All user feedbacks are inserted into the feedback table.
-// The admin Project Prioritization page reads from this table, so all user concerns are sent to the admin side automatically.
-$msg = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback'])) {
-    set_no_cache_headers();
-    check_auth();
-    if (!isset($_SESSION['user_id'])) {
-        $msg = 'Not logged in.';
-    } else if ($db->connect_error) {
-        $msg = 'Database connection failed.';
-    } else {
-        $user_id = $_SESSION['user_id'];
-        $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
-        $stmt->bind_param('i', $user_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $user = $result->fetch_assoc();
-        $stmt->close();
-        $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
-        $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
-        $category = $_POST['category'];
-        $location = isset($_POST['location']) ? trim($_POST['location']) : '';
-        $description = $_POST['feedback'];
-        $status = 'Pending';
-        if ($subject && $category && $location && $description) {
-            $stmt = $db->prepare("INSERT INTO feedback (user_name, subject, category, location, description, STATUS) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('ssssss', $user_name, $subject, $category, $location, $description, $status);
-            if ($stmt->execute()) {
-                $msg = 'Feedback submitted!';
-            } else {
-                $msg = 'Error submitting feedback: ' . $stmt->error . ' | DB: ' . $db->error;
-            }
-            $stmt->close();
-        } else {
-            $msg = 'All fields are required.';
-        }
-    }
-    $db->close();
-}
-
-// Normal page load
 set_no_cache_headers();
 check_auth();
 check_suspicious_activity();
-$user_id = $_SESSION['user_id'];
-$stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->bind_param('i', $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
-$stmt->close();
-$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
-?>
-<!DOCTYPE html>
-<?php
-// ...existing code...
+
+if (!isset($db) || $db->connect_error) {
+    http_response_code(500);
+    echo 'Database connection failed.';
+    exit;
+}
+
+$userId = (int) ($_SESSION['user_id'] ?? 0);
+$userStmt = $db->prepare('SELECT first_name, last_name, email FROM users WHERE id = ? LIMIT 1');
+$userStmt->bind_param('i', $userId);
+$userStmt->execute();
+$userRes = $userStmt->get_result();
+$user = $userRes ? $userRes->fetch_assoc() : [];
+$userStmt->close();
+
+$userName = trim($_SESSION['user_name'] ?? (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
+$userEmail = $user['email'] ?? '';
+$userInitials = user_avatar_initials($userName);
+$avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
+$profileImageWebPath = user_profile_photo_web_path($userId);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
+    header('Content-Type: application/json');
+
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        echo json_encode(['success' => false, 'message' => 'Invalid request token. Please refresh and try again.']);
+        $db->close();
+        exit;
+    }
+
+    $subject = trim($_POST['subject'] ?? '');
+    $category = trim($_POST['category'] ?? '');
+    $location = trim($_POST['location'] ?? '');
+    $description = trim($_POST['feedback'] ?? '');
+    $status = 'Pending';
+
+    if ($subject === '' || $category === '' || $location === '' || $description === '') {
+        echo json_encode(['success' => false, 'message' => 'All fields are required.']);
+        $db->close();
+        exit;
+    }
+
+    $stmt = $db->prepare('INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)');
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Unable to submit feedback right now.']);
+        $db->close();
+        exit;
+    }
+
+    $stmt->bind_param('ssssss', $userName, $subject, $category, $location, $description, $status);
+    $ok = $stmt->execute();
+    $stmt->close();
+
+    echo json_encode([
+        'success' => $ok,
+        'message' => $ok ? 'Feedback submitted successfully.' : 'Failed to submit feedback.'
+    ]);
+
+    $db->close();
+    exit;
+}
+
+$listStmt = $db->prepare('SELECT subject, category, location, status, date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 20');
+$listStmt->bind_param('s', $userName);
+$listStmt->execute();
+$feedbackRows = $listStmt->get_result();
+$listStmt->close();
+
+$db->close();
+$csrfToken = generate_csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Feedback</title>
+    <title>User Feedback - LGU IPMS</title>
     <link rel="icon" type="image/png" href="/logocityhall.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
+    <link rel="stylesheet" href="/assets/css/design-system.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
+    <link rel="stylesheet" href="/assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
+    <link rel="stylesheet" href="/assets/css/admin-component-overrides.css">
+    <link rel="stylesheet" href="/assets/css/form-redesign-base.css">
+    <link rel="stylesheet" href="/assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="/user-dashboard/user-shell.css?v=<?php echo filemtime(__DIR__ . '/user-shell.css'); ?>">
+    <?php echo get_app_config_script(); ?>
+    <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
-    <style>
-    /* No burger button styles */
-    </style>
+    <div class="sidebar-toggle-wrapper">
+        <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+    </div>
 
-    <div id="sidebarOverlay" class="sidebar-overlay"></div>
-    <aside class="nav sidebar-animated" id="navbar">
-        <div class="nav-logo admin-sidebar-logo" style="display:flex;flex-direction:row;align-items:center;justify-content:center;padding:18px 0 8px 0;gap:10px;">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
-            <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
+    <header class="nav" id="navbar">
+        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+        <div class="nav-logo">
+            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <span class="logo-text">IPMS</span>
         </div>
-        <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">
-            <?php
-            $profile_img = '';
-            $user_email = isset($user['email']) ? $user['email'] : '';
-            $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : (isset($user['first_name']) ? $user['first_name'] . ' ' . $user['last_name'] : 'User');
-            $initials = '';
-            if ($user_name) {
-                $parts = explode(' ', $user_name);
-                foreach ($parts as $p) {
-                    if ($p) $initials .= strtoupper($p[0]);
-                }
-            }
-            if (!function_exists('stringToColor')) {
-                function stringToColor($str) {
-                    $colors = [
-                        '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-                        '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
-                        '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#607D8B'
-                    ];
-                    $hash = 0;
-                    for ($i = 0; $i < strlen($str); $i++) {
-                        $hash = ord($str[$i]) + (($hash << 5) - $hash);
-                    }
-                    $index = abs($hash) % count($colors);
-                    return $colors[$index];
-                }
-            }
-            $bgcolor = stringToColor($user_name);
-            ?>
-            <?php if ($profile_img): ?>
-                <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon" style="width:48px;height:48px;" />
+        <div class="nav-user-profile">
+            <?php if ($profileImageWebPath !== ''): ?>
+                <img src="<?php echo htmlspecialchars($profileImageWebPath, ENT_QUOTES, 'UTF-8'); ?>" alt="Profile" class="user-profile-image">
             <?php else: ?>
-                <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                    <?php echo $initials; ?>
-                </div>
+                <div class="user-initial-badge" style="background: <?php echo htmlspecialchars($avatarColor, ENT_QUOTES, 'UTF-8'); ?>;"><?php echo htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
-            <div class="user-name" style="font-weight:700;font-size:1.08em;line-height:1.2;margin-top:2px;text-align:center;"> <?php echo htmlspecialchars($user_name); ?> </div>
-            <div class="user-email" style="font-size:0.97em;color:#64748b;line-height:1.1;text-align:center;"> <?php echo htmlspecialchars($user_email); ?> </div>
+            <div class="nav-user-name"><?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></div>
+            <div class="nav-user-email"><?php echo htmlspecialchars($userEmail ?: 'No email provided', ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
-        <hr class="sidebar-divider" />
-        <nav class="nav-links">
+        <div class="nav-links">
             <a href="user-dashboard.php"><img src="/assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
-            <a href="/admin/project-prioritization.php"><img src="/user-dashboard/feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php"><img src="/user-dashboard/settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
-        </nav>
-        <div class="sidebar-logout-container">
-            <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
+            <a href="user-progress-monitoring.php"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring Icon" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-feedback.php" class="active"><img src="/assets/images/admin/prioritization.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
+            <a href="user-settings.php"><img src="/assets/images/admin/person.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </div>
-    </aside>
+        <div class="nav-divider"></div>
+        <div class="nav-action-footer">
+            <a href="/logout.php" class="btn-logout nav-logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
+            </a>
+        </div>
+        <a href="#" id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </a>
+    </header>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        window.setupLogoutConfirmation && window.setupLogoutConfirmation();
-    });
-    </script>
-
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </a>
+    </div>
 
     <section class="main-content">
         <div class="dash-header">
             <h1>Submit Feedback</h1>
-            <p>Help us improve our infrastructure and services</p>
+            <p>Share concerns and suggestions for local projects.</p>
         </div>
 
-        <!-- User Feedback Form -->
-        <div class="feedback-form modern-feedback-form">
-            <div class="feedback-header">
-                <div class="feedback-icon-bg">
-                    <img src="feedback.png" alt="Feedback Icon" class="feedback-icon">
+        <div class="card" style="margin-bottom:18px;">
+            <h3 style="margin-bottom:12px;">Feedback Form</h3>
+            <form id="userFeedbackForm" method="post" action="user-feedback.php" enctype="multipart/form-data">
+                <input type="hidden" name="feedback_submit" value="1">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+
+                <div class="ac-a2374ef4">
+                    <label class="ac-37c29296" for="subject">Subject</label>
+                    <input class="ac-6f762f4a" type="text" id="subject" name="subject" maxlength="100" required>
                 </div>
-                <div>
-                    <h2 class="feedback-title">Submit Your Feedback or Suggestion</h2>
-                    <p class="feedback-desc">We value your input! Please fill out the form below to help us improve our services and infrastructure.</p>
+
+                <div class="ac-a2374ef4">
+                    <label class="ac-37c29296" for="location">Location</label>
+                    <input class="ac-6f762f4a" type="text" id="location" name="location" required>
                 </div>
-            </div>
-            <form id="userFeedbackForm" method="post" action="">
-                <div class="form-row">
-                    <div class="input-box" style="width:100%;">
-                        <label for="subject">Subject</label>
-                        <input type="text" id="subject" name="subject" maxlength="100" placeholder="Enter subject (e.g. Road Repair Request)" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="input-box" style="width:100%;">
-                        <label for="location">Location</label>
-                        <input type="text" id="location" name="location" placeholder="Enter location (e.g. Barangay name, address)" required>
-                    </div>
-                </div>
-                <div class="input-box">
-                    <label for="category">Category</label>
-                    <select id="category" name="category" required>
+
+                <div class="ac-a2374ef4">
+                    <label class="ac-37c29296" for="category">Category</label>
+                    <select class="ac-6f762f4a" id="category" name="category" required>
                         <option value="">Select Category</option>
-                        <option value="transportation">Transportation (roads, bridges, airports, railways)</option>
-                        <option value="energy">Energy (power generation/transmission)</option>
-                        <option value="water-waste">Water & Waste (supply, sanitation, drainage)</option>
-                        <option value="social-infrastructure">Social Infrastructure (schools, hospitals, etc.)</option>
-                        <option value="public-buildings">Public Buildings (park, irrigation systems, gov buildings)</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Energy">Energy</option>
+                        <option value="Water and Waste">Water and Waste</option>
+                        <option value="Social Infrastructure">Social Infrastructure</option>
+                        <option value="Public Buildings">Public Buildings</option>
                     </select>
                 </div>
-                <div class="input-box">
-                    <label for="photo">Photo Attachment (Optional)</label>
-                    <input type="file" id="photo" name="photo" accept="image/*">
+
+                <div class="ac-a2374ef4">
+                    <label class="ac-37c29296" for="feedback">Suggestion / Concern</label>
+                    <textarea class="ac-6f762f4a" id="feedback" name="feedback" rows="5" required></textarea>
                 </div>
-                <div class="input-box">
-                    <label for="feedback">Suggestion, Feedback, Concern</label>
-                    <textarea id="feedback" name="feedback" rows="5" placeholder="Enter your suggestion, feedback, or concern here..." required></textarea>
-                </div>
-                <button type="submit" class="submit-btn">Submit Feedback</button>
+
+                <button type="submit" class="ac-f84d9680">Submit Feedback</button>
+                <div id="message" style="display:none;margin-top:10px;"></div>
             </form>
-            <div id="message" class="message" style="display:<?php echo !empty($msg) ? 'block' : 'none'; ?>; margin-top: 18px; <?php echo !empty($msg) ? ($msg === 'Feedback submitted!' ? 'background:#d1fae5;color:#065f46;' : 'background:#fee2e2;color:#991b1b;') : 'background:#e0f2fe;color:#2563eb;'; ?>"><?php if (!empty($msg)) echo htmlspecialchars($msg); ?></div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom:12px;">Your Submissions</h3>
+            <div class="table-wrap">
+                <table class="projects-table" id="feedbackHistoryList">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Subject</th>
+                            <th>Category</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if ($feedbackRows && $feedbackRows->num_rows > 0): ?>
+                            <?php while ($row = $feedbackRows->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?php echo date('M d, Y', strtotime((string) $row['date_submitted'])); ?></td>
+                                    <td><?php echo htmlspecialchars((string) $row['subject']); ?></td>
+                                    <td><?php echo htmlspecialchars((string) $row['category']); ?></td>
+                                    <td><?php echo htmlspecialchars((string) $row['location']); ?></td>
+                                    <td><span class="status-badge pending"><?php echo htmlspecialchars((string) $row['status']); ?></span></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr><td colspan="5" class="ac-a004b216">No feedback submitted yet.</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </section>
 
-    <footer class="footer">
-        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
-    </footer>
-
-
-
-    <script src="/assets/js/shared/shared-data.js"></script>
-    <script src="/assets/js/shared/shared-toggle.js"></script>
-    <script src="user-feedback.js"></script>
-        <script>
-        // Sidebar burger and overlay logic (mobile burger only)
-        (function() {
-            const sidebar = document.getElementById('navbar');
-            const burger = document.getElementById('sidebarBurgerBtn');
-            const overlay = document.getElementById('sidebarOverlay');
-            // Show/hide burger only on mobile
-            function updateBurgerVisibility() {
-                if (window.innerWidth <= 991) {
-                    burger.style.display = 'block';
-                } else {
-                    burger.style.display = 'none';
-                    closeSidebar();
-                }
-            }
-            function openSidebar() {
-                sidebar.classList.add('sidebar-open');
-                overlay.classList.add('sidebar-overlay-active');
-                document.body.classList.add('sidebar-opened');
-            }
-            function closeSidebar() {
-                sidebar.classList.remove('sidebar-open');
-                overlay.classList.remove('sidebar-overlay-active');
-                document.body.classList.remove('sidebar-opened');
-            }
-            burger.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (sidebar.classList.contains('sidebar-open')) {
-                    closeSidebar();
-                } else {
-                    openSidebar();
-                }
-            });
-            overlay.addEventListener('click', closeSidebar);
-            window.addEventListener('resize', updateBurgerVisibility);
-            document.addEventListener('DOMContentLoaded', updateBurgerVisibility);
-            // Also close sidebar if clicking outside sidebar and burger (for extra safety)
-            document.addEventListener('click', function(e) {
-                if (
-                    sidebar.classList.contains('sidebar-open') &&
-                    !sidebar.contains(e.target) &&
-                    !burger.contains(e.target)
-                ) {
-                    closeSidebar();
-                }
-            });
-        })();
-        // Logout confirmation (if needed)
-        document.addEventListener('DOMContentLoaded', function() {
-            window.setupLogoutConfirmation && window.setupLogoutConfirmation();
-        });
-        </script>
-    <script>
-    // Remove duplicate logout modal if present
-    // ...existing code...
-    </script>
+    <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
+    <script src="/assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script src="/user-dashboard/user-shell.js?v=<?php echo filemtime(__DIR__ . '/user-shell.js'); ?>"></script>
+    <script src="/user-dashboard/user-feedback.js?v=<?php echo filemtime(__DIR__ . '/user-feedback.js'); ?>"></script>
 </body>
 </html>
-</parameter
-
-
-
-
-

@@ -1,258 +1,249 @@
 <?php
-// Import security functions
 require dirname(__DIR__) . '/session-auth.php';
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/config-path.php';
+require __DIR__ . '/user-profile-helper.php';
 
-// Protect page
 set_no_cache_headers();
 check_auth();
 check_suspicious_activity();
 
-require dirname(__DIR__) . '/database.php';
-require dirname(__DIR__) . '/config-path.php';
-if ($db->connect_error) {
-    die('Database connection failed: ' . $db->connect_error);
+if (!isset($db) || $db->connect_error) {
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+    exit;
 }
 
-// Get user info from database
-$user_id = $_SESSION['user_id'];
-$stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->bind_param('i', $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
-$stmt->close();
+$userId = (int) ($_SESSION['user_id'] ?? 0);
+$userStmt = $db->prepare('SELECT first_name, last_name, email FROM users WHERE id = ? LIMIT 1');
+$userStmt->bind_param('i', $userId);
+$userStmt->execute();
+$userRes = $userStmt->get_result();
+$user = $userRes ? $userRes->fetch_assoc() : [];
+$userStmt->close();
+$userName = trim($_SESSION['user_name'] ?? (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
+$userEmail = $user['email'] ?? '';
+$userInitials = user_avatar_initials($userName);
+$avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
+$profileImageWebPath = user_profile_photo_web_path($userId);
 
-// Get user name from session
-$user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : ($user['first_name'] . ' ' . $user['last_name']);
+function user_progress_has_created_at(mysqli $db): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'projects'
+           AND COLUMN_NAME = 'created_at'
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+
+    return $exists;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'load_projects') {
+    header('Content-Type: application/json');
+
+    $hasCreatedAt = user_progress_has_created_at($db);
+    $selectCreatedAt = $hasCreatedAt ? ', created_at' : '';
+    $orderBy = $hasCreatedAt ? 'created_at DESC' : 'id DESC';
+
+    $result = $db->query("SELECT id, code, name, description, location, province, sector, budget, status, start_date, end_date, duration_months{$selectCreatedAt} FROM projects ORDER BY {$orderBy} LIMIT 500");
+
+    $projects = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            if (!isset($row['progress'])) {
+                $row['progress'] = 0;
+            }
+            $projects[] = $row;
+        }
+        $result->free();
+    }
+
+    echo json_encode($projects);
+    $db->close();
+    exit;
+}
+
+$db->close();
 ?>
 <!doctype html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Progress Monitoring - User View</title>
     <link rel="icon" type="image/png" href="/logocityhall.png">
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/user-dashboard/user-dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/design-system.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
+    <link rel="stylesheet" href="/assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
+    <link rel="stylesheet" href="/assets/css/admin-component-overrides.css">
+    <link rel="stylesheet" href="/assets/css/table-redesign-base.css">
+    <link rel="stylesheet" href="/assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="/user-dashboard/user-shell.css?v=<?php echo filemtime(__DIR__ . '/user-shell.css'); ?>">
+    <?php echo get_app_config_script(); ?>
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
-    <!-- Mobile burger button (top left, only visible on mobile) -->
-        <style>
-        /* No burger button styles */
-        </style>
+    <div class="sidebar-toggle-wrapper">
+        <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+    </div>
 
-    <!-- Burger button (always visible on mobile, top left) -->
-    <div id="sidebarOverlay" class="sidebar-overlay"></div>
-    <aside class="nav sidebar-animated" id="navbar">
-        <div class="nav-logo admin-sidebar-logo" style="display:flex;flex-direction:row;align-items:center;justify-content:center;padding:18px 0 8px 0;gap:10px;">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img" style="width:48px;height:48px;" />
-            <span class="logo-text" style="font-size:1.5em;font-weight:700;letter-spacing:1px;">IPMS</span>
+    <header class="nav" id="navbar">
+        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+
+        <div class="nav-logo">
+            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <span class="logo-text">IPMS</span>
         </div>
-        <div class="nav-user" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;">
-            <?php
-            $profile_img = '';
-            $user_email = isset($user['email']) ? $user['email'] : '';
-            $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : (isset($user['first_name']) ? $user['first_name'] . ' ' . $user['last_name'] : 'User');
-            $initials = '';
-            if ($user_name) {
-                $parts = explode(' ', $user_name);
-                foreach ($parts as $p) {
-                    if ($p) $initials .= strtoupper($p[0]);
-                }
-            }
-            if (!function_exists('stringToColor')) {
-                function stringToColor($str) {
-                    $colors = [
-                        '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-                        '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
-                        '#FFEB3B', '#FFC107', '#FF9800', '#FF5722', '#795548', '#607D8B'
-                    ];
-                    $hash = 0;
-                    for ($i = 0; $i < strlen($str); $i++) {
-                        $hash = ord($str[$i]) + (($hash << 5) - $hash);
-                    }
-                    $index = abs($hash) % count($colors);
-                    return $colors[$index];
-                }
-            }
-            $bgcolor = stringToColor($user_name);
-            ?>
-            <?php if ($profile_img): ?>
-                <img src="<?php echo $profile_img; ?>" alt="User Icon" class="user-icon" style="width:48px;height:48px;" />
+        <div class="nav-user-profile">
+            <?php if ($profileImageWebPath !== ''): ?>
+                <img src="<?php echo htmlspecialchars($profileImageWebPath, ENT_QUOTES, 'UTF-8'); ?>" alt="Profile" class="user-profile-image">
             <?php else: ?>
-                <div class="user-icon user-initials" style="background:<?php echo $bgcolor; ?>;color:#fff;font-weight:600;font-size:1.1em;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                    <?php echo $initials; ?>
-                </div>
+                <div class="user-initial-badge" style="background: <?php echo htmlspecialchars($avatarColor, ENT_QUOTES, 'UTF-8'); ?>;"><?php echo htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
-            <div class="user-name" style="font-weight:700;font-size:1.08em;line-height:1.2;margin-top:2px;text-align:center;"> <?php echo htmlspecialchars($user_name); ?> </div>
-            <div class="user-email" style="font-size:0.97em;color:#64748b;line-height:1.1;text-align:center;"> <?php echo htmlspecialchars($user_email); ?> </div>
+            <div class="nav-user-name"><?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></div>
+            <div class="nav-user-email"><?php echo htmlspecialchars($userEmail ?: 'No email provided', ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
-        <hr class="sidebar-divider" />
-        <nav class="nav-links">
+
+        <div class="nav-links">
             <a href="user-dashboard.php"><img src="/assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
-            <a href="user-progress-monitoring.php" class="active"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring" class="nav-icon"> Progress Monitoring</a>
-            <a href="/admin/project-prioritization.php"><img src="/user-dashboard/feedback.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php"><img src="/user-dashboard/settings.png" alt="Settings Icon" class="nav-icon"> Settings</a>
-        </nav>
-        <div class="sidebar-logout-container">
-            <a href="/logout.php" class="nav-logout logout-btn" id="logoutLink">Logout</a>
+            <a href="user-progress-monitoring.php" class="active"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring Icon" class="nav-icon"> Progress Monitoring</a>
+            <a href="user-feedback.php"><img src="/assets/images/admin/prioritization.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
+            <a href="user-settings.php"><img src="/assets/images/admin/person.png" alt="Settings Icon" class="nav-icon"> Settings</a>
         </div>
-    </aside>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        window.setupLogoutConfirmation && window.setupLogoutConfirmation();
-    });
-    </script>
+        <div class="nav-divider"></div>
+        <div class="nav-action-footer">
+            <a href="/logout.php" class="btn-logout nav-logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
+            </a>
+        </div>
 
+        <a href="#" id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </a>
+    </header>
+
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </a>
+    </div>
 
     <section class="main-content">
         <div class="dash-header">
             <h1>Progress Monitoring</h1>
-            <p>View project progress in your area</p>
+            <p>Track projects in your area, <?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></p>
         </div>
 
-        <div class="recent-projects">
-            <div class="pm-controls">
-                <div class="pm-left">
-                    <input id="pmSearch" type="search" placeholder="Search by project code, name or location">
-                </div>
-                <div class="pm-right">
-                    <select id="pmStatusFilter" title="Filter by status">
-                        <option value="">All Status</option>
-                        <option>Draft</option>
-                        <option>For Approval</option>
-                        <option>Approved</option>
-                        <option>On-hold</option>
-                        <option>Cancelled</option>
-                    </select>
+        <div class="pm-section card">
+            <div class="pm-stats-wrapper">
+                <div class="stat-box stat-total"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Total Projects</div></div>
+                <div class="stat-box stat-approved"><div class="stat-number" id="statApproved">0</div><div class="stat-label">Approved</div></div>
+                <div class="stat-box stat-progress"><div class="stat-number" id="statInProgress">0</div><div class="stat-label">In Progress</div></div>
+                <div class="stat-box stat-completed"><div class="stat-number" id="statCompleted">0</div><div class="stat-label">Completed</div></div>
+            </div>
 
-                    <select id="pmSectorFilter" title="Filter by sector">
-                        <option value="">All Sectors</option>
-                        <option>Road</option>
-                        <option>Drainage</option>
-                        <option>Building</option>
-                        <option>Water</option>
-                        <option>Sanitation</option>
-                        <option>Other</option>
-                    </select>
+            <div class="pm-controls-wrapper">
+                <div class="pm-controls">
+                    <div class="pm-top-row">
+                        <div class="pm-left">
+                            <label for="pmSearch">Search Projects</label>
+                            <input id="pmSearch" type="search" placeholder="Search by code, name, or location...">
+                        </div>
+                        <button id="exportCsv" type="button" class="btn-export">Export CSV</button>
+                    </div>
 
-                    <select id="pmSort" title="Sort">
-                        <option value="createdAt_desc">Newest</option>
-                        <option value="createdAt_asc">Oldest</option>
-                        <option value="progress_desc">Progress (high → low)</option>
-                        <option value="progress_asc">Progress (low → high)</option>
-                    </select>
+                    <div class="pm-right">
+                        <div class="filter-group">
+                            <label for="pmStatusFilter">Status</label>
+                            <select id="pmStatusFilter"><option value="">All Status</option><option>Draft</option><option>For Approval</option><option>Approved</option><option>On-hold</option><option>Cancelled</option><option>Completed</option></select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="pmSectorFilter">Sector</label>
+                            <select id="pmSectorFilter"><option value="">All Sectors</option><option>Road</option><option>Drainage</option><option>Building</option><option>Water</option><option>Sanitation</option><option>Other</option></select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="pmProgressFilter">Progress</label>
+                            <select id="pmProgressFilter"><option value="">All Progress</option><option value="0-25">0-25%</option><option value="25-50">25-50%</option><option value="50-75">50-75%</option><option value="75-100">75-100%</option></select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="pmSort">Sort</label>
+                            <select id="pmSort"><option value="createdAt_desc">Newest</option><option value="createdAt_asc">Oldest</option><option value="progress_desc">Progress (high to low)</option><option value="progress_asc">Progress (low to high)</option></select>
+                        </div>
+                    </div>
 
-                    <button id="exportCsv" type="button">Export CSV</button>
+                    <div class="pm-bottom-row">
+                        <div id="pmQuickFilters" class="pm-quick-filters" aria-label="Quick status filters">
+                            <button type="button" data-status="" class="active">All</button>
+                            <button type="button" data-status="For Approval">For Approval</button>
+                            <button type="button" data-status="Approved">Approved</button>
+                            <button type="button" data-status="On-hold">On-hold</button>
+                            <button type="button" data-status="Completed">Completed</button>
+                        </div>
+                        <div class="pm-utility-row">
+                            <span id="pmResultSummary" class="pm-result-summary">Showing 0 of 0 projects</span>
+                            <button id="pmClearFilters" type="button" class="btn-clear-filters">Clear Filters</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <h3>Tracked Projects</h3>
-            <div id="projectsList" class="projects-list">Loading projects...</div>
-
-            <div id="pmEmpty" class="pm-empty" style="display:none;">No projects match your filters.</div>
+            <div class="pm-content">
+                <h3>Tracked Projects</h3>
+                <div id="projectsList" class="projects-list"></div>
+                <div id="pmEmpty" class="pm-empty ac-c8be1ccb">
+                    <div class="empty-state">
+                        <div class="empty-icon">No Match</div>
+                        <p>No projects match your filters</p>
+                        <small>Try adjusting your search criteria</small>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <footer class="footer">
-        <p>&copy; 2026 Local Government Unit. All rights reserved.</p>
-    </footer>
-
-
-
-    <script src="/assets/js/shared/shared-data.js"></script>
-    <script src="/assets/js/shared/shared-toggle.js"></script>
-    <script src="user-progress-monitoring.js"></script>
-        <script>
-        // Sidebar burger and overlay logic (mobile burger only)
-        (function() {
-            const sidebar = document.getElementById('navbar');
-            const burger = document.getElementById('sidebarBurgerBtn');
-            const overlay = document.getElementById('sidebarOverlay');
-            // Show/hide burger only on mobile
-            function updateBurgerVisibility() {
-                if (window.innerWidth <= 991) {
-                    burger.style.display = 'block';
-                } else {
-                    burger.style.display = 'none';
-                    closeSidebar();
-                }
-            }
-            function openSidebar() {
-                sidebar.classList.add('sidebar-open');
-                overlay.classList.add('sidebar-overlay-active');
-                document.body.classList.add('sidebar-opened');
-            }
-            function closeSidebar() {
-                sidebar.classList.remove('sidebar-open');
-                overlay.classList.remove('sidebar-overlay-active');
-                document.body.classList.remove('sidebar-opened');
-            }
-            burger.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (sidebar.classList.contains('sidebar-open')) {
-                    closeSidebar();
-                } else {
-                    openSidebar();
-                }
-            });
-            overlay.addEventListener('click', closeSidebar);
-            window.addEventListener('resize', updateBurgerVisibility);
-            document.addEventListener('DOMContentLoaded', updateBurgerVisibility);
-            // Also close sidebar if clicking outside sidebar and burger (for extra safety)
-            document.addEventListener('click', function(e) {
-                if (
-                    sidebar.classList.contains('sidebar-open') &&
-                    !sidebar.contains(e.target) &&
-                    !burger.contains(e.target)
-                ) {
-                    closeSidebar();
-                }
-            });
-        })();
-        // Logout confirmation (if needed)
-        document.addEventListener('DOMContentLoaded', function() {
-            window.setupLogoutConfirmation && window.setupLogoutConfirmation();
-        });
-        </script>
-    <script>
-    (function() {
-        // Remove duplicate logout modal if present
-        // ...existing code...
-    })();
-    </script>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const sidebar = document.getElementById('navbar');
-        const burgerBtn = document.getElementById('sidebarBurgerBtn');
-        if (sidebar && burgerBtn) {
-            burgerBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('sidebar-open');
-                if (sidebar.classList.contains('sidebar-open')) {
-                    sidebar.style.transform = 'translateX(0)';
-                } else {
-                    sidebar.style.transform = 'translateX(-110%)';
-                }
-            });
-            document.addEventListener('click', function(e) {
-                if (!sidebar.contains(e.target) && !burgerBtn.contains(e.target)) {
-                    sidebar.classList.remove('sidebar-open');
-                    sidebar.style.transform = 'translateX(-110%)';
-                }
-            });
-        }
-        sidebar && (sidebar.style.transform = 'translateX(0)');
-    });
-    </script>
+    <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
+    <script src="/assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script src="/user-dashboard/user-shell.js?v=<?php echo filemtime(__DIR__ . '/user-shell.js'); ?>"></script>
+    <script src="/user-dashboard/user-progress-monitoring.js?v=<?php echo filemtime(__DIR__ . '/user-progress-monitoring.js'); ?>"></script>
 </body>
 </html>
-
-
-
-
-
-

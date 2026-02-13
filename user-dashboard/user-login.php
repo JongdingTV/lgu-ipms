@@ -1,75 +1,75 @@
 <?php
-// Include security authentication
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
 
-// Set no-cache headers on login page
 set_no_cache_headers();
 
-// Secret used to sign "remember this device" tokens (10‑day trust)
-define('REMEMBER_DEVICE_SECRET', 'change_this_to_a_random_secret_key');
+if (isset($_SESSION['user_id'])) {
+    header('Location: /user-dashboard/user-dashboard.php');
+    exit;
+}
 
+$error = '';
+$email = '';
 
-
-// Use the same mailer as admin side
-require_once dirname(__DIR__) . '/config/email.php';
-
-// Handle login form submission
-if (isset($_POST['login_submit'])) {
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $error = '';
-    if ($email && $password) {
-        $stmt = $db->prepare('SELECT id, password FROM users WHERE email = ? LIMIT 1');
-        $stmt->bind_param('s', $email);
-        $stmt->execute();
-        $stmt->store_result();
-        if ($stmt->num_rows === 1) {
-            $stmt->bind_result($user_id, $hashed_password);
-            $stmt->fetch();
-            if (password_verify($password, $hashed_password)) {
-                // Set session and redirect
-                $_SESSION['user_id'] = $user_id;
-                $user_stmt = $db->prepare('SELECT first_name, last_name FROM users WHERE id = ? LIMIT 1');
-                $user_stmt->bind_param('i', $user_id);
-                $user_stmt->execute();
-                $user_stmt->bind_result($first_name, $last_name);
-                $user_stmt->fetch();
-                $_SESSION['user_name'] = $first_name . ' ' . $last_name;
-                $user_stmt->close();
-                // Use absolute path for redirect like employee side
-                header('Location: /user-dashboard/user-dashboard.php');
-                exit();
-            } else {
-                $error = 'Invalid email or password.';
-            }
-        } else {
-            $error = 'Invalid email or password.';
-        }
-        $stmt->close();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $error = 'Invalid request. Please refresh and try again.';
+    } elseif (!isset($db) || $db->connect_error) {
+        $error = 'Database connection error. Please try again later.';
+    } elseif (is_rate_limited('user_login', 5, 300)) {
+        $error = 'Too many login attempts. Please wait a few minutes and try again.';
     } else {
-        $error = 'Please enter both email and password.';
+        $email = sanitize_email($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if (empty($email) || empty($password)) {
+            $error = 'Please enter both email and password.';
+        } else {
+            $stmt = $db->prepare('SELECT id, password, first_name, last_name FROM users WHERE email = ? LIMIT 1');
+            if ($stmt) {
+                $stmt->bind_param('s', $email);
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                if ($result && $result->num_rows === 1) {
+                    $user = $result->fetch_assoc();
+                    if (password_verify($password, $user['password'])) {
+                        session_regenerate_id(true);
+                        $_SESSION['user_id'] = (int) $user['id'];
+                        $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+                        $_SESSION['user_type'] = 'citizen';
+                        $_SESSION['last_activity'] = time();
+                        $_SESSION['login_time'] = time();
+
+                        header('Location: /user-dashboard/user-dashboard.php');
+                        exit;
+                    }
+                }
+
+                record_attempt('user_login');
+                $error = 'Invalid email or password.';
+                $stmt->close();
+            } else {
+                $error = 'Unable to process request right now. Please try again.';
+            }
+        }
     }
 }
 
-                        // ...existing code...
-                        // Use the same mailer as admin side
-                        $recipientEmail = isset($_SESSION['pending_user']['email']) ? $_SESSION['pending_user']['email'] : (isset($email) ? $email : null);
-                        $recipientName = isset($_SESSION['pending_user']['first_name']) ? $_SESSION['pending_user']['first_name'] : '';
-                        if ($recipientEmail && $otp) {
-                            send_verification_code($recipientEmail, $otp, $recipientName);
-                        }
-                        $showOtpForm = true;
-        // End of elseif (isset($_POST['login_submit']))
-        $db->close();
+if (isset($db) && $db instanceof mysqli) {
+    $db->close();
+}
+
+$csrf_token = generate_csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LGU | Login</title>
+<title>LGU | Citizen Login</title>
 <link rel="icon" type="image/png" href="/logocityhall.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,185 +77,210 @@ if (isset($_POST['login_submit'])) {
 <link rel="stylesheet" href="/assets/css/shared/admin-auth.css">
 <?php echo get_app_config_script(); ?>
 <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
-</head>
-<body class="user-login-page">
-<!-- Blur overlay -->
 <style>
-body {
+:root {
+    --page-navy: #0f2a4a;
+    --page-blue: #1d4e89;
+    --page-sky: #3f83c9;
+    --page-light: #f7fbff;
+    --page-text: #0f172a;
+    --page-muted: #475569;
+    --page-danger: #b91c1c;
+    --page-danger-bg: #fee2e2;
+    --page-border: rgba(15, 23, 42, 0.12);
+}
+body.user-login-page {
     min-height: 100vh;
+    margin: 0;
     display: flex;
     flex-direction: column;
-
-    /* NEW — background image + blur */
-    background: url("/cityhall.jpeg") center/cover no-repeat fixed;
-    position: relative;
-    padding-top: 80px;
+    padding-top: 88px;
+    color: var(--page-text);
+    background:
+        radial-gradient(circle at 15% 15%, rgba(63, 131, 201, 0.28), transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(29, 78, 137, 0.26), transparent 45%),
+        linear-gradient(125deg, rgba(7, 20, 36, 0.72), rgba(15, 42, 74, 0.68)),
+        url("/cityhall.jpeg") center/cover fixed no-repeat;
+    background-attachment: fixed;
 }
-
-/* NEW — Blur overlay */
-body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
-    backdrop-filter: blur(6px); /* actual blur */
-    background: rgba(0, 0, 0, 0.35); /* dark overlay */
-    z-index: 0; /* keeps blur behind content */
-}
-
-/* Make content appear ABOVE blur */
-.nav {
+body.user-login-page .nav {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    inset: 0 0 auto 0;
     width: 100%;
-    z-index: 100;
-}
-
-.wrapper, .footer {
-    position: relative;
-    z-index: 1;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-
-.footer {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-}
-
-.nav-logo {
+    height: 78px;
+    padding: 14px 28px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    background: linear-gradient(90deg, rgba(255,255,255,0.94), rgba(247,251,255,0.98));
+    border-bottom: 1px solid var(--page-border);
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.12);
+    z-index: 30;
 }
-
-.nav-logo img {
-    height: 45px;
-    width: auto;
+body.user-login-page .nav-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--page-navy);
+}
+body.user-login-page .nav-logo img {
+    width: 44px;
+    height: 44px;
     object-fit: contain;
 }
+body.user-login-page .home-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(29, 78, 137, 0.22);
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--page-blue);
+    background: #ffffff;
+}
+body.user-login-page .wrapper {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 16px 36px;
+}
+body.user-login-page .card {
+    width: 100%;
+    max-width: 430px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 20px;
+    padding: 30px 26px;
+    text-align: center;
+    box-shadow: 0 24px 56px rgba(2, 6, 23, 0.3);
+}
+body.user-login-page .icon-top {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    margin: 2px auto 10px;
+}
+body.user-login-page .title {
+    margin: 0 0 6px;
+    font-size: 1.7rem;
+    line-height: 1.2;
+    color: var(--page-navy);
+}
+body.user-login-page .subtitle {
+    margin: 0 0 20px;
+    color: var(--page-muted);
+}
+body.user-login-page .input-box {
+    text-align: left;
+    margin-bottom: 14px;
+}
+body.user-login-page .input-box label {
+    display: block;
+    font-size: 0.86rem;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+body.user-login-page .input-box input {
+    width: 100%;
+    height: 46px;
+    border-radius: 11px;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    background: #ffffff;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    color: #0f172a;
+    outline: none;
+}
+body.user-login-page .input-box input:focus {
+    border-color: var(--page-sky);
+    box-shadow: 0 0 0 4px rgba(63, 131, 201, 0.15);
+}
+body.user-login-page .btn-primary {
+    width: 100%;
+    height: 46px;
+    margin-top: 6px;
+    border: 0;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #1d4e89, #3f83c9);
+    color: #ffffff;
+    font-size: 0.98rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+body.user-login-page .meta-links {
+    margin-top: 12px;
+    font-size: 0.88rem;
+}
+body.user-login-page .meta-links a {
+    color: var(--page-blue);
+    text-decoration: none;
+    font-weight: 600;
+}
+body.user-login-page .meta-links a:hover {
+    text-decoration: underline;
+}
+body.user-login-page .error-box {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-align: left;
+    background: var(--page-danger-bg);
+    color: var(--page-danger);
+    font-size: 0.89rem;
+    border: 1px solid rgba(185, 28, 28, 0.2);
+}
 </style>
+</head>
+<body class="user-login-page">
 <header class="nav">
-    <div class="nav-logo">
-        <img src="/logocityhall.png" alt="LGU Logo">
-        <span style="color:#1e293b;font-weight:600;font-size:1.15em;">Local Government Unit Portal</span>
-    </div>
-    <nav class="nav-links">
-        <a href="/public/index.php">Home</a>
-    </nav>
+    <div class="nav-logo"><img src="/logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
+    <a href="/public/index.php" class="home-btn" aria-label="Go to Home">Home</a>
 </header>
+
 <div class="wrapper">
     <div class="card">
-        <img src="/logocityhall.png" class="icon-top" alt="LGU City Hall Logo" style="margin-bottom: 10px;">
-        <h2 class="title" style="text-align:center;">Citizen Login</h2>
-        <?php if ($showOtpForm && isset($_SESSION['pending_user'])): ?>
-            <p class="subtitle">We sent a one-time verification code to your email. Enter it below to continue.</p>
+        <img src="/logocityhall.png" class="icon-top" alt="LGU Logo">
+        <h2 class="title">Citizen Login</h2>
+        <p class="subtitle">Secure access to your user dashboard.</p>
 
-            <form method="post">
-                <div class="input-box">
-                    <label>Verification Code</label>
-                    <input type="text" name="otp" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required autocomplete="one-time-code">
-                </div>
+        <form method="post" autocomplete="on">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+            <div class="input-box">
+                <label for="loginEmail">Email Address</label>
+                <input type="email" name="email" id="loginEmail" placeholder="name@lgu.gov.ph" required autocomplete="email" value="<?php echo htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?>">
+            </div>
 
-                <div class="input-box" style="display:flex;align-items:center;gap:8px;margin-top:4px;">
-                    <input type="checkbox" id="rememberDevice" name="remember_device" style="width:auto;">
-                    <label for="rememberDevice" style="margin:0;">Remember this device for 10 days</label>
-                </div>
+            <div class="input-box">
+                <label for="loginPassword">Password</label>
+                <input type="password" name="password" id="loginPassword" placeholder="********" required autocomplete="current-password">
+            </div>
 
-                <button class="btn-primary" type="submit" name="otp_submit">Verify Code</button>
-            </form>
+            <button class="btn-primary" type="submit" name="login_submit">Sign In</button>
 
-            <form method="post" style="margin-top:10px;text-align:center;">
-                <button class="btn-secondary" type="submit" name="resend_otp" id="resendBtn" disabled>Resend Code</button>
-                <p class="small-text" id="resendInfo" style="margin-top:6px;">You can request another code in <span id="resendTimer">10:00</span>.</p>
-            </form>
-        <?php else: ?>
-            <p class="subtitle">Secure access to community maintenance services.</p>
+            <div class="meta-links">
+                <a href="/user-dashboard/user-forgot-password.php">Forgot Password?</a>
+            </div>
+            <div class="meta-links">
+                Don&apos;t have an account? <a href="/user-dashboard/create.php">Create one</a>
+            </div>
 
-            <form method="post">
+            <?php if (!empty($error)): ?>
+            <div class="error-box"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
+            <?php endif; ?>
 
-                <div class="input-box">
-                    <label>Email Address</label>
-                    <input type="email" name="email" id="loginEmail" placeholder="name@lgu.gov.ph" required autocomplete="email">
-                </div>
-
-                <div class="input-box">
-                    <label>Password</label>
-                    <input type="password" name="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
-                </div>
-
-                <button class="btn-primary" type="submit" name="login_submit">Sign In</button>
-
-                <p class="small-text">Don’t have an account?
-                    <a href="create.php" class="link">Create one</a>
-                </p>
-            </form>
-        <?php endif; ?>
-
-        <?php if (isset($error)): ?>
-        <div style="margin-top:12px;color:#b00;"><?php echo $error; ?></div>
-        <?php endif; ?>
-        <?php if (isset($_GET['success'])): ?>
-        <div style="margin-top:12px;color:#0b0;">Account created successfully. Please log in.</div>
-        <?php endif; ?>
+            <?php if (isset($_GET['success'])): ?>
+            <div class="meta-links" style="color:#166534;">Account created successfully. Please log in.</div>
+            <?php endif; ?>
+        </form>
     </div>
 </div>
 
-<footer class="footer">
-    <div class="footer-links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">About</a>
-        <a href="#">Help</a>
-    </div>
-    <div class="footer-logo">© 2025 LGU Citizen Portal · All Rights Reserved</div>
-</footer>
-
-<?php if ($showOtpForm && isset($_SESSION['pending_user'], $_SESSION['otp_time'])): ?>
-<script>
-(function() {
-    var resendBtn = document.getElementById('resendBtn');
-    var timerEl = document.getElementById('resendTimer');
-    if (!resendBtn || !timerEl) return;
-
-    var total = <?php echo max(0, 600 - (time() - (int)$_SESSION['otp_time'])); ?>;
-
-    function updateTimer() {
-        if (total <= 0) {
-            timerEl.textContent = '00:00';
-            resendBtn.disabled = false;
-            return;
-        }
-        var m = Math.floor(total / 60);
-        var s = total % 60;
-        timerEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-        total--;
-        if (total >= 0) {
-            setTimeout(updateTimer, 1000);
-        } else {
-            resendBtn.disabled = false;
-        }
-    }
-
-    resendBtn.disabled = true;
-    updateTimer();
-})();
-</script>
-<?php endif; ?>
-
+<script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
-
