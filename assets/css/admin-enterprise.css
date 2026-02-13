@@ -529,14 +529,13 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
 /* Top sidebar toggle */
 .top-sidebar-toggle {
     position: fixed;
-    top: 14px;
+    top: 24px;
     left: 250px;
     z-index: 1300;
     width: 34px;
     height: 64px;
     border-radius: 0 12px 12px 0;
-    border: 1px solid #d5e3f3;
-    border-left: none;
+    border: none;
     background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
     color: #24486f;
     box-shadow: 0 10px 22px rgba(15, 30, 56, 0.18);
@@ -561,7 +560,7 @@ body.sidebar-hidden .top-sidebar-toggle {
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .top-sidebar-toggle {
     background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
     color: #1f3f69;
-    border-color: #cddbea;
+    border: none;
 }
 
 /* Hide legacy duplicated toggles */
