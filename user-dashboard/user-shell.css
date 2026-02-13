@@ -223,19 +223,17 @@ body.sidebar-hidden .nav-user-profile .user-initial-badge {
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
-    top: 16px !important;
-    right: 22px !important;
-    gap: 12px !important;
-    padding: 10px 12px !important;
-    border-radius: 14px !important;
+    top: 14px !important;
+    right: 16px !important;
+    gap: 8px !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
-    min-width: 210px;
+    min-width: 190px !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-group {
-    gap: 10px;
+    gap: 8px;
 }
 
 .top-sidebar-toggle,
@@ -439,9 +437,32 @@ button:focus-visible,
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
         right: 10px !important;
-        left: 10px;
+        top: 10px !important;
+        left: auto;
         width: auto;
-        justify-content: space-between;
+        gap: 6px !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
+        min-width: 128px !important;
+        padding: 6px 7px !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-time {
+        font-size: 0.83rem !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-date {
+        font-size: 0.68rem !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-btn {
+        min-height: 34px !important;
+        padding: 0 8px !important;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-label {
+        display: none !important;
     }
 
     .settings-page .settings-panel .settings-info-form {

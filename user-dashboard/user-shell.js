@@ -8,10 +8,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     var NAV_BREAKPOINT = '(max-width: 992px)';
+    var SIDEBAR_PREF_KEY = 'user_sidebar_hidden';
     var mq = window.matchMedia(NAV_BREAKPOINT);
     var body = document.body;
     var nav = document.getElementById('navbar') || document.querySelector('.nav');
-    var desktopSidebarHidden = false;
+    var desktopSidebarHidden = window.localStorage.getItem(SIDEBAR_PREF_KEY) === '1';
 
     function q(sel, root) { return (root || document).querySelector(sel); }
 
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         desktopSidebarHidden = body.classList.toggle('sidebar-hidden');
+        window.localStorage.setItem(SIDEBAR_PREF_KEY, desktopSidebarHidden ? '1' : '0');
     }
 
     function bindSidebarToggles() {

@@ -15,6 +15,29 @@
         return 'PHP ' + toNumber(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    function formatShortDate(value) {
+        if (!value) return '-';
+        const dt = new Date(value);
+        if (Number.isNaN(dt.getTime())) return '-';
+        return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function riskClassFromProject(project, progress) {
+        const status = normalizeStatus(project.status);
+        if (status === 'cancelled') return 'risk-low';
+        if (status === 'on-hold') return 'risk-high';
+        if (status === 'completed' || progress >= 100) return 'risk-low';
+        if (!project.end_date) return 'risk-medium';
+
+        const end = new Date(project.end_date);
+        if (Number.isNaN(end.getTime())) return 'risk-medium';
+
+        const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
+        if (daysLeft < 0 && progress < 100) return 'risk-critical';
+        if (daysLeft <= 21 && progress < 60) return 'risk-high';
+        return 'risk-medium';
+    }
+
     function getProgress(project) {
         const direct = toNumber(project.progress);
         if (direct >= 0 && direct <= 100) return direct;
@@ -111,32 +134,31 @@
             list.innerHTML = projects.map(project => {
                 const progress = getProgress(project);
                 const statusClass = normalizeStatus(project.status).replace(/\s+/g, '-');
+                const riskClass = riskClassFromProject(project, progress);
+                const updateDate = project.created_at || project.createdAt || project.start_date || '';
+                const processUpdate = `${project.status || 'Draft'} update (${formatShortDate(updateDate)})`;
 
                 return `
-                    <article class="project-card risk-low">
+                    <article class="project-card ${riskClass}">
                         <div class="project-header">
                             <div class="project-title-section">
-                                <span class="project-code-badge">${project.code || 'N/A'}</span>
-                                <h4>${project.name || 'Unnamed Project'}</h4>
+                                <h4>${project.code || 'N/A'} - ${project.name || 'Unnamed Project'}</h4>
+                                <span class="project-status ${statusClass}">${project.status || 'Draft'}</span>
                             </div>
-                            <span class="project-status ${statusClass}">${project.status || 'Draft'}</span>
                         </div>
 
-                        <p class="project-description">${project.description || 'No description provided.'}</p>
-
                         <div class="project-meta">
-                            <div class="project-meta-item"><span class="project-meta-label">Location</span><span class="project-meta-value">${project.location || '-'}</span></div>
-                            <div class="project-meta-item"><span class="project-meta-label">Sector</span><span class="project-meta-value">${project.sector || '-'}</span></div>
-                            <div class="project-meta-item"><span class="project-meta-label">Budget</span><span class="project-meta-value">${formatCurrency(project.budget)}</span></div>
-                            <div class="project-meta-item"><span class="project-meta-label">Duration</span><span class="project-meta-value">${project.duration_months || '-'} months</span></div>
+                            <div class="project-meta-item"><span class="project-meta-label">Location:</span><span class="project-meta-value">${project.location || '-'}</span></div>
+                            <div class="project-meta-item"><span class="project-meta-label">Sector:</span><span class="project-meta-value">${project.sector || '-'}</span></div>
+                            <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value">${formatCurrency(project.budget)}</span></div>
+                            <div class="project-meta-item"><span class="project-meta-label">Duration:</span><span class="project-meta-value">${project.duration_months || '-'} months</span></div>
+                            <div class="project-meta-item"><span class="project-meta-label">Process Update:</span><span class="project-meta-value">${processUpdate}</span></div>
                         </div>
 
                         <div class="progress-container">
-                            <div class="progress-label"><span>Progress</span><strong>${progress}%</strong></div>
-                            <div class="progress-bar"><div class="progress-fill" style="width:${progress}%;height:100%;"></div></div>
+                            <div class="progress-label"><span>Completion</span><strong>${progress}%</strong></div>
+                            <div class="progress-bar"><div class="progress-fill" style="width:${progress}%;"></div></div>
                         </div>
-
-                        <div class="project-click-hint">View-only mode: data is managed by admin.</div>
                     </article>
                 `;
             }).join('');
