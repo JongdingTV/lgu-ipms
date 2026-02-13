@@ -593,10 +593,6 @@
             <div class="project-meta-item"><span class="project-meta-label">Contractors:</span><span class="project-meta-value">${contractors.length}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Process Update:</span><span class="project-meta-value">${processUpdate}</span></div>
           </div>
-          <div class="progress-container">
-            <div class="progress-label"><span>Completion</span><span style="font-weight:700;">${progress}%</span></div>
-            <div class="progress-bar"><div class="progress-fill" style="width:${progress}%;"></div></div>
-          </div>
           <div class="project-click-hint">Click to view details</div>
         </article>`;
     }).join('');
