@@ -29,6 +29,24 @@ if (!$user) {
 
 $userName = trim($_SESSION['user_name'] ?? (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
 $userEmail = $user['email'] ?? '';
+$displayFullName = trim(implode(' ', array_filter([
+    trim((string) ($user['first_name'] ?? '')),
+    trim((string) ($user['middle_name'] ?? '')),
+    trim((string) ($user['last_name'] ?? '')),
+    trim((string) ($user['suffix'] ?? ''))
+], static fn($part) => $part !== '')));
+if ($displayFullName === '') {
+    $displayFullName = $userName;
+}
+
+$formatProfileValue = static function ($value): string {
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '-';
+    }
+    return ucwords(strtolower($value));
+};
+
 $userInitials = user_avatar_initials($userName);
 $avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
 $profileImageWebPath = user_profile_photo_web_path($userId);
@@ -140,6 +158,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_action'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $errors[] = 'Invalid request. Please refresh and try again.';
+    } else {
+        $uploadDir = dirname(__DIR__) . '/uploads/user-id';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        if ($_POST['id_action'] === 'remove') {
+            if (!empty($user['id_upload'])) {
+                $existingPath = dirname(__DIR__) . '/' . ltrim((string) $user['id_upload'], '/');
+                if (is_file($existingPath)) {
+                    @unlink($existingPath);
+                }
+            }
+
+            $clearStmt = $db->prepare('UPDATE users SET id_upload = NULL WHERE id = ?');
+            $clearStmt->bind_param('i', $userId);
+            $ok = $clearStmt->execute();
+            $clearStmt->close();
+
+            if ($ok) {
+                $user['id_upload'] = null;
+                $success = 'ID file removed.';
+                $activeTab = 'profile';
+            } else {
+                $errors[] = 'Unable to remove ID file.';
+            }
+        } elseif ($_POST['id_action'] === 'upload') {
+            if (!isset($_FILES['id_file']) || $_FILES['id_file']['error'] !== UPLOAD_ERR_OK) {
+                $errors[] = 'Please select a valid ID file.';
+            } else {
+                $tmpFile = $_FILES['id_file']['tmp_name'];
+                $fileSize = (int) ($_FILES['id_file']['size'] ?? 0);
+                if ($fileSize > 5 * 1024 * 1024) {
+                    $errors[] = 'ID file must be 5MB or less.';
+                } else {
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    $mimeType = $finfo ? (string) finfo_file($finfo, $tmpFile) : '';
+                    if ($finfo) {
+                        finfo_close($finfo);
+                    }
+
+                    $mimeMap = [
+                        'image/jpeg' => 'jpg',
+                        'image/png' => 'png',
+                        'image/webp' => 'webp',
+                        'application/pdf' => 'pdf'
+                    ];
+
+                    if (!isset($mimeMap[$mimeType])) {
+                        $errors[] = 'Only JPG, PNG, WEBP, or PDF files are allowed for ID upload.';
+                    } else {
+                        $existing = glob($uploadDir . '/user_' . $userId . '.*') ?: [];
+                        foreach ($existing as $path) {
+                            @unlink($path);
+                        }
+
+                        $ext = $mimeMap[$mimeType];
+                        $target = $uploadDir . '/user_' . $userId . '.' . $ext;
+                        if (!move_uploaded_file($tmpFile, $target)) {
+                            $errors[] = 'Unable to save the ID file.';
+                        } else {
+                            $webPath = '/uploads/user-id/' . basename($target);
+                            $idStmt = $db->prepare('UPDATE users SET id_upload = ? WHERE id = ?');
+                            $idStmt->bind_param('si', $webPath, $userId);
+                            $ok = $idStmt->execute();
+                            $idStmt->close();
+
+                            if ($ok) {
+                                $user['id_upload'] = $webPath;
+                                $success = 'ID file uploaded successfully.';
+                                $activeTab = 'profile';
+                            } else {
+                                $errors[] = 'Unable to save ID file reference.';
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 $feedbackStats = ['total' => 0, 'pending' => 0];
 $statsStmt = $db->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN status = "Pending" THEN 1 ELSE 0 END) as pending FROM feedback WHERE user_name = ?');
 $statsStmt->bind_param('s', $userName);
@@ -219,34 +322,20 @@ $csrfToken = generate_csrf_token();
                     <div class="settings-view">
                         <div class="settings-panel">
                             <h3 class="ac-b75fad00">Account Information</h3>
-                            <div class="settings-info-form" role="group" aria-label="Account information">
-                                <div class="settings-info-field"><label>First Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>Middle Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['middle_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>Last Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>Suffix</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['suffix'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>Full Name</label><div class="settings-info-value"><?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>Email</label><div class="settings-info-value"><?php echo htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>Contact</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['mobile'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>Birthdate</label><div class="settings-info-value"><?php echo !empty($user['birthdate']) ? date('M d, Y', strtotime((string) $user['birthdate'])) : '-'; ?></div></div>
-                                <div class="settings-info-field settings-info-field-full"><label>Address</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>Gender</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['gender'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>Civil Status</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['civil_status'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>ID Type</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['id_type'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field"><label>ID Number</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['id_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                                <div class="settings-info-field settings-info-field-full">
-                                    <label>ID Upload</label>
-                                    <div class="settings-info-value"><?php if (!empty($user['id_upload'])): ?><a href="<?php echo htmlspecialchars((string) $user['id_upload'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer">View Uploaded File</a><?php else: ?>-<?php endif; ?></div>
-                                </div>
-                                <div class="settings-info-field"><label>Registered On</label><div class="settings-info-value"><?php echo !empty($user['created_at']) ? date('M d, Y', strtotime((string) $user['created_at'])) : '-'; ?></div></div>
-                                <div class="settings-info-field"><label>Feedback Submitted</label><div class="settings-info-value"><?php echo (int) ($feedbackStats['total'] ?? 0); ?></div></div>
-                                <div class="settings-info-field"><label>Pending Feedback</label><div class="settings-info-value"><?php echo (int) ($feedbackStats['pending'] ?? 0); ?></div></div>
-                            </div>
-                            <div style="margin-top:14px;">
-                                <form method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                            <div class="avatar-upload-section">
+                                <form method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" class="avatar-upload-form">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                     <input type="hidden" name="photo_action" value="upload">
-                                    <input type="file" name="profile_photo" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
-                                    <button type="submit" class="ac-f84d9680" style="min-height:36px;">Upload Photo</button>
+                                    <label for="profilePhotoInput" class="avatar-upload-trigger" title="Choose profile photo">
+                                        <?php if ($profileImageWebPath !== ''): ?>
+                                            <img src="<?php echo htmlspecialchars($profileImageWebPath, ENT_QUOTES, 'UTF-8'); ?>" alt="Profile photo" class="avatar-upload-image">
+                                        <?php else: ?>
+                                            <div class="avatar-upload-initial" style="background: <?php echo htmlspecialchars($avatarColor, ENT_QUOTES, 'UTF-8'); ?>;"><?php echo htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8'); ?></div>
+                                        <?php endif; ?>
+                                        <span class="avatar-upload-camera" aria-hidden="true">CAM</span>
+                                    </label>
+                                    <input type="file" id="profilePhotoInput" name="profile_photo" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
+                                    <button type="submit" class="ac-f84d9680" style="min-height:36px;">Upload Profile Photo</button>
                                 </form>
                                 <?php if ($profileImageWebPath !== ''): ?>
                                     <form method="post" action="user-settings.php?tab=profile" style="margin-top:8px;">
@@ -255,7 +344,49 @@ $csrfToken = generate_csrf_token();
                                         <button type="submit" class="btn-clear-filters" style="min-height:34px;">Remove Photo</button>
                                     </form>
                                 <?php endif; ?>
-                                <small style="display:block;color:#64748b;margin-top:6px;">Allowed: JPG, PNG, WEBP. Max: 3MB.</small>
+                                <small style="display:block;color:#64748b;margin-top:6px;">Click the circle to choose photo. Allowed: JPG, PNG, WEBP. Max: 3MB.</small>
+                            </div>
+                            <div class="settings-info-form" role="group" aria-label="Account information">
+                                <div class="settings-info-field"><label>First Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Middle Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['middle_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Last Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Suffix</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['suffix'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Full Name</label><div class="settings-info-value"><?php echo htmlspecialchars($displayFullName, ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Email</label><div class="settings-info-value"><?php echo htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Contact</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['mobile'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Birthdate</label><div class="settings-info-value"><?php echo !empty($user['birthdate']) ? date('M d, Y', strtotime((string) $user['birthdate'])) : '-'; ?></div></div>
+                                <div class="settings-info-field settings-info-field-full"><label>Address</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Gender</label><div class="settings-info-value"><?php echo htmlspecialchars($formatProfileValue($user['gender'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>Civil Status</label><div class="settings-info-value"><?php echo htmlspecialchars($formatProfileValue($user['civil_status'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>ID Type</label><div class="settings-info-value"><?php echo htmlspecialchars($formatProfileValue($user['id_type'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field"><label>ID Number</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['id_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                                <div class="settings-info-field settings-info-field-full">
+                                    <label>ID Upload</label>
+                                    <div class="settings-info-value">
+                                        <?php if (!empty($user['id_upload'])): ?>
+                                            <a href="<?php echo htmlspecialchars((string) $user['id_upload'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer">View Uploaded File</a>
+                                        <?php else: ?>
+                                            -
+                                        <?php endif; ?>
+                                    </div>
+                                    <form method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                                        <input type="hidden" name="id_action" value="upload">
+                                        <input type="file" name="id_file" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" required>
+                                        <button type="submit" class="ac-f84d9680" style="min-height:36px;">Upload ID</button>
+                                    </form>
+                                    <?php if (!empty($user['id_upload'])): ?>
+                                        <form method="post" action="user-settings.php?tab=profile" style="margin-top:8px;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <input type="hidden" name="id_action" value="remove">
+                                            <button type="submit" class="btn-clear-filters" style="min-height:34px;">Remove ID</button>
+                                        </form>
+                                    <?php endif; ?>
+                                    <small style="display:block;color:#64748b;margin-top:6px;">Allowed: JPG, PNG, WEBP, PDF. Max: 5MB.</small>
+                                </div>
+                                <div class="settings-info-field"><label>Registered On</label><div class="settings-info-value"><?php echo !empty($user['created_at']) ? date('M d, Y', strtotime((string) $user['created_at'])) : '-'; ?></div></div>
+                                <div class="settings-info-field"><label>Feedback Submitted</label><div class="settings-info-value"><?php echo (int) ($feedbackStats['total'] ?? 0); ?></div></div>
+                                <div class="settings-info-field"><label>Pending Feedback</label><div class="settings-info-value"><?php echo (int) ($feedbackStats['pending'] ?? 0); ?></div></div>
                             </div>
                         </div>
                     </div>
@@ -282,6 +413,26 @@ $csrfToken = generate_csrf_token();
     <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <script src="/assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
     <script src="/user-dashboard/user-shell.js?v=<?php echo filemtime(__DIR__ . '/user-shell.js'); ?>"></script>
+
+    <div class="avatar-crop-modal" id="avatarCropModal" hidden>
+        <div class="avatar-crop-dialog" role="dialog" aria-modal="true" aria-labelledby="avatarCropTitle">
+            <div class="avatar-crop-header">
+                <h3 id="avatarCropTitle">Crop Profile Photo</h3>
+                <button type="button" class="avatar-crop-close" id="avatarCropClose" aria-label="Close cropper">&times;</button>
+            </div>
+            <div class="avatar-crop-body">
+                <canvas id="avatarCropCanvas" width="320" height="320" aria-label="Profile crop preview"></canvas>
+                <label for="avatarZoomRange">Zoom</label>
+                <input type="range" id="avatarZoomRange" min="1" max="3" step="0.01" value="1.2">
+                <small>Drag image to position it inside the circle.</small>
+            </div>
+            <div class="avatar-crop-actions">
+                <button type="button" class="btn-clear-filters" id="avatarCropCancel">Cancel</button>
+                <button type="button" class="ac-f84d9680" id="avatarCropApply">Use Cropped Photo</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/user-dashboard/user-settings.js?v=<?php echo filemtime(__DIR__ . '/user-settings.js'); ?>"></script>
 </body>
 </html>

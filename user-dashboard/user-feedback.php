@@ -181,6 +181,15 @@ $csrfToken = generate_csrf_token();
                             <option value="Water and Waste">Water and Waste</option>
                             <option value="Social Infrastructure">Social Infrastructure</option>
                             <option value="Public Buildings">Public Buildings</option>
+                            <option value="Road and Traffic">Road and Traffic</option>
+                            <option value="Drainage and Flooding">Drainage and Flooding</option>
+                            <option value="Street Lighting">Street Lighting</option>
+                            <option value="Public Safety">Public Safety</option>
+                            <option value="Health Services">Health Services</option>
+                            <option value="Education Facilities">Education Facilities</option>
+                            <option value="Parks and Recreation">Parks and Recreation</option>
+                            <option value="Sanitation">Sanitation</option>
+                            <option value="Others">Others</option>
                         </select>
                     </div>
                     <div class="full">
