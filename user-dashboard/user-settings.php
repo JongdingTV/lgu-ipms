@@ -339,16 +339,15 @@ $csrfToken = generate_csrf_token();
                                         <span class="avatar-upload-camera" aria-hidden="true">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
                                         </span>
-                                        <span class="avatar-upload-label">Change Photo</span>
                                     </label>
                                     <input type="file" id="profilePhotoInput" name="profile_photo" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
-                                    <button type="submit" class="ac-f84d9680" style="min-height:36px;">Upload Profile Photo</button>
+                                    <button type="submit" class="profile-action-btn profile-action-btn-primary">Upload Profile Photo</button>
                                 </form>
                                 <?php if ($profileImageWebPath !== ''): ?>
-                                    <form method="post" action="user-settings.php?tab=profile" style="margin-top:8px;">
+                                    <form method="post" action="user-settings.php?tab=profile" class="profile-inline-form">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="photo_action" value="remove">
-                                        <button type="submit" class="btn-clear-filters" style="min-height:34px;">Remove Photo</button>
+                                        <button type="submit" class="profile-action-btn profile-action-btn-ghost">Remove Photo</button>
                                     </form>
                                 <?php endif; ?>
                                 <small style="display:block;color:#64748b;margin-top:6px;">Click the avatar to choose photo, then crop and confirm upload. Allowed: JPG, PNG, WEBP. Max: 3MB.</small>
@@ -376,17 +375,17 @@ $csrfToken = generate_csrf_token();
                                             -
                                         <?php endif; ?>
                                     </div>
-                                    <form method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                                    <form method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" class="id-upload-form">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="id_action" value="upload">
                                         <input type="file" name="id_file" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" required>
-                                        <button type="submit" class="ac-f84d9680" style="min-height:36px;">Upload ID</button>
+                                        <button type="submit" class="profile-action-btn profile-action-btn-primary">Upload ID</button>
                                     </form>
                                     <?php if (!empty($user['id_upload'])): ?>
-                                        <form method="post" action="user-settings.php?tab=profile" style="margin-top:8px;">
+                                        <form method="post" action="user-settings.php?tab=profile" class="profile-inline-form">
                                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                             <input type="hidden" name="id_action" value="remove">
-                                            <button type="submit" class="btn-clear-filters" style="min-height:34px;">Remove ID</button>
+                                            <button type="submit" class="profile-action-btn profile-action-btn-ghost">Remove ID</button>
                                         </form>
                                     <?php endif; ?>
                                     <small style="display:block;color:#64748b;margin-top:6px;">Allowed: JPG, PNG, WEBP, PDF. Max: 5MB.</small>

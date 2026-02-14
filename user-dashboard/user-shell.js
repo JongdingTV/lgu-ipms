@@ -12,7 +12,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var mq = window.matchMedia(NAV_BREAKPOINT);
     var body = document.body;
     var nav = document.getElementById('navbar') || document.querySelector('.nav');
-    var desktopSidebarHidden = window.localStorage.getItem(SIDEBAR_PREF_KEY) === '1';
+    var savedSidebarPref = window.localStorage.getItem(SIDEBAR_PREF_KEY);
+    if (savedSidebarPref === null) {
+        window.localStorage.setItem(SIDEBAR_PREF_KEY, '1');
+        savedSidebarPref = '1';
+    }
+    var desktopSidebarHidden = savedSidebarPref === '1';
 
     function q(sel, root) { return (root || document).querySelector(sel); }
 

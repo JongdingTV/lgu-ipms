@@ -1,8 +1,21 @@
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('userFeedbackForm');
     const message = document.getElementById('message');
+    const category = document.getElementById('category');
 
     if (!form) return;
+
+    if (category) {
+        category.addEventListener('mousedown', function () {
+            category.dataset.scrollY = String(window.scrollY || 0);
+        });
+        category.addEventListener('change', function () {
+            const y = parseInt(category.dataset.scrollY || '0', 10);
+            window.requestAnimationFrame(function () {
+                window.scrollTo({ top: Number.isNaN(y) ? 0 : y, behavior: 'auto' });
+            });
+        });
+    }
 
     function showMessage(text, ok) {
         if (!message) return;

@@ -70,7 +70,7 @@
 }
 
 .main-content {
-    padding-top: 172px !important;
+    padding-top: 190px !important;
 }
 
 .pm-controls-wrapper,
@@ -180,7 +180,7 @@
     }
 
     .main-content {
-        padding-top: 156px !important;
+        padding-top: 166px !important;
     }
 }
 
@@ -227,26 +227,29 @@ body.sidebar-hidden .nav-user-profile .user-initial-badge {
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
-    top: 10px !important;
+    top: 8px !important;
     right: 16px !important;
-    gap: 8px !important;
+    gap: 6px !important;
 }
 
 .main-content .dash-header {
-    padding-right: 270px;
+    padding-right: 264px;
+    margin-top: 8px;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
-    min-width: 142px !important;
-    padding: 6px 8px !important;
+    min-width: 126px !important;
+    min-height: 34px !important;
+    padding: 4px 7px !important;
+    gap: 1px !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-time {
-    font-size: 0.86rem !important;
+    font-size: 0.8rem !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-date {
-    font-size: 0.69rem !important;
+    font-size: 0.63rem !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-group {
@@ -256,7 +259,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-gr
 .top-sidebar-toggle,
 body.sidebar-hidden .top-sidebar-toggle {
     left: 286px !important;
-    top: 14px !important;
+    top: 8px !important;
 }
 
 body.sidebar-hidden .top-sidebar-toggle {
@@ -349,6 +352,8 @@ button,
     border-radius: 12px;
     background: linear-gradient(160deg, #f8fbff, #eef5ff);
     padding: 12px;
+    display: grid;
+    gap: 10px;
 }
 
 .settings-page .avatar-upload-meta {
@@ -371,7 +376,7 @@ button,
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 12px;
 }
 
 .settings-page .avatar-upload-trigger {
@@ -386,6 +391,7 @@ button,
     display: grid;
     place-items: center;
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
+    align-self: flex-start;
 }
 
 .settings-page .avatar-upload-image,
@@ -394,6 +400,7 @@ button,
     height: 100%;
     border-radius: 999px;
     object-fit: cover;
+    object-position: center;
 }
 
 .settings-page .avatar-upload-initial {
@@ -406,30 +413,18 @@ button,
 
 .settings-page .avatar-upload-camera {
     position: absolute;
-    bottom: 8px;
-    right: 8px;
-    width: 28px;
-    height: 28px;
+    bottom: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
     border-radius: 999px;
-    background: rgba(15, 23, 42, 0.72);
+    background: rgba(15, 23, 42, 0.8);
     color: #ffffff;
     display: grid;
     place-items: center;
-    font-size: 0.8rem;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-}
-
-.settings-page .avatar-upload-label {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    padding: 3px 7px;
-    border-radius: 999px;
-    background: rgba(15, 23, 42, 0.72);
-    color: #ffffff;
-    font-size: 0.64rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 6px 12px rgba(15, 23, 42, 0.26);
+    z-index: 2;
 }
 
 .settings-page #profilePhotoInput {
@@ -438,6 +433,92 @@ button,
     height: 1px;
     opacity: 0;
     pointer-events: none;
+}
+
+.settings-page .profile-action-btn {
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.settings-page .profile-action-btn-primary {
+    color: #ffffff;
+    border-color: #1d4ed8;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+}
+
+.settings-page .profile-action-btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+}
+
+.settings-page .profile-action-btn-ghost {
+    color: #1e3a8a;
+    border-color: #c7d9ee;
+    background: #f8fbff;
+}
+
+.settings-page .profile-action-btn-ghost:hover {
+    background: #edf4ff;
+    border-color: #a9c5e4;
+}
+
+.settings-page .profile-inline-form {
+    margin-top: 2px;
+}
+
+.settings-page .id-upload-form {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px dashed #c7d9ee;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.settings-page .settings-info-field .settings-info-value a {
+    color: #1d4ed8;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.settings-page .settings-info-field .settings-info-value a:hover {
+    text-decoration: underline;
+}
+
+.settings-page .settings-info-field .profile-inline-form + small,
+.settings-page .id-upload-form + small {
+    margin-top: 8px !important;
+}
+
+/* Keep feedback category dropdown opening downward by ensuring visible space */
+.user-feedback-form,
+.user-feedback-form-grid,
+.user-feedback-form-grid .full,
+.user-feedback-form-grid .full select {
+    overflow: visible;
+}
+
+/* Remove sidebar/page bounce while preserving functionality */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .top-sidebar-toggle,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
+    transition: none !important;
+    animation: none !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .nav,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode.mobile-nav-open .nav,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode::after {
+    transition: none !important;
+    animation: none !important;
 }
 
 .avatar-crop-modal {
@@ -671,7 +752,7 @@ button:focus-visible,
 
 @media (max-width: 768px) {
     .main-content {
-        padding-top: 148px !important;
+        padding-top: 160px !important;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
@@ -683,16 +764,16 @@ button:focus-visible,
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
-        min-width: 128px !important;
-        padding: 6px 7px !important;
+        min-width: 116px !important;
+        padding: 4px 6px !important;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-time {
-        font-size: 0.83rem !important;
+        font-size: 0.78rem !important;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-date {
-        font-size: 0.68rem !important;
+        font-size: 0.61rem !important;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-btn {
