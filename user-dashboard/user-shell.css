@@ -12,18 +12,19 @@
 
 .nav-user-profile {
     margin: 0 14px 12px;
-    padding: 12px 10px;
+    padding: 14px 12px;
     border: 1px solid rgba(148, 163, 184, 0.35);
-    border-radius: 12px;
-    background: rgba(248, 250, 252, 0.95);
+    border-radius: 14px;
+    background: linear-gradient(160deg, rgba(248, 250, 252, 0.98), rgba(236, 244, 255, 0.95));
     text-align: center;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .user-initial-badge {
-    width: 42px;
-    height: 42px;
+    width: 58px;
+    height: 58px;
     border-radius: 999px;
-    margin: 0 auto 8px;
+    margin: 0 auto 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -34,13 +35,14 @@
 }
 
 .user-profile-image {
-    width: 42px;
-    height: 42px;
+    width: 58px;
+    height: 58px;
     border-radius: 999px;
     object-fit: cover;
-    margin: 0 auto 8px;
+    margin: 0 auto 10px;
     display: block;
-    border: 1px solid rgba(148, 163, 184, 0.35);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.2);
 }
 
 .nav-user-name {
@@ -68,7 +70,7 @@
 }
 
 .main-content {
-    padding-top: 146px !important;
+    padding-top: 172px !important;
 }
 
 .pm-controls-wrapper,
@@ -178,7 +180,7 @@
     }
 
     .main-content {
-        padding-top: 114px !important;
+        padding-top: 156px !important;
     }
 }
 
@@ -220,10 +222,12 @@ body.sidebar-hidden .nav-user-profile .nav-user-email {
 body.sidebar-hidden .nav-user-profile .user-profile-image,
 body.sidebar-hidden .nav-user-profile .user-initial-badge {
     margin: 0 auto;
+    width: 42px;
+    height: 42px;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
-    top: 14px !important;
+    top: 10px !important;
     right: 16px !important;
     gap: 8px !important;
 }
@@ -340,7 +344,27 @@ button,
 }
 
 .settings-page .avatar-upload-section {
-    margin: 10px 0 16px;
+    margin: 12px 0 18px;
+    border: 1px solid #dbe7f3;
+    border-radius: 12px;
+    background: linear-gradient(160deg, #f8fbff, #eef5ff);
+    padding: 12px;
+}
+
+.settings-page .avatar-upload-meta {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 10px;
+}
+
+.settings-page .avatar-upload-meta strong {
+    color: #0f172a;
+    font-size: 0.92rem;
+}
+
+.settings-page .avatar-upload-meta span {
+    color: #64748b;
+    font-size: 0.78rem;
 }
 
 .settings-page .avatar-upload-form {
@@ -351,8 +375,8 @@ button,
 }
 
 .settings-page .avatar-upload-trigger {
-    width: 122px;
-    height: 122px;
+    width: 132px;
+    height: 132px;
     border-radius: 999px;
     border: 4px solid #f1f5f9;
     background: #9ca3af;
@@ -361,6 +385,7 @@ button,
     position: relative;
     display: grid;
     place-items: center;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
 }
 
 .settings-page .avatar-upload-image,
@@ -390,8 +415,21 @@ button,
     color: #ffffff;
     display: grid;
     place-items: center;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.settings-page .avatar-upload-label {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.72);
+    color: #ffffff;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 
 .settings-page #profilePhotoInput {
@@ -633,12 +671,12 @@ button:focus-visible,
 
 @media (max-width: 768px) {
     .main-content {
-        padding-top: 130px !important;
+        padding-top: 148px !important;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
         right: 10px !important;
-        top: 10px !important;
+        top: 8px !important;
         left: auto;
         width: auto;
         gap: 6px !important;

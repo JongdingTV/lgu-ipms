@@ -323,6 +323,10 @@ $csrfToken = generate_csrf_token();
                         <div class="settings-panel">
                             <h3 class="ac-b75fad00">Account Information</h3>
                             <div class="avatar-upload-section">
+                                <div class="avatar-upload-meta">
+                                    <strong>Profile Photo</strong>
+                                    <span>Visible in your sidebar profile card</span>
+                                </div>
                                 <form method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" class="avatar-upload-form">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                     <input type="hidden" name="photo_action" value="upload">
@@ -332,7 +336,10 @@ $csrfToken = generate_csrf_token();
                                         <?php else: ?>
                                             <div class="avatar-upload-initial" style="background: <?php echo htmlspecialchars($avatarColor, ENT_QUOTES, 'UTF-8'); ?>;"><?php echo htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8'); ?></div>
                                         <?php endif; ?>
-                                        <span class="avatar-upload-camera" aria-hidden="true">CAM</span>
+                                        <span class="avatar-upload-camera" aria-hidden="true">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                                        </span>
+                                        <span class="avatar-upload-label">Change Photo</span>
                                     </label>
                                     <input type="file" id="profilePhotoInput" name="profile_photo" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
                                     <button type="submit" class="ac-f84d9680" style="min-height:36px;">Upload Profile Photo</button>
@@ -344,7 +351,7 @@ $csrfToken = generate_csrf_token();
                                         <button type="submit" class="btn-clear-filters" style="min-height:34px;">Remove Photo</button>
                                     </form>
                                 <?php endif; ?>
-                                <small style="display:block;color:#64748b;margin-top:6px;">Click the circle to choose photo. Allowed: JPG, PNG, WEBP. Max: 3MB.</small>
+                                <small style="display:block;color:#64748b;margin-top:6px;">Click the avatar to choose photo, then crop and confirm upload. Allowed: JPG, PNG, WEBP. Max: 3MB.</small>
                             </div>
                             <div class="settings-info-form" role="group" aria-label="Account information">
                                 <div class="settings-info-field"><label>First Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string) ($user['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
