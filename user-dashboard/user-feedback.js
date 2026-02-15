@@ -340,7 +340,8 @@
                 }
 
                 buildLocationValue();
-                showMessage('Location pinned on map. You can drag the marker for exact spot.', true);
+                const accText = acc ? Math.round(acc) + 'm' : 'unknown';
+                showMessage('Used your GPS as a starting pin (~' + accText + ' accuracy). Drag the pin for exact spot.', true);
             }, function (error) {
                 const msg = error && error.message ? error.message : 'Unable to get your current location.';
                 showMessage(msg, false);
@@ -459,6 +460,40 @@
         });
     }
 
+
+    const photoModal = document.getElementById('feedbackPhotoModal');
+    const photoPreview = document.getElementById('feedbackPhotoPreview');
+    const photoClose = document.getElementById('feedbackPhotoClose');
+
+    document.querySelectorAll('.feedback-photo-view-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const url = btn.getAttribute('data-photo-url') || '';
+            if (!photoModal || !photoPreview || url === '') return;
+            photoPreview.src = url;
+            photoModal.hidden = false;
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    function closePhotoModal() {
+        if (!photoModal) return;
+        photoModal.hidden = true;
+        if (photoPreview) photoPreview.src = '';
+        document.body.style.overflow = '';
+    }
+
+    if (photoClose) {
+        photoClose.addEventListener('click', closePhotoModal);
+    }
+
+    if (photoModal) {
+        photoModal.addEventListener('click', function (event) {
+            if (event.target === photoModal) {
+                closePhotoModal();
+            }
+        });
+    }
+
     form.addEventListener('submit', async function (event) {
         event.preventDefault();
 
@@ -515,6 +550,9 @@
         }
     });
 });
+
+
+
 
 
 

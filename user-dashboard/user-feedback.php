@@ -132,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     exit;
 }
 
-$listStmt = $db->prepare('SELECT subject, category, location, status, date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 20');
+$listStmt = $db->prepare('SELECT subject, category, location, description, status, date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 20');
 $listStmt->bind_param('s', $userName);
 $listStmt->execute();
 $feedbackRows = $listStmt->get_result();
@@ -283,7 +283,7 @@ $csrfToken = generate_csrf_token();
                     </div>
                     <div class="full">
                         <label for="photo">Upload a Photo (Optional)</label>
-                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <div id="feedbackPhotoRow" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                             <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp" style="flex:1 1 280px;">
                             <button type="button" id="removePhotoBtn" class="ac-f84d9680">Remove Photo</button>
                         </div>
@@ -291,10 +291,10 @@ $csrfToken = generate_csrf_token();
                     </div>
                     <div class="full">
                         <label>Map Pinpoint</label>
-                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+                        <div id="feedbackMapControls" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
                             <input type="text" id="mapSearchInput" placeholder="Search place or address" style="flex:1 1 320px;">
                             <button type="button" id="mapSearchBtn" class="ac-f84d9680">Search</button>
-                            <button type="button" id="gpsPinBtn" class="ac-f84d9680">Use My Current Location</button>
+                            <button type="button" id="gpsPinBtn" class="ac-f84d9680">Use Current Location (GPS)</button>
                         </div>
                         <div id="concernMap" style="height:320px;border:1px solid #d1d5db;border-radius:10px;"></div>
                         <small id="pinnedAddress" style="display:block;margin-top:8px;color:#334155;">No pinned address yet.</small>
@@ -324,6 +324,7 @@ $csrfToken = generate_csrf_token();
                             <th>Category</th>
                             <th>Location</th>
                             <th>Status</th>
+                            <th>Photo</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -335,10 +336,18 @@ $csrfToken = generate_csrf_token();
                                     <td><?php echo htmlspecialchars((string) $row['category']); ?></td>
                                     <td><?php echo htmlspecialchars((string) $row['location']); ?></td>
                                     <td><span class="status-badge pending"><?php echo htmlspecialchars((string) $row['status']); ?></span></td>
+                                    <?php $desc = (string) ($row['description'] ?? ''); $photoPath = ''; if (preg_match('/\[Photo Attachment\]\s+(\/uploads\/feedback\/[\w\-.]+\.((jpg)|(jpeg)|(png)|(webp)))/i', $desc, $m)) { $photoPath = $m[1]; } ?>
+                                    <td>
+                                        <?php if ($photoPath !== ''): ?>
+                                            <button type="button" class="ac-f84d9680 feedback-photo-view-btn" data-photo-url="<?php echo htmlspecialchars($photoPath, ENT_QUOTES, 'UTF-8'); ?>">View Photo</button>
+                                        <?php else: ?>
+                                            -
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>
-                            <tr><td colspan="5" class="ac-a004b216">No feedback submitted yet.</td></tr>
+                            <tr><td colspan="6" class="ac-a004b216">No feedback submitted yet.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -346,6 +355,18 @@ $csrfToken = generate_csrf_token();
         </div>
     </section>
 
+
+    <div id="feedbackPhotoModal" class="avatar-crop-modal" hidden>
+        <div class="avatar-crop-dialog" style="max-width:820px;width:min(92vw,820px);">
+            <div class="avatar-crop-header">
+                <h3>Submitted Photo</h3>
+                <button type="button" class="avatar-crop-close" id="feedbackPhotoClose" aria-label="Close photo viewer">&times;</button>
+            </div>
+            <div class="avatar-crop-body" style="padding:12px;">
+                <img id="feedbackPhotoPreview" src="" alt="Submitted feedback photo" style="max-height:70vh;width:auto;max-width:100%;display:block;margin:0 auto;border-radius:8px;">
+            </div>
+        </div>
+    </div>
     <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <script src="/assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
     <script src="/user-dashboard/user-shell.js?v=<?php echo filemtime(__DIR__ . '/user-shell.js'); ?>"></script>
@@ -353,4 +374,9 @@ $csrfToken = generate_csrf_token();
     <script src="/user-dashboard/user-feedback.js?v=<?php echo filemtime(__DIR__ . '/user-feedback.js'); ?>"></script>
 </body>
 </html>
+
+
+
+
+
 

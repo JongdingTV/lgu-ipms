@@ -27,6 +27,120 @@
         });
     }
 
+    const idViewBtn = document.querySelector('.id-view-btn');
+    const idViewerModal = document.getElementById('idViewerModal');
+    const idViewerClose = document.getElementById('idViewerClose');
+    const idViewerImage = document.getElementById('idViewerImage');
+    const idViewerPdf = document.getElementById('idViewerPdf');
+    const idViewerImageWrap = document.getElementById('idViewerImageWrap');
+    const idViewerZoomControls = document.getElementById('idViewerZoomControls');
+    const idZoomRange = document.getElementById('idZoomRange');
+    const idZoomIn = document.getElementById('idZoomIn');
+    const idZoomOut = document.getElementById('idZoomOut');
+    const idZoomReset = document.getElementById('idZoomReset');
+
+    let idZoom = 1;
+    function applyIdZoom() {
+        if (!idViewerImage) return;
+        idViewerImage.style.transform = 'scale(' + idZoom.toFixed(2) + ')';
+    }
+
+    function setIdZoom(next) {
+        const clamped = Math.max(1, Math.min(3, next));
+        idZoom = clamped;
+        if (idZoomRange) idZoomRange.value = idZoom.toFixed(1);
+        applyIdZoom();
+    }
+
+    function closeIdViewer() {
+        if (!idViewerModal) return;
+        idViewerModal.hidden = true;
+        if (idViewerImage) {
+            idViewerImage.src = '';
+            idViewerImage.style.display = 'none';
+            idViewerImage.style.transform = 'scale(1)';
+        }
+        if (idViewerImageWrap) {
+            idViewerImageWrap.style.display = 'none';
+            idViewerImageWrap.scrollTop = 0;
+            idViewerImageWrap.scrollLeft = 0;
+        }
+        if (idViewerPdf) {
+            idViewerPdf.src = '';
+            idViewerPdf.style.display = 'none';
+        }
+        if (idViewerZoomControls) idViewerZoomControls.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    if (idViewBtn && idViewerModal) {
+        idViewBtn.addEventListener('click', function () {
+            const url = idViewBtn.getAttribute('data-id-url') || '';
+            if (url === '') return;
+            const isPdf = /\.pdf($|\?)/i.test(url);
+
+            if (isPdf) {
+                if (idViewerPdf) {
+                    idViewerPdf.src = url;
+                    idViewerPdf.style.display = 'block';
+                }
+                if (idViewerImage) {
+                    idViewerImage.src = '';
+                    idViewerImage.style.display = 'none';
+                }
+                if (idViewerImageWrap) idViewerImageWrap.style.display = 'none';
+                if (idViewerZoomControls) idViewerZoomControls.style.display = 'none';
+            } else {
+                if (idViewerImage) {
+                    idViewerImage.src = url;
+                    idViewerImage.style.display = 'block';
+                }
+                if (idViewerImageWrap) idViewerImageWrap.style.display = 'block';
+                if (idViewerPdf) {
+                    idViewerPdf.src = '';
+                    idViewerPdf.style.display = 'none';
+                }
+                if (idViewerZoomControls) idViewerZoomControls.style.display = 'flex';
+                setIdZoom(1);
+            }
+
+            idViewerModal.hidden = false;
+            document.body.style.overflow = 'hidden';
+        });
+    }
+
+    if (idViewerClose) {
+        idViewerClose.addEventListener('click', closeIdViewer);
+    }
+
+    if (idViewerModal) {
+        idViewerModal.addEventListener('click', function (event) {
+            if (event.target === idViewerModal) {
+                closeIdViewer();
+            }
+        });
+    }
+
+    if (idZoomRange) {
+        idZoomRange.addEventListener('input', function () {
+            setIdZoom(parseFloat(idZoomRange.value || '1'));
+        });
+    }
+    if (idZoomIn) {
+        idZoomIn.addEventListener('click', function () {
+            setIdZoom(idZoom + 0.1);
+        });
+    }
+    if (idZoomOut) {
+        idZoomOut.addEventListener('click', function () {
+            setIdZoom(idZoom - 0.1);
+        });
+    }
+    if (idZoomReset) {
+        idZoomReset.addEventListener('click', function () {
+            setIdZoom(1);
+        });
+    }
     const idFileInput = document.getElementById('idFileInput');
     const idUploadForm = document.getElementById('idUploadForm');
     if (idFileInput && idUploadForm) {
@@ -271,5 +385,4 @@
         }
     });
 });
-
 

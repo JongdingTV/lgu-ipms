@@ -92,13 +92,13 @@
     align-items: end;
     justify-content: space-between;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .pm-right {
     display: flex;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .filter-group {
@@ -384,7 +384,7 @@ button,
     display: flex;
     align-items: center;
     gap: 14px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .settings-page .avatar-upload-trigger {
@@ -486,7 +486,7 @@ button,
     margin-top: 10px;
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     background: rgba(255, 255, 255, 0.75);
     border: 1px dashed #c7d9ee;
@@ -823,11 +823,11 @@ button:focus-visible,
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .settings-page .id-upload-row input[type="file"] {
-    flex: 1 1 300px;
+    flex: 1 1 auto; min-width: 0;
 }
 
 .settings-page .id-upload-row .profile-action-btn-ghost {
@@ -851,4 +851,22 @@ button:focus-visible,
 .user-feedback-form #gpsPinBtn:hover,
 .user-feedback-form #mapSearchBtn:hover {
     background: linear-gradient(135deg, #1d4ed8, #1e40af);
+}
+
+
+@media (max-width: 768px) {
+    .user-feedback-form #feedbackPhotoRow,
+    .user-feedback-form #feedbackMapControls {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .user-feedback-form #photo,
+    .user-feedback-form #mapSearchInput,
+    .user-feedback-form #removePhotoBtn,
+    .user-feedback-form #mapSearchBtn,
+    .user-feedback-form #gpsPinBtn {
+        width: 100% !important;
+        min-height: 44px;
+    }
 }

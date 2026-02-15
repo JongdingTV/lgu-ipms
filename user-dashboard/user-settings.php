@@ -376,7 +376,7 @@ $csrfToken = generate_csrf_token();
                                     <label>ID Upload</label>
                                     <div class="settings-info-value">
                                         <?php if (!empty($user['id_upload'])): ?>
-                                            <a href="<?php echo htmlspecialchars((string) $user['id_upload'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer">View Uploaded File</a>
+                                            <button type="button" class="profile-action-btn profile-action-btn-primary id-view-btn" data-id-url="<?php echo htmlspecialchars((string) $user['id_upload'], ENT_QUOTES, 'UTF-8'); ?>">View Uploaded ID</button>
                                         <?php else: ?>
                                             -
                                         <?php endif; ?>
@@ -448,9 +448,34 @@ $csrfToken = generate_csrf_token();
         </div>
     </div>
 
+
+    <div class="avatar-crop-modal" id="idViewerModal" hidden>
+        <div class="avatar-crop-dialog" role="dialog" aria-modal="true" aria-labelledby="idViewerTitle" style="max-width:900px;width:min(94vw,900px);">
+            <div class="avatar-crop-header">
+                <h3 id="idViewerTitle">Uploaded ID</h3>
+                <button type="button" class="avatar-crop-close" id="idViewerClose" aria-label="Close ID viewer">&times;</button>
+            </div>
+            <div class="avatar-crop-body" style="padding:12px;">
+                <div id="idViewerZoomControls" style="display:none;align-items:center;gap:8px;justify-content:flex-end;margin-bottom:8px;">
+                    <button type="button" class="btn-clear-filters" id="idZoomOut">-</button>
+                    <input type="range" id="idZoomRange" min="1" max="3" step="0.1" value="1" style="width:180px;">
+                    <button type="button" class="btn-clear-filters" id="idZoomIn">+</button>
+                    <button type="button" class="ac-f84d9680" id="idZoomReset">Reset</button>
+                </div>
+                <div id="idViewerImageWrap" style="display:none;max-height:74vh;overflow:auto;border:1px solid #dbe7f3;border-radius:8px;background:#fff;">
+                    <img id="idViewerImage" src="" alt="Uploaded ID" style="display:block;max-height:none;width:auto;max-width:none;margin:0 auto;border-radius:8px;transform-origin:center center;">
+                </div>
+                <iframe id="idViewerPdf" src="" title="Uploaded ID PDF" style="display:none;width:100%;height:74vh;border:1px solid #dbe7f3;border-radius:8px;background:#fff;"></iframe>
+            </div>
+        </div>
+    </div>
+
     <script src="/user-dashboard/user-settings.js?v=<?php echo filemtime(__DIR__ . '/user-settings.js'); ?>"></script>
 </body>
 </html>
+
+
+
 
 
 
