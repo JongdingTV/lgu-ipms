@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     $gpsLng = trim($_POST['gps_lng'] ?? '');
     $gpsAccuracy = trim($_POST['gps_accuracy'] ?? '');
     $gpsMapUrl = trim($_POST['gps_map_url'] ?? '');
+    $gpsAddress = trim($_POST['gps_address'] ?? '');
     $status = 'Pending';
 
     if (isset($_FILES['photo']) && (int) ($_FILES['photo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
@@ -99,6 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         }
         if ($gpsMapUrl !== '') {
             $description .= "\n\n[Google Maps Pin] " . $gpsMapUrl;
+        }
+        if ($gpsAddress !== '') {
+            $description .= "\n\n[Pinned Address] " . $gpsAddress;
         }
     }
 
@@ -286,18 +290,19 @@ $csrfToken = generate_csrf_token();
                         <small id="photoStatus" style="display:block;margin-top:6px;color:#64748b;">No photo selected.</small>
                     </div>
                     <div class="full">
-                        <label>Map Pinpoint (Google Maps-style workflow)</label>
+                        <label>Map Pinpoint</label>
                         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+                            <input type="text" id="mapSearchInput" placeholder="Search place or address" style="flex:1 1 320px;">
+                            <button type="button" id="mapSearchBtn" class="ac-f84d9680">Search</button>
                             <button type="button" id="gpsPinBtn" class="ac-f84d9680">Use My Current Location</button>
-                            <small style="color:#64748b;">Click the map to drop a pin, then drag it to exact location.</small>
                         </div>
                         <div id="concernMap" style="height:320px;border:1px solid #d1d5db;border-radius:10px;"></div>
-                        <div class="user-feedback-form-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top:10px;">
-                            <input type="text" id="gps_lat" name="gps_lat" placeholder="Latitude" readonly>
-                            <input type="text" id="gps_lng" name="gps_lng" placeholder="Longitude" readonly>
-                            <input type="text" id="gps_accuracy" name="gps_accuracy" placeholder="Accuracy (meters)" readonly>
-                        </div>
-                        <input type="url" id="gps_map_url" name="gps_map_url" placeholder="Google Maps Pin URL" readonly style="margin-top:10px;">
+                        <small id="pinnedAddress" style="display:block;margin-top:8px;color:#334155;">No pinned address yet.</small>
+                        <input type="hidden" id="gps_lat" name="gps_lat" value="">
+                        <input type="hidden" id="gps_lng" name="gps_lng" value="">
+                        <input type="hidden" id="gps_accuracy" name="gps_accuracy" value="">
+                        <input type="hidden" id="gps_map_url" name="gps_map_url" value="">
+                        <input type="hidden" id="gps_address" name="gps_address" value="">
                     </div>
                 </div>
 
@@ -348,3 +353,4 @@ $csrfToken = generate_csrf_token();
     <script src="/user-dashboard/user-feedback.js?v=<?php echo filemtime(__DIR__ . '/user-feedback.js'); ?>"></script>
 </body>
 </html>
+

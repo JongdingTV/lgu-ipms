@@ -15,6 +15,10 @@
     const removePhotoBtn = document.getElementById('removePhotoBtn');
     const photoStatus = document.getElementById('photoStatus');
     const mapContainer = document.getElementById('concernMap');
+    const mapSearchInput = document.getElementById('mapSearchInput');
+    const mapSearchBtn = document.getElementById('mapSearchBtn');
+    const pinnedAddress = document.getElementById('pinnedAddress');
+    const gpsAddress = document.getElementById('gps_address');
 
     if (!form) return;
 
@@ -208,6 +212,36 @@
         select.value = '';
     }
 
+
+    async function reverseGeocode(lat, lng) {
+        try {
+            const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + encodeURIComponent(String(lat)) + '&lon=' + encodeURIComponent(String(lng));
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!response.ok) return '';
+            const data = await response.json();
+            return (data && data.display_name) ? String(data.display_name) : '';
+        } catch (_error) {
+            return '';
+        }
+    }
+
+    async function searchLocation(query) {
+        const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(query);
+        const response = await fetch(url, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) return null;
+        const data = await response.json();
+        if (!Array.isArray(data) || data.length === 0) return null;
+        return {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon),
+            address: data[0].display_name || ''
+        };
+    }
+
     function buildLocationValue() {
         if (!locationInput || !district || !barangay || !altName) return;
         const districtText = district.value ? 'District ' + district.value : '';
@@ -319,13 +353,16 @@
     }
 
 
-    function updateMapFields(lat, lng, accuracyMeters) {
+    async function updateMapFields(lat, lng, accuracyMeters) {
         const latText = Number(lat).toFixed(6);
         const lngText = Number(lng).toFixed(6);
         if (gpsLat) gpsLat.value = latText;
         if (gpsLng) gpsLng.value = lngText;
         if (gpsAccuracy) gpsAccuracy.value = accuracyMeters ? String(Math.round(accuracyMeters)) : '';
         if (gpsMapUrl) gpsMapUrl.value = 'https://maps.google.com/?q=' + latText + ',' + lngText;
+        const addressText = await reverseGeocode(latText, lngText);
+        if (gpsAddress) gpsAddress.value = addressText;
+        if (pinnedAddress) pinnedAddress.textContent = addressText !== '' ? addressText : 'Pinned location found, but address is unavailable.';
     }
 
     if (photoInput && photoStatus) {
@@ -370,6 +407,58 @@
         });
     }
 
+
+    if (mapSearchBtn && mapSearchInput) {
+        mapSearchBtn.addEventListener('click', async function () {
+            const query = (mapSearchInput.value || '').trim();
+            if (query === '') {
+                showMessage('Enter a location to search on the map.', false);
+                return;
+            }
+
+            try {
+                const result = await searchLocation(query);
+                if (!result) {
+                    showMessage('No matching location found.', false);
+                    return;
+                }
+
+                if (map) {
+                    map.setView([result.lat, result.lng], 17);
+                    if (!marker) {
+                        marker = window.L.marker([result.lat, result.lng], { draggable: true }).addTo(map);
+                        marker.on('dragend', function (dragEvent) {
+                            const p = dragEvent.target.getLatLng();
+                            updateMapFields(p.lat, p.lng, null);
+                            buildLocationValue();
+                        });
+                    } else {
+                        marker.setLatLng([result.lat, result.lng]);
+                    }
+                }
+
+                if (pinnedAddress && result.address) {
+                    pinnedAddress.textContent = result.address;
+                }
+                if (gpsAddress && result.address) {
+                    gpsAddress.value = result.address;
+                }
+
+                updateMapFields(result.lat, result.lng, null);
+                buildLocationValue();
+            } catch (_error) {
+                showMessage('Unable to search location right now.', false);
+            }
+        });
+
+        mapSearchInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                mapSearchBtn.click();
+            }
+        });
+    }
+
     form.addEventListener('submit', async function (event) {
         event.preventDefault();
 
@@ -407,6 +496,8 @@
                 if (gpsLng) gpsLng.value = '';
                 if (gpsAccuracy) gpsAccuracy.value = '';
                 if (gpsMapUrl) gpsMapUrl.value = '';
+                if (gpsAddress) gpsAddress.value = '';
+                if (pinnedAddress) pinnedAddress.textContent = 'No pinned address yet.';
                 if (photoStatus) photoStatus.textContent = 'No photo selected.';
                 if (marker && map) {
                     map.removeLayer(marker);
@@ -424,6 +515,12 @@
         }
     });
 });
+
+
+
+
+
+
 
 
 
