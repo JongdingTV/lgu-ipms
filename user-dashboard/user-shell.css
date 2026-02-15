@@ -1116,18 +1116,19 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip 
     gap: 2px !important;
     min-width: 180px !important;
     min-height: 40px !important;
+    box-sizing: border-box !important;
     border: 1px solid #d4e2f2 !important;
     border-radius: 10px !important;
     background: linear-gradient(160deg, #ffffff, #f6fbff) !important;
     box-shadow: 0 6px 16px rgba(14, 33, 58, 0.12) !important;
-    padding: 6px 9px !important;
+    padding: 4px 8px !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-time {
     color: #183e6b !important;
     font-weight: 800 !important;
     font-size: 0.98rem !important;
-    line-height: 1 !important;
+    line-height: 1.1 !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-date {
@@ -1230,3 +1231,6 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .t
         height: 34px !important;
     }
 }
+
+
+
