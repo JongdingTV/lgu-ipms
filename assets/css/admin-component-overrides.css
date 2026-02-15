@@ -477,7 +477,7 @@ body.sidebar-hidden .sidebar-toggle-wrapper {
    ============================================ */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
     max-width: 1440px !important;
-    padding: 26px 28px 34px !important;
+    padding: 78px 28px 34px !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header {
@@ -564,7 +564,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .quick-stats {
 
 @media (max-width: 768px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
-        padding: 14px 12px 22px !important;
+        padding: 74px 12px 22px !important;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .metrics-container {
