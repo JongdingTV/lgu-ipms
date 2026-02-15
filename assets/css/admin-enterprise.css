@@ -100,16 +100,23 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-bt
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 0;
+    width: 40px;
+    min-width: 40px;
     min-height: 38px;
     border: 1px solid #c9d9eb;
     border-radius: 10px;
     background: #ffffff;
     color: #2a4c77;
-    padding: 0 10px;
+    padding: 0;
     font-size: 0.82rem;
     font-weight: 700;
     cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-label {
+    display: none !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-btn:hover {
@@ -118,6 +125,9 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-bt
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
     min-width: 18px;
     height: 18px;
     border-radius: 999px;
