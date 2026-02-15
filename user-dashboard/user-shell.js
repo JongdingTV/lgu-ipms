@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+﻿document.addEventListener('DOMContentLoaded', function () {
     var path = (window.location.pathname || '').replace(/\\/g, '/').toLowerCase();
     var isUserArea = path.indexOf('/user-dashboard/') >= 0;
     var isAuthPage = /\/user-dashboard\/(user-login|create|user-forgot-password)\.php$/.test(path);
@@ -70,6 +70,26 @@ document.addEventListener('DOMContentLoaded', function () {
             topToggle.setAttribute('aria-label', 'Toggle sidebar');
             topToggle.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>';
             document.body.appendChild(topToggle);
+        }
+
+
+        var mobileClose = document.getElementById('mobileSidebarClose');
+        if (!mobileClose && nav) {
+            mobileClose = document.createElement('button');
+            mobileClose.type = 'button';
+            mobileClose.id = 'mobileSidebarClose';
+            mobileClose.className = 'mobile-sidebar-close';
+            mobileClose.setAttribute('aria-label', 'Close sidebar');
+            mobileClose.innerHTML = '&times;';
+            nav.appendChild(mobileClose);
+        }
+
+        if (mobileClose) {
+            mobileClose.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeMobileNav();
+            });
         }
 
         topToggle.addEventListener('click', function (e) {
@@ -330,4 +350,6 @@ document.addEventListener('DOMContentLoaded', function () {
     initLogoutConfirmation();
     initTopUtilities();
 });
+
+
 
