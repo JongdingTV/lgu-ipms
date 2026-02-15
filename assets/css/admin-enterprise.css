@@ -495,7 +495,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
 body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .main-content {
         margin-left: 0 !important;
         width: 100% !important;
-        padding: 78px 12px 18px !important;
+        padding: 68px 12px 18px !important;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .top-sidebar-toggle {
@@ -1197,7 +1197,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
     width: calc(100% - var(--admin-sidebar-width)) !important;
     max-width: none !important;
     box-sizing: border-box !important;
-    padding-top: 84px !important;
+    padding-top: 68px !important;
     padding-left: clamp(12px, 2vw, 28px) !important;
     padding-right: clamp(12px, 2vw, 28px) !important;
     transition: margin-left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), padding 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
@@ -1227,7 +1227,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
         margin-left: 0 !important;
         width: 100% !important;
-        padding-top: 76px !important;
+        padding-top: 68px !important;
         padding-left: 14px !important;
         padding-right: 14px !important;
     }
