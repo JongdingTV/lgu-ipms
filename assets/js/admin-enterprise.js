@@ -276,66 +276,79 @@
     const bar = document.createElement('div');
     bar.className = 'admin-top-utilities';
     bar.innerHTML = `
-      <div class="admin-time-chip" aria-live="polite">
-        <span class="admin-time" id="adminLiveTime">--:--:--</span>
-        <span class="admin-date" id="adminLiveDate">----</span>
-      </div>
-      <div class="admin-utility-group">
-        <button type="button" class="admin-utility-btn" id="adminCalendarBtn" aria-expanded="false" aria-controls="adminCalendarPanel" title="Calendar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
+      <div class="admin-top-left">
+        <button type="button" class="admin-top-menu" id="adminTopMenuBtn" aria-label="Toggle sidebar" title="Toggle sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="4" y1="6" x2="20" y2="6"></line>
+            <line x1="4" y1="12" x2="20" y2="12"></line>
+            <line x1="4" y1="18" x2="20" y2="18"></line>
           </svg>
-          <span class="admin-utility-label" id="adminCalendarLabel">Calendar</span>
-        </button>
-        <button type="button" class="admin-utility-btn" id="adminNotifBtn" aria-expanded="false" aria-controls="adminNotifPanel" title="Notifications">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path>
-            <path d="M9 17a3 3 0 0 0 6 0"></path>
-          </svg>
-          <span class="admin-utility-label">Alerts</span>
-          <span class="admin-utility-badge" id="adminNotifCount">0</span>
-        </button>
-        <button type="button" class="admin-utility-btn" id="adminThemeBtn" title="Toggle dark mode">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="4"></circle>
-            <path d="M12 2v2"></path>
-            <path d="M12 20v2"></path>
-            <path d="m4.93 4.93 1.41 1.41"></path>
-            <path d="m17.66 17.66 1.41 1.41"></path>
-            <path d="M2 12h2"></path>
-            <path d="M20 12h2"></path>
-            <path d="m6.34 17.66-1.41 1.41"></path>
-            <path d="m19.07 4.93-1.41 1.41"></path>
-          </svg>
-          <span class="admin-utility-label" id="adminThemeLabel">Dark</span>
         </button>
       </div>
-      <div class="admin-notif-panel" id="adminNotifPanel" hidden>
-        <div class="admin-notif-head">
-          <strong>Notifications</strong>
-          <button type="button" id="adminNotifMarkRead">Mark all read</button>
+      <div class="admin-top-right">
+        <div class="admin-time-chip" aria-live="polite">
+          <span class="admin-time" id="adminLiveTime">--:--:--</span>
+          <span class="admin-date" id="adminLiveDate">----</span>
         </div>
-        <ul class="admin-notif-list" id="adminNotifList"></ul>
+        <div class="admin-utility-group">
+          <button type="button" class="admin-utility-btn" id="adminCalendarBtn" aria-expanded="false" aria-controls="adminCalendarPanel" title="Calendar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span class="admin-utility-label" id="adminCalendarLabel">Calendar</span>
+          </button>
+          <button type="button" class="admin-utility-btn" id="adminNotifBtn" aria-expanded="false" aria-controls="adminNotifPanel" title="Notifications">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path>
+              <path d="M9 17a3 3 0 0 0 6 0"></path>
+            </svg>
+            <span class="admin-utility-label">Alerts</span>
+            <span class="admin-utility-badge" id="adminNotifCount">0</span>
+          </button>
+          <button type="button" class="admin-utility-btn" id="adminThemeBtn" title="Toggle dark mode">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2"></path>
+              <path d="M12 20v2"></path>
+              <path d="m4.93 4.93 1.41 1.41"></path>
+              <path d="m17.66 17.66 1.41 1.41"></path>
+              <path d="M2 12h2"></path>
+              <path d="M20 12h2"></path>
+              <path d="m6.34 17.66-1.41 1.41"></path>
+              <path d="m19.07 4.93-1.41 1.41"></path>
+            </svg>
+            <span class="admin-utility-label" id="adminThemeLabel">Dark</span>
+          </button>
+        </div>
+        <div class="admin-notif-panel" id="adminNotifPanel" hidden>
+          <div class="admin-notif-head">
+            <strong>Notifications</strong>
+            <button type="button" id="adminNotifMarkRead">Mark all read</button>
+          </div>
+          <ul class="admin-notif-list" id="adminNotifList"></ul>
+        </div>
+        <div class="admin-calendar-panel" id="adminCalendarPanel" hidden>
+          <div class="admin-calendar-head">
+            <button type="button" id="adminCalPrev" aria-label="Previous month">&#8249;</button>
+            <strong id="adminCalTitle">Month Year</strong>
+            <button type="button" id="adminCalNext" aria-label="Next month">&#8250;</button>
+          </div>
+          <div class="admin-calendar-weekdays">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div class="admin-calendar-grid" id="adminCalendarGrid" aria-live="polite"></div>
+          <div class="admin-calendar-foot">
+            <button type="button" id="adminCalToday">Today</button>
+          </div>
+        </div>
       </div>
-      <div class="admin-calendar-panel" id="adminCalendarPanel" hidden>
-        <div class="admin-calendar-head">
-          <button type="button" id="adminCalPrev" aria-label="Previous month">&#8249;</button>
-          <strong id="adminCalTitle">Month Year</strong>
-          <button type="button" id="adminCalNext" aria-label="Next month">&#8250;</button>
-        </div>
-        <div class="admin-calendar-weekdays">
-          <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-        </div>
-        <div class="admin-calendar-grid" id="adminCalendarGrid" aria-live="polite"></div>
-        <div class="admin-calendar-foot">
-          <button type="button" id="adminCalToday">Today</button>
-        </div>
-      </div>`;
+      `;
     document.body.appendChild(bar);
 
+    const topMenuBtn = document.getElementById('adminTopMenuBtn');
     const timeEl = document.getElementById('adminLiveTime');
     const dateEl = document.getElementById('adminLiveDate');
     const calendarBtn = document.getElementById('adminCalendarBtn');
@@ -358,6 +371,13 @@
     const persistedTheme = localStorage.getItem('ipms_admin_theme') || 'light';
     document.body.classList.toggle('theme-dark', persistedTheme === 'dark');
     if (themeLabel) themeLabel.textContent = persistedTheme === 'dark' ? 'Light' : 'Dark';
+
+    if (topMenuBtn) {
+      topMenuBtn.addEventListener('click', () => {
+        const legacyToggle = document.querySelector('.top-sidebar-toggle');
+        if (legacyToggle) legacyToggle.click();
+      });
+    }
 
     const today = new Date();
     let calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);

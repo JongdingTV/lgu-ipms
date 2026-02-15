@@ -10,19 +10,56 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) {
     --ipms-border: #d8e4f2;
     --ipms-radius: 14px;
     --ipms-shadow: 0 16px 30px rgba(15, 30, 56, 0.16);
+    --admin-sidebar-open: 250px;
+    --admin-sidebar-collapsed: 100px;
+    --admin-sidebar-width: var(--admin-sidebar-open);
     overflow-x: hidden !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden {
+    --admin-sidebar-width: var(--admin-sidebar-collapsed);
 }
 
 /* Top-right utilities: time/date, notifications, theme toggle */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
     position: fixed;
-    top: 14px;
-    right: 16px;
+    top: 0;
+    left: var(--admin-sidebar-width);
+    right: 0;
     z-index: 1320;
     display: flex;
-    align-items: stretch;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
+    min-height: 68px;
+    padding: 10px 18px;
+    border-bottom: 1px solid #d5e3f2;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 255, 0.98));
+    box-shadow: 0 2px 12px rgba(14, 33, 58, 0.1);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-left,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-right {
+    display: inline-flex;
+    align-items: center;
     gap: 8px;
-    justify-content: flex-end;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-menu {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid #cad9eb;
+    background: #ffffff;
+    color: #2a4c77;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-menu:hover {
+    background: #f2f7ff;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
@@ -31,13 +68,13 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip 
     justify-content: center;
     align-items: flex-end;
     gap: 2px;
-    min-width: 190px;
-    min-height: 38px;
+    min-width: 180px;
+    min-height: 40px;
     border: 1px solid #d4e2f2;
-    border-radius: 12px;
+    border-radius: 10px;
     background: linear-gradient(160deg, #ffffff, #f6fbff);
-    box-shadow: 0 10px 24px rgba(14, 33, 58, 0.18);
-    padding: 6px 10px;
+    box-shadow: 0 6px 16px rgba(14, 33, 58, 0.12);
+    padding: 6px 9px;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-time {
@@ -410,8 +447,11 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
 
 @media (max-width: 860px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
-        top: 10px;
-        right: 10px;
+        top: 0;
+        left: var(--admin-sidebar-width);
+        right: 0;
+        min-height: 60px;
+        padding: 8px 10px;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
@@ -455,22 +495,23 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
         transform: translateX(0) !important;
     }
 
-    body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .main-content {
+body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .main-content {
         margin-left: 0 !important;
         width: 100% !important;
-        padding: 82px 12px 18px !important;
+        padding: 68px 12px 18px !important;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .top-sidebar-toggle {
-        top: 10px !important;
-        left: 10px !important;
-        z-index: 1501 !important;
+        display: none !important;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .admin-top-utilities {
-        top: 10px;
-        right: 10px;
+        top: 0;
+        left: 0;
+        right: 0;
         z-index: 1501;
+        min-height: 58px;
+        padding: 7px 8px;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .metrics-container,
@@ -517,7 +558,11 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
+        left: 0;
+        right: 0;
         gap: 6px;
+        min-height: 56px;
+        padding: 6px 8px;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-btn {
@@ -545,6 +590,11 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
     cursor: pointer;
     transform: none;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* Hide legacy floating top toggle since the top bar now includes its own menu button */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .top-sidebar-toggle {
+    display: none !important;
 }
 
 .top-sidebar-toggle:hover {
@@ -1134,8 +1184,8 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) select:focus-visi
 
 /* Responsive content alignment for all admin pages. */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) {
-    --admin-sidebar-open: 270px;
-    --admin-sidebar-collapsed: 120px;
+    --admin-sidebar-open: 250px;
+    --admin-sidebar-collapsed: 100px;
     --admin-sidebar-width: var(--admin-sidebar-open);
     --admin-content-max: 1440px;
 }
@@ -1150,6 +1200,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
     width: calc(100% - var(--admin-sidebar-width)) !important;
     max-width: none !important;
     box-sizing: border-box !important;
+    padding-top: 78px !important;
     padding-left: clamp(12px, 2vw, 28px) !important;
     padding-right: clamp(12px, 2vw, 28px) !important;
     transition: margin-left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), padding 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
@@ -1179,6 +1230,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > .
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
         margin-left: 0 !important;
         width: 100% !important;
+        padding-top: 74px !important;
         padding-left: 14px !important;
         padding-right: 14px !important;
     }
