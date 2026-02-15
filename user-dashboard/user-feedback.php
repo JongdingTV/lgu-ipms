@@ -294,7 +294,7 @@ $csrfToken = generate_csrf_token();
                         <div id="feedbackMapControls" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
                             <input type="text" id="mapSearchInput" placeholder="Search place or address" style="flex:1 1 320px;">
                             <button type="button" id="mapSearchBtn" class="ac-f84d9680">Search</button>
-                            <button type="button" id="gpsPinBtn" class="ac-f84d9680">Use Current Location (GPS)</button>
+                            <button type="button" id="gpsPinBtn" class="ac-f84d9680">Use Current Location</button>
                         </div>
                         <div id="concernMap" style="height:320px;border:1px solid #d1d5db;border-radius:10px;"></div>
                         <small id="pinnedAddress" style="display:block;margin-top:8px;color:#334155;">No pinned address yet.</small>

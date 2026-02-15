@@ -18,6 +18,7 @@
         savedSidebarPref = '1';
     }
     var desktopSidebarHidden = savedSidebarPref === '1';
+    var mobileCloseBtn = null;
 
     function q(sel, root) { return (root || document).querySelector(sel); }
 
@@ -26,9 +27,13 @@
         body.classList.add('sidebar-hidden');
     }
 
+    var mobileCloseBtn = null;
     function applyResponsiveSidebarMode() {
         var isMobile = mq.matches;
         body.classList.toggle('mobile-sidebar-mode', isMobile);
+        if (mobileCloseBtn) {
+            mobileCloseBtn.hidden = !isMobile;
+        }
 
         if (isMobile) {
             body.classList.add('sidebar-hidden');
@@ -85,6 +90,7 @@
         }
 
         if (mobileClose) {
+            mobileCloseBtn = mobileClose;
             mobileClose.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -350,6 +356,10 @@
     initLogoutConfirmation();
     initTopUtilities();
 });
+
+
+
+
 
 
 
