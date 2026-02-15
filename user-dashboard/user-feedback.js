@@ -6,6 +6,11 @@
     const barangay = document.getElementById('barangay');
     const altName = document.getElementById('alt_name');
     const locationInput = document.getElementById('location');
+    const gpsPinBtn = document.getElementById('gpsPinBtn');
+    const gpsLat = document.getElementById('gps_lat');
+    const gpsLng = document.getElementById('gps_lng');
+    const gpsAccuracy = document.getElementById('gps_accuracy');
+    const gpsMapUrl = document.getElementById('gps_map_url');
 
     if (!form) return;
 
@@ -268,6 +273,38 @@
         altName.addEventListener('change', buildLocationValue);
     }
 
+
+    if (gpsPinBtn) {
+        gpsPinBtn.addEventListener('click', function () {
+            if (!navigator.geolocation) {
+                showMessage('Geolocation is not supported by your browser.', false);
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(function (position) {
+                const lat = position.coords.latitude.toFixed(6);
+                const lng = position.coords.longitude.toFixed(6);
+                const acc = Math.round(position.coords.accuracy || 0);
+                const mapsUrl = 'https://maps.google.com/?q=' + lat + ',' + lng;
+
+                if (gpsLat) gpsLat.value = lat;
+                if (gpsLng) gpsLng.value = lng;
+                if (gpsAccuracy) gpsAccuracy.value = String(acc);
+                if (gpsMapUrl) gpsMapUrl.value = mapsUrl;
+
+                buildLocationValue();
+                showMessage('GPS pin captured. You can now submit your feedback.', true);
+            }, function (error) {
+                const msg = error && error.message ? error.message : 'Unable to get your current location.';
+                showMessage(msg, false);
+            }, {
+                enableHighAccuracy: true,
+                timeout: 12000,
+                maximumAge: 0
+            });
+        });
+    }
+
     form.addEventListener('submit', async function (event) {
         event.preventDefault();
 
@@ -313,5 +350,12 @@
         }
     });
 });
+
+
+
+
+
+
+
 
 
