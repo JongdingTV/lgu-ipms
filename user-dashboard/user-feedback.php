@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -169,8 +169,29 @@ $csrfToken = generate_csrf_token();
                         <input type="text" id="subject" name="subject" maxlength="100" required>
                     </div>
                     <div>
-                        <label for="location">Location</label>
-                        <input type="text" id="location" name="location" required>
+                        <label for="district">District</label>
+                        <select id="district" name="district" required>
+                            <option value="">Select District</option>
+                            <option value="1">District 1</option>
+                            <option value="2">District 2</option>
+                            <option value="3">District 3</option>
+                            <option value="4">District 4</option>
+                            <option value="5">District 5</option>
+                            <option value="6">District 6</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="barangay">Barangay</label>
+                        <select id="barangay" name="barangay" required disabled>
+                            <option value="">Select Barangay</option>
+                        </select>
+                    </div>
+                    <div class="full">
+                        <label for="alt_name">Alternative Name</label>
+                        <select id="alt_name" name="alt_name" required disabled>
+                            <option value="">Select Alternative Name</option>
+                        </select>
+                        <input type="hidden" id="location" name="location" value="">
                     </div>
                     <div class="full">
                         <label for="category">Category</label>
@@ -244,3 +265,4 @@ $csrfToken = generate_csrf_token();
     <script src="/user-dashboard/user-feedback.js?v=<?php echo filemtime(__DIR__ . '/user-feedback.js'); ?>"></script>
 </body>
 </html>
+
