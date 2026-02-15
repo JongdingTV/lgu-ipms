@@ -227,9 +227,19 @@ body.sidebar-hidden .nav-user-profile .user-initial-badge {
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
-    top: 8px !important;
-    right: 16px !important;
-    gap: 6px !important;
+    top: 0 !important;
+    left: var(--admin-sidebar-width) !important;
+    right: 0 !important;
+    z-index: 1320 !important;
+    display: flex;
+    align-items: center;
+    gap: 10px !important;
+    justify-content: space-between;
+    min-height: 68px !important;
+    padding: 10px 18px !important;
+    border-bottom: 1px solid #d5e3f2;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 255, 0.98));
+    box-shadow: 0 2px 12px rgba(14, 33, 58, 0.1);
 }
 
 .main-content .dash-header {
@@ -238,18 +248,18 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilit
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
-    min-width: 126px !important;
-    min-height: 34px !important;
-    padding: 4px 7px !important;
-    gap: 1px !important;
+    min-width: 180px !important;
+    min-height: 40px !important;
+    padding: 6px 9px !important;
+    gap: 2px !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-time {
-    font-size: 0.8rem !important;
+    font-size: 0.98rem !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-date {
-    font-size: 0.63rem !important;
+    font-size: 0.76rem !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-group {
@@ -1019,64 +1029,61 @@ button:focus-visible,
     }
 }
 
-/* Mobile-only top header compact layout */
+/* Mobile-only top header layout (aligned with admin spacing) */
 .mobile-sidebar-close {
     display: none !important;
 }
 
 @media (max-width: 768px) {
     body.mobile-sidebar-mode .top-sidebar-toggle {
-        top: 6px !important;
+        position: fixed !important;
+        top: 10px !important;
         left: 8px !important;
         width: 34px;
         height: 34px;
         padding: 0 !important;
         margin: 0 !important;
-        z-index: 12060 !important;
+        z-index: 1502 !important;
     }
 
     body.mobile-sidebar-mode .admin-top-utilities {
-        top: 6px !important;
-        right: 8px !important;
-        gap: 4px !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 1501 !important;
+        min-height: 56px !important;
+        padding: 6px 8px !important;
+        gap: 6px !important;
         margin: 0 !important;
-        padding: 0 !important;
-        z-index: 12050 !important;
     }
 
     body.mobile-sidebar-mode .admin-time-chip {
-        min-width: 104px !important;
-        min-height: 28px !important;
-        padding: 0 6px !important;
+        min-width: 128px !important;
+        padding: 6px 7px !important;
         margin: 0 !important;
     }
 
     body.mobile-sidebar-mode .admin-time-chip .admin-time {
-        font-size: 0.72rem !important;
+        font-size: 0.83rem !important;
     }
 
     body.mobile-sidebar-mode .admin-time-chip .admin-date {
-        font-size: 0.56rem !important;
+        font-size: 0.68rem !important;
     }
 
     body.mobile-sidebar-mode .admin-utility-btn {
-        min-height: 28px !important;
-        height: 28px !important;
-        width: 28px !important;
-        padding: 0 !important;
+        min-height: 34px !important;
+        padding: 0 8px !important;
         margin: 0 !important;
     }
 
-    body.mobile-sidebar-mode .admin-utility-btn svg {
-        width: 14px;
-        height: 14px;
-    }
-
     body.mobile-sidebar-mode .main-content {
-        padding-top: 126px !important;
+        padding-top: 132px !important;
     }
 
     body.mobile-sidebar-mode.mobile-nav-open .mobile-sidebar-close {
         display: inline-flex !important;
     }
 }
+
