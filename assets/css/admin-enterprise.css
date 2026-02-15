@@ -10,14 +10,21 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) {
     --ipms-border: #d8e4f2;
     --ipms-radius: 14px;
     --ipms-shadow: 0 16px 30px rgba(15, 30, 56, 0.16);
+    --admin-sidebar-open: 250px;
+    --admin-sidebar-collapsed: 100px;
+    --admin-sidebar-width: var(--admin-sidebar-open);
     overflow-x: hidden !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden {
+    --admin-sidebar-width: var(--admin-sidebar-collapsed);
 }
 
 /* Top-right utilities: time/date, notifications, theme toggle */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
     position: fixed;
     top: 0;
-    left: 262px;
+    left: var(--admin-sidebar-width);
     right: 0;
     z-index: 1320;
     display: flex;
@@ -53,10 +60,6 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-menu {
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-menu:hover {
     background: #f2f7ff;
-}
-
-body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .admin-top-utilities {
-    left: 94px;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
@@ -445,8 +448,8 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin
 @media (max-width: 860px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
         top: 0;
-        left: 88px;
-        right: 10px;
+        left: var(--admin-sidebar-width);
+        right: 0;
         min-height: 60px;
         padding: 8px 10px;
     }
@@ -504,7 +507,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mo
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mode .admin-top-utilities {
         top: 0;
-        left: 62px;
+        left: 0;
         right: 0;
         z-index: 1501;
         min-height: 58px;
@@ -555,7 +558,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).mobile-sidebar-mo
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilities {
-        left: 58px;
+        left: 0;
         right: 0;
         gap: 6px;
         min-height: 56px;
@@ -1181,8 +1184,8 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) select:focus-visi
 
 /* Responsive content alignment for all admin pages. */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) {
-    --admin-sidebar-open: 270px;
-    --admin-sidebar-collapsed: 120px;
+    --admin-sidebar-open: 250px;
+    --admin-sidebar-collapsed: 100px;
     --admin-sidebar-width: var(--admin-sidebar-open);
     --admin-content-max: 1440px;
 }
