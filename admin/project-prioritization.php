@@ -165,10 +165,10 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
             <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
-                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Contractors<span class="dropdown-arrow">▼</span></a>
+                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Contractor</span></a>
-                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Contractors</span></a>
+                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Engineer</span></a>
+                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Engineers</span></a>
                 </div>
             </div>
             <a href="project-prioritization.php" class="active"><img src="../assets/images/admin/prioritization.png" alt="Priority Icon" class="nav-icon">Project Prioritization</a>

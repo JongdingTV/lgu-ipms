@@ -16,7 +16,7 @@ if ($db->connect_error) {
     exit;
 }
 
-// Create contractor_project_assignments table if it doesn't exist
+// Create Engineer_project_assignments table if it doesn't exist
 $db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
     id INT PRIMARY KEY AUTO_INCREMENT,
     contractor_id INT NOT NULL,
@@ -27,24 +27,24 @@ $db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 )");
 
-// Handle GET request for loading contractors
+// Handle GET request for loading Engineers
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_contractors') {
     header('Content-Type: application/json');
     
     // Match the actual database column names from contractors-api.php
     $result = $db->query("SELECT id, company, license, email, phone, status, rating FROM contractors ORDER BY id DESC LIMIT 100");
-    $contractors = [];
+    $Engineers = [];
     
     if ($result) {
         while ($row = $result->fetch_assoc()) {
-            $contractors[] = $row;
+            $Engineers[] = $row;
         }
         $result->free();
     } else {
-        error_log("Contractors query error: " . $db->error);
+        error_log("Engineers query error: " . $db->error);
     }
     
-    echo json_encode($contractors);
+    echo json_encode($Engineers);
     exit;
 }
 
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     exit;
 }
 
-// Handle POST request for assigning contractor to project
+// Handle POST request for assigning Engineer to project
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'assign_contractor') {
     header('Content-Type: application/json');
     
@@ -89,22 +89,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt->bind_param("ii", $contractor_id, $project_id);
         
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Contractor assigned to project successfully']);
+            echo json_encode(['success' => true, 'message' => 'Engineer assigned to project successfully']);
         } else {
             if (strpos($stmt->error, 'Duplicate') !== false) {
-                echo json_encode(['success' => false, 'message' => 'This contractor is already assigned to this project']);
+                echo json_encode(['success' => false, 'message' => 'This Engineer is already assigned to this project']);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to assign contractor: ' . $stmt->error]);
+                echo json_encode(['success' => false, 'message' => 'Failed to assign Engineer: ' . $stmt->error]);
             }
         }
         $stmt->close();
     } else {
-        echo json_encode(['success' => false, 'message' => 'Invalid contractor or project ID']);
+        echo json_encode(['success' => false, 'message' => 'Invalid Engineer or project ID']);
     }
     exit;
 }
 
-// Handle POST request for removing contractor from project
+// Handle POST request for removing Engineer from project
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'unassign_contractor') {
     header('Content-Type: application/json');
     
@@ -116,22 +116,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt->bind_param("ii", $contractor_id, $project_id);
         
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Contractor unassigned from project']);
+            echo json_encode(['success' => true, 'message' => 'Engineer unassigned from project']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to unassign contractor']);
+            echo json_encode(['success' => false, 'message' => 'Failed to unassign Engineer']);
         }
         $stmt->close();
     }
     exit;
 }
 
-// Handle POST request for deleting contractor
+// Handle POST request for deleting Engineer
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_contractor') {
     header('Content-Type: application/json');
 
     $contractor_id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($contractor_id <= 0) {
-        echo json_encode(['success' => false, 'message' => 'Invalid contractor ID']);
+        echo json_encode(['success' => false, 'message' => 'Invalid Engineer ID']);
         exit;
     }
 
@@ -139,16 +139,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt->bind_param("i", $contractor_id);
 
     if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Contractor deleted successfully']);
+        echo json_encode(['success' => true, 'message' => 'Engineer deleted successfully']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete contractor']);
+        echo json_encode(['success' => false, 'message' => 'Failed to delete Engineer']);
     }
 
     $stmt->close();
     exit;
 }
 
-// Handle GET request for loading assigned projects for a contractor
+// Handle GET request for loading assigned projects for a Engineer
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_assigned_projects') {
     header('Content-Type: application/json');
     
@@ -183,7 +183,7 @@ $db->close();
     
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Registered Contractors - LGU IPMS</title>
+    <title>Registered Engineers - LGU IPMS</title>
     <link rel="icon" type="image/png" href="../logocityhall.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -227,20 +227,20 @@ $db->close();
             <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             
-            <!-- Contractors with Submenu -->
+            <!-- Engineers with Submenu -->
             <div class="nav-item-group">
                 <a href="contractors.php" class="nav-main-item" id="contractorsToggle">
-                    <img src="../assets/images/admin/contractors.png" class="nav-icon">Contractors
+                    <img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers
                     <span class="dropdown-arrow">▼</span>
                 </a>
                 <div class="nav-submenu" id="contractorsSubmenu">
                     <a href="contractors.php" class="nav-submenu-item">
                         <span class="submenu-icon">➕</span>
-                        <span>Add Contractor</span>
+                        <span>Add Engineer</span>
                     </a>
                     <a href="registered_contractors.php" class="nav-submenu-item active">
                         <span class="submenu-icon">👷</span>
-                        <span>Registered Contractors</span>
+                        <span>Registered Engineers</span>
                     </a>
                 </div>
             </div>
@@ -285,15 +285,15 @@ $db->close();
 
     <section class="main-content">
         <div class="dash-header">
-            <h1>Registered Contractors</h1>
-            <p>Review contractor records, assign projects, and monitor accreditation status.</p>
+            <h1>Registered Engineers</h1>
+            <p>Review Engineer records, assign projects, and monitor accreditation status.</p>
         </div>
 
         <div class="recent-projects contractor-page contractor-registry-shell">
             <div class="contractor-page-head">
                 <div>
-                    <h3>Contractor Registry</h3>
-                    <p>Search, filter, assign, and maintain active contractors in one workspace.</p>
+                    <h3>Engineer Registry</h3>
+                    <p>Search, filter, assign, and maintain active Engineers in one workspace.</p>
                 </div>
                 <div class="contractor-head-tools">
                     <span id="contractorLastSync" class="contractor-last-sync">Last synced: --</span>
@@ -314,12 +314,12 @@ $db->close();
                     <option>Suspended</option>
                     <option>Blacklisted</option>
                 </select>
-                <div id="contractorsCount" class="contractor-count-pill">0 contractors</div>
+                <div id="contractorsCount" class="contractor-count-pill">0 Engineers</div>
             </div>
 
             <div class="contractor-stats-grid">
                 <article class="contractor-stat-card">
-                    <span>Total Contractors</span>
+                    <span>Total Engineers</span>
                     <strong id="contractorStatTotal">0</strong>
                 </article>
                 <article class="contractor-stat-card is-active">
@@ -363,7 +363,7 @@ $db->close();
 
             <div class="projects-section contractor-project-bank" id="available-projects">
                 <h3>Available Projects</h3>
-                <p class="contractor-subtext">Projects listed below are available for assignment to selected contractors.</p>
+                <p class="contractor-subtext">Projects listed below are available for assignment to selected engineers.</p>
                 <div class="table-wrap">
                     <table id="projectsTable" class="table">
                         <thead>
@@ -410,9 +410,9 @@ $db->close();
         <div class="contractor-modal-panel contractor-delete-panel">
             <div class="contractor-delete-head">
                 <span class="contractor-delete-icon">!</span>
-                <h2 id="contractorDeleteTitle">Delete Contractor?</h2>
+                <h2 id="contractorDeleteTitle">Delete Engineer?</h2>
             </div>
-            <p class="contractor-delete-message">This contractor and all related assignment records will be permanently deleted.</p>
+            <p class="contractor-delete-message">This Engineer and all related assignment records will be permanently deleted.</p>
             <div id="contractorDeleteName" class="contractor-delete-name"></div>
             <div class="contractor-modal-actions">
                 <button type="button" id="contractorDeleteCancel" class="btn-contractor-secondary">Cancel</button>
@@ -524,10 +524,10 @@ $db->close();
             const list = Array.isArray(rows) ? rows : [];
             visibleContractors = list;
 
-            if (countEl) countEl.textContent = `${list.length} contractor${list.length === 1 ? '' : 's'}`;
+            if (countEl) countEl.textContent = `${list.length} Engineer${list.length === 1 ? '' : 's'}`;
 
             if (!list.length) {
-                contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#6b7280;">No contractors found.</td></tr>';
+                contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#6b7280;">No Engineers found.</td></tr>';
                 return;
             }
 
@@ -594,7 +594,7 @@ $db->close();
         function exportVisibleContractorsCsv() {
             const list = Array.isArray(visibleContractors) ? visibleContractors : [];
             if (!list.length) {
-                setMessage('No contractors to export.', true);
+                setMessage('No Engineers to export.', true);
                 return;
             }
             const escCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -611,7 +611,7 @@ $db->close();
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `contractors-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.download = `Engineers-${new Date().toISOString().slice(0, 10)}.csv`;
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -699,7 +699,7 @@ $db->close();
                     resolve(window.confirm(`Delete ${contractorName}? This cannot be undone.`));
                     return;
                 }
-                contractorDeleteName.textContent = contractorName || 'Selected contractor';
+                contractorDeleteName.textContent = contractorName || 'Selected Engineer';
                 contractorDeleteModal.style.display = 'flex';
 
                 const cancel = () => {
@@ -809,18 +809,18 @@ $db->close();
                 refreshBtn.textContent = 'Refreshing...';
             }
             try {
-                const [contractors, projects] = await Promise.all([
+                const [Engineers, projects] = await Promise.all([
                     fetchJsonWithFallback('action=load_contractors&_=' + Date.now()),
                     fetchJsonWithFallback('action=load_projects&_=' + Date.now())
                 ]);
-                contractorsCache = Array.isArray(contractors) ? contractors : [];
+                contractorsCache = Array.isArray(Engineers) ? Engineers : [];
                 projectsCache = Array.isArray(projects) ? projects : [];
                 updateStats(contractorsCache);
                 updateLastSync();
                 renderContractors(contractorsCache);
                 renderProjects(projectsCache);
             } catch (err) {
-                if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#c00;">Failed to load contractors data.</td></tr>';
+                if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#c00;">Failed to load Engineers data.</td></tr>';
                 if (projectsTbody) projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#c00;">Failed to load projects data.</td></tr>';
                 if (formMessage) {
                     formMessage.style.display = 'block';
@@ -848,15 +848,15 @@ $db->close();
             if (!btn) return;
             const contractorId = btn.getAttribute('data-id');
             const row = btn.closest('tr');
-            const contractorName = row ? row.querySelector('td:first-child')?.textContent.trim() : 'Contractor';
+            const contractorName = row ? row.querySelector('td:first-child')?.textContent.trim() : 'Engineer';
             if (!contractorId) return;
 
             if (btn.classList.contains('btn-view-projects')) {
-                openProjectsModal(contractorId, contractorName || 'Contractor');
+                openProjectsModal(contractorId, contractorName || 'Engineer');
                 return;
             }
             if (btn.classList.contains('btn-assign')) {
-                openAssignModal(contractorId, contractorName || 'Contractor');
+                openAssignModal(contractorId, contractorName || 'Engineer');
                 return;
             }
             if (btn.classList.contains('btn-delete')) {
@@ -869,9 +869,9 @@ $db->close();
                     contractorsCache = contractorsCache.filter((c) => String(c.id) !== String(contractorId));
                     updateStats(contractorsCache);
                     applyFilters();
-                    setMessage('Contractor deleted successfully.', false);
+                    setMessage('Engineer deleted successfully.', false);
                 } catch (err) {
-                    setMessage(err.message || 'Failed to delete contractor.', true);
+                    setMessage(err.message || 'Failed to delete Engineer.', true);
                 }
             }
         });

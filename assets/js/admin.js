@@ -132,7 +132,7 @@
     const pathSegments = pathname.split('/').filter(p => p);
     
     // Known subdirectory names in the app
-    const knownDirs = ['dashboard', 'contractors', 'project-registration', 'progress-monitoring', 
+    const knownDirs = ['dashboard', 'Engineers', 'project-registration', 'progress-monitoring', 
                       'budget-resources', 'task-milestone', 'project-prioritization', 'user-dashboard'];
     
     let appRoot = '/';
@@ -922,19 +922,19 @@ function formatCurrency(n) {
     return '₱' + Number(n).toLocaleString();
 }
 
-function renderContractorsBadges(contractors) {
-    if (!contractors || contractors.length === 0) {
-        return '<div class="contractors-badge empty">No Contractors</div>';
+function renderContractorsBadges(Engineers) {
+    if (!Engineers || Engineers.length === 0) {
+        return '<div class="contractors-badge empty">No Engineers</div>';
     }
     
-    const badges = contractors.slice(0, 3).map(c => `
+    const badges = Engineers.slice(0, 3).map(c => `
         <div class="contractor-badge" title="${c.company}">
             <span class="contractor-name">${c.company}</span>
             ${c.rating ? '<span class="contractor-rating">⭐ ' + c.rating + '</span>' : ''}
         </div>
     `).join('');
     
-    const extra = contractors.length > 3 ? `<div class="contractor-badge extra">+${contractors.length - 3} more</div>` : '';
+    const extra = Engineers.length > 3 ? `<div class="contractor-badge extra">+${Engineers.length - 3} more</div>` : '';
     
     return badges + extra;
 }
@@ -1007,7 +1007,7 @@ function renderProjects() {
             if (progressFilter === '75-100' && !(progress > 75 && progress <= 100)) return false;
         }
         
-        // Contractor filter
+        // Engineer filter
         if (contractorFilter === 'assigned' && (!p.assigned_contractors || p.assigned_contractors.length === 0)) return false;
         if (contractorFilter === 'unassigned' && (p.assigned_contractors && p.assigned_contractors.length > 0)) return false;
         
@@ -1086,7 +1086,7 @@ function renderProjects() {
 
   <div class="contractors-section">
     <div class="contractors-title">
-      <span>👷 Assigned Contractors</span>
+      <span>👷 Assigned Engineers</span>
       <span class="contractor-count">${contractorCount}</span>
     </div>
     ${renderContractorsBadges(p.assigned_contractors)}
@@ -1439,8 +1439,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 
 
-/* ===== File: contractors/contractors.js ===== */
-console.log('contractors.js loaded');
+/* ===== File: Engineers/Engineers.js ===== */
+console.log('Engineers.js loaded');
 
 const sidebarToggle = document.getElementById('toggleSidebar');
 if (sidebarToggle) {
@@ -1472,7 +1472,7 @@ if (sidebarShow) {
     });
 }
 
-// Contractor form handling
+// Engineer form handling
 const contractorForm = document.getElementById('contractorForm');
 const formMessage = document.getElementById('formMessage');
 const resetBtn = document.getElementById('resetBtn');
@@ -1483,7 +1483,7 @@ if (contractorForm && resetBtn && formMessage) {
         contractorForm.reset();
         editingId = null;
         const submitBtn = contractorForm.querySelector('button[type="submit"]');
-        if (submitBtn) submitBtn.innerHTML = 'Create Contractor';
+        if (submitBtn) submitBtn.innerHTML = 'Create Engineer';
         formMessage.style.display = 'none';
     });
 
@@ -1522,12 +1522,12 @@ if (contractorForm && resetBtn && formMessage) {
 
             if (response.ok) {
                 formMessage.style.color = '#0b5';
-                formMessage.textContent = editingId ? 'Contractor updated successfully!' : 'Contractor created successfully!';
+                formMessage.textContent = editingId ? 'Engineer updated successfully!' : 'Engineer created successfully!';
                 formMessage.style.display = 'block';
                 contractorForm.reset();
                 editingId = null;
                 const submitBtn = contractorForm.querySelector('button[type="submit"]');
-                if (submitBtn) submitBtn.innerHTML = 'Create Contractor';
+                if (submitBtn) submitBtn.innerHTML = 'Create Engineer';
                 setTimeout(() => { formMessage.style.display = 'none'; }, 3000);
             } else {
                 const error = await response.json();
@@ -2588,7 +2588,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let allContractors = [];
         let allProjects = [];
 
-        // Load contractors from database
+        // Load Engineers from database
         function loadContractors() {
             console.log('loadContractors called');
             const url = 'registered_contractors.php?action=load_contractors&_=' + Date.now();
@@ -2604,20 +2604,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(text => {
                     console.log('Response text:', text);
                     try {
-                        const contractors = JSON.parse(text);
-                        console.log('Contractors parsed:', contractors);
-                        allContractors = contractors;
-                        renderContractors(contractors);
+                        const Engineers = JSON.parse(text);
+                        console.log('Engineers parsed:', Engineers);
+                        allContractors = Engineers;
+                        renderContractors(Engineers);
                     } catch (e) {
                         console.error('JSON parse error:', e, 'Text was:', text);
                         const tbody = document.querySelector('#contractorsTable tbody');
                         if (tbody) {
-                            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#c00;">Failed to parse contractor data. Please refresh.</td></tr>';
+                            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#c00;">Failed to parse Engineer data. Please refresh.</td></tr>';
                         }
                     }
                 })
                 .catch(error => {
-                    console.error('Error loading contractors:', error);
+                    console.error('Error loading Engineers:', error);
                     const tbody = document.querySelector('#contractorsTable tbody');
                     if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#c00;">Error: ' + error.message + '</td></tr>';
                 });
@@ -2682,9 +2682,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (searchInput) searchInput.addEventListener('input', filterContractors);
         if (statusFilter) statusFilter.addEventListener('change', filterContractors);
 
-        // Render contractors table
-        function renderContractors(contractors) {
-            console.log('renderContractors called with:', contractors);
+        // Render Engineers table
+        function renderContractors(Engineers) {
+            console.log('renderContractors called with:', Engineers);
             const tbody = document.querySelector('#contractorsTable tbody');
             if (!tbody) {
                 console.error('Cannot find #contractorsTable tbody');
@@ -2694,18 +2694,18 @@ document.addEventListener('DOMContentLoaded', function() {
             tbody.innerHTML = '';
             const countEl = document.getElementById('contractorsCount');
             if (countEl) {
-                const total = Array.isArray(contractors) ? contractors.length : 0;
-                countEl.textContent = `${total} contractor${total === 1 ? '' : 's'}`;
+                const total = Array.isArray(Engineers) ? Engineers.length : 0;
+                countEl.textContent = `${total} Engineer${total === 1 ? '' : 's'}`;
             }
 
-            if (!contractors || !contractors.length) {
-                console.log('No contractors to display');
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#6b7280;">No contractors found.</td></tr>';
+            if (!Engineers || !Engineers.length) {
+                console.log('No Engineers to display');
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#6b7280;">No Engineers found.</td></tr>';
                 return;
             }
 
-            console.log('Rendering', contractors.length, 'contractors');
-            contractors.forEach(c => {
+            console.log('Rendering', Engineers.length, 'Engineers');
+            Engineers.forEach(c => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td><strong>${c.company || 'N/A'}</strong></td>
@@ -2742,7 +2742,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const contractorId = this.dataset.id;
                     const contractorRow = this.closest('tr');
                     const contractorName = contractorRow.querySelector('td:nth-child(1)').textContent;
-                    console.log('Opening modal for contractor:', contractorName, 'ID:', contractorId);
+                    console.log('Opening modal for Engineer:', contractorName, 'ID:', contractorId);
                     openAssignModal(contractorId, contractorName);
                 });
             });
@@ -2754,9 +2754,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     const contractorName = contractorRow.querySelector('td:nth-child(1)').textContent;
 
                     showConfirmation({
-                        title: 'Delete Contractor',
-                        message: 'This contractor and all associated records will be permanently deleted. This action cannot be undone.',
-                        itemName: `Contractor: ${contractorName}`,
+                        title: 'Delete Engineer',
+                        message: 'This Engineer and all associated records will be permanently deleted. This action cannot be undone.',
+                        itemName: `Engineer: ${contractorName}`,
                         icon: 'Delete',
                         confirmText: 'Delete Permanently',
                         cancelText: 'Cancel',
@@ -2980,11 +2980,11 @@ document.addEventListener('DOMContentLoaded', function() {
             saveBtn.textContent = 'Saving...';
             
             const contractorId = document.getElementById('assignContractorId').value;
-            console.log('Contractor ID:', contractorId);
+            console.log('Engineer ID:', contractorId);
             
             if (!contractorId) {
-                console.error('No contractor ID');
-                showSuccessNotification('Assignment Error', 'No contractor selected.');
+                console.error('No Engineer ID');
+                showSuccessNotification('Assignment Error', 'No Engineer selected.');
                 saveBtn.disabled = false;
                 saveBtn.textContent = 'Save Assignments';
                 return;
@@ -3791,7 +3791,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Dropdown navigation toggle for Contractors
+        // Dropdown navigation toggle for Engineers
         const contractorsToggle = document.getElementById('contractorsToggle');
         const contractorsNavItemGroup = contractorsToggle?.closest('.nav-item-group');
         

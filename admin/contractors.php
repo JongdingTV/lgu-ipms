@@ -41,7 +41,7 @@ $db->close();
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Contractors - LGU IPMS</title>
+    <title>Engineers - LGU IPMS</title>
     <link rel="icon" type="image/png" href="../logocityhall.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -103,20 +103,20 @@ $db->close();
             <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             
-            <!-- Contractors with Submenu -->
+            <!-- Engineers with Submenu -->
             <div class="nav-item-group">
                 <a href="contractors.php" class="nav-main-item" id="contractorsToggle">
-                    <img src="../assets/images/admin/contractors.png" class="nav-icon">Contractors
+                    <img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers
                     <span class="dropdown-arrow">▼</span>
                 </a>
                 <div class="nav-submenu" id="contractorsSubmenu">
                     <a href="contractors.php" class="nav-submenu-item">
                         <span class="submenu-icon">➕</span>
-                        <span>Add Contractor</span>
+                        <span>Add Engineer</span>
                     </a>
                     <a href="registered_contractors.php" class="nav-submenu-item">
                         <span class="submenu-icon">👷</span>
-                        <span>Registered Contractors</span>
+                        <span>Registered Engineers</span>
                     </a>
                 </div>
             </div>
@@ -161,13 +161,13 @@ $db->close();
 
     <section class="main-content">
         <div class="dash-header">
-            <h1>Contractors</h1>
-            <p>Register and maintain accredited contractors for infrastructure projects.</p>
+            <h1>Engineers</h1>
+            <p>Register and maintain accredited engineers for infrastructure projects.</p>
         </div>
 
         <div class="recent-projects contractor-page contractor-form-shell">
             <div class="contractor-page-head">
-                <h3>Add or Edit Contractor</h3>
+                <h3>Add or Edit Engineer</h3>
                 <p>Fill in company details, compliance information, and current accreditation status.</p>
             </div>
 
@@ -242,12 +242,12 @@ $db->close();
 
                     <div class="contractor-field">
                         <label for="ctrNotes">Notes</label>
-                        <textarea id="ctrNotes" rows="3" placeholder="Additional notes about this contractor"></textarea>
+                        <textarea id="ctrNotes" rows="3" placeholder="Additional notes about this Engineer"></textarea>
                     </div>
                 </fieldset>
 
                 <div class="contractor-form-actions">
-                    <button type="submit" id="submitBtn" class="btn-contractor-primary">Create Contractor</button>
+                    <button type="submit" id="submitBtn" class="btn-contractor-primary">Create Engineer</button>
                     <button type="button" id="resetBtn" class="btn-contractor-secondary">Reset</button>
                 </div>
             </form>

@@ -49,7 +49,7 @@ function progress_projects_has_created_at(mysqli $db): bool
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
     
-    // Create contractor_project_assignments table if it doesn't exist
+    // Create Engineer_project_assignments table if it doesn't exist
     $db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
         id INT PRIMARY KEY AUTO_INCREMENT,
         contractor_id INT NOT NULL,
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             $status = (string)($row['status'] ?? 'Draft');
             $row['process_update'] = $status . ($updateDate ? ' (' . date('M d, Y', strtotime((string)$updateDate)) . ')' : '');
             
-            // Get assigned contractors for this project
+            // Get Assigned Engineers for this project
             $contractorsQuery = $db->query("
                 SELECT c.id, c.company, c.rating 
                 FROM contractors c
@@ -83,15 +83,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
                 WHERE cpa.project_id = " . intval($row['id'])
             );
             
-            $contractors = [];
+            $Engineers = [];
             if ($contractorsQuery) {
-                while ($contractor = $contractorsQuery->fetch_assoc()) {
-                    $contractors[] = $contractor;
+                while ($Engineer = $contractorsQuery->fetch_assoc()) {
+                    $Engineers[] = $Engineer;
                 }
                 $contractorsQuery->free();
             }
             
-            $row['assigned_contractors'] = $contractors;
+            $row['assigned_contractors'] = $Engineers;
             $projects[] = $row;
         }
         $result->free();
@@ -159,10 +159,10 @@ $db->close();
             <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
-                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Contractors<span class="dropdown-arrow">&#9662;</span></a>
+                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">&#9662;</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#10133;</span><span>Add Contractor</span></a>
-                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Contractors</span></a>
+                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#10133;</span><span>Add Engineer</span></a>
+                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Engineers</span></a>
                 </div>
             </div>
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
@@ -230,7 +230,7 @@ $db->close();
                 </div>
                 <div class="stat-box stat-contractors">
                     <div class="stat-number" id="statContractors">0</div>
-                    <div class="stat-label">Assigned Contractors</div>
+                    <div class="stat-label">Assigned Engineers</div>
                 </div>
             </div>
 
@@ -284,11 +284,11 @@ $db->close();
                         </div>
 
                         <div class="filter-group">
-                            <label for="pmContractorFilter">Has Contractors</label>
-                            <select id="pmContractorFilter" title="Filter by contractors">
+                            <label for="pmContractorFilter">Has Engineers</label>
+                            <select id="pmContractorFilter" title="Filter by engineers">
                                 <option value="">All Projects</option>
-                                <option value="assigned">With Contractors</option>
-                                <option value="unassigned">No Contractors</option>
+                                <option value="assigned">With Engineers</option>
+                                <option value="unassigned">No Engineers</option>
                             </select>
                         </div>
 

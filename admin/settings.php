@@ -163,9 +163,9 @@ if (isset($db) && !$db->connect_error) {
             <a href="budget_resources.php" data-section="budget"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php" data-section="tasks"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
-                <a href="contractors.php" class="nav-main-item" id="contractorsToggle" data-section="contractors"><img src="../assets/images/admin/contractors.png" class="nav-icon">Contractors<span class="dropdown-arrow">▼</span></a>
+                <a href="contractors.php" class="nav-main-item" id="contractorsToggle" data-section="contractors"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">▼</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Contractor</span></a>
+                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Engineer</span></a>
                     <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
                 </div>
             </div>

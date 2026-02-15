@@ -594,7 +594,7 @@
 
     const html = projects.map((p) => {
       const progress = 0;
-      const contractors = Array.isArray(p.assigned_contractors) ? p.assigned_contractors : [];
+      const Engineers = Array.isArray(p.assigned_contractors) ? p.assigned_contractors : [];
       const riskClass = riskClassFromProject(p, progress);
       const updateDate = p.created_at || p.createdAt || p.start_date || '';
       const processUpdate = p.process_update || `${p.status || 'Draft'} update (${formatShortDate(updateDate)})`;
@@ -610,7 +610,7 @@
             <div class="project-meta-item"><span class="project-meta-label">Location:</span><span class="project-meta-value">${p.location || '-'}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Sector:</span><span class="project-meta-value">${p.sector || '-'}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value">₱${Number(p.budget || 0).toLocaleString()}</span></div>
-            <div class="project-meta-item"><span class="project-meta-label">Contractors:</span><span class="project-meta-value">${contractors.length}</span></div>
+            <div class="project-meta-item"><span class="project-meta-label">Engineers:</span><span class="project-meta-value">${Engineers.length}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Process Update:</span><span class="project-meta-value">${processUpdate}</span></div>
           </div>
           <div class="progress-container">
@@ -684,12 +684,12 @@
     const approved = all.filter((p) => p.status === 'Approved').length;
     const inProgress = all.filter((p) => Number(p.progress || 0) > 0 && Number(p.progress || 0) < 100).length;
     const completed = all.filter((p) => Number(p.progress || 0) >= 100 || p.status === 'Completed').length;
-    const contractors = all.reduce((sum, p) => sum + ((p.assigned_contractors || []).length), 0);
+    const Engineers = all.reduce((sum, p) => sum + ((p.assigned_contractors || []).length), 0);
     if ($('#statTotal')) $('#statTotal').textContent = String(total);
     if ($('#statApproved')) $('#statApproved').textContent = String(approved);
     if ($('#statInProgress')) $('#statInProgress').textContent = String(inProgress);
     if ($('#statCompleted')) $('#statCompleted').textContent = String(completed);
-    if ($('#statContractors')) $('#statContractors').textContent = String(contractors);
+    if ($('#statContractors')) $('#statContractors').textContent = String(Engineers);
   }
 
   function initProgressMonitoringFix() {
@@ -771,7 +771,7 @@
           return;
         }
         const escapeCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-        const header = ['Code', 'Project Name', 'Status', 'Sector', 'Location', 'Budget', 'Progress', 'Contractors', 'Start Date', 'End Date'];
+        const header = ['Code', 'Project Name', 'Status', 'Sector', 'Location', 'Budget', 'Progress', 'Engineers', 'Start Date', 'End Date'];
         const csv = [
           header.map(escapeCsv).join(','),
           ...rows.map((p) => ([
