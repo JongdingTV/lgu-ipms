@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+﻿document.addEventListener('DOMContentLoaded', function () {
     const newPassword = document.getElementById('newPassword');
     const strength = document.getElementById('passwordStrength');
 
@@ -27,6 +27,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const idFileInput = document.getElementById('idFileInput');
+    const idUploadForm = document.getElementById('idUploadForm');
+    if (idFileInput && idUploadForm) {
+        idFileInput.addEventListener('change', function () {
+            if (idFileInput.files && idFileInput.files.length > 0) {
+                idUploadForm.submit();
+            }
+        });
+    }
     const fileInput = document.getElementById('profilePhotoInput');
     const modal = document.getElementById('avatarCropModal');
     const closeBtn = document.getElementById('avatarCropClose');
@@ -73,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function drawCropper() {
         if (!img) return;
         ctx.clearRect(0, 0, size, size);
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = '#f1f5f9';
         ctx.fillRect(0, 0, size, size);
 
         const drawW = img.width * zoom;
@@ -89,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.drawImage(img, drawX, drawY, drawW, drawH);
         ctx.restore();
 
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.18)';
         ctx.fillRect(0, 0, size, size);
         ctx.save();
         ctx.globalCompositeOperation = 'destination-out';
@@ -262,3 +271,5 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+
+

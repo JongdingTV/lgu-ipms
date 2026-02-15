@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -381,12 +381,11 @@ $csrfToken = generate_csrf_token();
                                             -
                                         <?php endif; ?>
                                     </div>
-                                    <form method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" class="id-upload-form">
+                                    <form id="idUploadForm" method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" class="id-upload-form">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="id_action" value="upload">
-                                        <input type="file" name="id_file" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" required>
-                                        <div class="profile-btn-stack">
-                                            <button type="submit" class="profile-action-btn profile-action-btn-primary">Upload ID</button>
+                                        <div class="id-upload-row">
+                                            <input type="file" id="idFileInput" name="id_file" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" required>
                                             <?php if (!empty($user['id_upload'])): ?>
                                                 <button form="removeIdForm" type="submit" class="profile-action-btn profile-action-btn-ghost">Remove ID</button>
                                             <?php endif; ?>
@@ -398,7 +397,7 @@ $csrfToken = generate_csrf_token();
                                             <input type="hidden" name="id_action" value="remove">
                                         </form>
                                     <?php endif; ?>
-                                    <small style="display:block;color:#64748b;margin-top:6px;">Allowed: JPG, PNG, WEBP, PDF. Max: 5MB.</small>
+                                    <small style="display:block;color:#64748b;margin-top:6px;">Allowed: JPG, PNG, WEBP, PDF. Max: 5MB. Upload starts automatically when you choose a file.</small>
                                 </div>
                                 <div class="settings-info-field"><label>Registered On</label><div class="settings-info-value"><?php echo !empty($user['created_at']) ? date('M d, Y', strtotime((string) $user['created_at'])) : '-'; ?></div></div>
                                 <div class="settings-info-field"><label>Feedback Submitted</label><div class="settings-info-value"><?php echo (int) ($feedbackStats['total'] ?? 0); ?></div></div>
@@ -452,4 +451,6 @@ $csrfToken = generate_csrf_token();
     <script src="/user-dashboard/user-settings.js?v=<?php echo filemtime(__DIR__ . '/user-settings.js'); ?>"></script>
 </body>
 </html>
+
+
 
