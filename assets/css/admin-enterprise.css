@@ -2903,3 +2903,32 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .delet
     border-top-color: #7f1d1d !important;
     background: rgba(25, 11, 15, 0.9) !important;
 }
+
+/* Final dark-mode text enforcement for dashboard widgets (must stay last) */
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .dash-header h1 {
+    color: #f3f8ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .dash-header p {
+    color: #d7e5fb !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .metric-card .metric-content h3 {
+    color: #dce9ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .metric-card .metric-value {
+    color: #8fb7ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .metric-card .metric-status {
+    color: #c9dbf6 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .chart-box h3 {
+    color: #f2f7ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .chart-box .ac-39f9429c {
+    color: #d6e5fb !important;
+}
