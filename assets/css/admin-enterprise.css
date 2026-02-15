@@ -2932,3 +2932,17 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .chart-box .ac-39f9429c {
     color: #d6e5fb !important;
 }
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .quick-stats .stat-item h4 {
+    color: #e6f0ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .quick-stats .stat-item p {
+    color: #9fc1ff !important;
+    font-weight: 700 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .quick-stats,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .quick-stats .stat-item {
+    border-color: #2e4665 !important;
+}
