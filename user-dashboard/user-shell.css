@@ -925,3 +925,96 @@ button:focus-visible,
         height: 210px !important;
     }
 }
+
+/* Mobile hard-fix: keep feedback photo/map controls compact */
+@media (max-width: 768px) {
+    .user-feedback-form #feedbackPhotoRow,
+    .user-feedback-form #feedbackMapControls {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .user-feedback-form #photo {
+        display: block;
+        width: 100% !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
+        padding: 4px 8px !important;
+        line-height: 1.1 !important;
+    }
+
+    .user-feedback-form #photo::file-selector-button {
+        height: 30px;
+        padding: 0 10px;
+    }
+
+    .user-feedback-form #mapSearchInput {
+        width: 100% !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
+        padding: 6px 10px !important;
+    }
+
+    .user-feedback-form #removePhotoBtn,
+    .user-feedback-form #mapSearchBtn,
+    .user-feedback-form #gpsPinBtn {
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
+        padding: 0 12px !important;
+    }
+
+    .user-feedback-form #concernMap {
+        height: 170px !important;
+    }
+}
+
+/* Mobile top controls + sidebar close button */
+@media (max-width: 992px) {
+    body.mobile-sidebar-mode .top-sidebar-toggle {
+        position: fixed !important;
+        top: 8px !important;
+        left: 10px !important;
+        z-index: 12060 !important;
+    }
+
+    body.mobile-sidebar-mode .admin-top-utilities {
+        position: fixed !important;
+        top: 8px !important;
+        right: 10px !important;
+        z-index: 12050 !important;
+    }
+
+    body.mobile-sidebar-mode .nav#navbar {
+        z-index: 12040 !important;
+        position: fixed;
+    }
+
+    .mobile-sidebar-close {
+        display: none;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #0f172a;
+        font-size: 1.2rem;
+        line-height: 1;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+        z-index: 2;
+    }
+
+    body.mobile-sidebar-mode.mobile-nav-open .mobile-sidebar-close {
+        display: inline-flex;
+    }
+}
