@@ -11,6 +11,10 @@
     const gpsLng = document.getElementById('gps_lng');
     const gpsAccuracy = document.getElementById('gps_accuracy');
     const gpsMapUrl = document.getElementById('gps_map_url');
+    const photoInput = document.getElementById('photo');
+    const removePhotoBtn = document.getElementById('removePhotoBtn');
+    const photoStatus = document.getElementById('photoStatus');
+    const mapContainer = document.getElementById('concernMap');
 
     if (!form) return;
 
@@ -282,18 +286,27 @@
             }
 
             navigator.geolocation.getCurrentPosition(function (position) {
-                const lat = position.coords.latitude.toFixed(6);
-                const lng = position.coords.longitude.toFixed(6);
-                const acc = Math.round(position.coords.accuracy || 0);
-                const mapsUrl = 'https://maps.google.com/?q=' + lat + ',' + lng;
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const acc = position.coords.accuracy || null;
+                updateMapFields(lat, lng, acc);
 
-                if (gpsLat) gpsLat.value = lat;
-                if (gpsLng) gpsLng.value = lng;
-                if (gpsAccuracy) gpsAccuracy.value = String(acc);
-                if (gpsMapUrl) gpsMapUrl.value = mapsUrl;
+                if (map) {
+                    map.setView([lat, lng], 17);
+                    if (!marker) {
+                        marker = window.L.marker([lat, lng], { draggable: true }).addTo(map);
+                        marker.on('dragend', function (dragEvent) {
+                            const p = dragEvent.target.getLatLng();
+                            updateMapFields(p.lat, p.lng, null);
+                            buildLocationValue();
+                        });
+                    } else {
+                        marker.setLatLng([lat, lng]);
+                    }
+                }
 
                 buildLocationValue();
-                showMessage('GPS pin captured. You can now submit your feedback.', true);
+                showMessage('Location pinned on map. You can drag the marker for exact spot.', true);
             }, function (error) {
                 const msg = error && error.message ? error.message : 'Unable to get your current location.';
                 showMessage(msg, false);
@@ -302,6 +315,58 @@
                 timeout: 12000,
                 maximumAge: 0
             });
+        });
+    }
+
+
+    function updateMapFields(lat, lng, accuracyMeters) {
+        const latText = Number(lat).toFixed(6);
+        const lngText = Number(lng).toFixed(6);
+        if (gpsLat) gpsLat.value = latText;
+        if (gpsLng) gpsLng.value = lngText;
+        if (gpsAccuracy) gpsAccuracy.value = accuracyMeters ? String(Math.round(accuracyMeters)) : '';
+        if (gpsMapUrl) gpsMapUrl.value = 'https://maps.google.com/?q=' + latText + ',' + lngText;
+    }
+
+    if (photoInput && photoStatus) {
+        photoInput.addEventListener('change', function () {
+            photoStatus.textContent = photoInput.files && photoInput.files.length > 0
+                ? 'Selected: ' + photoInput.files[0].name
+                : 'No photo selected.';
+        });
+    }
+
+    if (removePhotoBtn && photoInput) {
+        removePhotoBtn.addEventListener('click', function () {
+            photoInput.value = '';
+            if (photoStatus) photoStatus.textContent = 'No photo selected.';
+        });
+    }
+
+    let map = null;
+    let marker = null;
+    if (mapContainer && typeof window.L !== 'undefined') {
+        map = window.L.map(mapContainer).setView([14.6760, 121.0437], 12);
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        map.on('click', function (event) {
+            const lat = event.latlng.lat;
+            const lng = event.latlng.lng;
+            if (!marker) {
+                marker = window.L.marker([lat, lng], { draggable: true }).addTo(map);
+                marker.on('dragend', function (dragEvent) {
+                    const p = dragEvent.target.getLatLng();
+                    updateMapFields(p.lat, p.lng, null);
+                    buildLocationValue();
+                });
+            } else {
+                marker.setLatLng([lat, lng]);
+            }
+            updateMapFields(lat, lng, null);
+            buildLocationValue();
         });
     }
 
@@ -338,6 +403,15 @@
                 if (locationInput) {
                     locationInput.value = '';
                 }
+                if (gpsLat) gpsLat.value = '';
+                if (gpsLng) gpsLng.value = '';
+                if (gpsAccuracy) gpsAccuracy.value = '';
+                if (gpsMapUrl) gpsMapUrl.value = '';
+                if (photoStatus) photoStatus.textContent = 'No photo selected.';
+                if (marker && map) {
+                    map.removeLayer(marker);
+                    marker = null;
+                }
                 window.setTimeout(function () {
                     window.location.reload();
                 }, 700);
@@ -350,6 +424,11 @@
         }
     });
 });
+
+
+
+
+
 
 
 
