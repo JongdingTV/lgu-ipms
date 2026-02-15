@@ -186,7 +186,7 @@ $csrfToken = generate_csrf_token();
                             <option value="">Select Barangay</option>
                         </select>
                     </div>
-                    <div class="full">
+                    <div>
                         <label for="alt_name">Alternative Name</label>
                         <select id="alt_name" name="alt_name" required disabled>
                             <option value="">Select Alternative Name</option>
@@ -265,4 +265,6 @@ $csrfToken = generate_csrf_token();
     <script src="/user-dashboard/user-feedback.js?v=<?php echo filemtime(__DIR__ . '/user-feedback.js'); ?>"></script>
 </body>
 </html>
+
+
 
