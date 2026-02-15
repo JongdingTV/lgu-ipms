@@ -2946,3 +2946,128 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .quick-stats .stat-item {
     border-color: #2e4665 !important;
 }
+
+/* Final dark-mode contrast patch for all admin pages */
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav-submenu {
+    background: linear-gradient(180deg, #132742, #102136) !important;
+    border-color: #2f4c70 !important;
+    box-shadow: 0 14px 28px rgba(2, 10, 20, 0.55) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav-submenu-item {
+    color: #d8e8ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav-submenu-item .submenu-icon,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav-submenu-item span {
+    color: #d8e8ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .nav-submenu-item:hover {
+    background: #1b3554 !important;
+    color: #f5f9ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .quick-stats .stat-item,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .stat-box,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .priority-kpi,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .summary .stat,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .prioritization-summary .stat {
+    background: linear-gradient(165deg, #152c49, #10233a) !important;
+    border-color: #355478 !important;
+    color: #e7f1ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .quick-stats .stat-item h4,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .priority-kpi > span,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .summary .stat small,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .prioritization-summary .stat small,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .stat-label {
+    color: #bdd2ef !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .quick-stats .stat-item p,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .priority-kpi > strong,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .summary .stat > div,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .prioritization-summary .stat > div,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .stat-number {
+    color: #f0f7ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .pm-controls-wrapper,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .feedback-controls,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .recent-projects,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .validation-summary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .tasks-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .settings-panel,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .contractor-form fieldset,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .project-card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .project-meta-item {
+    background: linear-gradient(165deg, #132843, #0f2238) !important;
+    border-color: #355478 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #fbSearch,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #fbStatusFilter,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #fbCategoryFilter,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .pm-left input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .pm-controls select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .ac-6f762f4a {
+    background: #102741 !important;
+    border-color: #3a5a80 !important;
+    color: #e8f2ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #fbSearch::placeholder,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .pm-left input::placeholder,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .ac-6f762f4a::placeholder {
+    color: #9db6d6 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .settings-tabs {
+    background: linear-gradient(160deg, #102239, #122b47) !important;
+    border-color: #365679 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .settings-tabs .tab-btn {
+    color: #cce0fb !important;
+    border-color: #355478 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .settings-tabs .tab-btn.active {
+    background: linear-gradient(135deg, #245ec0, #2d73e0) !important;
+    border-color: #3f84e7 !important;
+    color: #ffffff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .ac-37c29296,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .settings-subtitle,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .feedback-visible-count,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .pm-result-summary {
+    color: #bdd2ef !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .pm-quick-filters button,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .btn-clear-filters,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #clearSearch,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .br-tab {
+    background: #132a46 !important;
+    border-color: #385a82 !important;
+    color: #d9e9ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .pm-quick-filters button:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .btn-clear-filters:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content #clearSearch:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .br-tab:hover {
+    background: #1a385c !important;
+    border-color: #4c73a0 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .settings-empty,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .pm-empty .empty-state,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .no-results {
+    background: linear-gradient(160deg, #10253f, #0d1f34) !important;
+    border-color: #355478 !important;
+    color: #d6e7ff !important;
+}
