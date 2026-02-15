@@ -235,6 +235,19 @@
 
         document.body.appendChild(util);
 
+        // Mirror admin top bar: include a menu button on the left side.
+        var topLeft = document.createElement('div');
+        topLeft.className = 'admin-top-left';
+        topLeft.innerHTML = '' +
+            '<button type="button" class="admin-top-menu" id="userTopMenuBtn" aria-label="Toggle sidebar">' +
+            '  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+            '    <line x1="3" y1="12" x2="21" y2="12"></line>' +
+            '    <line x1="3" y1="6" x2="21" y2="6"></line>' +
+            '    <line x1="3" y1="18" x2="21" y2="18"></line>' +
+            '  </svg>' +
+            '</button>';
+        util.insertBefore(topLeft, util.firstChild);
+
         var timeEl = document.getElementById('userLiveTime');
         var dateEl = document.getElementById('userLiveDate');
         var calendarBtn = document.getElementById('userCalendarBtn');
@@ -247,6 +260,7 @@
         var calToday = document.getElementById('userCalToday');
         var themeBtn = document.getElementById('userThemeBtn');
         var themeLabel = document.getElementById('userThemeLabel');
+        var topMenuBtn = document.getElementById('userTopMenuBtn');
 
         var isDarkTheme = body.classList.contains('theme-dark');
         if (themeLabel) {
@@ -329,6 +343,14 @@
             calToday.addEventListener('click', function () {
                 calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);
                 renderCalendar();
+            });
+        }
+
+        if (topMenuBtn) {
+            topMenuBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleSidebar();
             });
         }
 
