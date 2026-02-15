@@ -1,4 +1,4 @@
-﻿.nav#navbar {
+.nav#navbar {
     display: flex;
     flex-direction: column;
 }
@@ -1030,6 +1030,8 @@ button:focus-visible,
         left: 8px !important;
         width: 34px;
         height: 34px;
+        padding: 0 !important;
+        margin: 0 !important;
         z-index: 12060 !important;
     }
 
@@ -1037,34 +1039,44 @@ button:focus-visible,
         top: 6px !important;
         right: 8px !important;
         gap: 4px !important;
+        margin: 0 !important;
+        padding: 0 !important;
         z-index: 12050 !important;
     }
 
     body.mobile-sidebar-mode .admin-time-chip {
-        min-width: 108px !important;
-        min-height: 30px !important;
-        padding: 3px 6px !important;
+        min-width: 104px !important;
+        min-height: 28px !important;
+        padding: 0 6px !important;
+        margin: 0 !important;
     }
 
     body.mobile-sidebar-mode .admin-time-chip .admin-time {
-        font-size: 0.74rem !important;
+        font-size: 0.72rem !important;
     }
 
     body.mobile-sidebar-mode .admin-time-chip .admin-date {
-        font-size: 0.58rem !important;
+        font-size: 0.56rem !important;
     }
 
     body.mobile-sidebar-mode .admin-utility-btn {
-        min-height: 30px !important;
-        padding: 0 7px !important;
+        min-height: 28px !important;
+        height: 28px !important;
+        width: 28px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    body.mobile-sidebar-mode .admin-utility-btn svg {
+        width: 14px;
+        height: 14px;
     }
 
     body.mobile-sidebar-mode .main-content {
-        padding-top: 132px !important;
+        padding-top: 126px !important;
     }
 
     body.mobile-sidebar-mode.mobile-nav-open .mobile-sidebar-close {
         display: inline-flex !important;
     }
 }
-
