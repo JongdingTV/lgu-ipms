@@ -870,3 +870,58 @@ button:focus-visible,
         min-height: 44px;
     }
 }
+
+
+/* Keep profile upload preview strictly circular */
+.settings-page .avatar-upload-trigger {
+    width: 132px;
+    height: 132px;
+    aspect-ratio: 1 / 1;
+    flex: 0 0 132px;
+    border-radius: 50%;
+}
+
+.settings-page .avatar-upload-image,
+.settings-page .avatar-upload-initial {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Slim feedback upload + map sections */
+.user-feedback-form #feedbackPhotoRow,
+.user-feedback-form #feedbackMapControls {
+    gap: 8px;
+}
+
+.user-feedback-form #photo,
+.user-feedback-form #mapSearchInput {
+    min-height: 36px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.user-feedback-form #removePhotoBtn,
+.user-feedback-form #mapSearchBtn,
+.user-feedback-form #gpsPinBtn {
+    min-height: 36px;
+    padding: 0 12px;
+}
+
+.user-feedback-form #concernMap {
+    height: 250px !important;
+}
+
+@media (max-width: 768px) {
+    .settings-page .avatar-upload-trigger {
+        width: 120px;
+        height: 120px;
+        flex: 0 0 120px;
+    }
+
+    .user-feedback-form #concernMap {
+        height: 210px !important;
+    }
+}
