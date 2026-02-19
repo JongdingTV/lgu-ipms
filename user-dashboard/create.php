@@ -26,6 +26,31 @@ $form = [
     'idNumber' => ''
 ];
 
+function create_users_has_verification_status(mysqli $db): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'users'
+           AND COLUMN_NAME = 'verification_status'
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+
+    return $exists;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_submit'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Invalid request. Please refresh and try again.';
@@ -74,6 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_submit'])) {
             $errors[] = 'Address is required.';
         }
 
+        $addressLower = strtolower($form['address']);
+        $isQuezonCityAddress = strpos($addressLower, 'quezon city') !== false
+            || preg_match('/\bqc\b/', $addressLower);
+
         if ($form['birthdate'] !== '') {
             $birthTs = strtotime($form['birthdate']);
             if ($birthTs === false || $birthTs > time()) {
@@ -93,26 +122,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_submit'])) {
             $errors[] = 'Passwords do not match.';
         }
 
-        $idUploadPath = '';
-        if (!empty($_FILES['idUpload']['name'])) {
-            if (!isset($_FILES['idUpload']) || $_FILES['idUpload']['error'] !== UPLOAD_ERR_OK) {
-                $errors[] = 'Unable to upload ID file. Please try again.';
-            } else {
-                $tmpFile = (string) $_FILES['idUpload']['tmp_name'];
-                $fileSize = (int) ($_FILES['idUpload']['size'] ?? 0);
-                if ($fileSize > (5 * 1024 * 1024)) {
-                    $errors[] = 'ID upload must be 5MB or less.';
-                } else {
-                    $mime = (string) (mime_content_type($tmpFile) ?: '');
-                    $allowed = [
-                        'image/jpeg' => 'jpg',
-                        'image/png' => 'png',
-                        'application/pdf' => 'pdf'
-                    ];
+        if ($form['idType'] === '') {
+            $errors[] = 'Please select an ID type.';
+        }
 
-                    if (!isset($allowed[$mime])) {
-                        $errors[] = 'Only JPG, PNG, or PDF files are allowed for ID upload.';
-                    }
+        if ($form['idNumber'] === '') {
+            $errors[] = 'Please provide your ID number.';
+        }
+
+        if ($form['idType'] !== '' && $form['idType'] !== 'barangayid' && !$isQuezonCityAddress) {
+            $errors[] = 'For non-Barangay IDs, the address must indicate Quezon City.';
+        }
+
+        $idUploadPath = '';
+        if (empty($_FILES['idUpload']['name'])) {
+            $errors[] = 'ID upload is required for verification.';
+        } elseif (!isset($_FILES['idUpload']) || $_FILES['idUpload']['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'Unable to upload ID file. Please try again.';
+        } else {
+            $tmpFile = (string) $_FILES['idUpload']['tmp_name'];
+            $fileSize = (int) ($_FILES['idUpload']['size'] ?? 0);
+            if ($fileSize > (5 * 1024 * 1024)) {
+                $errors[] = 'ID upload must be 5MB or less.';
+            } else {
+                $mime = (string) (mime_content_type($tmpFile) ?: '');
+                $allowed = [
+                    'image/jpeg' => 'jpg',
+                    'image/png' => 'png',
+                    'application/pdf' => 'pdf'
+                ];
+
+                if (!isset($allowed[$mime])) {
+                    $errors[] = 'Only JPG, PNG, or PDF files are allowed for ID upload.';
                 }
             }
         }
@@ -158,31 +199,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_submit'])) {
 
         if (empty($errors)) {
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $hasVerificationStatus = create_users_has_verification_status($db);
             $insert = $db->prepare(
-                'INSERT INTO users (first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, password)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                $hasVerificationStatus
+                    ? 'INSERT INTO users (first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, password, verification_status)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    : 'INSERT INTO users (first_name, middle_name, last_name, suffix, email, mobile, birthdate, gender, civil_status, address, id_type, id_number, id_upload, password)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
 
             if (!$insert) {
                 $errors[] = 'Unable to create account right now. Please try again later.';
             } else {
-                $insert->bind_param(
-                    'ssssssssssssss',
-                    $form['firstName'],
-                    $form['middleName'],
-                    $form['lastName'],
-                    $form['suffix'],
-                    $form['email'],
-                    $form['mobile'],
-                    $form['birthdate'],
-                    $form['gender'],
-                    $form['civilStatus'],
-                    $form['address'],
-                    $form['idType'],
-                    $form['idNumber'],
-                    $idUploadPath,
-                    $hashedPassword
-                );
+                if ($hasVerificationStatus) {
+                    $verificationStatus = 'pending';
+                    $insert->bind_param(
+                        'sssssssssssssss',
+                        $form['firstName'],
+                        $form['middleName'],
+                        $form['lastName'],
+                        $form['suffix'],
+                        $form['email'],
+                        $form['mobile'],
+                        $form['birthdate'],
+                        $form['gender'],
+                        $form['civilStatus'],
+                        $form['address'],
+                        $form['idType'],
+                        $form['idNumber'],
+                        $idUploadPath,
+                        $hashedPassword,
+                        $verificationStatus
+                    );
+                } else {
+                    $insert->bind_param(
+                        'ssssssssssssss',
+                        $form['firstName'],
+                        $form['middleName'],
+                        $form['lastName'],
+                        $form['suffix'],
+                        $form['email'],
+                        $form['mobile'],
+                        $form['birthdate'],
+                        $form['gender'],
+                        $form['civilStatus'],
+                        $form['address'],
+                        $form['idType'],
+                        $form['idNumber'],
+                        $idUploadPath,
+                        $hashedPassword
+                    );
+                }
 
                 if ($insert->execute()) {
                     header('Location: /user-dashboard/user-login.php?success=1');
@@ -648,8 +715,8 @@ body.user-signup-page .subtitle {
                         </select>
                     </div>
                     <div class="input-box">
-                        <label for="idType">ID Type</label>
-                        <select id="idType" name="idType">
+                        <label for="idType">ID Type *</label>
+                        <select id="idType" name="idType" required>
                             <option value="" <?php echo $form['idType'] === '' ? 'selected' : ''; ?>>Select ID Type</option>
                             <option value="nbi" <?php echo $form['idType'] === 'nbi' ? 'selected' : ''; ?>>NBI Clearance</option>
                             <option value="passport" <?php echo $form['idType'] === 'passport' ? 'selected' : ''; ?>>Passport</option>
@@ -660,12 +727,15 @@ body.user-signup-page .subtitle {
                         </select>
                     </div>
                     <div class="input-box">
-                        <label for="idNumber">ID Number</label>
-                        <input id="idNumber" name="idNumber" type="text" value="<?php echo htmlspecialchars($form['idNumber'], ENT_QUOTES, 'UTF-8'); ?>">
+                        <label for="idNumber">ID Number *</label>
+                        <input id="idNumber" name="idNumber" type="text" required value="<?php echo htmlspecialchars($form['idNumber'], ENT_QUOTES, 'UTF-8'); ?>">
                     </div>
                     <div class="input-box full">
-                        <label for="idUpload">Upload ID (JPG/PNG/PDF, max 5MB)</label>
-                        <input id="idUpload" name="idUpload" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf">
+                        <label for="idUpload">Upload ID * (JPG/PNG/PDF, max 5MB)</label>
+                        <input id="idUpload" name="idUpload" type="file" required accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf">
+                        <small style="display:block;margin-top:6px;color:#64748b;">
+                            Barangay ID is recommended. Other IDs are accepted if your address is in Quezon City.
+                        </small>
                     </div>
                 </div>
             </div>
@@ -820,8 +890,24 @@ body.user-signup-page .subtitle {
             }
         }
         if (step === 3) {
-            if (!document.getElementById('gender').value || !document.getElementById('civilStatus').value) {
+            var gender = document.getElementById('gender').value;
+            var civilStatus = document.getElementById('civilStatus').value;
+            var idType = document.getElementById('idType').value;
+            var idNumber = document.getElementById('idNumber').value.trim();
+            var idUpload = document.getElementById('idUpload').value;
+            var addressForIdCheck = document.getElementById('address').value.trim().toLowerCase();
+            var isQcAddress = addressForIdCheck.indexOf('quezon city') >= 0 || /\bqc\b/.test(addressForIdCheck);
+
+            if (!gender || !civilStatus) {
                 showError('Please select gender and civil status.');
+                return false;
+            }
+            if (!idType || !idNumber || !idUpload) {
+                showError('Please provide ID type, ID number, and upload your ID.');
+                return false;
+            }
+            if (idType !== 'barangayid' && !isQcAddress) {
+                showError('For non-Barangay IDs, your address must indicate Quezon City.');
                 return false;
             }
         }

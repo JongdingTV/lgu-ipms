@@ -15,6 +15,7 @@ CREATE TABLE users (
     id_type VARCHAR(50),
     id_number VARCHAR(50),
     id_upload VARCHAR(255),
+    verification_status ENUM('pending', 'verified', 'rejected') DEFAULT 'pending',
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -41,3 +41,58 @@ function user_profile_photo_web_path(int $userId): string
     return '/uploads/user-profile/' . basename($matches[0]);
 }
 
+function user_table_has_column(mysqli $db, string $tableName, string $columnName): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param('ss', $tableName, $columnName);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+
+    return $exists;
+}
+
+function user_feedback_verification_status(mysqli $db, int $userId): string
+{
+    if (!user_table_has_column($db, 'users', 'verification_status')) {
+        return 'verified';
+    }
+
+    $stmt = $db->prepare('SELECT verification_status FROM users WHERE id = ? LIMIT 1');
+    if (!$stmt) {
+        return 'pending';
+    }
+
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+
+    $status = strtolower(trim((string) ($row['verification_status'] ?? 'pending')));
+    return $status !== '' ? $status : 'pending';
+}
+
+function user_feedback_access_allowed(mysqli $db, int $userId): bool
+{
+    $status = user_feedback_verification_status($db, $userId);
+    return in_array($status, ['verified', 'approved', 'active'], true);
+}

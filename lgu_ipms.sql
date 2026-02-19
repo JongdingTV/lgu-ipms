@@ -170,6 +170,7 @@ CREATE TABLE `users` (
   `id_type` varchar(50) DEFAULT NULL,
   `id_number` varchar(50) DEFAULT NULL,
   `id_upload` varchar(255) DEFAULT NULL,
+  `verification_status` enum('pending','verified','rejected') DEFAULT 'pending',
   `password` varchar(255) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

@@ -22,6 +22,9 @@ $stmt->close();
 
 $userName = trim($_SESSION['user_name'] ?? (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
 $userEmail = $user['email'] ?? '';
+$canAccessFeedback = user_feedback_access_allowed($db, $userId);
+$verificationStatus = user_feedback_verification_status($db, $userId);
+$feedbackLockRequested = isset($_GET['feedback_locked']) && $_GET['feedback_locked'] === '1';
 $userInitials = user_avatar_initials($userName);
 $avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
 $profileImageWebPath = user_profile_photo_web_path($userId);
@@ -54,7 +57,7 @@ function user_dashboard_projects_has_created_at(mysqli $db): bool
 $totalProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'] ?? 0);
 $inProgressProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'] ?? 0);
 $completedProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed'")->fetch_assoc()['count'] ?? 0);
-$totalBudget = (float) ($db->query("SELECT COALESCE(SUM(budget), 0) as total FROM projects")->fetch_assoc()['total'] ?? 0);
+$forApprovalProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'For Approval'")->fetch_assoc()['count'] ?? 0);
 
 $recentOrder = user_dashboard_projects_has_created_at($db) ? 'created_at DESC' : 'id DESC';
 $recentProjects = $db->query("SELECT id, name, location, status, budget FROM projects ORDER BY {$recentOrder} LIMIT 5");
@@ -89,6 +92,22 @@ $db->close();
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
+    <style>
+        .verification-reminder {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #fcd34d;
+            background: #fffbeb;
+            color: #92400e;
+            font-weight: 600;
+        }
+        .limited-view .sensitive-data {
+            filter: blur(6px);
+            user-select: none;
+            pointer-events: none;
+        }
+    </style>
     <div class="sidebar-toggle-wrapper">
         <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -156,10 +175,13 @@ $db->close();
         </a>
     </div>
 
-    <section class="main-content">
+    <section class="main-content<?php echo $canAccessFeedback ? '' : ' limited-view'; ?>">
         <div class="dash-header">
             <h1>User Dashboard</h1>
             <p>Transparent project updates from the admin side.</p>
+            <?php if (!$canAccessFeedback): ?>
+                <div class="verification-reminder">Limited view mode is active. Verify your ID to unlock full project details.</div>
+            <?php endif; ?>
         </div>
 
         <div class="metrics-container">
@@ -187,12 +209,12 @@ $db->close();
                     <span class="metric-status">On schedule</span>
                 </div>
             </div>
-            <div class="metric-card card" id="budgetCard" data-budget="<?php echo number_format($totalBudget, 2, '.', ''); ?>">
-                <img src="/assets/images/admin/budget.png" alt="Total Budget" class="metric-icon">
+            <div class="metric-card card">
+                <img src="/assets/images/admin/list.png" alt="For Approval" class="metric-icon">
                 <div class="metric-content">
-                    <h3>Total Budget</h3>
-                    <p class="metric-value" id="budgetValue">PHP <?php echo number_format($totalBudget, 2); ?></p>
-                    <span class="metric-status">Allocated funds</span>
+                    <h3>For Approval</h3>
+                    <p class="metric-value"><?php echo $forApprovalProjects; ?></p>
+                    <span class="metric-status">Awaiting final confirmation</span>
                 </div>
             </div>
         </div>
@@ -201,18 +223,21 @@ $db->close();
             <div class="chart-box card">
                 <h3>Project Status Distribution</h3>
                 <div class="chart-placeholder">
+                    <div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="statusStackBar" style="width:0%;"></div></div>
                     <div class="status-legend">
-                        <div class="legend-item"><span class="legend-color" style="background:#16a34a;"></span><span id="completedPercent">Completed: 0%</span></div>
-                        <div class="legend-item"><span class="legend-color" style="background:#2563eb;"></span><span id="inProgressPercent">In Progress: 0%</span></div>
-                        <div class="legend-item"><span class="legend-color" style="background:#f59e0b;"></span><span id="otherPercent">Other: 0%</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#16a34a;"></span><span id="completedPercent" class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>">Completed: 0%</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#2563eb;"></span><span id="inProgressPercent" class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>">In Progress: 0%</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#f59e0b;"></span><span id="otherPercent" class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>">Other: 0%</span></div>
                     </div>
                 </div>
             </div>
             <div class="chart-box card">
-                <h3>Budget Utilization</h3>
+                <h3>Monthly Project Activity</h3>
                 <div class="chart-placeholder">
-                    <div class="progress-bar"><div class="progress-fill" id="budgetProgressFill" style="width:0%;"></div></div>
-                    <p id="budgetUtilizationText">Budget utilization: 0% Used</p>
+                    <svg id="monthlyActivityChart" viewBox="0 0 320 120" role="img" aria-label="Monthly project activity chart">
+                        <polyline id="monthlyActivityLine" fill="none" stroke="#1d4ed8" stroke-width="3" points="0,110 320,110"></polyline>
+                    </svg>
+                    <p id="monthlyActivityText" class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>">No monthly activity yet.</p>
                 </div>
             </div>
         </div>
@@ -242,11 +267,11 @@ $db->close();
                                 elseif ($project['status'] === 'Cancelled') $statusColor = 'cancelled';
                                 ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($project['name']); ?></td>
-                                    <td><?php echo htmlspecialchars($project['location']); ?></td>
+                                    <td class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>"><?php echo htmlspecialchars($project['name']); ?></td>
+                                    <td class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>"><?php echo htmlspecialchars($project['location']); ?></td>
                                     <td><span class="status-badge <?php echo $statusColor; ?>"><?php echo htmlspecialchars($project['status']); ?></span></td>
                                     <td><div class="progress-small"><div class="progress-fill-small" style="width:0%;"></div></div></td>
-                                    <td>PHP <?php echo number_format((float) $project['budget'], 2); ?></td>
+                                    <td class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>">PHP <?php echo number_format((float) $project['budget'], 2); ?></td>
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>
@@ -288,10 +313,60 @@ $db->close();
         </div>
     </section>
 
+    <?php if (!$canAccessFeedback): ?>
+    <div id="feedbackVerificationModal" style="position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;z-index:6000;padding:16px;">
+        <div style="width:min(92vw,520px);background:#fff;border-radius:14px;padding:18px 16px;box-shadow:0 20px 40px rgba(0,0,0,.2);">
+            <h3 style="margin:0 0 10px;color:#1e3a8a;">ID Verification Required</h3>
+            <p style="margin:0 0 12px;color:#334155;line-height:1.5;">
+                Your account is active, but Feedback is locked until your ID is verified by staff.
+                Current status: <strong><?php echo htmlspecialchars(ucfirst($verificationStatus), ENT_QUOTES, 'UTF-8'); ?></strong>.
+            </p>
+            <p style="margin:0 0 14px;color:#64748b;font-size:.92rem;">Once verified, the Feedback section will automatically unlock.</p>
+            <div style="display:flex;justify-content:flex-end;">
+                <button type="button" id="closeFeedbackVerificationModal" class="ac-f84d9680">OK</button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <script src="/assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
     <script src="/user-dashboard/user-shell.js?v=<?php echo filemtime(__DIR__ . '/user-shell.js'); ?>"></script>
     <script src="/user-dashboard/user-dashboard.js?v=<?php echo filemtime(__DIR__ . '/user-dashboard.js'); ?>"></script>
+    <?php if (!$canAccessFeedback): ?>
+    <script>
+    (function () {
+        var modal = document.getElementById('feedbackVerificationModal');
+        var closeBtn = document.getElementById('closeFeedbackVerificationModal');
+        if (!modal || !closeBtn) return;
+
+        var shouldOpen = <?php echo $feedbackLockRequested ? 'true' : 'false'; ?>;
+        if (!shouldOpen) {
+            try {
+                if (!sessionStorage.getItem('verificationReminderShown')) {
+                    shouldOpen = true;
+                    sessionStorage.setItem('verificationReminderShown', '1');
+                }
+            } catch (e) {
+                shouldOpen = true;
+            }
+        }
+
+        if (shouldOpen) {
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeModal();
+        });
+    })();
+    </script>
+    <?php endif; ?>
 </body>
 </html>
 

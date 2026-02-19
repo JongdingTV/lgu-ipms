@@ -127,6 +127,7 @@ $db->close();
                 <div class="nav-submenu" id="userSubmenu">
                     <a href="settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
                     <a href="settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
+                    <a href="citizen-verification.php" class="nav-submenu-item"><span class="submenu-icon">ID</span><span>Citizen Verification</span></a>
                 </div>
             </div>
         </div>
@@ -261,6 +262,8 @@ $db->close();
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 

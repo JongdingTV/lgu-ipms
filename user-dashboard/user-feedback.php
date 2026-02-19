@@ -24,6 +24,7 @@ $userStmt->close();
 
 $userName = trim($_SESSION['user_name'] ?? (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
 $userEmail = $user['email'] ?? '';
+$canAccessFeedback = user_feedback_access_allowed($db, $userId);
 $userInitials = user_avatar_initials($userName);
 $avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
 $profileImageWebPath = user_profile_photo_web_path($userId);
@@ -33,6 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
 
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         echo json_encode(['success' => false, 'message' => 'Invalid request token. Please refresh and try again.']);
+        $db->close();
+        exit;
+    }
+    if (!$canAccessFeedback) {
+        echo json_encode(['success' => false, 'message' => 'Your account is pending ID verification. Feedback submission is locked until verification is approved.']);
         $db->close();
         exit;
     }
@@ -219,6 +225,11 @@ $csrfToken = generate_csrf_token();
         <div class="dash-header">
             <h1>Submit Feedback</h1>
             <p>Share concerns and suggestions that will be reviewed by the admin prioritization team.</p>
+            <?php if (!$canAccessFeedback): ?>
+                <p style="margin-top:8px;padding:10px 12px;border-radius:10px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;font-weight:600;">
+                    Reminder: Your ID verification is still pending. You can view this page, but form inputs are locked until your account is verified.
+                </p>
+            <?php endif; ?>
         </div>
 
         <div class="card" style="margin-bottom:18px;">
@@ -226,6 +237,7 @@ $csrfToken = generate_csrf_token();
             <form id="userFeedbackForm" class="user-feedback-form" method="post" action="user-feedback.php" enctype="multipart/form-data">
                 <input type="hidden" name="feedback_submit" value="1">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                <fieldset <?php echo $canAccessFeedback ? '' : 'disabled'; ?> style="border:0;padding:0;margin:0;">
 
                 <div class="user-feedback-form-grid">
                     <div>
@@ -307,9 +319,10 @@ $csrfToken = generate_csrf_token();
                 </div>
 
                 <div class="feedback-submit-row">
-                    <button type="submit" class="ac-f84d9680">Submit Feedback</button>
+                    <button type="submit" class="ac-f84d9680" <?php echo $canAccessFeedback ? '' : 'disabled'; ?>>Submit Feedback</button>
                 </div>
                 <div id="message" style="display:none;margin-top:10px;"></div>
+                </fieldset>
             </form>
         </div>
 

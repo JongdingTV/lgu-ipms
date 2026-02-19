@@ -2,6 +2,7 @@
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
+require dirname(__DIR__) . '/config/email.php';
 
 set_no_cache_headers();
 
@@ -12,6 +13,38 @@ if (isset($_SESSION['user_id'])) {
 
 $error = '';
 $email = '';
+$otpMessage = '';
+$otpPending = isset($_SESSION['user_login_otp_user_id'], $_SESSION['user_login_otp_code'], $_SESSION['user_login_otp_expires']);
+$otpEmail = (string) ($_SESSION['user_login_otp_email'] ?? '');
+
+function clear_user_login_otp_session(): void
+{
+    unset(
+        $_SESSION['user_login_otp_user_id'],
+        $_SESSION['user_login_otp_name'],
+        $_SESSION['user_login_otp_email'],
+        $_SESSION['user_login_otp_code'],
+        $_SESSION['user_login_otp_expires'],
+        $_SESSION['user_login_otp_attempts']
+    );
+}
+
+function issue_user_login_otp(int $userId, string $name, string $email): bool
+{
+    $code = (string) random_int(100000, 999999);
+    $ok = send_verification_code($email, $code, $name === '' ? 'Citizen' : $name);
+    if (!$ok) {
+        return false;
+    }
+
+    $_SESSION['user_login_otp_user_id'] = $userId;
+    $_SESSION['user_login_otp_name'] = $name;
+    $_SESSION['user_login_otp_email'] = $email;
+    $_SESSION['user_login_otp_code'] = $code;
+    $_SESSION['user_login_otp_expires'] = time() + (10 * 60);
+    $_SESSION['user_login_otp_attempts'] = 0;
+    return true;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -36,24 +69,94 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
                 if ($result && $result->num_rows === 1) {
                     $user = $result->fetch_assoc();
                     if (password_verify($password, $user['password'])) {
-                        session_regenerate_id(true);
-                        $_SESSION['user_id'] = (int) $user['id'];
-                        $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
-                        $_SESSION['user_type'] = 'citizen';
-                        $_SESSION['last_activity'] = time();
-                        $_SESSION['login_time'] = time();
-
-                        header('Location: /user-dashboard/user-dashboard.php');
-                        exit;
+                        $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+                        clear_user_login_otp_session();
+                        if (issue_user_login_otp((int) $user['id'], $fullName, $email)) {
+                            $otpPending = true;
+                            $otpEmail = $email;
+                            $otpMessage = 'A verification code was sent to your email. Enter it below to finish login.';
+                        } else {
+                            $error = 'Login verified, but OTP email could not be sent. Please try again.';
+                        }
+                    } else {
+                        record_attempt('user_login');
+                        $error = 'Invalid email or password.';
                     }
+                } else {
+                    record_attempt('user_login');
+                    $error = 'Invalid email or password.';
                 }
 
-                record_attempt('user_login');
-                $error = 'Invalid email or password.';
                 $stmt->close();
             } else {
                 $error = 'Unable to process request right now. Please try again.';
             }
+        }
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_otp_submit'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $error = 'Invalid request. Please refresh and try again.';
+    } elseif (!$otpPending) {
+        $error = 'No OTP session found. Please sign in again.';
+    } else {
+        $otpInput = trim((string) ($_POST['otp_code'] ?? ''));
+        $storedCode = (string) ($_SESSION['user_login_otp_code'] ?? '');
+        $expiresAt = (int) ($_SESSION['user_login_otp_expires'] ?? 0);
+        $attempts = (int) ($_SESSION['user_login_otp_attempts'] ?? 0);
+
+        if (time() > $expiresAt) {
+            clear_user_login_otp_session();
+            $otpPending = false;
+            $error = 'OTP expired. Please sign in again.';
+        } elseif (!preg_match('/^\d{6}$/', $otpInput)) {
+            $error = 'Please enter the 6-digit OTP code.';
+        } elseif (!hash_equals($storedCode, $otpInput)) {
+            $_SESSION['user_login_otp_attempts'] = $attempts + 1;
+            if ($_SESSION['user_login_otp_attempts'] >= 5) {
+                clear_user_login_otp_session();
+                $otpPending = false;
+                $error = 'Too many incorrect OTP attempts. Please sign in again.';
+            } else {
+                $error = 'Invalid OTP code.';
+            }
+        } else {
+            $userId = (int) ($_SESSION['user_login_otp_user_id'] ?? 0);
+            $userName = (string) ($_SESSION['user_login_otp_name'] ?? '');
+            clear_user_login_otp_session();
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $userId;
+            $_SESSION['user_name'] = $userName;
+            $_SESSION['user_type'] = 'citizen';
+            $_SESSION['last_activity'] = time();
+            $_SESSION['login_time'] = time();
+
+            header('Location: /user-dashboard/user-dashboard.php');
+            exit;
+        }
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_otp_submit'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $error = 'Invalid request. Please refresh and try again.';
+    } elseif (!$otpPending) {
+        $error = 'No OTP session found. Please sign in again.';
+    } else {
+        $userId = (int) ($_SESSION['user_login_otp_user_id'] ?? 0);
+        $userName = (string) ($_SESSION['user_login_otp_name'] ?? '');
+        $userEmail = (string) ($_SESSION['user_login_otp_email'] ?? '');
+        if ($userId <= 0 || $userEmail === '') {
+            clear_user_login_otp_session();
+            $otpPending = false;
+            $error = 'OTP session invalid. Please sign in again.';
+        } elseif (issue_user_login_otp($userId, $userName, $userEmail)) {
+            $otpPending = true;
+            $otpEmail = $userEmail;
+            $otpMessage = 'A new verification code was sent to your email.';
+        } else {
+            $error = 'Unable to resend OTP right now. Please try again.';
         }
     }
 }
@@ -246,38 +349,60 @@ body.user-login-page .error-box {
 <div class="wrapper">
     <div class="card">
         <img src="/logocityhall.png" class="icon-top" alt="LGU Logo">
-        <h2 class="title">Citizen Login</h2>
-        <p class="subtitle">Secure access to your user dashboard.</p>
+        <h2 class="title"><?php echo $otpPending ? 'Verify OTP' : 'Citizen Login'; ?></h2>
+        <p class="subtitle"><?php echo $otpPending ? 'Enter the code sent to your email to continue.' : 'Secure access to your user dashboard.'; ?></p>
 
-        <form method="post" autocomplete="on">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
-            <div class="input-box">
-                <label for="loginEmail">Email Address</label>
-                <input type="email" name="email" id="loginEmail" placeholder="name@lgu.gov.ph" required autocomplete="email" value="<?php echo htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?>">
-            </div>
+        <?php if ($otpPending): ?>
+            <form method="post" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                <div class="meta-links" style="margin-bottom:10px;">
+                    Code sent to: <strong><?php echo htmlspecialchars($otpEmail, ENT_QUOTES, 'UTF-8'); ?></strong>
+                </div>
+                <div class="input-box">
+                    <label for="otpCode">One-Time Password (6 digits)</label>
+                    <input type="text" name="otp_code" id="otpCode" maxlength="6" pattern="\d{6}" placeholder="123456" required>
+                </div>
+                <button class="btn-primary" type="submit" name="verify_otp_submit">Verify & Sign In</button>
+                <button class="btn-primary" type="submit" name="resend_otp_submit" style="margin-top:10px;background:linear-gradient(135deg,#475569,#64748b);">Resend OTP</button>
 
-            <div class="input-box">
-                <label for="loginPassword">Password</label>
-                <input type="password" name="password" id="loginPassword" placeholder="********" required autocomplete="current-password">
-            </div>
+                <?php if (!empty($otpMessage)): ?>
+                <div class="meta-links" style="color:#166534;"><?php echo htmlspecialchars($otpMessage, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($error)): ?>
+                <div class="error-box"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+            </form>
+        <?php else: ?>
+            <form method="post" autocomplete="on">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                <div class="input-box">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" name="email" id="loginEmail" placeholder="name@lgu.gov.ph" required autocomplete="email" value="<?php echo htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?>">
+                </div>
 
-            <button class="btn-primary" type="submit" name="login_submit">Sign In</button>
+                <div class="input-box">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" name="password" id="loginPassword" placeholder="********" required autocomplete="current-password">
+                </div>
 
-            <div class="meta-links">
-                <a href="/user-dashboard/user-forgot-password.php">Forgot Password?</a>
-            </div>
-            <div class="meta-links">
-                Don&apos;t have an account? <a href="/user-dashboard/create.php">Create one</a>
-            </div>
+                <button class="btn-primary" type="submit" name="login_submit">Sign In</button>
 
-            <?php if (!empty($error)): ?>
-            <div class="error-box"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
-            <?php endif; ?>
+                <div class="meta-links">
+                    <a href="/user-dashboard/user-forgot-password.php">Forgot Password?</a>
+                </div>
+                <div class="meta-links">
+                    Don&apos;t have an account? <a href="/user-dashboard/create.php">Create one</a>
+                </div>
 
-            <?php if (isset($_GET['success'])): ?>
-            <div class="meta-links" style="color:#166534;">Account created successfully. Please log in.</div>
-            <?php endif; ?>
-        </form>
+                <?php if (!empty($error)): ?>
+                <div class="error-box"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+
+                <?php if (isset($_GET['success'])): ?>
+                <div class="meta-links" style="color:#166534;">Account created successfully. Please log in.</div>
+                <?php endif; ?>
+            </form>
+        <?php endif; ?>
     </div>
 </div>
 
