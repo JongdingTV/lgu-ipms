@@ -745,10 +745,6 @@ $show_gate_wall = false;
 
             <button class="btn-primary" type="submit">Sign In</button>
 
-            <div class="ac-4d4de932">
-                <a href="/admin/forgot-password.php" class="ac-f72a71bf">Forgot Password?</a>
-            </div>
-
             <!-- Removed 'For citizens, click here' button as requested -->
 
             <?php if (!empty($error)): ?>
