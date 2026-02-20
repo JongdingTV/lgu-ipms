@@ -114,43 +114,14 @@ $error = '';
 $email_input = '';
 $gate_error = '';
 $employee_id_input = '';
-$gate_ok_flash = $_SESSION['admin_gate_notice'] ?? '';
-if (isset($_SESSION['admin_gate_notice'])) {
-    unset($_SESSION['admin_gate_notice']);
-}
-$gate_passed = !empty($_SESSION['admin_gate_passed']);
+$gate_ok_flash = '';
+$gate_passed = true;
+unset($_SESSION['admin_gate_passed'], $_SESSION['admin_gate_verified_id'], $_SESSION['admin_gate_notice']);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!isset($db) || $db->connect_error) {
         $error = 'Database connection error. Please try again later.';
     } else {
-        if (isset($_POST['admin_gate_submit'])) {
-            $employee_id_input = trim((string)($_POST['employee_gate_id'] ?? ''));
-            if ($employee_id_input === '' || !ctype_digit($employee_id_input) || (int)$employee_id_input <= 0) {
-                $gate_error = 'Please enter a valid Employee ID number.';
-            } else {
-                $gate_id = (int)$employee_id_input;
-                $gate_stmt = $db->prepare("SELECT id FROM employees WHERE id = ? LIMIT 1");
-                if ($gate_stmt) {
-                    $gate_stmt->bind_param('i', $gate_id);
-                    $gate_stmt->execute();
-                    $gate_result = $gate_stmt->get_result();
-                    if ($gate_result && $gate_result->num_rows > 0) {
-                        $_SESSION['admin_gate_passed'] = true;
-                        $_SESSION['admin_gate_verified_id'] = $gate_id;
-                        $_SESSION['admin_gate_notice'] = 'Employee ID matched. You may now sign in.';
-                        header('Location: /admin/index.php');
-                        exit;
-                    }
-                    $gate_error = 'Employee ID not recognized. Access to this page is restricted to authorized LGU employees.';
-                    $gate_stmt->close();
-                } else {
-                    $gate_error = 'Unable to validate Employee ID right now. Please try again.';
-                }
-            }
-        } elseif (!$gate_passed) {
-            $gate_error = 'Enter your Employee ID first before continuing to admin login.';
-        } else {
             $email = isset($_POST['email']) ? trim($_POST['email']) : '';
             $password = isset($_POST['password']) ? trim($_POST['password']) : '';
             $email_input = $email;
@@ -283,11 +254,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } else {
                 $error = 'Please enter both email and password.';
             }
-        }
     }
 }
 
-$show_gate_wall = !$gate_passed;
+$show_gate_wall = false;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -744,35 +714,13 @@ $show_gate_wall = !$gate_passed;
     <a href="../public/index.php" class="home-btn" aria-label="Go to Home">Home</a>
 </header>
 
-<?php if ($show_gate_wall): ?>
-<div class="id-gate-overlay" role="dialog" aria-modal="true" aria-labelledby="employeeGateTitle">
-    <form class="id-gate-modal" method="post">
-        <h3 id="employeeGateTitle">STOP! Private Admin Page</h3>
-        <div class="id-gate-warning"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Warning: Unauthorized access is prohibited.</div>
-        <p>For authorized LGU personnel only. Enter your Employee ID before proceeding to employee login.</p>
-        <input class="id-gate-input" type="number" min="1" step="1" inputmode="numeric" name="employee_gate_id" placeholder="Enter Employee ID" required value="<?php echo htmlspecialchars($employee_id_input, ENT_QUOTES, 'UTF-8'); ?>">
-        <div class="id-gate-actions">
-            <button class="id-gate-btn" type="submit" name="admin_gate_submit" value="1">Verify Employee ID</button>
-            <a class="id-gate-home" href="/public/index.php">Home</a>
-        </div>
-        <?php if ($gate_error !== ''): ?>
-        <div class="id-gate-error"><?php echo htmlspecialchars($gate_error, ENT_QUOTES, 'UTF-8'); ?></div>
-        <?php endif; ?>
-    </form>
-</div>
-<?php endif; ?>
-
-<div class="wrapper<?php echo $show_gate_wall ? ' login-blocked' : ''; ?>">
+<div class="wrapper">
     <div class="card">
 
         <img src="../logocityhall.png" class="icon-top">
 
         <h2 class="title">Employee Login</h2>
         <p class="subtitle">Secure access for LGU employees.</p>
-        <?php if ($gate_ok_flash !== ''): ?>
-        <div class="gate-ok"><?php echo htmlspecialchars($gate_ok_flash, ENT_QUOTES, 'UTF-8'); ?></div>
-        <?php endif; ?>
-
         <?php if (isset($_SESSION['admin_verified'])): ?>
         <div class="ac-0b2b14a3">
             <span class="ac-99b23121">&#10003;</span>

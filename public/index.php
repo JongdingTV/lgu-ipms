@@ -730,105 +730,6 @@ $csrfToken = landing_generate_csrf_token();
             to { transform: rotate(360deg); }
         }
 
-        .employee-login-widget {
-            position: fixed;
-            right: 1.1rem;
-            bottom: 1.1rem;
-            z-index: 1200;
-        }
-
-        .employee-login-toggle {
-            width: 54px;
-            height: 54px;
-            border: 0;
-            border-radius: 14px;
-            cursor: pointer;
-            background: linear-gradient(135deg, #1f4c87, #2f6bb8);
-            color: #fff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.05rem;
-            box-shadow: 0 14px 28px rgba(11, 40, 77, 0.35);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .employee-login-toggle:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 18px 30px rgba(11, 40, 77, 0.4);
-        }
-
-        .floating-employee-login {
-            position: absolute;
-            right: 0;
-            bottom: 66px;
-            width: min(92vw, 330px);
-            background: rgba(255, 255, 255, 0.98);
-            border: 1px solid #d2e2f7;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(10, 33, 64, 0.28);
-            overflow: hidden;
-            transform: translateY(8px) scale(0.98);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-
-        .employee-login-widget.is-open .floating-employee-login {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .floating-head {
-            background: linear-gradient(135deg, #1f4c87, #2f6bb8);
-            color: #fff;
-            padding: 0.85rem 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-
-        .floating-head i {
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.18);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .floating-head strong {
-            font-size: 0.95rem;
-            font-weight: 800;
-        }
-
-        .floating-body {
-            padding: 0.9rem 0.95rem;
-        }
-
-        .floating-body p {
-            color: #3b5578;
-            font-size: 0.88rem;
-            line-height: 1.6;
-            margin-bottom: 0.75rem;
-        }
-
-        .floating-login-btn {
-            width: 100%;
-            justify-content: center;
-            background: linear-gradient(135deg, #1f4c87, #2f6bb8);
-            color: #fff;
-            border-radius: 10px;
-            padding: 0.72rem 0.8rem;
-            font-size: 0.9rem;
-            box-shadow: 0 9px 18px rgba(31, 76, 135, 0.3);
-        }
-
-        .floating-login-btn:hover {
-            color: #fff;
-        }
 
         @media (max-width: 1024px) {
             .hero-wrap {
@@ -883,16 +784,6 @@ $csrfToken = landing_generate_csrf_token();
                 grid-template-columns: 1fr;
             }
 
-            .employee-login-widget {
-                right: 0.75rem;
-                bottom: 0.75rem;
-            }
-
-            .floating-employee-login {
-                width: min(92vw, 330px);
-                bottom: 62px;
-                box-shadow: 0 12px 24px rgba(10, 33, 64, 0.24);
-            }
         }
     </style>
 </head>
@@ -1058,24 +949,6 @@ $csrfToken = landing_generate_csrf_token();
         </div>
     </section>
 
-    <div class="employee-login-widget" id="employeeLoginWidget">
-        <button type="button" class="employee-login-toggle" id="employeeLoginToggle" aria-label="Toggle employee login panel" aria-expanded="false" aria-controls="employeeLoginPanel">
-            <i class="fa-solid fa-user-shield"></i>
-        </button>
-        <div class="floating-employee-login" id="employeeLoginPanel" aria-label="Employee login shortcut">
-            <div class="floating-head">
-                <i class="fa-solid fa-user-shield"></i>
-                <strong>Employee Login</strong>
-            </div>
-            <div class="floating-body">
-                <p>For LGU staff and authorized users. Access project operations, monitoring, and administration tools.</p>
-                <a class="btn floating-login-btn" href="/admin/index.php">
-                    <i class="fa-solid fa-right-to-bracket"></i> Open Employee Portal
-                </a>
-            </div>
-        </div>
-    </div>
-
     <footer class="footer">
         <p>&copy; 2026 Local Government Unit Infrastructure Project Management System</p>
     </footer>
@@ -1111,29 +984,6 @@ $csrfToken = landing_generate_csrf_token();
                 }
             }, true);
 
-            var widget = document.getElementById('employeeLoginWidget');
-            var toggle = document.getElementById('employeeLoginToggle');
-            var panel = document.getElementById('employeeLoginPanel');
-            if (!widget || !toggle || !panel) return;
-
-            function setOpen(isOpen) {
-                widget.classList.toggle('is-open', isOpen);
-                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-            }
-
-            toggle.addEventListener('click', function () {
-                setOpen(!widget.classList.contains('is-open'));
-            });
-
-            document.addEventListener('click', function (event) {
-                if (!widget.classList.contains('is-open')) return;
-                if (widget.contains(event.target)) return;
-                setOpen(false);
-            });
-
-            document.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape') setOpen(false);
-            });
         })();
 
         document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
