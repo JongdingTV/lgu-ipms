@@ -98,6 +98,26 @@ function feedback_strlen(string $value): int
     return (int) strlen($value);
 }
 
+function resolve_feedback_upload_dir(): ?string
+{
+    $candidates = [
+        dirname(__DIR__) . '/../private_uploads/lgu-ipms/feedback',
+        dirname(__DIR__) . '/private_uploads/lgu-ipms/feedback'
+    ];
+
+    foreach ($candidates as $candidate) {
+        $dir = str_replace(['\\', '//'], ['/', '/'], $candidate);
+        if (@is_dir($dir)) {
+            return rtrim($dir, '/');
+        }
+        if (@mkdir($dir, 0755, true)) {
+            return rtrim($dir, '/');
+        }
+    }
+
+    return null;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     header('Content-Type: application/json');
     try {
@@ -171,8 +191,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
             exit;
         }
 
-        $uploadDir = dirname(__DIR__, 3) . '/private_uploads/lgu-ipms/feedback';
-        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+        $uploadDir = resolve_feedback_upload_dir();
+        if ($uploadDir === null) {
             echo json_encode(['success' => false, 'message' => 'Unable to prepare upload directory.']);
             $db->close();
             exit;

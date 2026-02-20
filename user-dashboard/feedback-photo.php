@@ -38,9 +38,24 @@ if (!$allowed) {
     exit('Forbidden');
 }
 
-$baseDir = dirname(__DIR__, 3) . '/private_uploads/lgu-ipms/feedback';
-$fullPath = $baseDir . '/' . $file;
-if (!is_file($fullPath)) {
+function feedback_photo_candidate_dirs(): array
+{
+    return [
+        str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/../private_uploads/lgu-ipms/feedback'),
+        str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/private_uploads/lgu-ipms/feedback')
+    ];
+}
+
+$fullPath = null;
+foreach (feedback_photo_candidate_dirs() as $baseDir) {
+    $candidate = rtrim($baseDir, '/') . '/' . $file;
+    if (@is_file($candidate)) {
+        $fullPath = $candidate;
+        break;
+    }
+}
+
+if ($fullPath === null) {
     http_response_code(404);
     exit('Not found');
 }
