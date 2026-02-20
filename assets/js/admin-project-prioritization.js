@@ -74,6 +74,24 @@
         document.body.style.overflow = '';
     });
 
+    function togglePhotoError(img, show) {
+        if (!img) return;
+        var wrap = img.closest('.modal-body');
+        if (!wrap) return;
+        var box = wrap.querySelector('.feedback-photo-error');
+        if (!box) return;
+        box.hidden = !show;
+    }
+
+    document.querySelectorAll('.feedback-photo-preview').forEach(function (img) {
+        img.addEventListener('load', function () {
+            togglePhotoError(img, false);
+        });
+        img.addEventListener('error', function () {
+            togglePhotoError(img, true);
+        });
+    });
+
     var searchInput = document.getElementById('fbSearch');
     var statusFilter = document.getElementById('fbStatusFilter');
     var categoryFilter = document.getElementById('fbCategoryFilter');

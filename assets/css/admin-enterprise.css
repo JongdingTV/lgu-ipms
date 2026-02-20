@@ -3410,6 +3410,28 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .feedback-photo-p
     background: #0b1220;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .feedback-photo-error {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    border-radius: 10px;
+    color: #991b1b;
+    font-size: 0.86rem;
+    display: grid;
+    gap: 6px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .feedback-photo-debug-link {
+    color: #1d4ed8;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .feedback-photo-debug-link:hover {
+    text-decoration: underline;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links .nav-citizen-verification {
     position: relative;
     border: 1px solid #d6e4f6;
