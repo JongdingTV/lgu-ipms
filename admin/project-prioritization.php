@@ -85,6 +85,55 @@ function feedback_has_column(mysqli $db, string $column): bool
     return $exists;
 }
 
+function clean_feedback_description(string $description): string
+{
+    $cleaned = preg_replace('/^\[(Photo Attachment Private|Google Maps Pin|Pinned Address|Complete Address)\].*$/mi', '', $description);
+    $cleaned = preg_replace("/\n{3,}/", "\n\n", (string) $cleaned);
+    $cleaned = trim((string) $cleaned);
+    return $cleaned !== '' ? $cleaned : '-';
+}
+
+function feedback_map_embed_url(array $feedback): ?string
+{
+    $lat = null;
+    $lng = null;
+
+    $latRaw = trim((string) ($feedback['map_lat'] ?? ''));
+    $lngRaw = trim((string) ($feedback['map_lng'] ?? ''));
+    if ($latRaw !== '' && $lngRaw !== '' && is_numeric($latRaw) && is_numeric($lngRaw)) {
+        $lat = (float) $latRaw;
+        $lng = (float) $lngRaw;
+    } else {
+        $mapLink = trim((string) ($feedback['map_link'] ?? ''));
+        if ($mapLink !== '') {
+            if (preg_match('/[?&]mlat=([-0-9.]+).*?[?&]mlon=([-0-9.]+)/i', $mapLink, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+            } elseif (preg_match('/#map=\d+\/([-0-9.]+)\/([-0-9.]+)/i', $mapLink, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+            } elseif (preg_match('/[?&]q=([-0-9.]+),\s*([-0-9.]+)/i', $mapLink, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+            }
+        }
+    }
+
+    if ($lat === null || $lng === null) {
+        return null;
+    }
+
+    $delta = 0.004;
+    $left = $lng - $delta;
+    $right = $lng + $delta;
+    $top = $lat + $delta;
+    $bottom = $lat - $delta;
+
+    return 'https://www.openstreetmap.org/export/embed.html?bbox='
+        . rawurlencode((string) $left . ',' . (string) $bottom . ',' . (string) $right . ',' . (string) $top)
+        . '&layer=mapnik&marker=' . rawurlencode((string) $lat . ',' . (string) $lng);
+}
+
 // Fetch feedback for display with pagination
 $offset = 0;
 $limit = 50;
@@ -420,6 +469,8 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                             <?php $count = 1; foreach ($feedbacks as $fb): ?>
                                 <?php
                                 $fb_lc = array_change_key_case($fb, CASE_LOWER);
+                                $cleanDescription = clean_feedback_description((string) ($fb_lc['description'] ?? ''));
+                                $mapEmbedUrl = feedback_map_embed_url($fb_lc);
                                 $rowStatus = strtolower(trim((string)($fb_lc['status'] ?? '')));
                                 $rowCategory = strtolower(trim((string)($fb_lc['category'] ?? '')));
                                 $rowDays = null;
@@ -582,7 +633,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     </div>
                                     <div class="modal-field">
                                         <span class="modal-label">Message / Description:</span>
-                                        <div class="modal-value"><?= isset($fb_lc['description']) ? htmlspecialchars($fb_lc['description']) : '-' ?></div>
+                                        <div class="modal-value"><?= htmlspecialchars($cleanDescription) ?></div>
                                     </div>
                                     <div class="modal-field">
                                         <span class="modal-label">Citizen Photo:</span>
@@ -597,12 +648,11 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     <div class="modal-field">
                                         <span class="modal-label">Pinned Map:</span>
                                         <div class="modal-value">
-                                            <?php if (!empty($fb_lc['map_link'])): ?>
-                                                <a href="<?= htmlspecialchars((string) $fb_lc['map_link']) ?>" target="_blank" rel="noopener">Open pinned map</a>
-                                            <?php elseif (!empty($fb_lc['map_lat']) && !empty($fb_lc['map_lng'])): ?>
-                                                <a href="https://maps.google.com/?q=<?= rawurlencode((string) $fb_lc['map_lat'] . ',' . (string) $fb_lc['map_lng']) ?>" target="_blank" rel="noopener">
-                                                    Open map (<?= htmlspecialchars((string) $fb_lc['map_lat']) ?>, <?= htmlspecialchars((string) $fb_lc['map_lng']) ?>)
-                                                </a>
+                                            <?php if ($mapEmbedUrl !== null): ?>
+                                                <iframe class="feedback-map-preview" src="<?= htmlspecialchars($mapEmbedUrl) ?>" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                                <?php if (!empty($fb_lc['map_lat']) && !empty($fb_lc['map_lng'])): ?>
+                                                    <div class="feedback-map-coords"><?= htmlspecialchars((string) $fb_lc['map_lat']) ?>, <?= htmlspecialchars((string) $fb_lc['map_lng']) ?></div>
+                                                <?php endif; ?>
                                             <?php else: ?>
                                                 No map pin available.
                                             <?php endif; ?>
@@ -628,12 +678,11 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     <div class="modal-field">
                                         <span class="modal-label">Pinned Map / Coordinates:</span>
                                         <div class="modal-value">
-                                            <?php if (!empty($fb_lc['map_link'])): ?>
-                                                <a href="<?= htmlspecialchars((string) $fb_lc['map_link']) ?>" target="_blank" rel="noopener">Open map link</a>
-                                            <?php elseif (!empty($fb_lc['map_lat']) && !empty($fb_lc['map_lng'])): ?>
-                                                <a href="https://maps.google.com/?q=<?= rawurlencode((string) $fb_lc['map_lat'] . ',' . (string) $fb_lc['map_lng']) ?>" target="_blank" rel="noopener">
-                                                    <?= htmlspecialchars((string) $fb_lc['map_lat']) ?>, <?= htmlspecialchars((string) $fb_lc['map_lng']) ?>
-                                                </a>
+                                            <?php if ($mapEmbedUrl !== null): ?>
+                                                <iframe class="feedback-map-preview" src="<?= htmlspecialchars($mapEmbedUrl) ?>" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                                <?php if (!empty($fb_lc['map_lat']) && !empty($fb_lc['map_lng'])): ?>
+                                                    <div class="feedback-map-coords"><?= htmlspecialchars((string) $fb_lc['map_lat']) ?>, <?= htmlspecialchars((string) $fb_lc['map_lng']) ?></div>
+                                                <?php endif; ?>
                                             <?php else: ?>
                                                 Not provided.
                                             <?php endif; ?>

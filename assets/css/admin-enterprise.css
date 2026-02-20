@@ -3385,6 +3385,21 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-close:
     background: rgba(255, 255, 255, 0.24);
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .feedback-map-preview {
+    width: 100%;
+    min-height: 220px;
+    border: 1px solid #cfe0f5;
+    border-radius: 10px;
+    background: #f8fbff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .feedback-map-coords {
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: #557291;
+    font-weight: 600;
+}
+
 @media (max-width: 760px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-banner {
         top: 8px;

@@ -18,19 +18,67 @@ if ($userId <= 0 || $file === '' || !preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|pn
     exit('Invalid request');
 }
 
-$stmt = $db->prepare(
-    "SELECT 1
-     FROM feedback
-     WHERE (user_id = ? OR user_name = ?)
-       AND LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0
-     LIMIT 1"
-);
+function feedback_photo_has_column(mysqli $db, string $column): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'feedback'
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+    return $exists;
+}
+
+$hasUserId = feedback_photo_has_column($db, 'user_id');
+$hasPhotoPath = feedback_photo_has_column($db, 'photo_path');
 $userName = trim((string) ($_SESSION['user_name'] ?? ''));
-$stmt->bind_param('iss', $userId, $userName, $file);
-$stmt->execute();
-$res = $stmt->get_result();
-$allowed = $res && $res->num_rows > 0;
-$stmt->close();
+
+$photoMatchSql = $hasPhotoPath
+    ? "(photo_path = ? OR LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0)"
+    : "LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0";
+
+if ($hasUserId) {
+    $sql = "SELECT 1 FROM feedback WHERE (user_id = ? OR user_name = ?) AND {$photoMatchSql} LIMIT 1";
+    $stmt = $db->prepare($sql);
+    if ($stmt) {
+        if ($hasPhotoPath) {
+            $stmt->bind_param('isss', $userId, $userName, $file, $file);
+        } else {
+            $stmt->bind_param('iss', $userId, $userName, $file);
+        }
+    }
+} else {
+    $sql = "SELECT 1 FROM feedback WHERE user_name = ? AND {$photoMatchSql} LIMIT 1";
+    $stmt = $db->prepare($sql);
+    if ($stmt) {
+        if ($hasPhotoPath) {
+            $stmt->bind_param('sss', $userName, $file, $file);
+        } else {
+            $stmt->bind_param('ss', $userName, $file);
+        }
+    }
+}
+
+$allowed = false;
+if ($stmt) {
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $allowed = $res && $res->num_rows > 0;
+    $stmt->close();
+}
 $db->close();
 
 if (!$allowed) {
