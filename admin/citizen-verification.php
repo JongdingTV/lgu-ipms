@@ -107,8 +107,8 @@ $db->close();
         .verify-id-preview { border:1px solid #dbe7f3; border-radius:10px; background:#fff; padding:8px; min-height:280px; }
         .verify-id-preview img { max-width:100%; max-height:70vh; display:block; margin:0 auto; border-radius:8px; }
         .verify-id-preview iframe { width:100%; height:70vh; border:0; border-radius:8px; }
-        .citizen-table-wrap { overflow-x: auto; width: 100%; }
-        .citizen-table-wrap .projects-table { min-width: 1100px; }
+        .citizen-table-wrap { overflow-x: auto; width: 100%; max-width: 100%; }
+        .citizen-table-wrap .projects-table { min-width: 840px; width: 100%; table-layout: auto; }
         @media (max-width: 860px) { .verify-grid { grid-template-columns:1fr; } }
     </style>
 </head>

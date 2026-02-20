@@ -3560,6 +3560,68 @@ body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.sign
     background: linear-gradient(135deg, #f6faff, #edf4ff);
 }
 
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .recent-projects h3,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-table th,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-table td,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .verify-actions .btn {
+    font-family: 'Poppins', sans-serif !important;
+}
+
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto !important;
+}
+
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap .projects-table,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-table-wrap.citizen-table-wrap .projects-table {
+    width: 100% !important;
+    min-width: 840px !important;
+    table-layout: auto !important;
+}
+
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap th,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap td:nth-child(1),
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap td:nth-child(2) {
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+}
+
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap td:last-child,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap th:last-child {
+    min-width: 270px;
+}
+
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .verify-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .verify-actions .btn {
+    white-space: nowrap;
+}
+
+@media (max-width: 920px) {
+    body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap .projects-table {
+        min-width: 760px !important;
+    }
+
+    body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap td:last-child,
+    body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .citizen-table-wrap th:last-child {
+        min-width: 230px;
+    }
+}
+
 /* Project Prioritization: freeze nav item geometry to avoid linked hover movement. */
 body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a,
 body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item,
