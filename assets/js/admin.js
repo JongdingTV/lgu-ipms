@@ -125,6 +125,91 @@
     window.IPMSPageLoader = { show: showLoader, hide: hideLoader };
 })();
 
+/* ===== Admin DB Health Check Banner ===== */
+(function () {
+  const path = (window.location.pathname || '').replace(/\\/g, '/');
+  const isAdminPage = path.includes('/admin/');
+  const isAuthPage = /\/admin\/(index|forgot-password|reset-password)\.php$/i.test(path);
+  if (!isAdminPage || isAuthPage) return;
+
+  function candidateUrls() {
+    const list = [
+      'db-health-check.php?action=check',
+      '/admin/db-health-check.php?action=check'
+    ];
+    if (typeof window.getApiUrl === 'function') {
+      list.unshift(window.getApiUrl('admin/db-health-check.php?action=check'));
+    }
+    return Array.from(new Set(list));
+  }
+
+  async function fetchHealth() {
+    const urls = candidateUrls();
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) continue;
+        const text = await res.text();
+        if (!text || text.trim().startsWith('<')) continue;
+        return JSON.parse(text);
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  function buildMissingText(missing) {
+    const parts = [];
+    if (missing && Array.isArray(missing.tables) && missing.tables.length) {
+      parts.push('Missing tables: ' + missing.tables.join(', '));
+    }
+    if (missing && missing.columns && typeof missing.columns === 'object') {
+      Object.keys(missing.columns).forEach((table) => {
+        const cols = Array.isArray(missing.columns[table]) ? missing.columns[table] : [];
+        if (cols.length) parts.push('Missing columns in ' + table + ': ' + cols.join(', '));
+      });
+    }
+    return parts.join(' | ');
+  }
+
+  function showBanner(payload) {
+    if (!payload || payload.ok || !payload.missing) return;
+    if (document.getElementById('dbHealthBanner')) return;
+
+    const bar = document.createElement('div');
+    bar.id = 'dbHealthBanner';
+    bar.className = 'db-health-banner';
+
+    const title = document.createElement('strong');
+    title.className = 'db-health-title';
+    title.textContent = 'Database schema update needed';
+
+    const text = document.createElement('span');
+    text.className = 'db-health-text';
+    text.textContent = buildMissingText(payload.missing) || 'Some required schema items are missing.';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'db-health-close';
+    closeBtn.textContent = 'Dismiss';
+    closeBtn.addEventListener('click', () => bar.remove());
+
+    bar.appendChild(title);
+    bar.appendChild(text);
+    bar.appendChild(closeBtn);
+    document.body.appendChild(bar);
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const payload = await fetchHealth();
+    if (payload && payload.success && payload.ok === false) {
+      showBanner(payload);
+      if (window.adminToast) {
+        window.adminToast('Schema check: migration required for some admin features.', 'warning', 4200);
+      }
+    }
+  });
+})();
+
 /* ===== File: assets/js/shared/shared-config.js ===== */
 // Shared configuration for API paths - works for both local and production
 (function() {

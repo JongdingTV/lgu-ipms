@@ -3339,3 +3339,56 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-project
     color: #7087a3;
     font-size: 0.8rem;
 }
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-banner {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(96vw, 1080px);
+    z-index: 10090;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: 1px solid #fca5a5;
+    background: rgba(127, 29, 29, 0.95);
+    color: #fff1f2;
+    box-shadow: 0 14px 30px rgba(127, 29, 29, 0.35);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-text {
+    font-size: 0.81rem;
+    line-height: 1.35;
+    color: #ffe4e6;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-close {
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-close:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+
+@media (max-width: 760px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-banner {
+        top: 8px;
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+}
