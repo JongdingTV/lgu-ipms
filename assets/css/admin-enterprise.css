@@ -3560,6 +3560,26 @@ body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.sign
     background: linear-gradient(135deg, #f6faff, #edf4ff);
 }
 
+/* Project Prioritization: freeze nav item geometry to avoid linked hover movement. */
+body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a,
+body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item,
+body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links .nav-citizen-verification {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    transform: none !important;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a:hover,
+body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item:hover,
+body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a.active,
+body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item.active,
+body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links .nav-citizen-verification:hover,
+body.project-prioritization-page:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links .nav-citizen-verification.active {
+    padding-left: 12px !important;
+    transform: none !important;
+}
+
 @media (max-width: 760px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-banner {
         top: 8px;

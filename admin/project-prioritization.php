@@ -317,7 +317,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
     
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
     </head>
-<body>
+<body class="project-prioritization-page">
     <!-- Sidebar Toggle Button (Floating) -->
     <div class="sidebar-toggle-wrapper">
         <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
