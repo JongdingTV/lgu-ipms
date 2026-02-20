@@ -12,8 +12,10 @@ if (!isset($db) || $db->connect_error) {
 }
 
 $userId = (int) ($_SESSION['user_id'] ?? 0);
+$employeeId = (int) ($_SESSION['employee_id'] ?? 0);
+$isAdminSession = $employeeId > 0;
 $file = trim((string) ($_GET['file'] ?? ''));
-if ($userId <= 0 || $file === '' || !preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)) {
+if (($userId <= 0 && !$isAdminSession) || $file === '' || !preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)) {
     http_response_code(400);
     exit('Invalid request');
 }
@@ -50,7 +52,17 @@ $photoMatchSql = $hasPhotoPath
     ? "(photo_path = ? OR LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0)"
     : "LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0";
 
-if ($hasUserId) {
+if ($isAdminSession) {
+    $sql = "SELECT 1 FROM feedback WHERE {$photoMatchSql} LIMIT 1";
+    $stmt = $db->prepare($sql);
+    if ($stmt) {
+        if ($hasPhotoPath) {
+            $stmt->bind_param('ss', $file, $file);
+        } else {
+            $stmt->bind_param('s', $file);
+        }
+    }
+} elseif ($hasUserId) {
     $sql = "SELECT 1 FROM feedback WHERE (user_id = ? OR user_name = ?) AND {$photoMatchSql} LIMIT 1";
     $stmt = $db->prepare($sql);
     if ($stmt) {

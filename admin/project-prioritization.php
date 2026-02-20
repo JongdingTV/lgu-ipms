@@ -93,6 +93,29 @@ function clean_feedback_description(string $description): string
     return $cleaned !== '' ? $cleaned : '-';
 }
 
+function feedback_extract_marker_value(string $description, string $marker): ?string
+{
+    $pattern = '/^\[' . preg_quote($marker, '/') . '\]\s*(.+)$/mi';
+    if (preg_match($pattern, $description, $matches)) {
+        $value = trim((string) ($matches[1] ?? ''));
+        return $value !== '' ? $value : null;
+    }
+    return null;
+}
+
+function feedback_photo_file(array $feedback): ?string
+{
+    $photoPath = trim((string) ($feedback['photo_path'] ?? ''));
+    if ($photoPath !== '' && preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $photoPath)) {
+        return $photoPath;
+    }
+    $markerFile = feedback_extract_marker_value((string) ($feedback['description'] ?? ''), 'Photo Attachment Private');
+    if ($markerFile !== null && preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $markerFile)) {
+        return $markerFile;
+    }
+    return null;
+}
+
 function feedback_map_embed_url(array $feedback): ?string
 {
     $lat = null;
@@ -105,6 +128,12 @@ function feedback_map_embed_url(array $feedback): ?string
         $lng = (float) $lngRaw;
     } else {
         $mapLink = trim((string) ($feedback['map_link'] ?? ''));
+        if ($mapLink === '') {
+            $fromDescription = feedback_extract_marker_value((string) ($feedback['description'] ?? ''), 'Google Maps Pin');
+            if ($fromDescription !== null) {
+                $mapLink = $fromDescription;
+            }
+        }
         if ($mapLink !== '') {
             if (preg_match('/[?&]mlat=([-0-9.]+).*?[?&]mlon=([-0-9.]+)/i', $mapLink, $m)) {
                 $lat = (float) $m[1];
@@ -471,6 +500,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 $fb_lc = array_change_key_case($fb, CASE_LOWER);
                                 $cleanDescription = clean_feedback_description((string) ($fb_lc['description'] ?? ''));
                                 $mapEmbedUrl = feedback_map_embed_url($fb_lc);
+                                $photoFile = feedback_photo_file($fb_lc);
                                 $rowStatus = strtolower(trim((string)($fb_lc['status'] ?? '')));
                                 $rowCategory = strtolower(trim((string)($fb_lc['category'] ?? '')));
                                 $rowDays = null;
@@ -638,8 +668,8 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     <div class="modal-field">
                                         <span class="modal-label">Citizen Photo:</span>
                                         <div class="modal-value">
-                                            <?php if (!empty($fb_lc['photo_path'])): ?>
-                                                <a href="/user-dashboard/feedback-photo.php?file=<?= rawurlencode((string) $fb_lc['photo_path']) ?>" target="_blank" rel="noopener">View Uploaded Photo</a>
+                                            <?php if ($photoFile !== null): ?>
+                                                <button type="button" class="view-btn" data-photo-modal="photo-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Uploaded Photo</button>
                                             <?php else: ?>
                                                 No photo attached.
                                             <?php endif; ?>
@@ -694,6 +724,22 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 </div>
                             </div>
                         </div>
+                        <?php if ($photoFile !== null): ?>
+                        <div id="photo-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h2>Uploaded Photo</h2>
+                                    <button type="button" class="modal-close" data-close-modal="photo-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <img class="feedback-photo-preview" src="/user-dashboard/feedback-photo.php?file=<?= rawurlencode((string) $photoFile) ?>" alt="Feedback Photo" loading="lazy">
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="modal-btn modal-btn-close" data-close-modal="photo-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     <?php $count++; endforeach; ?>
                 </div>
             <?php endif; ?>
