@@ -16,6 +16,7 @@ $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
 $isAdminSession = $employeeId > 0;
 $file = trim((string) ($_GET['file'] ?? ''));
 $feedbackId = (int) ($_GET['feedback_id'] ?? 0);
+$debugMode = $isAdminSession && (string)($_GET['debug'] ?? '') === '1';
 if (($userId <= 0 && !$isAdminSession) || ($file === '' && $feedbackId <= 0)) {
     http_response_code(400);
     exit('Invalid request');
@@ -60,6 +61,7 @@ $hasUserId = feedback_photo_has_column($db, 'user_id');
 $hasPhotoPath = feedback_photo_has_column($db, 'photo_path');
 $userName = trim((string) ($_SESSION['user_name'] ?? ''));
 $resolvedFile = '';
+$rawPhotoPath = '';
 
 if ($feedbackId > 0) {
     $select = ['id', 'description', 'user_name'];
@@ -101,7 +103,8 @@ if ($feedbackId > 0) {
     }
 
     if ($hasPhotoPath) {
-        $candidate = basename(trim((string) ($row['photo_path'] ?? '')));
+        $rawPhotoPath = trim((string) ($row['photo_path'] ?? ''));
+        $candidate = basename($rawPhotoPath);
         if ($candidate !== '' && preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $candidate)) {
             $resolvedFile = $candidate;
         }
@@ -181,15 +184,37 @@ function feedback_photo_candidate_dirs(): array
 }
 
 $fullPath = null;
+if ($rawPhotoPath !== '' && (strpos($rawPhotoPath, '/') !== false || strpos($rawPhotoPath, '\\') !== false)) {
+    $directPath = str_replace(['\\', '//'], ['/', '/'], $rawPhotoPath);
+    if (@is_file($directPath)) {
+        $fullPath = $directPath;
+    }
+}
+
+$pathChecks = [];
 foreach (feedback_photo_candidate_dirs() as $baseDir) {
     $candidate = rtrim($baseDir, '/') . '/' . $resolvedFile;
-    if (@is_file($candidate)) {
+    $exists = @is_file($candidate);
+    $pathChecks[] = ['path' => $candidate, 'exists' => $exists];
+    if ($exists) {
         $fullPath = $candidate;
         break;
     }
 }
 
 if ($fullPath === null) {
+    if ($debugMode) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Photo file not found on server',
+            'feedback_id' => $feedbackId,
+            'resolved_file' => $resolvedFile,
+            'raw_photo_path' => $rawPhotoPath,
+            'path_checks' => $pathChecks
+        ], JSON_PRETTY_PRINT);
+        exit;
+    }
     http_response_code(404);
     exit('Not found');
 }
