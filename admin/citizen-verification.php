@@ -112,7 +112,7 @@ $db->close();
         @media (max-width: 860px) { .verify-grid { grid-template-columns:1fr; } }
     </style>
 </head>
-<body>
+<body class="citizen-verification-page">
 <header class="nav" id="navbar">
     <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
@@ -123,13 +123,25 @@ $db->close();
     </div>
     <div class="nav-links">
         <a href="dashboard.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon">Dashboard Overview</a>
-        <a href="project_registration.php"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration</a>
+        <div class="nav-item-group">
+            <a href="project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">&#9662;</span></a>
+            <div class="nav-submenu" id="projectRegSubmenu">
+                <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">&#10133;</span><span>New Project</span></a>
+                <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Projects</span></a>
+            </div>
+        </div>
         <a href="progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
         <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
         <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
-        <a href="contractors.php"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers</a>
+        <div class="nav-item-group">
+            <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">&#9662;</span></a>
+            <div class="nav-submenu" id="contractorsSubmenu">
+                <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#10133;</span><span>Add Engineer</span></a>
+                <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Engineers</span></a>
+            </div>
+        </div>
         <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
-                    <a href="citizen-verification.php" class="nav-citizen-verification active"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
+        <a href="citizen-verification.php" class="nav-citizen-verification active"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
     </div>
     <div class="nav-divider"></div>
     <div class="nav-action-footer">
