@@ -213,14 +213,14 @@
             '  <span class="admin-date" id="userLiveDate">----</span>' +
             '</div>' +
             '<div class="admin-utility-group">' +
-            '  <button type="button" class="admin-utility-btn" id="userCalendarBtn" aria-expanded="false" aria-controls="userCalendarPanel" title="Calendar">' +
-            '    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>' +
-            '    <span class="admin-utility-label" id="userCalendarLabel">Calendar</span>' +
-            '  </button>' +
             '  <button type="button" class="admin-utility-btn" id="userNotifBtn" aria-expanded="false" aria-controls="userNotifPanel" title="Notifications">' +
             '    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path><path d="M9 17a3 3 0 0 0 6 0"></path></svg>' +
             '    <span class="admin-utility-label">Alerts</span>' +
             '    <span class="admin-utility-badge" id="userNotifCount">0</span>' +
+            '  </button>' +
+            '  <button type="button" class="admin-utility-btn" id="userCalendarBtn" aria-expanded="false" aria-controls="userCalendarPanel" title="Calendar">' +
+            '    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>' +
+            '    <span class="admin-utility-label" id="userCalendarLabel">Calendar</span>' +
             '  </button>' +
             '  <button type="button" class="admin-utility-btn" id="userThemeBtn" title="Toggle dark mode">' +
             '    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>' +
@@ -392,6 +392,9 @@
                     if (!userNotifications.length) {
                         userNotifications = [{ id: 0, level: 'info', title: 'No new updates', message: 'No project updates at the moment.', created_at: null }];
                     }
+                    if (notifPanel && !notifPanel.hasAttribute('hidden') && latestUserNotificationId > 0) {
+                        setSeenNotifId(latestUserNotificationId);
+                    }
                     renderUserNotifications();
                 })
                 .catch(function () {
@@ -425,6 +428,13 @@
                 if (willOpen && calendarPanel) {
                     calendarPanel.setAttribute('hidden', 'hidden');
                     if (calendarBtn) calendarBtn.setAttribute('aria-expanded', 'false');
+                }
+                if (willOpen) {
+                    var highestId = latestUserNotificationId;
+                    if (highestId > 0) {
+                        setSeenNotifId(highestId);
+                        renderUserNotifications();
+                    }
                 }
             });
         }

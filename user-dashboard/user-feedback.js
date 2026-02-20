@@ -8,7 +8,6 @@
     const locationInput = document.getElementById('location');
     const gpsPinBtn = document.getElementById('gpsPinBtn');
     const improveAccuracyBtn = document.getElementById('improveAccuracyBtn');
-    const streetViewBtn = document.getElementById('streetViewBtn');
     const gpsLat = document.getElementById('gps_lat');
     const gpsLng = document.getElementById('gps_lng');
     const gpsAccuracy = document.getElementById('gps_accuracy');
@@ -21,9 +20,6 @@
     const mapSearchBtn = document.getElementById('mapSearchBtn');
     const pinnedAddress = document.getElementById('pinnedAddress');
     const gpsAddress = document.getElementById('gps_address');
-    const streetViewWrap = document.getElementById('streetViewWrap');
-    const streetViewFrame = document.getElementById('streetViewFrame');
-    const openStreetViewExternal = document.getElementById('openStreetViewExternal');
 
     if (!form) return;
 
@@ -260,19 +256,6 @@
         }
     }
 
-    function updateStreetView(latText, lngText) {
-        const externalUrl = 'https://www.google.com/maps?layer=c&cbll=' + encodeURIComponent(latText + ',' + lngText);
-        const embedUrl = 'https://maps.google.com/maps?q=&layer=c&cbll=' + encodeURIComponent(latText + ',' + lngText) + '&output=embed';
-        if (streetViewFrame) streetViewFrame.src = embedUrl;
-        if (openStreetViewExternal) openStreetViewExternal.href = externalUrl;
-    }
-
-    function toggleStreetView() {
-        if (!streetViewWrap) return;
-        const isHidden = streetViewWrap.style.display === '' || streetViewWrap.style.display === 'none';
-        streetViewWrap.style.display = isHidden ? 'block' : 'none';
-    }
-
     async function pinToLocation(lat, lng, accuracyMeters) {
         if (map) {
             map.setView([lat, lng], 17);
@@ -445,18 +428,6 @@
         });
     }
 
-    if (streetViewBtn) {
-        streetViewBtn.addEventListener('click', function () {
-            if (!gpsLat || !gpsLng || gpsLat.value === '' || gpsLng.value === '') {
-                showMessage('Set a map pin first to view street-level imagery.', false);
-                return;
-            }
-            toggleStreetView();
-            updateStreetView(gpsLat.value, gpsLng.value);
-        });
-    }
-
-
     async function updateMapFields(lat, lng, accuracyMeters) {
         const latText = Number(lat).toFixed(6);
         const lngText = Number(lng).toFixed(6);
@@ -467,7 +438,6 @@
         const addressText = await reverseGeocode(latText, lngText);
         if (gpsAddress) gpsAddress.value = addressText;
         if (pinnedAddress) pinnedAddress.textContent = addressText !== '' ? addressText : 'Pinned location found, but address is unavailable.';
-        updateStreetView(latText, lngText);
     }
 
     if (photoInput && photoStatus) {
@@ -489,10 +459,70 @@
     let marker = null;
     if (mapContainer && typeof window.L !== 'undefined') {
         map = window.L.map(mapContainer).setView([14.6760, 121.0437], 12);
-        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        const streets = window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
+        const satellite = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri'
+        });
+        window.L.control.layers(
+            { Streets: streets, Satellite: satellite },
+            {},
+            { position: 'topright', collapsed: true }
+        ).addTo(map);
+
+        // Approximate Quezon City boundary guide for quick visual orientation.
+        const qcBoundary = window.L.polygon([
+            [14.7903, 121.0178],
+            [14.7901, 121.0909],
+            [14.7717, 121.1088],
+            [14.7429, 121.1156],
+            [14.7137, 121.1097],
+            [14.6844, 121.1062],
+            [14.6542, 121.0925],
+            [14.6332, 121.0746],
+            [14.6218, 121.0469],
+            [14.6196, 121.0204],
+            [14.6327, 121.0014],
+            [14.6561, 120.9970],
+            [14.6904, 120.9973],
+            [14.7191, 121.0013],
+            [14.7484, 121.0076],
+            [14.7725, 121.0114]
+        ], {
+            color: '#2563eb',
+            weight: 2,
+            fillColor: '#3b82f6',
+            fillOpacity: 0.05
+        }).addTo(map);
+        qcBoundary.bindTooltip('Approximate Quezon City boundary', { sticky: true });
+
+        const StreetViewControl = window.L.Control.extend({
+            options: { position: 'topright' },
+            onAdd: function () {
+                const btn = window.L.DomUtil.create('button', 'leaflet-bar');
+                btn.type = 'button';
+                btn.title = 'Open Google Street View for current pin';
+                btn.textContent = 'Street View';
+                btn.style.background = '#fff';
+                btn.style.padding = '4px 8px';
+                btn.style.cursor = 'pointer';
+                window.L.DomEvent.disableClickPropagation(btn);
+                window.L.DomEvent.on(btn, 'click', function (e) {
+                    window.L.DomEvent.stop(e);
+                    if (!gpsLat || !gpsLng || gpsLat.value === '' || gpsLng.value === '') {
+                        showMessage('Set a map pin first to open Street View.', false);
+                        return;
+                    }
+                    const url = 'https://www.google.com/maps?layer=c&cbll=' + encodeURIComponent(gpsLat.value + ',' + gpsLng.value);
+                    window.open(url, '_blank', 'noopener');
+                });
+                return btn;
+            }
+        });
+        map.addControl(new StreetViewControl());
 
         map.on('click', function (event) {
             const lat = event.latlng.lat;

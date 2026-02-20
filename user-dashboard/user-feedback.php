@@ -390,15 +390,8 @@ $csrfToken = generate_csrf_token();
                             <button type="button" id="mapSearchBtn" class="ac-f84d9680">Search</button>
                             <button type="button" id="gpsPinBtn" class="ac-f84d9680">Use Current Location</button>
                             <button type="button" id="improveAccuracyBtn" class="ac-f84d9680">Improve Accuracy</button>
-                            <button type="button" id="streetViewBtn" class="ac-f84d9680">Street View</button>
                         </div>
                         <div id="concernMap" style="height:320px;border:1px solid #d1d5db;border-radius:10px;"></div>
-                        <div id="streetViewWrap" style="display:none;margin-top:10px;">
-                            <iframe id="streetViewFrame" title="Street View" style="width:100%;height:280px;border:1px solid #d1d5db;border-radius:10px;" loading="lazy"></iframe>
-                            <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;">
-                                <a id="openStreetViewExternal" class="ac-f84d9680" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;">Open in Google Street View</a>
-                            </div>
-                        </div>
                         <small id="pinnedAddress" style="display:block;margin-top:8px;color:#334155;">No pinned address yet.</small>
                         <input type="hidden" id="gps_lat" name="gps_lat" value="">
                         <input type="hidden" id="gps_lng" name="gps_lng" value="">
