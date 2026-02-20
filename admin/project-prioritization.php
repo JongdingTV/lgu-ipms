@@ -728,7 +728,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     <button type="button" class="modal-close" data-close-modal="photo-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">&times;</button>
                                 </div>
                                 <div class="modal-body">
-                                    <img class="feedback-photo-preview" src="/user-dashboard/feedback-photo.php?file=<?= rawurlencode((string) $photoFile) ?>" alt="Feedback Photo" loading="lazy">
+                                    <img class="feedback-photo-preview" src="/user-dashboard/feedback-photo.php?feedback_id=<?= (int) ($fb_lc['id'] ?? 0) ?>" alt="Feedback Photo" loading="lazy">
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="modal-btn modal-btn-close" data-close-modal="photo-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Close</button>

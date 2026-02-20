@@ -15,7 +15,8 @@ $userId = (int) ($_SESSION['user_id'] ?? 0);
 $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
 $isAdminSession = $employeeId > 0;
 $file = trim((string) ($_GET['file'] ?? ''));
-if (($userId <= 0 && !$isAdminSession) || $file === '' || !preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)) {
+$feedbackId = (int) ($_GET['feedback_id'] ?? 0);
+if (($userId <= 0 && !$isAdminSession) || ($file === '' && $feedbackId <= 0)) {
     http_response_code(400);
     exit('Invalid request');
 }
@@ -44,9 +45,82 @@ function feedback_photo_has_column(mysqli $db, string $column): bool
     return $exists;
 }
 
+function feedback_extract_photo_marker(string $description): ?string
+{
+    if (preg_match('/\[(Photo Attachment Private)\]\s*(.*?)(?=\s*\[[^\]]+\]|$)/is', $description, $matches)) {
+        $candidate = basename(trim((string) ($matches[2] ?? '')));
+        if ($candidate !== '' && preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $candidate)) {
+            return $candidate;
+        }
+    }
+    return null;
+}
+
 $hasUserId = feedback_photo_has_column($db, 'user_id');
 $hasPhotoPath = feedback_photo_has_column($db, 'photo_path');
 $userName = trim((string) ($_SESSION['user_name'] ?? ''));
+$resolvedFile = '';
+
+if ($feedbackId > 0) {
+    $select = ['id', 'description', 'user_name'];
+    if ($hasUserId) {
+        $select[] = 'user_id';
+    }
+    if ($hasPhotoPath) {
+        $select[] = 'photo_path';
+    }
+
+    $stmt = $db->prepare('SELECT ' . implode(', ', $select) . ' FROM feedback WHERE id = ? LIMIT 1');
+    if (!$stmt) {
+        http_response_code(500);
+        exit('Query failed');
+    }
+    $stmt->bind_param('i', $feedbackId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    if (!$row) {
+        http_response_code(404);
+        exit('Not found');
+    }
+
+    if (!$isAdminSession) {
+        $ownerOk = false;
+        if ($hasUserId && isset($row['user_id'])) {
+            $ownerOk = ((int) $row['user_id'] === $userId);
+        }
+        if (!$ownerOk) {
+            $ownerOk = ((string) ($row['user_name'] ?? '') === $userName);
+        }
+        if (!$ownerOk) {
+            http_response_code(403);
+            exit('Forbidden');
+        }
+    }
+
+    if ($hasPhotoPath) {
+        $candidate = basename(trim((string) ($row['photo_path'] ?? '')));
+        if ($candidate !== '' && preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $candidate)) {
+            $resolvedFile = $candidate;
+        }
+    }
+    if ($resolvedFile === '') {
+        $resolvedFile = (string) (feedback_extract_photo_marker((string) ($row['description'] ?? '')) ?? '');
+    }
+} else {
+    if (!preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)) {
+        http_response_code(400);
+        exit('Invalid request');
+    }
+    $resolvedFile = $file;
+}
+
+if ($resolvedFile === '') {
+    http_response_code(404);
+    exit('Not found');
+}
 
 $photoMatchSql = $hasPhotoPath
     ? "(photo_path = ? OR LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0)"
@@ -57,9 +131,9 @@ if ($isAdminSession) {
     $stmt = $db->prepare($sql);
     if ($stmt) {
         if ($hasPhotoPath) {
-            $stmt->bind_param('ss', $file, $file);
+            $stmt->bind_param('ss', $resolvedFile, $resolvedFile);
         } else {
-            $stmt->bind_param('s', $file);
+            $stmt->bind_param('s', $resolvedFile);
         }
     }
 } elseif ($hasUserId) {
@@ -67,9 +141,9 @@ if ($isAdminSession) {
     $stmt = $db->prepare($sql);
     if ($stmt) {
         if ($hasPhotoPath) {
-            $stmt->bind_param('isss', $userId, $userName, $file, $file);
+            $stmt->bind_param('isss', $userId, $userName, $resolvedFile, $resolvedFile);
         } else {
-            $stmt->bind_param('iss', $userId, $userName, $file);
+            $stmt->bind_param('iss', $userId, $userName, $resolvedFile);
         }
     }
 } else {
@@ -77,9 +151,9 @@ if ($isAdminSession) {
     $stmt = $db->prepare($sql);
     if ($stmt) {
         if ($hasPhotoPath) {
-            $stmt->bind_param('sss', $userName, $file, $file);
+            $stmt->bind_param('sss', $userName, $resolvedFile, $resolvedFile);
         } else {
-            $stmt->bind_param('ss', $userName, $file);
+            $stmt->bind_param('ss', $userName, $resolvedFile);
         }
     }
 }
@@ -108,7 +182,7 @@ function feedback_photo_candidate_dirs(): array
 
 $fullPath = null;
 foreach (feedback_photo_candidate_dirs() as $baseDir) {
-    $candidate = rtrim($baseDir, '/') . '/' . $file;
+    $candidate = rtrim($baseDir, '/') . '/' . $resolvedFile;
     if (@is_file($candidate)) {
         $fullPath = $candidate;
         break;
