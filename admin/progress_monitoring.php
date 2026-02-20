@@ -45,6 +45,54 @@ function progress_projects_has_created_at(mysqli $db): bool
     return $exists;
 }
 
+function progress_project_has_column(mysqli $db, string $columnName): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'projects'
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $columnName);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+    return $exists;
+}
+
+function progress_table_has_column(mysqli $db, string $tableName, string $columnName): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('ss', $tableName, $columnName);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+    return $exists;
+}
+
 function progress_table_exists(mysqli $db, string $tableName): bool
 {
     $stmt = $db->prepare(
@@ -69,29 +117,46 @@ function progress_table_exists(mysqli $db, string $tableName): bool
 // Handle API requests first (before rendering HTML)
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
-    
-    // Create Engineer_project_assignments table if it doesn't exist
-    $db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        contractor_id INT NOT NULL,
-        project_id INT NOT NULL,
-        assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(contractor_id) REFERENCES contractors(id) ON DELETE CASCADE,
-        FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
-    )");
-    
-    // Simple query first - support schemas with or without created_at.
+
+    // Build schema-safe SELECT (no fatal error if migration is not yet applied).
     $hasCreatedAt = progress_projects_has_created_at($db);
-    $selectCreatedAt = $hasCreatedAt ? ", created_at" : "";
-    $orderBy = $hasCreatedAt ? "created_at DESC" : "id DESC";
-    $result = $db->query("SELECT id, code, name, description, location, province, sector, budget, status, priority, priority_percent, start_date, end_date, duration_months{$selectCreatedAt} FROM projects ORDER BY {$orderBy} LIMIT 500");
+    $hasPriorityPercent = progress_project_has_column($db, 'priority_percent');
+    $hasDurationMonths = progress_project_has_column($db, 'duration_months');
+    $hasStartDate = progress_project_has_column($db, 'start_date');
+    $hasEndDate = progress_project_has_column($db, 'end_date');
     $hasTaskTable = progress_table_exists($db, 'project_tasks');
     $hasMilestoneTable = progress_table_exists($db, 'project_milestones');
-    
+    $hasAssignmentsTable = progress_table_exists($db, 'contractor_project_assignments');
+    $contractorCompanyCol = progress_table_has_column($db, 'contractors', 'company') ? 'company' : (progress_table_has_column($db, 'contractors', 'company_name') ? 'company_name' : (progress_table_has_column($db, 'contractors', 'name') ? 'name' : null));
+    $contractorRatingCol = progress_table_has_column($db, 'contractors', 'rating') ? 'rating' : null;
+
+    $selectFields = [
+        'id',
+        'code',
+        'name',
+        'description',
+        'location',
+        'province',
+        'sector',
+        'budget',
+        'status',
+        'priority'
+    ];
+    $selectFields[] = $hasPriorityPercent ? 'priority_percent' : '0 AS priority_percent';
+    $selectFields[] = $hasStartDate ? 'start_date' : 'NULL AS start_date';
+    $selectFields[] = $hasEndDate ? 'end_date' : 'NULL AS end_date';
+    $selectFields[] = $hasDurationMonths ? 'duration_months' : 'NULL AS duration_months';
+    if ($hasCreatedAt) {
+        $selectFields[] = 'created_at';
+    }
+
+    $orderBy = $hasCreatedAt ? "created_at DESC" : "id DESC";
     $projects = [];
-    
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
+
+    try {
+        $result = $db->query("SELECT " . implode(', ', $selectFields) . " FROM projects ORDER BY {$orderBy} LIMIT 500");
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
             // Keep progress neutral unless an explicit progress field is available from schema/data.
             $row['progress'] = isset($row['progress']) ? (float)$row['progress'] : 0;
             $updateDate = $row['created_at'] ?? $row['start_date'] ?? null;
@@ -99,12 +164,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             $row['process_update'] = $status . ($updateDate ? ' (' . date('M d, Y', strtotime((string)$updateDate)) . ')' : '');
             
             // Get Assigned Engineers for this project
-            $contractorsQuery = $db->query("
-                SELECT c.id, c.company, c.rating 
-                FROM contractors c
-                INNER JOIN contractor_project_assignments cpa ON c.id = cpa.contractor_id
-                WHERE cpa.project_id = " . intval($row['id'])
-            );
+            $contractorsQuery = false;
+            if ($hasAssignmentsTable) {
+                $contractorsQuery = $db->query("
+                    SELECT c.id, " . ($contractorCompanyCol ? "c.{$contractorCompanyCol}" : "''") . " AS company, " . ($contractorRatingCol ? "c.{$contractorRatingCol}" : "0") . " AS rating
+                    FROM contractors c
+                    INNER JOIN contractor_project_assignments cpa ON c.id = cpa.contractor_id
+                    WHERE cpa.project_id = " . intval($row['id'])
+                );
+            }
             
             $Engineers = [];
             if ($contractorsQuery) {
@@ -162,9 +230,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             }
             $projects[] = $row;
         }
-        $result->free();
+            $result->free();
+        }
+    } catch (Throwable $e) {
+        error_log('progress_monitoring load_projects error: ' . $e->getMessage());
+        echo json_encode([]);
+        exit;
     }
-    
+
     echo json_encode($projects);
     exit;
 }

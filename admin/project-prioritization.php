@@ -186,9 +186,9 @@ if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
     }
     $prioritySql = "SELECT "
         . implode(', ', $prioritySelect)
-        . ", COALESCE(NULLIF(category,''), 'Uncategorized') AS category_name, COALESCE(NULLIF(subject,''), 'No Subject') AS subject_name, COUNT(*) AS report_total "
+        . ", COALESCE(NULLIF(category,''), 'Uncategorized') AS category_name, COUNT(*) AS report_total "
         . "FROM feedback "
-        . "GROUP BY " . implode(', ', array_merge($priorityGroup, ["COALESCE(NULLIF(category,''), 'Uncategorized')", "COALESCE(NULLIF(subject,''), 'No Subject')"]))
+        . "GROUP BY " . implode(', ', array_merge($priorityGroup, ["COALESCE(NULLIF(category,''), 'Uncategorized')"]))
         . " ORDER BY report_total DESC LIMIT 1";
     $priorityRes = $db->query($prioritySql);
     if ($priorityRes) {
@@ -196,7 +196,7 @@ if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
         $priorityRes->free();
     }
 } else {
-    $priorityRes = $db->query("SELECT COALESCE(NULLIF(location,''), 'No location') AS location_name, COALESCE(NULLIF(category,''), 'Uncategorized') AS category_name, COALESCE(NULLIF(subject,''), 'No Subject') AS subject_name, COUNT(*) AS report_total FROM feedback GROUP BY COALESCE(NULLIF(location,''), 'No location'), COALESCE(NULLIF(category,''), 'Uncategorized'), COALESCE(NULLIF(subject,''), 'No Subject') ORDER BY report_total DESC LIMIT 1");
+    $priorityRes = $db->query("SELECT COALESCE(NULLIF(location,''), 'No location') AS location_name, COALESCE(NULLIF(category,''), 'Uncategorized') AS category_name, COUNT(*) AS report_total FROM feedback GROUP BY COALESCE(NULLIF(location,''), 'No location'), COALESCE(NULLIF(category,''), 'Uncategorized') ORDER BY report_total DESC LIMIT 1");
     if ($priorityRes) {
         $priorityRows = $priorityRes->fetch_all(MYSQLI_ASSOC);
         $priorityRes->free();
@@ -209,7 +209,7 @@ if (!empty($priorityRows)) {
     } else {
         $topPriority['location_group'] = $top['location_name'] ?? 'No data';
     }
-    $topPriority['category'] = trim(($top['category_name'] ?? 'Uncategorized') . ' / ' . ($top['subject_name'] ?? 'No Subject'));
+    $topPriority['category'] = trim((string)($top['category_name'] ?? 'Uncategorized'));
     $topPriority['total'] = (int) ($top['report_total'] ?? 0);
 }
 
@@ -444,7 +444,10 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     <td><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></td>
                                     <td><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></td>
                                     <td><?= isset($fb_lc['category']) ? htmlspecialchars($fb_lc['category']) : '-' ?></td>
-                                    <td><?= isset($fb_lc['exact_address']) && trim((string)$fb_lc['exact_address']) !== '' ? htmlspecialchars($fb_lc['exact_address']) : (isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-') ?></td>
+                                    <td>
+                                        <div><?= isset($fb_lc['exact_address']) && trim((string)$fb_lc['exact_address']) !== '' ? htmlspecialchars($fb_lc['exact_address']) : (isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-') ?></div>
+                                        <button type="button" class="view-btn" data-address-modal="address-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Full Address</button>
+                                    </td>
                                     <td>
                                         <span class="badge <?= (isset($fb_lc['status']) ? strtolower($fb_lc['status']) : '') ?>">
                                             <?= isset($fb_lc['status']) ? htmlspecialchars($fb_lc['status']) : '-' ?>
@@ -459,7 +462,6 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     </td>
                                     <td>
                                         <button type="button" class="copy-btn" data-copy-control="CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?>">Copy #</button>
-                                        <button type="button" class="view-btn" data-address-modal="address-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Full Address</button>
                                         <button type="button" class="edit-btn" data-edit-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Edit</button>
                                         <button type="button" class="view-btn" data-view-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Details</button>
                                     </td>

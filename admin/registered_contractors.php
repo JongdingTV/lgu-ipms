@@ -59,32 +59,92 @@ function registered_table_exists(mysqli $db, string $table): bool
     return $exists;
 }
 
-// Create Engineer_project_assignments table if it doesn't exist
-$db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    contractor_id INT NOT NULL,
-    project_id INT NOT NULL,
-    assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_assignment (contractor_id, project_id),
-    FOREIGN KEY (contractor_id) REFERENCES contractors(id) ON DELETE CASCADE,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-)");
+function registered_table_has_column(mysqli $db, string $table, string $column): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('ss', $table, $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $exists;
+}
+
+function registered_pick_column(mysqli $db, string $table, array $candidates): ?string
+{
+    foreach ($candidates as $candidate) {
+        if (registered_table_has_column($db, $table, $candidate)) {
+            return $candidate;
+        }
+    }
+    return null;
+}
+
+function ensure_assignment_table(mysqli $db): bool
+{
+    if (registered_table_exists($db, 'contractor_project_assignments')) {
+        return true;
+    }
+
+    try {
+        $ok = $db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            contractor_id INT NOT NULL,
+            project_id INT NOT NULL,
+            assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_assignment (contractor_id, project_id)
+        )");
+        return (bool) $ok;
+    } catch (Throwable $e) {
+        error_log('ensure_assignment_table error: ' . $e->getMessage());
+        return false;
+    }
+}
 
 // Handle GET request for loading Engineers
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_contractors') {
     header('Content-Type: application/json');
     
-    // Match the actual database column names from contractors-api.php
-    $result = $db->query("SELECT id, company, license, email, phone, status, rating FROM contractors ORDER BY id DESC LIMIT 100");
+    $companyCol = registered_pick_column($db, 'contractors', ['company', 'company_name', 'name']);
+    $licenseCol = registered_pick_column($db, 'contractors', ['license', 'license_number', 'prc_license_no']);
+    $emailCol = registered_pick_column($db, 'contractors', ['email', 'contact_email']);
+    $phoneCol = registered_pick_column($db, 'contractors', ['phone', 'contact_number', 'mobile']);
+    $statusCol = registered_pick_column($db, 'contractors', ['status']);
+    $ratingCol = registered_pick_column($db, 'contractors', ['rating']);
+
+    $selectParts = ['id'];
+    $selectParts[] = $companyCol ? "{$companyCol} AS company" : "'' AS company";
+    $selectParts[] = $licenseCol ? "{$licenseCol} AS license" : "'' AS license";
+    $selectParts[] = $emailCol ? "{$emailCol} AS email" : "'' AS email";
+    $selectParts[] = $phoneCol ? "{$phoneCol} AS phone" : "'' AS phone";
+    $selectParts[] = $statusCol ? "{$statusCol} AS status" : "'active' AS status";
+    $selectParts[] = $ratingCol ? "{$ratingCol} AS rating" : "0 AS rating";
+
     $Engineers = [];
-    
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $Engineers[] = $row;
+
+    try {
+        $result = $db->query("SELECT " . implode(', ', $selectParts) . " FROM contractors ORDER BY id DESC LIMIT 100");
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $Engineers[] = $row;
+            }
+            $result->free();
         }
-        $result->free();
-    } else {
-        error_log("Engineers query error: " . $db->error);
+    } catch (Throwable $e) {
+        error_log("Engineers query error: " . $e->getMessage());
+        echo json_encode([]);
+        exit;
     }
     
     echo json_encode($Engineers);
@@ -98,11 +158,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $hasCreatedAt = registered_projects_has_column($db, 'created_at');
     $hasPriorityPercent = registered_projects_has_column($db, 'priority_percent');
     $hasExactAddress = registered_projects_has_column($db, 'location');
+    $hasType = registered_projects_has_column($db, 'type');
+    $hasProvince = registered_projects_has_column($db, 'province');
+    $hasBarangay = registered_projects_has_column($db, 'barangay');
+    $hasBudget = registered_projects_has_column($db, 'budget');
+    $hasStartDate = registered_projects_has_column($db, 'start_date');
+    $hasEndDate = registered_projects_has_column($db, 'end_date');
+    $hasDurationMonths = registered_projects_has_column($db, 'duration_months');
+    $hasLicenseDoc = registered_projects_has_column($db, 'engineer_license_doc');
+    $hasCertDoc = registered_projects_has_column($db, 'engineer_certification_doc');
+    $hasCredDoc = registered_projects_has_column($db, 'engineer_credentials_doc');
     $hasTaskTable = registered_table_exists($db, 'project_tasks');
     $hasMilestoneTable = registered_table_exists($db, 'project_milestones');
     $orderBy = $hasCreatedAt ? 'created_at DESC' : 'id DESC';
     $prioritySelect = $hasPriorityPercent ? 'priority_percent' : '0 AS priority_percent';
-    $result = $db->query("SELECT id, code, name, type, sector, status, priority, " . $prioritySelect . ", location, province, barangay, budget, start_date, end_date, duration_months, engineer_license_doc, engineer_certification_doc, engineer_credentials_doc FROM projects ORDER BY {$orderBy}");
+    $projectSelect = [
+        'id',
+        'code',
+        'name',
+        $hasType ? 'type' : "'' AS type",
+        'sector',
+        'status',
+        'priority',
+        $prioritySelect,
+        'location',
+        $hasProvince ? 'province' : "'' AS province",
+        $hasBarangay ? 'barangay' : "'' AS barangay",
+        $hasBudget ? 'budget' : '0 AS budget',
+        $hasStartDate ? 'start_date' : 'NULL AS start_date',
+        $hasEndDate ? 'end_date' : 'NULL AS end_date',
+        $hasDurationMonths ? 'duration_months' : 'NULL AS duration_months',
+        $hasLicenseDoc ? 'engineer_license_doc' : "'' AS engineer_license_doc",
+        $hasCertDoc ? 'engineer_certification_doc' : "'' AS engineer_certification_doc",
+        $hasCredDoc ? 'engineer_credentials_doc' : "'' AS engineer_credentials_doc"
+    ];
+    try {
+        $result = $db->query("SELECT " . implode(', ', $projectSelect) . " FROM projects ORDER BY {$orderBy}");
+    } catch (Throwable $e) {
+        error_log('registered_contractors load_projects query error: ' . $e->getMessage());
+        echo json_encode([]);
+        exit;
+    }
     $projects = [];
     
     if ($result) {
@@ -152,16 +248,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $project_id = isset($_POST['project_id']) ? (int)$_POST['project_id'] : 0;
     
     if ($contractor_id > 0 && $project_id > 0) {
-        // Create table if it doesn't exist
-        $db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            contractor_id INT NOT NULL,
-            project_id INT NOT NULL,
-            assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_assignment (contractor_id, project_id),
-            FOREIGN KEY (contractor_id) REFERENCES contractors(id) ON DELETE CASCADE,
-            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-        )");
+        if (!ensure_assignment_table($db)) {
+            echo json_encode(['success' => false, 'message' => 'Assignment table is missing and cannot be created.']);
+            exit;
+        }
         
         $stmt = $db->prepare("INSERT INTO contractor_project_assignments (contractor_id, project_id) VALUES (?, ?)");
         $stmt->bind_param("ii", $contractor_id, $project_id);
@@ -190,6 +280,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $project_id = isset($_POST['project_id']) ? (int)$_POST['project_id'] : 0;
     
     if ($contractor_id > 0 && $project_id > 0) {
+        if (!registered_table_exists($db, 'contractor_project_assignments')) {
+            echo json_encode(['success' => true, 'message' => 'No assignment found']);
+            exit;
+        }
         $stmt = $db->prepare("DELETE FROM contractor_project_assignments WHERE contractor_id=? AND project_id=?");
         $stmt->bind_param("ii", $contractor_id, $project_id);
         
@@ -233,11 +327,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $contractor_id = isset($_GET['contractor_id']) ? (int)$_GET['contractor_id'] : 0;
     
     if ($contractor_id > 0) {
+        if (!registered_table_exists($db, 'contractor_project_assignments')) {
+            echo json_encode([]);
+            exit;
+        }
+
         $hasPriorityPercent = registered_projects_has_column($db, 'priority_percent');
+        $hasType = registered_projects_has_column($db, 'type');
+        $hasProvince = registered_projects_has_column($db, 'province');
+        $hasBarangay = registered_projects_has_column($db, 'barangay');
+        $hasBudget = registered_projects_has_column($db, 'budget');
+        $hasStartDate = registered_projects_has_column($db, 'start_date');
+        $hasEndDate = registered_projects_has_column($db, 'end_date');
+        $hasDurationMonths = registered_projects_has_column($db, 'duration_months');
+        $hasLicenseDoc = registered_projects_has_column($db, 'engineer_license_doc');
+        $hasCertDoc = registered_projects_has_column($db, 'engineer_certification_doc');
+        $hasCredDoc = registered_projects_has_column($db, 'engineer_credentials_doc');
         $prioritySelect = $hasPriorityPercent ? 'p.priority_percent' : '0 AS priority_percent';
-        $stmt = $db->prepare("SELECT p.id, p.code, p.name, p.type, p.sector, p.status, p.priority, " . $prioritySelect . ", p.location, p.province, p.barangay, p.budget, p.start_date, p.end_date, p.duration_months, p.engineer_license_doc, p.engineer_certification_doc, p.engineer_credentials_doc FROM projects p 
+        try {
+            $stmt = $db->prepare("SELECT p.id, p.code, p.name, " . ($hasType ? "p.type" : "'' AS type") . ", p.sector, p.status, p.priority, " . $prioritySelect . ", p.location, " . ($hasProvince ? "p.province" : "'' AS province") . ", " . ($hasBarangay ? "p.barangay" : "'' AS barangay") . ", " . ($hasBudget ? "p.budget" : "0 AS budget") . ", " . ($hasStartDate ? "p.start_date" : "NULL AS start_date") . ", " . ($hasEndDate ? "p.end_date" : "NULL AS end_date") . ", " . ($hasDurationMonths ? "p.duration_months" : "NULL AS duration_months") . ", " . ($hasLicenseDoc ? "p.engineer_license_doc" : "'' AS engineer_license_doc") . ", " . ($hasCertDoc ? "p.engineer_certification_doc" : "'' AS engineer_certification_doc") . ", " . ($hasCredDoc ? "p.engineer_credentials_doc" : "'' AS engineer_credentials_doc") . " FROM projects p 
                                INNER JOIN contractor_project_assignments cpa ON p.id = cpa.project_id 
                                WHERE cpa.contractor_id = ?");
+        } catch (Throwable $e) {
+            error_log('registered_contractors get_assigned_projects prepare error: ' . $e->getMessage());
+            echo json_encode([]);
+            exit;
+        }
+        if (!$stmt) {
+            echo json_encode([]);
+            exit;
+        }
         $stmt->bind_param("i", $contractor_id);
         $stmt->execute();
         $result = $stmt->get_result();
