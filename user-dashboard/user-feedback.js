@@ -211,12 +211,14 @@
         if (!window.localStorage || !form) return;
         const subjectEl = document.getElementById('subject');
         const feedbackEl = document.getElementById('feedback');
+        const completeAddressEl = document.getElementById('complete_address');
         const payload = {
             subject: subjectEl ? subjectEl.value : '',
             district: district ? district.value : '',
             barangay: barangay ? barangay.value : '',
             alt_name: altName ? altName.value : '',
             category: category ? category.value : '',
+            complete_address: completeAddressEl ? completeAddressEl.value : '',
             feedback: feedbackEl ? feedbackEl.value : ''
         };
         try {
@@ -246,8 +248,10 @@
 
         const subjectEl = document.getElementById('subject');
         const feedbackEl = document.getElementById('feedback');
+        const completeAddressEl = document.getElementById('complete_address');
         if (subjectEl && draft.subject) subjectEl.value = draft.subject;
         if (category && draft.category) category.value = draft.category;
+        if (completeAddressEl && draft.complete_address) completeAddressEl.value = draft.complete_address;
         if (feedbackEl && draft.feedback) feedbackEl.value = draft.feedback;
 
         if (district && draft.district) {
@@ -625,6 +629,9 @@
     const fdLocation = document.getElementById('fdLocation');
     const fdStatus = document.getElementById('fdStatus');
     const fdDescription = document.getElementById('fdDescription');
+    const fdPhotoRow = document.getElementById('fdPhotoRow');
+    const fdViewPhotoBtn = document.getElementById('fdViewPhotoBtn');
+    let currentDetailsPhotoUrl = '';
 
     document.querySelectorAll('.feedback-photo-view-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -669,6 +676,8 @@
             if (fdLocation) fdLocation.textContent = row.getAttribute('data-location') || '-';
             if (fdStatus) fdStatus.textContent = row.getAttribute('data-status') || '-';
             if (fdDescription) fdDescription.textContent = row.getAttribute('data-description') || '-';
+            currentDetailsPhotoUrl = row.getAttribute('data-photo-url') || '';
+            if (fdPhotoRow) fdPhotoRow.style.display = currentDetailsPhotoUrl ? 'block' : 'none';
             detailsModal.hidden = false;
             document.body.style.overflow = 'hidden';
         });
@@ -694,6 +703,14 @@
             if (event.target === detailsModal) {
                 closeDetailsModal();
             }
+        });
+    }
+    if (fdViewPhotoBtn) {
+        fdViewPhotoBtn.addEventListener('click', function () {
+            if (!currentDetailsPhotoUrl || !photoModal || !photoPreview) return;
+            photoPreview.src = currentDetailsPhotoUrl;
+            photoModal.hidden = false;
+            document.body.style.overflow = 'hidden';
         });
     }
 

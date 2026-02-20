@@ -92,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     $district = trim((string) ($_POST['district'] ?? ''));
     $barangay = trim((string) ($_POST['barangay'] ?? ''));
     $altName = trim((string) ($_POST['alt_name'] ?? ''));
+    $completeAddress = trim((string) ($_POST['complete_address'] ?? ''));
     $location = trim($_POST['location'] ?? '');
     $description = trim($_POST['feedback'] ?? '');
     $gpsLat = trim($_POST['gps_lat'] ?? '');
@@ -190,6 +191,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         $db->close();
         exit;
     }
+    if ($completeAddress === '' || mb_strlen($completeAddress) < 8 || mb_strlen($completeAddress) > 255) {
+        echo json_encode(['success' => false, 'message' => 'Please provide a valid complete address (8-255 characters).']);
+        $db->close();
+        exit;
+    }
     if (!preg_match('/^[1-6]$/', $district) || $barangay === '' || $altName === '') {
         echo json_encode(['success' => false, 'message' => 'Please select a valid district, barangay, and alternative name.']);
         $db->close();
@@ -199,6 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     if (stripos($location, $serverLocation) !== 0) {
         $location = $serverLocation;
     }
+    $description .= "\n\n[Complete Address] " . $completeAddress;
     if (mb_strlen($subject) > 100 || mb_strlen($category) > 100 || mb_strlen($location) > 255) {
         record_attempt('user_feedback_submit');
         echo json_encode(['success' => false, 'message' => 'Some fields are too long.']);
@@ -477,6 +484,10 @@ $csrfToken = generate_csrf_token();
                         </select>
                     </div>
                     <div class="full">
+                        <label for="complete_address">Complete Address</label>
+                        <input type="text" id="complete_address" name="complete_address" maxlength="255" placeholder="House/Block/Lot, Street, Barangay, District, Quezon City" required>
+                    </div>
+                    <div class="full">
                         <label for="feedback">Suggestion / Concern</label>
                         <textarea id="feedback" name="feedback" rows="5" required></textarea>
                     </div>
@@ -580,6 +591,7 @@ $csrfToken = generate_csrf_token();
                             <div
                                 class="feedback-mail-row"
                                 data-feedback-open="1"
+                                data-photo-url="<?php echo htmlspecialchars($photoPath, ENT_QUOTES, 'UTF-8'); ?>"
                                 data-status-filter="<?php echo htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8'); ?>"
                                 data-search="<?php echo htmlspecialchars(strtolower((string) $row['subject'] . ' ' . (string) $row['category'] . ' ' . (string) $row['location']), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-date="<?php echo htmlspecialchars(date('M d, Y h:i A', strtotime((string) $row['date_submitted'])), ENT_QUOTES, 'UTF-8'); ?>"
@@ -600,7 +612,7 @@ $csrfToken = generate_csrf_token();
                                 <div class="feedback-mail-actions">
                                     <span class="feedback-mail-time"><?php echo date('M d, Y', strtotime((string) $row['date_submitted'])); ?></span>
                                     <?php if ($photoPath !== ''): ?>
-                                        <button type="button" class="ac-f84d9680 feedback-photo-view-btn" data-photo-url="<?php echo htmlspecialchars($photoPath, ENT_QUOTES, 'UTF-8'); ?>">Photo</button>
+                                        <span style="font-size:.78rem;color:#1d4ed8;font-weight:600;">Attachment</span>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -641,6 +653,9 @@ $csrfToken = generate_csrf_token();
                 <div>
                     <strong>Description:</strong>
                     <pre id="fdDescription" style="margin:8px 0 0;padding:10px;border:1px solid #dbe7f3;border-radius:10px;background:#f8fbff;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto;">-</pre>
+                </div>
+                <div id="fdPhotoRow" style="display:none;">
+                    <button type="button" id="fdViewPhotoBtn" class="ac-f84d9680">View Attached Photo</button>
                 </div>
             </div>
         </div>
