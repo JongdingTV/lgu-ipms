@@ -95,7 +95,7 @@ function clean_feedback_description(string $description): string
 
 function feedback_extract_marker_value(string $description, string $marker): ?string
 {
-    $pattern = '/^\[' . preg_quote($marker, '/') . '\]\s*(.+)$/mi';
+    $pattern = '/\[' . preg_quote($marker, '/') . '\]\s*(.*?)(?=\s*\[[^\]]+\]|$)/is';
     if (preg_match($pattern, $description, $matches)) {
         $value = trim((string) ($matches[1] ?? ''));
         return $value !== '' ? $value : null;
@@ -106,6 +106,9 @@ function feedback_extract_marker_value(string $description, string $marker): ?st
 function feedback_photo_file(array $feedback): ?string
 {
     $photoPath = trim((string) ($feedback['photo_path'] ?? ''));
+    if ($photoPath !== '') {
+        $photoPath = basename($photoPath);
+    }
     if ($photoPath !== '' && preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $photoPath)) {
         return $photoPath;
     }
