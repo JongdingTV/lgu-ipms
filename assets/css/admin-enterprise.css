@@ -3471,6 +3471,20 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links .nav-c
     border-color: #bfd6f6;
 }
 
+/* Keep sidebar items independent: hovering Citizen Verification must not shift other menu items. */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item {
+    transform: none !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a.active,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item.active {
+    transform: none !important;
+    padding-left: 12px !important;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group {
     margin-bottom: 2px;
 }
