@@ -89,6 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
 
     $subject = trim($_POST['subject'] ?? '');
     $category = trim($_POST['category'] ?? '');
+    $district = trim((string) ($_POST['district'] ?? ''));
+    $barangay = trim((string) ($_POST['barangay'] ?? ''));
+    $altName = trim((string) ($_POST['alt_name'] ?? ''));
     $location = trim($_POST['location'] ?? '');
     $description = trim($_POST['feedback'] ?? '');
     $gpsLat = trim($_POST['gps_lat'] ?? '');
@@ -124,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
             exit;
         }
 
-        $uploadDir = dirname(__DIR__) . '/uploads/feedback';
+        $uploadDir = dirname(__DIR__, 3) . '/private_uploads/lgu-ipms/feedback';
         if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
             echo json_encode(['success' => false, 'message' => 'Unable to prepare upload directory.']);
             $db->close();
@@ -166,8 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
             exit;
         }
 
-        $photoWebPath = '/uploads/feedback/' . $savedName;
-        $description .= "\n\n[Photo Attachment] " . $photoWebPath;
+        $description .= "\n\n[Photo Attachment Private] " . $savedName;
     }
 
     if ($gpsLat !== '' && $gpsLng !== '') {
@@ -187,6 +189,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         echo json_encode(['success' => false, 'message' => 'All fields are required.']);
         $db->close();
         exit;
+    }
+    if (!preg_match('/^[1-6]$/', $district) || $barangay === '' || $altName === '') {
+        echo json_encode(['success' => false, 'message' => 'Please select a valid district, barangay, and alternative name.']);
+        $db->close();
+        exit;
+    }
+    $serverLocation = 'District ' . $district . ' | ' . $barangay . ' | ' . $altName;
+    if (stripos($location, $serverLocation) !== 0) {
+        $location = $serverLocation;
     }
     if (mb_strlen($subject) > 100 || mb_strlen($category) > 100 || mb_strlen($location) > 255) {
         record_attempt('user_feedback_submit');
@@ -505,6 +516,18 @@ $csrfToken = generate_csrf_token();
 
         <div class="card">
             <h3 style="margin-bottom:12px;">Your Submissions</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+                <input type="search" id="feedbackInboxSearch" placeholder="Search subject, category, location..." style="flex:1 1 260px;min-height:38px;border:1px solid #dbe7f3;border-radius:10px;padding:8px 10px;">
+                <select id="feedbackInboxStatus" style="min-height:38px;border:1px solid #dbe7f3;border-radius:10px;padding:8px 10px;">
+                    <option value="">All status</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Addressed">Addressed</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Closed">Closed</option>
+                </select>
+                <span id="feedbackInboxCount" style="font-size:.82rem;color:#64748b;">Showing 0</span>
+            </div>
             <style>
                 .feedback-inbox { border:1px solid #dbe7f3;border-radius:12px;overflow:hidden;background:#fff; }
                 .feedback-inbox-head { display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;background:#f8fbff;border-bottom:1px solid #dbe7f3; }
@@ -548,13 +571,17 @@ $csrfToken = generate_csrf_token();
                             }
                             $desc = (string) ($row['description'] ?? '');
                             $photoPath = '';
-                            if (preg_match('/\[Photo Attachment\]\s+(\/uploads\/feedback\/[\w\-.]+\.((jpg)|(jpeg)|(png)|(webp)))/i', $desc, $m)) {
+                            if (preg_match('/\[Photo Attachment Private\]\s+([\w\-.]+\.(?:jpg|jpeg|png|webp))/i', $desc, $m)) {
+                                $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($m[1]);
+                            } elseif (preg_match('/\[Photo Attachment\]\s+(\/uploads\/feedback\/[\w\-.]+\.((jpg)|(jpeg)|(png)|(webp)))/i', $desc, $m)) {
                                 $photoPath = $m[1];
                             }
                             ?>
                             <div
                                 class="feedback-mail-row"
                                 data-feedback-open="1"
+                                data-status-filter="<?php echo htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8'); ?>"
+                                data-search="<?php echo htmlspecialchars(strtolower((string) $row['subject'] . ' ' . (string) $row['category'] . ' ' . (string) $row['location']), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-date="<?php echo htmlspecialchars(date('M d, Y h:i A', strtotime((string) $row['date_submitted'])), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-subject="<?php echo htmlspecialchars((string) $row['subject'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-category="<?php echo htmlspecialchars((string) $row['category'], ENT_QUOTES, 'UTF-8'); ?>"

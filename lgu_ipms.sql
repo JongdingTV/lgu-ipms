@@ -324,3 +324,10 @@ CREATE TABLE IF NOT EXISTS `user_rate_limiting` (
   PRIMARY KEY (`id`),
   KEY `idx_user_action_time` (`user_id`,`action_type`,`attempt_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `user_notification_state` (
+  `user_id` int(11) NOT NULL,
+  `last_seen_id` bigint(20) NOT NULL DEFAULT 0,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

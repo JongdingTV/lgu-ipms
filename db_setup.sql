@@ -151,3 +151,9 @@ CREATE TABLE IF NOT EXISTS user_rate_limiting (
     attempt_time INT NOT NULL,
     INDEX idx_user_action_time (user_id, action_type, attempt_time)
 );
+
+CREATE TABLE IF NOT EXISTS user_notification_state (
+    user_id INT PRIMARY KEY,
+    last_seen_id BIGINT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

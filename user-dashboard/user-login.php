@@ -148,6 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_otp_submit']))
             if ($rememberRequested) {
                 remember_user_device($userId, REMEMBER_DEVICE_DAYS);
             }
+            log_security_event('USER_LOGIN_SUCCESS', 'Citizen account login via OTP success');
 
             header('Location: /user-dashboard/user-dashboard.php');
             exit;

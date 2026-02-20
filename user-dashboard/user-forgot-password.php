@@ -114,6 +114,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step1_request'])) {
                                 error_log('Failed to send user password reset email to: ' . $email);
                             } else {
                                 record_user_attempt('user_password_reset_request_user', $resetUserId);
+                                $_SESSION['user_id'] = $resetUserId;
+                                log_security_event('USER_PASSWORD_RESET_REQUEST', 'Citizen requested password reset email');
+                                unset($_SESSION['user_id']);
                             }
                         }
                         $ins->close();
@@ -198,6 +201,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step2_reset'])) {
                             record_attempt('user_password_reset_submit');
                             if ($resetUserId > 0) {
                                 record_user_attempt('user_password_reset_submit_user', $resetUserId);
+                                $_SESSION['user_id'] = $resetUserId;
+                                log_security_event('USER_PASSWORD_RESET_SUCCESS', 'Citizen password reset completed');
+                                unset($_SESSION['user_id']);
                             }
                             $success = 'Password has been reset successfully. Redirecting to login...';
                             echo '<meta http-equiv="refresh" content="2;url=/user-dashboard/user-login.php">';

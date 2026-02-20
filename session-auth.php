@@ -355,7 +355,7 @@ function log_security_event($event_type, $description, $ip_address = null) {
         $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
     }
     
-    $user_id = $_SESSION['employee_id'] ?? null;
+    $user_id = $_SESSION['employee_id'] ?? ($_SESSION['user_id'] ?? null);
     $timestamp = date('Y-m-d H:i:s');
     
     // Create security_logs table if it doesn't exist

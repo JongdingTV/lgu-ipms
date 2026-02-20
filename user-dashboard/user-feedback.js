@@ -20,6 +20,7 @@
     const mapSearchBtn = document.getElementById('mapSearchBtn');
     const pinnedAddress = document.getElementById('pinnedAddress');
     const gpsAddress = document.getElementById('gps_address');
+    const draftKey = 'ipms_feedback_form_draft_v1';
 
     if (!form) return;
 
@@ -191,6 +192,9 @@
             });
         });
     }
+    form.addEventListener('input', saveDraft);
+    form.addEventListener('change', saveDraft);
+    restoreDraft();
 
     function showMessage(text, ok) {
         if (!message) return;
@@ -201,6 +205,67 @@
         message.style.border = ok ? '1px solid #86efac' : '1px solid #fecaca';
         message.style.background = ok ? '#dcfce7' : '#fee2e2';
         message.style.color = ok ? '#166534' : '#991b1b';
+    }
+
+    function saveDraft() {
+        if (!window.localStorage || !form) return;
+        const subjectEl = document.getElementById('subject');
+        const feedbackEl = document.getElementById('feedback');
+        const payload = {
+            subject: subjectEl ? subjectEl.value : '',
+            district: district ? district.value : '',
+            barangay: barangay ? barangay.value : '',
+            alt_name: altName ? altName.value : '',
+            category: category ? category.value : '',
+            feedback: feedbackEl ? feedbackEl.value : ''
+        };
+        try {
+            window.localStorage.setItem(draftKey, JSON.stringify(payload));
+        } catch (_error) {
+            // ignore storage errors
+        }
+    }
+
+    function restoreDraft() {
+        if (!window.localStorage) return;
+        let raw = '';
+        try {
+            raw = window.localStorage.getItem(draftKey) || '';
+        } catch (_error) {
+            return;
+        }
+        if (!raw) return;
+
+        let draft = null;
+        try {
+            draft = JSON.parse(raw);
+        } catch (_error) {
+            return;
+        }
+        if (!draft || typeof draft !== 'object') return;
+
+        const subjectEl = document.getElementById('subject');
+        const feedbackEl = document.getElementById('feedback');
+        if (subjectEl && draft.subject) subjectEl.value = draft.subject;
+        if (category && draft.category) category.value = draft.category;
+        if (feedbackEl && draft.feedback) feedbackEl.value = draft.feedback;
+
+        if (district && draft.district) {
+            district.value = draft.district;
+            district.dispatchEvent(new Event('change'));
+            setTimeout(function () {
+                if (barangay && draft.barangay) {
+                    barangay.value = draft.barangay;
+                    barangay.dispatchEvent(new Event('change'));
+                }
+                setTimeout(function () {
+                    if (altName && draft.alt_name) {
+                        altName.value = draft.alt_name;
+                        altName.dispatchEvent(new Event('change'));
+                    }
+                }, 150);
+            }, 150);
+        }
     }
 
     function resetSelect(select, placeholder) {
@@ -591,6 +656,8 @@
     }
 
     document.querySelectorAll('[data-feedback-open="1"]').forEach(function (row) {
+        row.setAttribute('tabindex', '0');
+        row.setAttribute('role', 'button');
         row.addEventListener('click', function (event) {
             if (event.target && event.target.closest('.feedback-photo-view-btn')) {
                 return;
@@ -604,6 +671,12 @@
             if (fdDescription) fdDescription.textContent = row.getAttribute('data-description') || '-';
             detailsModal.hidden = false;
             document.body.style.overflow = 'hidden';
+        });
+        row.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                row.click();
+            }
         });
     });
 
@@ -623,6 +696,30 @@
             }
         });
     }
+
+    const inboxSearch = document.getElementById('feedbackInboxSearch');
+    const inboxStatus = document.getElementById('feedbackInboxStatus');
+    const inboxCount = document.getElementById('feedbackInboxCount');
+    const inboxRows = Array.prototype.slice.call(document.querySelectorAll('[data-feedback-open="1"]'));
+    function filterInboxRows() {
+        if (!inboxRows.length) return;
+        const q = ((inboxSearch && inboxSearch.value) || '').trim().toLowerCase();
+        const status = ((inboxStatus && inboxStatus.value) || '').trim().toLowerCase();
+        let shown = 0;
+        inboxRows.forEach(function (row) {
+            const hay = (row.getAttribute('data-search') || '').toLowerCase();
+            const rowStatus = (row.getAttribute('data-status-filter') || '').toLowerCase();
+            const okQ = q === '' || hay.indexOf(q) >= 0;
+            const okStatus = status === '' || rowStatus === status;
+            const visible = okQ && okStatus;
+            row.style.display = visible ? '' : 'none';
+            if (visible) shown += 1;
+        });
+        if (inboxCount) inboxCount.textContent = 'Showing ' + shown;
+    }
+    if (inboxSearch) inboxSearch.addEventListener('input', filterInboxRows);
+    if (inboxStatus) inboxStatus.addEventListener('change', filterInboxRows);
+    filterInboxRows();
 
     form.addEventListener('submit', async function (event) {
         event.preventDefault();
@@ -667,6 +764,11 @@
                 if (marker && map) {
                     map.removeLayer(marker);
                     marker = null;
+                }
+                try {
+                    window.localStorage.removeItem(draftKey);
+                } catch (_error) {
+                    // ignore storage errors
                 }
                 window.setTimeout(function () {
                     window.location.reload();

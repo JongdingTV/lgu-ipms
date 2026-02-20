@@ -27,6 +27,7 @@ $canAccessFeedback = user_feedback_access_allowed($db, $userId);
 $userInitials = user_avatar_initials($userName);
 $avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
 $profileImageWebPath = user_profile_photo_web_path($userId);
+$progressUpdatedAt = date('M d, Y h:i A');
 
 function user_progress_has_created_at(mysqli $db): bool
 {
@@ -200,6 +201,7 @@ $db->close();
         <div class="dash-header">
             <h1>Progress Monitoring</h1>
             <p>Track projects in your area, <?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></p>
+            <p style="margin:6px 0 0;font-size:.82rem;color:#64748b;">Last updated: <?php echo htmlspecialchars($progressUpdatedAt, ENT_QUOTES, 'UTF-8'); ?></p>
         </div>
 
         <div class="pm-section card">

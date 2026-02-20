@@ -61,6 +61,7 @@ $forApprovalProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects
 
 $recentOrder = user_dashboard_projects_has_created_at($db) ? 'created_at DESC' : 'id DESC';
 $recentProjects = $db->query("SELECT id, name, location, status, budget FROM projects ORDER BY {$recentOrder} LIMIT 5");
+$dashboardUpdatedAt = date('M d, Y h:i A');
 
 $feedbackStmt = null;
 $hasFeedbackUserIdStmt = $db->prepare(
@@ -189,6 +190,7 @@ $db->close();
         <div class="dash-header">
             <h1>User Dashboard</h1>
             <p>Transparent project updates from the admin side.</p>
+            <p style="margin:6px 0 0;font-size:.82rem;color:#64748b;">Last updated: <?php echo htmlspecialchars($dashboardUpdatedAt, ENT_QUOTES, 'UTF-8'); ?></p>
         </div>
         <?php if (!$canAccessFeedback): ?>
             <p style="margin:0 0 14px;color:#92400e;font-weight:600;">Your account can view all public project information. Verify your ID to unlock feedback submission.</p>

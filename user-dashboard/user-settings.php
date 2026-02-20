@@ -278,6 +278,21 @@ if ($statsRes && $statsRes->num_rows === 1) {
 }
 $statsStmt->close();
 
+$securityEvents = [];
+$secStmt = $db->prepare('SELECT event_type, ip_address, description, timestamp FROM security_logs WHERE user_id = ? ORDER BY timestamp DESC LIMIT 10');
+if ($secStmt) {
+    $secStmt->bind_param('i', $userId);
+    $secStmt->execute();
+    $secRes = $secStmt->get_result();
+    while ($secRes && ($secRow = $secRes->fetch_assoc())) {
+        $securityEvents[] = $secRow;
+    }
+    if ($secRes) {
+        $secRes->free();
+    }
+    $secStmt->close();
+}
+
 $db->close();
 $csrfToken = generate_csrf_token();
 ?>
@@ -429,6 +444,46 @@ $csrfToken = generate_csrf_token();
                                 <div class="settings-info-field"><label>Pending Feedback</label><div class="settings-info-value"><?php echo (int) ($feedbackStats['pending'] ?? 0); ?></div></div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="settings-card" style="margin-top:14px;">
+                        <h4 style="margin:0 0 10px;">Security Activity</h4>
+                        <p style="margin:0 0 12px;color:#64748b;font-size:.88rem;">Recent account events (login, password reset, suspicious activity).</p>
+                        <div class="table-wrap">
+                            <table class="projects-table">
+                                <thead>
+                                    <tr>
+                                        <th>When</th>
+                                        <th>Event</th>
+                                        <th>IP</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (!empty($securityEvents)): ?>
+                                        <?php foreach ($securityEvents as $event): ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars((string) date('M d, Y h:i A', strtotime((string) ($event['timestamp'] ?? 'now'))), ENT_QUOTES, 'UTF-8'); ?></td>
+                                                <td><?php echo htmlspecialchars((string) ($event['event_type'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                                                <td><?php echo htmlspecialchars((string) ($event['ip_address'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                                                <td><?php echo htmlspecialchars((string) ($event['description'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr><td colspan="4" class="ac-a004b216">No recent security events.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="settings-card" style="margin-top:14px;">
+                        <h4 style="margin:0 0 10px;">Privacy & Data Use</h4>
+                        <ul style="margin:0;padding-left:18px;color:#475569;line-height:1.5;">
+                            <li>Your ID is used for verification and anti-fraud checks only.</li>
+                            <li>Project feedback records are tied to your account for auditing and response updates.</li>
+                            <li>Security events (login/reset) are logged to protect your account.</li>
+                            <li>If you need account data review/removal, contact LGU support.</li>
+                        </ul>
                     </div>
                 <?php else: ?>
                     <div class="settings-view">

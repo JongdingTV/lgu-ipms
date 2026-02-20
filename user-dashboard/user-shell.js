@@ -278,8 +278,6 @@
         var themeBtn = document.getElementById('userThemeBtn');
         var themeLabel = document.getElementById('userThemeLabel');
         var topMenuBtn = document.getElementById('userTopMenuBtn');
-        var userNotifSeenKey = 'ipms_user_notifications_seen_id';
-
         var isDarkTheme = body.classList.contains('theme-dark');
         if (themeLabel) {
             themeLabel.textContent = isDarkTheme ? 'Light' : 'Dark';
@@ -336,13 +334,23 @@
 
         var userNotifications = [];
         var latestUserNotificationId = 0;
+        var serverSeenNotifId = 0;
 
         function getSeenNotifId() {
-            return Number(window.localStorage.getItem(userNotifSeenKey) || 0) || 0;
+            return Number(serverSeenNotifId || 0) || 0;
         }
 
         function setSeenNotifId(id) {
-            window.localStorage.setItem(userNotifSeenKey, String(Number(id) || 0));
+            var nextSeen = Number(id || 0) || 0;
+            if (nextSeen <= serverSeenNotifId) return;
+            serverSeenNotifId = nextSeen;
+            var url = window.getApiUrl ? window.getApiUrl('user-dashboard/user-notifications-api.php') : '/user-dashboard/user-notifications-api.php';
+            fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mark_seen_id: nextSeen })
+            }).catch(function () { /* ignore transient failure; next poll will resync */ });
         }
 
         function relativeTime(value) {
@@ -389,6 +397,7 @@
                     if (!data || data.success !== true) return;
                     userNotifications = Array.isArray(data.items) ? data.items : [];
                     latestUserNotificationId = Number(data.latest_id || 0) || 0;
+                    serverSeenNotifId = Number(data.seen_id || 0) || serverSeenNotifId;
                     if (!userNotifications.length) {
                         userNotifications = [{ id: 0, level: 'info', title: 'No new updates', message: 'No project updates at the moment.', created_at: null }];
                     }

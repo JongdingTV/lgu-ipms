@@ -19,6 +19,49 @@ $userId = (int) ($_SESSION['user_id'] ?? 0);
 $userName = trim((string) ($_SESSION['user_name'] ?? ''));
 $items = [];
 $latestId = 0;
+$seenId = 0;
+
+$db->query("CREATE TABLE IF NOT EXISTS user_notification_state (
+    user_id INT PRIMARY KEY,
+    last_seen_id BIGINT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)");
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $payload = json_decode((string) file_get_contents('php://input'), true);
+    $markSeenId = (int) ($payload['mark_seen_id'] ?? 0);
+    if ($markSeenId > 0 && $userId > 0) {
+        $up = $db->prepare(
+            "INSERT INTO user_notification_state (user_id, last_seen_id)
+             VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE last_seen_id = GREATEST(last_seen_id, VALUES(last_seen_id))"
+        );
+        if ($up) {
+            $up->bind_param('ii', $userId, $markSeenId);
+            $ok = $up->execute();
+            $up->close();
+            echo json_encode(['success' => (bool) $ok]);
+            $db->close();
+            exit;
+        }
+    }
+    echo json_encode(['success' => false, 'message' => 'Unable to update notification state']);
+    $db->close();
+    exit;
+}
+
+$seenStmt = $db->prepare('SELECT last_seen_id FROM user_notification_state WHERE user_id = ? LIMIT 1');
+if ($seenStmt) {
+    $seenStmt->bind_param('i', $userId);
+    $seenStmt->execute();
+    $seenRes = $seenStmt->get_result();
+    $seenRow = $seenRes ? $seenRes->fetch_assoc() : null;
+    $seenId = (int) (($seenRow['last_seen_id'] ?? 0) ?: 0);
+    if ($seenRes) {
+        $seenRes->free();
+    }
+    $seenStmt->close();
+}
 
 // Project-related updates (new/active/completed projects)
 $projectQuery = $db->query("SELECT id, name, location, status, created_at FROM projects ORDER BY id DESC LIMIT 15");
@@ -184,6 +227,7 @@ usort($items, static function (array $a, array $b): int {
 echo json_encode([
     'success' => true,
     'latest_id' => $latestId,
+    'seen_id' => $seenId,
     'items' => $items
 ]);
 
