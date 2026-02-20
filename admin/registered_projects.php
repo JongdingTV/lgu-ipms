@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Import security functions
 require dirname(__DIR__) . '/session-auth.php';
 // Database connection
@@ -206,15 +206,15 @@ $db->close();
             <div class="nav-item-group">
                 <a href="project_registration.php" class="nav-main-item" id="projectRegToggle">
                     <img src="../assets/images/admin/list.png" class="nav-icon">Project Registration
-                    <span class="dropdown-arrow">▼</span>
+                    <span class="dropdown-arrow">â–¼</span>
                 </a>
                 <div class="nav-submenu" id="projectRegSubmenu">
                     <a href="project_registration.php" class="nav-submenu-item">
-                        <span class="submenu-icon">➕</span>
+                        <span class="submenu-icon">âž•</span>
                         <span>New Project</span>
                     </a>
                     <a href="registered_projects.php" class="nav-submenu-item active">
-                        <span class="submenu-icon">📋</span>
+                        <span class="submenu-icon">ðŸ“‹</span>
                         <span>Registered Projects</span>
                     </a>
                 </div>
@@ -228,29 +228,22 @@ $db->close();
             <div class="nav-item-group">
                 <a href="contractors.php" class="nav-main-item" id="contractorsToggle">
                     <img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers
-                    <span class="dropdown-arrow">▼</span>
+                    <span class="dropdown-arrow">â–¼</span>
                 </a>
                 <div class="nav-submenu" id="contractorsSubmenu">
                     <a href="contractors.php" class="nav-submenu-item">
-                        <span class="submenu-icon">➕</span>
+                        <span class="submenu-icon">âž•</span>
                         <span>Add Engineer</span>
                     </a>
                     <a href="registered_contractors.php" class="nav-submenu-item">
-                        <span class="submenu-icon">👷</span>
+                        <span class="submenu-icon">ðŸ‘·</span>
                         <span>Registered Engineers</span>
                     </a>
                 </div>
             </div>
             
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
-            <div class="nav-item-group">
-                <a href="settings.php" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="../assets/images/admin/person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
-                <div class="nav-submenu" id="userSubmenu">
-                    <a href="settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
-                    <a href="settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
-                    <a href="citizen-verification.php" class="nav-submenu-item"><span class="submenu-icon">ID</span><span>Citizen Verification</span></a>
-                </div>
-            </div>
+                        <a href="citizen-verification.php" class="nav-citizen-verification"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
@@ -294,7 +287,7 @@ $db->close();
                     <input 
                         type="search" 
                         id="searchProjects" 
-                        placeholder="🔍 Search projects by code, name or location..." 
+                        placeholder="ðŸ” Search projects by code, name or location..." 
                         class="ac-54b56ade"
                     >
                     <select 
@@ -308,7 +301,7 @@ $db->close();
                         <option>On-hold</option>
                         <option>Cancelled</option>
                     </select>
-                    <button id="exportCsv" class="ac-1974716d">📥 Export CSV</button>
+                    <button id="exportCsv" class="ac-1974716d">ðŸ“¥ Export CSV</button>
                 </div>
             </div>
 
@@ -1067,6 +1060,7 @@ $db->close();
     </script>
 </body>
 </html>
+
 
 
 

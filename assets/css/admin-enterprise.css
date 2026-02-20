@@ -3410,6 +3410,44 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .feedback-photo-p
     background: #0b1220;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links .nav-citizen-verification {
+    position: relative;
+    border: 1px solid #d6e4f6;
+    background: linear-gradient(135deg, #f7fbff, #eef5ff);
+    border-radius: 12px;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links .nav-citizen-verification::after {
+    content: 'ID';
+    margin-left: auto;
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: #1d4e89;
+    background: #e2ecfb;
+    border: 1px solid #c3d7f6;
+    padding: 2px 7px;
+    border-radius: 999px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links .nav-citizen-verification:hover {
+    transform: translateX(2px);
+    border-color: #b9d0f2;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links .nav-citizen-verification.active {
+    background: linear-gradient(135deg, #1d4e89, #2f67b3);
+    color: #ffffff;
+    border-color: #2a5ea5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links .nav-citizen-verification.active::after {
+    color: #0f2d53;
+    background: #d8e6fa;
+    border-color: #bfd6f6;
+}
+
 @media (max-width: 760px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-banner {
         top: 8px;

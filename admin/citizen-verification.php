@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -129,14 +129,7 @@ $db->close();
         <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
         <a href="contractors.php"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers</a>
         <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
-        <div class="nav-item-group">
-            <a href="settings.php" class="nav-main-item active"><img src="../assets/images/admin/person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
-            <div class="nav-submenu" id="userSubmenu">
-                <a href="settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
-                <a href="settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
-                <a href="citizen-verification.php" class="nav-submenu-item active"><span class="submenu-icon">ID</span><span>Citizen Verification</span></a>
-            </div>
-        </div>
+                    <a href="citizen-verification.php" class="nav-citizen-verification active"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
     </div>
     <div class="nav-divider"></div>
     <div class="nav-action-footer">
@@ -329,3 +322,4 @@ $db->close();
 </script>
 </body>
 </html>
+
