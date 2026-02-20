@@ -16,6 +16,7 @@ if (!isset($db) || $db->connect_error) {
 }
 
 $userId = (int) ($_SESSION['user_id'] ?? 0);
+$userName = trim((string) ($_SESSION['user_name'] ?? ''));
 $items = [];
 $latestId = 0;
 
@@ -27,9 +28,11 @@ if ($projectQuery) {
         $nid = $pid + 1000;
         $status = strtolower((string) ($row['status'] ?? ''));
         $level = 'info';
-        if ($status === 'completed') $level = 'success';
-        elseif ($status === 'on-hold' || $status === 'cancelled') $level = 'warning';
-        elseif ($status === 'approved' || $status === 'for approval') $level = 'info';
+        if ($status === 'completed') {
+            $level = 'success';
+        } elseif ($status === 'on-hold' || $status === 'cancelled') {
+            $level = 'warning';
+        }
 
         $projectName = trim((string) ($row['name'] ?? 'Project'));
         $location = trim((string) ($row['location'] ?? ''));
@@ -39,10 +42,12 @@ if ($projectQuery) {
             'id' => $nid,
             'level' => $level,
             'title' => 'Project Update: ' . $projectName,
-            'message' => $location !== '' ? ($statusText . ' • ' . $location) : $statusText,
+            'message' => $location !== '' ? ($statusText . ' | ' . $location) : $statusText,
             'created_at' => $row['created_at'] ?? null
         ];
-        if ($nid > $latestId) $latestId = $nid;
+        if ($nid > $latestId) {
+            $latestId = $nid;
+        }
     }
     $projectQuery->free();
 }
@@ -55,7 +60,9 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
         $stmt->execute();
         $res = $stmt->get_result();
         $row = $res ? $res->fetch_assoc() : null;
-        if ($res) $res->free();
+        if ($res) {
+            $res->free();
+        }
         $stmt->close();
 
         $status = strtolower(trim((string) ($row['verification_status'] ?? 'pending')));
@@ -70,7 +77,9 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
                     : 'Please review your ID details and upload a valid document.',
                 'created_at' => $row['created_at'] ?? null
             ];
-            if ($nid > $latestId) $latestId = $nid;
+            if ($nid > $latestId) {
+                $latestId = $nid;
+            }
         } elseif ($status === 'pending') {
             $nid = 800000000 + $userId;
             $items[] = [
@@ -80,12 +89,63 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
                 'message' => 'Your account is in limited mode until verification is approved.',
                 'created_at' => $row['created_at'] ?? null
             ];
-            if ($nid > $latestId) $latestId = $nid;
+            if ($nid > $latestId) {
+                $latestId = $nid;
+            }
         }
     }
 }
 
-// Sort latest first by ID (simple deterministic ordering for seen-state key).
+// Feedback status updates for current user.
+if ($userName !== '') {
+    $fbStmt = $db->prepare(
+        "SELECT id, subject, status, date_submitted
+         FROM feedback
+         WHERE user_name = ?
+         ORDER BY date_submitted DESC, id DESC
+         LIMIT 20"
+    );
+    if ($fbStmt) {
+        $fbStmt->bind_param('s', $userName);
+        $fbStmt->execute();
+        $fbRes = $fbStmt->get_result();
+        while ($fbRes && ($fbRow = $fbRes->fetch_assoc())) {
+            $feedbackId = (int) ($fbRow['id'] ?? 0);
+            if ($feedbackId <= 0) {
+                continue;
+            }
+
+            $subject = trim((string) ($fbRow['subject'] ?? 'Feedback'));
+            $statusText = trim((string) ($fbRow['status'] ?? 'Pending'));
+            $statusLower = strtolower($statusText);
+            $level = 'info';
+            if (in_array($statusLower, ['addressed', 'resolved', 'completed'], true)) {
+                $level = 'success';
+            } elseif (in_array($statusLower, ['rejected', 'invalid', 'closed'], true)) {
+                $level = 'danger';
+            } elseif ($statusLower === 'pending') {
+                $level = 'warning';
+            }
+
+            $nid = 500000000 + $feedbackId;
+            $items[] = [
+                'id' => $nid,
+                'level' => $level,
+                'title' => 'Feedback Update: ' . $subject,
+                'message' => 'Current status: ' . ($statusText !== '' ? $statusText : 'Pending'),
+                'created_at' => $fbRow['date_submitted'] ?? null
+            ];
+            if ($nid > $latestId) {
+                $latestId = $nid;
+            }
+        }
+        if ($fbRes) {
+            $fbRes->free();
+        }
+        $fbStmt->close();
+    }
+}
+
 usort($items, static function (array $a, array $b): int {
     return ((int) ($b['id'] ?? 0)) <=> ((int) ($a['id'] ?? 0));
 });

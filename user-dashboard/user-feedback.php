@@ -421,17 +421,30 @@ $csrfToken = generate_csrf_token();
                             <th>Location</th>
                             <th>Status</th>
                             <th>Photo</th>
+                            <th>Details</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if ($feedbackRows && $feedbackRows->num_rows > 0): ?>
                             <?php while ($row = $feedbackRows->fetch_assoc()): ?>
+                                <?php
+                                $statusValue = (string) ($row['status'] ?? 'Pending');
+                                $statusLower = strtolower(trim($statusValue));
+                                $statusClass = 'pending';
+                                if (in_array($statusLower, ['addressed', 'resolved', 'completed'], true)) {
+                                    $statusClass = 'approved';
+                                } elseif (in_array($statusLower, ['rejected', 'invalid', 'closed'], true)) {
+                                    $statusClass = 'cancelled';
+                                } elseif ($statusLower === 'on-hold') {
+                                    $statusClass = 'onhold';
+                                }
+                                ?>
                                 <tr>
                                     <td><?php echo date('M d, Y', strtotime((string) $row['date_submitted'])); ?></td>
                                     <td><?php echo htmlspecialchars((string) $row['subject']); ?></td>
                                     <td><?php echo htmlspecialchars((string) $row['category']); ?></td>
                                     <td><?php echo htmlspecialchars((string) $row['location']); ?></td>
-                                    <td><span class="status-badge pending"><?php echo htmlspecialchars((string) $row['status']); ?></span></td>
+                                    <td><span class="status-badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($statusValue); ?></span></td>
                                     <?php $desc = (string) ($row['description'] ?? ''); $photoPath = ''; if (preg_match('/\[Photo Attachment\]\s+(\/uploads\/feedback\/[\w\-.]+\.((jpg)|(jpeg)|(png)|(webp)))/i', $desc, $m)) { $photoPath = $m[1]; } ?>
                                     <td>
                                         <?php if ($photoPath !== ''): ?>
@@ -440,10 +453,22 @@ $csrfToken = generate_csrf_token();
                                             -
                                         <?php endif; ?>
                                     </td>
+                                    <td>
+                                        <button
+                                            type="button"
+                                            class="ac-f84d9680 feedback-details-view-btn"
+                                            data-date="<?php echo htmlspecialchars(date('M d, Y h:i A', strtotime((string) $row['date_submitted'])), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-subject="<?php echo htmlspecialchars((string) $row['subject'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-category="<?php echo htmlspecialchars((string) $row['category'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-location="<?php echo htmlspecialchars((string) $row['location'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-status="<?php echo htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-description="<?php echo htmlspecialchars((string) $row['description'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        >View</button>
+                                    </td>
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>
-                            <tr><td colspan="6" class="ac-a004b216">No feedback submitted yet.</td></tr>
+                            <tr><td colspan="7" class="ac-a004b216">No feedback submitted yet.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -460,6 +485,26 @@ $csrfToken = generate_csrf_token();
             </div>
             <div class="avatar-crop-body" style="padding:12px;">
                 <img id="feedbackPhotoPreview" src="" alt="Submitted feedback photo" style="max-height:70vh;width:auto;max-width:100%;display:block;margin:0 auto;border-radius:8px;">
+            </div>
+        </div>
+    </div>
+
+    <div id="feedbackDetailsModal" class="avatar-crop-modal" hidden>
+        <div class="avatar-crop-dialog" style="max-width:760px;width:min(94vw,760px);">
+            <div class="avatar-crop-header">
+                <h3>Feedback Details</h3>
+                <button type="button" class="avatar-crop-close" id="feedbackDetailsClose" aria-label="Close details viewer">&times;</button>
+            </div>
+            <div class="avatar-crop-body" style="padding:14px;display:grid;gap:10px;">
+                <div><strong>Date:</strong> <span id="fdDate">-</span></div>
+                <div><strong>Subject:</strong> <span id="fdSubject">-</span></div>
+                <div><strong>Category:</strong> <span id="fdCategory">-</span></div>
+                <div><strong>Location:</strong> <span id="fdLocation">-</span></div>
+                <div><strong>Status:</strong> <span id="fdStatus">-</span></div>
+                <div>
+                    <strong>Description:</strong>
+                    <pre id="fdDescription" style="margin:8px 0 0;padding:10px;border:1px solid #dbe7f3;border-radius:10px;background:#f8fbff;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto;">-</pre>
+                </div>
             </div>
         </div>
     </div>

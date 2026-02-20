@@ -577,6 +577,14 @@
     const photoModal = document.getElementById('feedbackPhotoModal');
     const photoPreview = document.getElementById('feedbackPhotoPreview');
     const photoClose = document.getElementById('feedbackPhotoClose');
+    const detailsModal = document.getElementById('feedbackDetailsModal');
+    const detailsClose = document.getElementById('feedbackDetailsClose');
+    const fdDate = document.getElementById('fdDate');
+    const fdSubject = document.getElementById('fdSubject');
+    const fdCategory = document.getElementById('fdCategory');
+    const fdLocation = document.getElementById('fdLocation');
+    const fdStatus = document.getElementById('fdStatus');
+    const fdDescription = document.getElementById('fdDescription');
 
     document.querySelectorAll('.feedback-photo-view-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -603,6 +611,37 @@
         photoModal.addEventListener('click', function (event) {
             if (event.target === photoModal) {
                 closePhotoModal();
+            }
+        });
+    }
+
+    document.querySelectorAll('.feedback-details-view-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (!detailsModal) return;
+            if (fdDate) fdDate.textContent = btn.getAttribute('data-date') || '-';
+            if (fdSubject) fdSubject.textContent = btn.getAttribute('data-subject') || '-';
+            if (fdCategory) fdCategory.textContent = btn.getAttribute('data-category') || '-';
+            if (fdLocation) fdLocation.textContent = btn.getAttribute('data-location') || '-';
+            if (fdStatus) fdStatus.textContent = btn.getAttribute('data-status') || '-';
+            if (fdDescription) fdDescription.textContent = btn.getAttribute('data-description') || '-';
+            detailsModal.hidden = false;
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    function closeDetailsModal() {
+        if (!detailsModal) return;
+        detailsModal.hidden = true;
+        document.body.style.overflow = '';
+    }
+
+    if (detailsClose) {
+        detailsClose.addEventListener('click', closeDetailsModal);
+    }
+    if (detailsModal) {
+        detailsModal.addEventListener('click', function (event) {
+            if (event.target === detailsModal) {
+                closeDetailsModal();
             }
         });
     }
