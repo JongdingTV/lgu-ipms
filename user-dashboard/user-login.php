@@ -74,6 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
                 if ($result && $result->num_rows === 1) {
                     $user = $result->fetch_assoc();
                     if (password_verify($password, $user['password'])) {
+                        if (is_user_rate_limited('user_login', 8, 900, (int) $user['id'])) {
+                            $error = 'Too many login attempts for this account. Please wait a few minutes and try again.';
+                            $stmt->close();
+                            goto user_login_after_query;
+                        }
                         $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
                         clear_user_login_otp_session();
                         if (issue_user_login_otp((int) $user['id'], $fullName, $email)) {
@@ -81,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
                             $otpPending = true;
                             $otpEmail = $email;
                             $otpMessage = 'A verification code was sent to your email. Enter it below to finish login.';
+                            record_user_attempt('user_login', (int) $user['id']);
                         } else {
                             $error = 'Login verified, but OTP email could not be sent. Please try again.';
                         }
@@ -97,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
             } else {
                 $error = 'Unable to process request right now. Please try again.';
             }
+            user_login_after_query:
         }
     }
 }

@@ -295,3 +295,32 @@ ALTER TABLE `users`
 ALTER TABLE `expenses`
   ADD CONSTRAINT `expenses_ibfk_1` FOREIGN KEY (`milestoneId`) REFERENCES `milestones` (`id`) ON DELETE CASCADE;
 COMMIT;
+
+-- Additional security/ownership migrations
+ALTER TABLE `feedback`
+  ADD COLUMN IF NOT EXISTS `user_id` int(11) NULL AFTER `id`;
+
+UPDATE `feedback` f
+JOIN `users` u
+  ON LOWER(TRIM(f.`user_name`)) = LOWER(TRIM(CONCAT_WS(' ', u.`first_name`, u.`last_name`)))
+SET f.`user_id` = u.`id`
+WHERE f.`user_id` IS NULL;
+
+ALTER TABLE `feedback`
+  ADD INDEX `idx_feedback_user_id_date` (`user_id`, `date_submitted`);
+
+ALTER TABLE `feedback`
+  ADD CONSTRAINT `fk_feedback_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `users`
+  ADD UNIQUE KEY `uniq_users_mobile` (`mobile`),
+  ADD UNIQUE KEY `uniq_users_id_pair` (`id_type`, `id_number`);
+
+CREATE TABLE IF NOT EXISTS `user_rate_limiting` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `action_type` varchar(50) NOT NULL,
+  `attempt_time` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_action_time` (`user_id`,`action_type`,`attempt_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

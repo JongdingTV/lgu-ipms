@@ -62,8 +62,34 @@ $forApprovalProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects
 $recentOrder = user_dashboard_projects_has_created_at($db) ? 'created_at DESC' : 'id DESC';
 $recentProjects = $db->query("SELECT id, name, location, status, budget FROM projects ORDER BY {$recentOrder} LIMIT 5");
 
-$feedbackStmt = $db->prepare('SELECT subject, category, status, date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 10');
-$feedbackStmt->bind_param('s', $userName);
+$feedbackStmt = null;
+$hasFeedbackUserIdStmt = $db->prepare(
+    "SELECT 1
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'feedback'
+       AND COLUMN_NAME = 'user_id'
+     LIMIT 1"
+);
+$hasFeedbackUserId = false;
+if ($hasFeedbackUserIdStmt) {
+    $hasFeedbackUserIdStmt->execute();
+    $hasFeedbackUserIdRes = $hasFeedbackUserIdStmt->get_result();
+    $hasFeedbackUserId = $hasFeedbackUserIdRes && $hasFeedbackUserIdRes->num_rows > 0;
+    if ($hasFeedbackUserIdRes) {
+        $hasFeedbackUserIdRes->free();
+    }
+    $hasFeedbackUserIdStmt->close();
+}
+
+$feedbackStmt = $hasFeedbackUserId
+    ? $db->prepare('SELECT subject, category, status, date_submitted FROM feedback WHERE user_id = ? ORDER BY date_submitted DESC LIMIT 10')
+    : $db->prepare('SELECT subject, category, status, date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 10');
+if ($hasFeedbackUserId) {
+    $feedbackStmt->bind_param('i', $userId);
+} else {
+    $feedbackStmt->bind_param('s', $userName);
+}
 $feedbackStmt->execute();
 $userFeedback = $feedbackStmt->get_result();
 $feedbackStmt->close();

@@ -6,9 +6,10 @@
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
+    $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
     // Set secure session configuration
     ini_set('session.cookie_httponly', 1);      // Prevent JavaScript access to session cookie
-    ini_set('session.cookie_secure', 0);         // Set to 1 in production with HTTPS
+    ini_set('session.cookie_secure', $isHttps ? '1' : '0');
     ini_set('session.use_strict_mode', 1);       // Don't accept uninitialized session IDs
     ini_set('session.cookie_samesite', 'Lax');   // Prevent CSRF
     
@@ -22,10 +23,11 @@ define('REMEMBER_COOKIE_NAME', 'lgu_remember_device');
 
 function set_auth_cookie(string $name, string $value, int $expiresAt): void
 {
+    $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
     setcookie($name, $value, [
         'expires' => $expiresAt,
         'path' => '/',
-        'secure' => false,
+        'secure' => $isHttps,
         'httponly' => true,
         'samesite' => 'Lax'
     ]);
@@ -263,13 +265,14 @@ function destroy_session() {
     // Delete the session cookie
     if (ini_get("session.use_cookies")) {
         $params = session_get_cookie_params();
+        $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
         setcookie(
             session_name(),
             '',
             time() - 42000,
             $params["path"],
             $params["domain"],
-            $params["secure"],
+            $isHttps,
             $params["httponly"]
         );
     }
@@ -430,6 +433,59 @@ function record_attempt($action_type = 'login') {
     // Clean old records (older than 1 hour)
     $cutoff = time() - 3600;
     $db->query("DELETE FROM rate_limiting WHERE attempt_time < $cutoff");
+}
+
+/**
+ * Check user-specific rate limit independent of IP.
+ */
+function is_user_rate_limited($action_type = 'generic', $max_attempts = 5, $time_window = 300, $user_id = null) {
+    global $db;
+    $uid = $user_id !== null ? (int) $user_id : (int) ($_SESSION['user_id'] ?? 0);
+    if ($uid <= 0) {
+        return false;
+    }
+
+    $cutoff_time = time() - (int) $time_window;
+    $db->query("CREATE TABLE IF NOT EXISTS user_rate_limiting (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        action_type VARCHAR(50) NOT NULL,
+        attempt_time INT NOT NULL,
+        INDEX idx_user_action_time (user_id, action_type, attempt_time)
+    )");
+
+    $stmt = $db->prepare("SELECT COUNT(*) AS count FROM user_rate_limiting WHERE user_id = ? AND action_type = ? AND attempt_time > ?");
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('isi', $uid, $action_type, $cutoff_time);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : ['count' => 0];
+    $stmt->close();
+    return (int) ($row['count'] ?? 0) >= $max_attempts;
+}
+
+/**
+ * Record user-specific attempt.
+ */
+function record_user_attempt($action_type = 'generic', $user_id = null) {
+    global $db;
+    $uid = $user_id !== null ? (int) $user_id : (int) ($_SESSION['user_id'] ?? 0);
+    if ($uid <= 0) {
+        return;
+    }
+
+    $timestamp = time();
+    $stmt = $db->prepare("INSERT INTO user_rate_limiting (user_id, action_type, attempt_time) VALUES (?, ?, ?)");
+    if ($stmt) {
+        $stmt->bind_param('isi', $uid, $action_type, $timestamp);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    $cutoff = time() - 3600;
+    $db->query("DELETE FROM user_rate_limiting WHERE attempt_time < $cutoff");
 }
 
 /**

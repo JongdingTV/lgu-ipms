@@ -93,6 +93,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step1_request'])) {
 
                 if ($result && $result->num_rows === 1) {
                     $user = $result->fetch_assoc();
+                    $resetUserId = (int) ($user['id'] ?? 0);
+                    if ($resetUserId > 0 && is_user_rate_limited('user_password_reset_request_user', 3, 1800, $resetUserId)) {
+                        $stmt->close();
+                        record_attempt('user_password_reset_request');
+                        $success = 'If an account exists with that email, a reset link has been sent.';
+                        goto forgot_request_done;
+                    }
                     $rawToken = bin2hex(random_bytes(32));
                     $tokenHash = hash('sha256', $rawToken);
                     $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
@@ -105,6 +112,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step1_request'])) {
                             $mailSent = send_user_reset_email($email, $fullName === '' ? 'Citizen' : $fullName, $rawToken);
                             if (!$mailSent) {
                                 error_log('Failed to send user password reset email to: ' . $email);
+                            } else {
+                                record_user_attempt('user_password_reset_request_user', $resetUserId);
                             }
                         }
                         $ins->close();
@@ -114,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step1_request'])) {
                 $stmt->close();
                 record_attempt('user_password_reset_request');
                 $success = 'If an account exists with that email, a reset link has been sent.';
+                forgot_request_done:
             } else {
                 $error = 'Unable to process request right now. Please try again.';
             }
@@ -155,6 +165,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step2_reset'])) {
                 if ($res && $res->num_rows === 1) {
                     $row = $res->fetch_assoc();
                     $email = (string) ($row['email'] ?? '');
+                    $userLookup = $db->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+                    $resetUserId = 0;
+                    if ($userLookup) {
+                        $userLookup->bind_param('s', $email);
+                        $userLookup->execute();
+                        $userLookupRes = $userLookup->get_result();
+                        if ($userLookupRes && $userLookupRes->num_rows === 1) {
+                            $userRow = $userLookupRes->fetch_assoc();
+                            $resetUserId = (int) ($userRow['id'] ?? 0);
+                        }
+                        $userLookup->close();
+                    }
+                    if ($resetUserId > 0 && is_user_rate_limited('user_password_reset_submit_user', 6, 3600, $resetUserId)) {
+                        $error = 'Too many reset attempts for this account. Please request a new reset link later.';
+                        $check->close();
+                        goto forgot_reset_done;
+                    }
                     $hash = password_hash($newPassword, PASSWORD_DEFAULT);
 
                     $upd = $db->prepare('UPDATE users SET password = ? WHERE email = ? LIMIT 1');
@@ -169,6 +196,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step2_reset'])) {
                             }
 
                             record_attempt('user_password_reset_submit');
+                            if ($resetUserId > 0) {
+                                record_user_attempt('user_password_reset_submit_user', $resetUserId);
+                            }
                             $success = 'Password has been reset successfully. Redirecting to login...';
                             echo '<meta http-equiv="refresh" content="2;url=/user-dashboard/user-login.php">';
                         } else {
@@ -184,6 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step2_reset'])) {
                 }
 
                 $check->close();
+                forgot_reset_done:
             } else {
                 $error = 'Unable to process request right now. Please try again.';
             }

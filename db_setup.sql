@@ -125,3 +125,29 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Security and ownership hardening migrations
+ALTER TABLE feedback
+    ADD COLUMN IF NOT EXISTS user_id INT NULL AFTER id;
+
+UPDATE feedback f
+JOIN users u
+  ON LOWER(TRIM(f.user_name)) = LOWER(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)))
+SET f.user_id = u.id
+WHERE f.user_id IS NULL;
+
+ALTER TABLE feedback
+    ADD INDEX IF NOT EXISTS idx_feedback_user_id_date (user_id, date_submitted),
+    ADD CONSTRAINT fk_feedback_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE users
+    ADD UNIQUE KEY uniq_users_mobile (mobile),
+    ADD UNIQUE KEY uniq_users_id_pair (id_type, id_number);
+
+CREATE TABLE IF NOT EXISTS user_rate_limiting (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    attempt_time INT NOT NULL,
+    INDEX idx_user_action_time (user_id, action_type, attempt_time)
+);

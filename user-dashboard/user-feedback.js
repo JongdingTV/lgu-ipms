@@ -434,7 +434,7 @@
         if (gpsLat) gpsLat.value = latText;
         if (gpsLng) gpsLng.value = lngText;
         if (gpsAccuracy) gpsAccuracy.value = accuracyMeters ? String(Math.round(accuracyMeters)) : '';
-        if (gpsMapUrl) gpsMapUrl.value = 'https://maps.google.com/?q=' + latText + ',' + lngText;
+        if (gpsMapUrl) gpsMapUrl.value = 'https://www.openstreetmap.org/?mlat=' + latText + '&mlon=' + lngText + '#map=18/' + latText + '/' + lngText;
         const addressText = await reverseGeocode(latText, lngText);
         if (gpsAddress) gpsAddress.value = addressText;
         if (pinnedAddress) pinnedAddress.textContent = addressText !== '' ? addressText : 'Pinned location found, but address is unavailable.';
@@ -498,31 +498,6 @@
             fillOpacity: 0.05
         }).addTo(map);
         qcBoundary.bindTooltip('Approximate Quezon City boundary', { sticky: true });
-
-        const StreetViewControl = window.L.Control.extend({
-            options: { position: 'topright' },
-            onAdd: function () {
-                const btn = window.L.DomUtil.create('button', 'leaflet-bar');
-                btn.type = 'button';
-                btn.title = 'Open Google Street View for current pin';
-                btn.textContent = 'Street View';
-                btn.style.background = '#fff';
-                btn.style.padding = '4px 8px';
-                btn.style.cursor = 'pointer';
-                window.L.DomEvent.disableClickPropagation(btn);
-                window.L.DomEvent.on(btn, 'click', function (e) {
-                    window.L.DomEvent.stop(e);
-                    if (!gpsLat || !gpsLng || gpsLat.value === '' || gpsLng.value === '') {
-                        showMessage('Set a map pin first to open Street View.', false);
-                        return;
-                    }
-                    const url = 'https://www.google.com/maps?layer=c&cbll=' + encodeURIComponent(gpsLat.value + ',' + gpsLng.value);
-                    window.open(url, '_blank', 'noopener');
-                });
-                return btn;
-            }
-        });
-        map.addControl(new StreetViewControl());
 
         map.on('click', function (event) {
             const lat = event.latlng.lat;
@@ -615,15 +590,18 @@
         });
     }
 
-    document.querySelectorAll('.feedback-details-view-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
+    document.querySelectorAll('[data-feedback-open="1"]').forEach(function (row) {
+        row.addEventListener('click', function (event) {
+            if (event.target && event.target.closest('.feedback-photo-view-btn')) {
+                return;
+            }
             if (!detailsModal) return;
-            if (fdDate) fdDate.textContent = btn.getAttribute('data-date') || '-';
-            if (fdSubject) fdSubject.textContent = btn.getAttribute('data-subject') || '-';
-            if (fdCategory) fdCategory.textContent = btn.getAttribute('data-category') || '-';
-            if (fdLocation) fdLocation.textContent = btn.getAttribute('data-location') || '-';
-            if (fdStatus) fdStatus.textContent = btn.getAttribute('data-status') || '-';
-            if (fdDescription) fdDescription.textContent = btn.getAttribute('data-description') || '-';
+            if (fdDate) fdDate.textContent = row.getAttribute('data-date') || '-';
+            if (fdSubject) fdSubject.textContent = row.getAttribute('data-subject') || '-';
+            if (fdCategory) fdCategory.textContent = row.getAttribute('data-category') || '-';
+            if (fdLocation) fdLocation.textContent = row.getAttribute('data-location') || '-';
+            if (fdStatus) fdStatus.textContent = row.getAttribute('data-status') || '-';
+            if (fdDescription) fdDescription.textContent = row.getAttribute('data-description') || '-';
             detailsModal.hidden = false;
             document.body.style.overflow = 'hidden';
         });
