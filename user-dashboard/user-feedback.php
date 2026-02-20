@@ -90,8 +90,17 @@ function feedback_bind_params(mysqli_stmt $stmt, string $types, array &$values):
     return call_user_func_array([$stmt, 'bind_param'], $bindParams);
 }
 
+function feedback_strlen(string $value): int
+{
+    if (function_exists('mb_strlen')) {
+        return (int) mb_strlen($value);
+    }
+    return (int) strlen($value);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     header('Content-Type: application/json');
+    try {
 
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         echo json_encode(['success' => false, 'message' => 'Invalid request token. Please refresh and try again.']);
@@ -226,7 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         $db->close();
         exit;
     }
-    if ($completeAddress === '' || mb_strlen($completeAddress) < 8 || mb_strlen($completeAddress) > 255) {
+    if ($completeAddress === '' || feedback_strlen($completeAddress) < 8 || feedback_strlen($completeAddress) > 255) {
         echo json_encode(['success' => false, 'message' => 'Please provide a valid complete address (8-255 characters).']);
         $db->close();
         exit;
@@ -241,13 +250,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         $location = $serverLocation;
     }
     $description .= "\n\n[Complete Address] " . $completeAddress;
-    if (mb_strlen($subject) > 100 || mb_strlen($category) > 100 || mb_strlen($location) > 255) {
+    if (feedback_strlen($subject) > 100 || feedback_strlen($category) > 100 || feedback_strlen($location) > 255) {
         record_attempt('user_feedback_submit');
         echo json_encode(['success' => false, 'message' => 'Some fields are too long.']);
         $db->close();
         exit;
     }
-    if (mb_strlen($description) < 12 || mb_strlen($description) > 5000) {
+    if (feedback_strlen($description) < 12 || feedback_strlen($description) > 5000) {
         record_attempt('user_feedback_submit');
         echo json_encode(['success' => false, 'message' => 'Feedback must be between 12 and 5000 characters.']);
         $db->close();
@@ -370,15 +379,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         $types .= 's';
         $values[] = $photoSavedName;
     }
-    if ($hasMapLatCol) {
+    if ($hasMapLatCol && $gpsLat !== '' && is_numeric($gpsLat)) {
         $columns[] = 'map_lat';
         $types .= 'd';
-        $values[] = ($gpsLat !== '' ? (float) $gpsLat : null);
+        $values[] = (float) $gpsLat;
     }
-    if ($hasMapLngCol) {
+    if ($hasMapLngCol && $gpsLng !== '' && is_numeric($gpsLng)) {
         $columns[] = 'map_lng';
         $types .= 'd';
-        $values[] = ($gpsLng !== '' ? (float) $gpsLng : null);
+        $values[] = (float) $gpsLng;
     }
     if ($hasMapLinkCol) {
         $columns[] = 'map_link';
@@ -406,6 +415,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
 
     $db->close();
     exit;
+    } catch (Throwable $e) {
+        error_log('user-feedback submit error: ' . $e->getMessage());
+        echo json_encode([
+            'success' => false,
+            'message' => 'Submission failed due to a server error. Please try again.'
+        ]);
+        $db->close();
+        exit;
+    }
 }
 
 $hasFeedbackUserId = feedback_table_has_user_id($db);

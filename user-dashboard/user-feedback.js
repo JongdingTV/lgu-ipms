@@ -755,8 +755,15 @@
                 method: 'POST',
                 body: data
             });
-
-            const payload = await response.json();
+            const raw = await response.text();
+            let payload = null;
+            try {
+                payload = JSON.parse(raw);
+            } catch (_jsonError) {
+                const cleaned = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                showMessage(cleaned || 'Server returned an invalid response. Please try again.', false);
+                return;
+            }
             if (payload.success) {
                 showMessage(payload.message || 'Feedback submitted successfully.', true);
                 form.reset();
@@ -795,7 +802,7 @@
             }
         } catch (error) {
             console.error(error);
-            showMessage('An unexpected error occurred while submitting feedback.', false);
+            showMessage('Unable to submit feedback right now. Please try again in a moment.', false);
         }
     });
 });
