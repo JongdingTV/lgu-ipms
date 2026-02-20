@@ -1,4 +1,8 @@
 <?php
+if (ob_get_level() === 0) {
+    ob_start();
+}
+
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 
@@ -7,6 +11,9 @@ check_auth();
 check_suspicious_activity();
 
 if (!isset($db) || $db->connect_error) {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     http_response_code(500);
     exit('Database connection failed');
 }
@@ -18,6 +25,9 @@ $file = trim((string) ($_GET['file'] ?? ''));
 $feedbackId = (int) ($_GET['feedback_id'] ?? 0);
 $debugMode = $isAdminSession && (string)($_GET['debug'] ?? '') === '1';
 if (($userId <= 0 && !$isAdminSession) || ($file === '' && $feedbackId <= 0)) {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     http_response_code(400);
     exit('Invalid request');
 }
@@ -74,6 +84,9 @@ if ($feedbackId > 0) {
 
     $stmt = $db->prepare('SELECT ' . implode(', ', $select) . ' FROM feedback WHERE id = ? LIMIT 1');
     if (!$stmt) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         http_response_code(500);
         exit('Query failed');
     }
@@ -84,6 +97,9 @@ if ($feedbackId > 0) {
     $stmt->close();
 
     if (!$row) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         http_response_code(404);
         exit('Not found');
     }
@@ -97,6 +113,9 @@ if ($feedbackId > 0) {
             $ownerOk = ((string) ($row['user_name'] ?? '') === $userName);
         }
         if (!$ownerOk) {
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
             http_response_code(403);
             exit('Forbidden');
         }
@@ -114,6 +133,9 @@ if ($feedbackId > 0) {
     }
 } else {
     if (!preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         http_response_code(400);
         exit('Invalid request');
     }
@@ -121,6 +143,9 @@ if ($feedbackId > 0) {
 }
 
 if ($resolvedFile === '') {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     http_response_code(404);
     exit('Not found');
 }
@@ -204,6 +229,9 @@ foreach (feedback_photo_candidate_dirs() as $baseDir) {
 
 if ($fullPath === null) {
     if ($debugMode) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         header('Content-Type: application/json');
         echo json_encode([
             'success' => false,
@@ -215,11 +243,17 @@ if ($fullPath === null) {
         ], JSON_PRETTY_PRINT);
         exit;
     }
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     http_response_code(404);
     exit('Not found');
 }
 
 $mime = (string) (mime_content_type($fullPath) ?: 'application/octet-stream');
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
 header('Content-Type: ' . $mime);
 header('Content-Length: ' . (string) filesize($fullPath));
 header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
