@@ -244,8 +244,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_action'])) {
 }
 
 $feedbackStats = ['total' => 0, 'pending' => 0];
-$statsStmt = $db->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN status = "Pending" THEN 1 ELSE 0 END) as pending FROM feedback WHERE user_name = ?');
-$statsStmt->bind_param('s', $userName);
+$hasFeedbackUserIdStmt = $db->prepare(
+    "SELECT 1
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'feedback'
+       AND COLUMN_NAME = 'user_id'
+     LIMIT 1"
+);
+$hasFeedbackUserId = false;
+if ($hasFeedbackUserIdStmt) {
+    $hasFeedbackUserIdStmt->execute();
+    $hasFeedbackUserIdRes = $hasFeedbackUserIdStmt->get_result();
+    $hasFeedbackUserId = $hasFeedbackUserIdRes && $hasFeedbackUserIdRes->num_rows > 0;
+    if ($hasFeedbackUserIdRes) {
+        $hasFeedbackUserIdRes->free();
+    }
+    $hasFeedbackUserIdStmt->close();
+}
+
+$statsStmt = $hasFeedbackUserId
+    ? $db->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN status = "Pending" THEN 1 ELSE 0 END) as pending FROM feedback WHERE user_id = ?')
+    : $db->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN status = "Pending" THEN 1 ELSE 0 END) as pending FROM feedback WHERE user_name = ?');
+if ($hasFeedbackUserId) {
+    $statsStmt->bind_param('i', $userId);
+} else {
+    $statsStmt->bind_param('s', $userName);
+}
 $statsStmt->execute();
 $statsRes = $statsStmt->get_result();
 if ($statsRes && $statsRes->num_rows === 1) {

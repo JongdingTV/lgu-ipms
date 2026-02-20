@@ -97,16 +97,47 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
 }
 
 // Feedback status updates for current user.
-if ($userName !== '') {
-    $fbStmt = $db->prepare(
-        "SELECT id, subject, status, date_submitted
-         FROM feedback
-         WHERE user_name = ?
-         ORDER BY date_submitted DESC, id DESC
-         LIMIT 20"
+if ($userId > 0 || $userName !== '') {
+    $hasFeedbackUserIdStmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'feedback'
+           AND COLUMN_NAME = 'user_id'
+         LIMIT 1"
     );
+    $hasFeedbackUserId = false;
+    if ($hasFeedbackUserIdStmt) {
+        $hasFeedbackUserIdStmt->execute();
+        $hasFeedbackUserIdRes = $hasFeedbackUserIdStmt->get_result();
+        $hasFeedbackUserId = $hasFeedbackUserIdRes && $hasFeedbackUserIdRes->num_rows > 0;
+        if ($hasFeedbackUserIdRes) {
+            $hasFeedbackUserIdRes->free();
+        }
+        $hasFeedbackUserIdStmt->close();
+    }
+
+    $fbStmt = $hasFeedbackUserId
+        ? $db->prepare(
+            "SELECT id, subject, status, date_submitted
+             FROM feedback
+             WHERE user_id = ?
+             ORDER BY date_submitted DESC, id DESC
+             LIMIT 20"
+        )
+        : $db->prepare(
+            "SELECT id, subject, status, date_submitted
+             FROM feedback
+             WHERE user_name = ?
+             ORDER BY date_submitted DESC, id DESC
+             LIMIT 20"
+        );
     if ($fbStmt) {
-        $fbStmt->bind_param('s', $userName);
+        if ($hasFeedbackUserId) {
+            $fbStmt->bind_param('i', $userId);
+        } else {
+            $fbStmt->bind_param('s', $userName);
+        }
         $fbStmt->execute();
         $fbRes = $fbStmt->get_result();
         while ($fbRes && ($fbRow = $fbRes->fetch_assoc())) {

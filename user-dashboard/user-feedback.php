@@ -34,6 +34,29 @@ function normalize_feedback_text(string $value): string
     return strtolower(trim(preg_replace('/\s+/', ' ', $value) ?? ''));
 }
 
+function feedback_table_has_user_id(mysqli $db): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'feedback'
+           AND COLUMN_NAME = 'user_id'
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+    return $exists;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     header('Content-Type: application/json');
 
@@ -49,6 +72,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     }
     if (is_rate_limited('user_feedback_submit', 8, 600)) {
         echo json_encode(['success' => false, 'message' => 'Too many submission attempts. Please wait a few minutes before trying again.']);
+        $db->close();
+        exit;
+    }
+    if (is_user_rate_limited('user_feedback_submit', 6, 600, $userId)) {
+        echo json_encode(['success' => false, 'message' => 'Too many feedback attempts for your account. Please wait before trying again.']);
         $db->close();
         exit;
     }
@@ -105,7 +133,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
 
         $savedName = 'feedback_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         $savedPath = $uploadDir . '/' . $savedName;
-        if (!move_uploaded_file($tmpName, $savedPath)) {
+        $saved = false;
+        if (function_exists('getimagesize') && function_exists('imagecreatetruecolor')) {
+            $imgInfo = @getimagesize($tmpName);
+            $imgMime = (string) ($imgInfo['mime'] ?? '');
+            $src = null;
+            if ($imgMime === 'image/jpeg' && function_exists('imagecreatefromjpeg')) {
+                $src = @imagecreatefromjpeg($tmpName);
+            } elseif ($imgMime === 'image/png' && function_exists('imagecreatefrompng')) {
+                $src = @imagecreatefrompng($tmpName);
+            } elseif ($imgMime === 'image/webp' && function_exists('imagecreatefromwebp')) {
+                $src = @imagecreatefromwebp($tmpName);
+            }
+            if ($src) {
+                imagesavealpha($src, true);
+                if ($ext === 'jpg' || $ext === 'jpeg') {
+                    $saved = @imagejpeg($src, $savedPath, 88);
+                } elseif ($ext === 'png') {
+                    $saved = @imagepng($src, $savedPath, 6);
+                } elseif ($ext === 'webp' && function_exists('imagewebp')) {
+                    $saved = @imagewebp($src, $savedPath, 85);
+                }
+                imagedestroy($src);
+            }
+        }
+        if (!$saved) {
+            $saved = move_uploaded_file($tmpName, $savedPath);
+        }
+        if (!$saved) {
             echo json_encode(['success' => false, 'message' => 'Unable to save uploaded photo.']);
             $db->close();
             exit;
@@ -146,9 +201,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         exit;
     }
 
-    $cooldownStmt = $db->prepare('SELECT date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 1');
+    $hasFeedbackUserId = feedback_table_has_user_id($db);
+    $cooldownStmt = $hasFeedbackUserId
+        ? $db->prepare('SELECT date_submitted FROM feedback WHERE user_id = ? ORDER BY date_submitted DESC LIMIT 1')
+        : $db->prepare('SELECT date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 1');
     if ($cooldownStmt) {
-        $cooldownStmt->bind_param('s', $userName);
+        if ($hasFeedbackUserId) {
+            $cooldownStmt->bind_param('i', $userId);
+        } else {
+            $cooldownStmt->bind_param('s', $userName);
+        }
         $cooldownStmt->execute();
         $cooldownRes = $cooldownStmt->get_result();
         $latest = $cooldownRes ? $cooldownRes->fetch_assoc() : null;
@@ -164,9 +226,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         }
     }
 
-    $dailyStmt = $db->prepare('SELECT COUNT(*) AS total FROM feedback WHERE user_name = ? AND date_submitted >= (NOW() - INTERVAL 1 DAY)');
+    $dailyStmt = $hasFeedbackUserId
+        ? $db->prepare('SELECT COUNT(*) AS total FROM feedback WHERE user_id = ? AND date_submitted >= (NOW() - INTERVAL 1 DAY)')
+        : $db->prepare('SELECT COUNT(*) AS total FROM feedback WHERE user_name = ? AND date_submitted >= (NOW() - INTERVAL 1 DAY)');
     if ($dailyStmt) {
-        $dailyStmt->bind_param('s', $userName);
+        if ($hasFeedbackUserId) {
+            $dailyStmt->bind_param('i', $userId);
+        } else {
+            $dailyStmt->bind_param('s', $userName);
+        }
         $dailyStmt->execute();
         $dailyRes = $dailyStmt->get_result();
         $dailyCount = (int) (($dailyRes ? $dailyRes->fetch_assoc()['total'] : 0) ?? 0);
@@ -180,9 +248,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
 
     $normSubject = normalize_feedback_text($subject);
     $normDescription = normalize_feedback_text($description);
-    $dupeStmt = $db->prepare('SELECT subject, description FROM feedback WHERE user_name = ? AND date_submitted >= (NOW() - INTERVAL 1 DAY)');
+    $dupeStmt = $hasFeedbackUserId
+        ? $db->prepare('SELECT subject, description FROM feedback WHERE user_id = ? AND date_submitted >= (NOW() - INTERVAL 1 DAY)')
+        : $db->prepare('SELECT subject, description FROM feedback WHERE user_name = ? AND date_submitted >= (NOW() - INTERVAL 1 DAY)');
     if ($dupeStmt) {
-        $dupeStmt->bind_param('s', $userName);
+        if ($hasFeedbackUserId) {
+            $dupeStmt->bind_param('i', $userId);
+        } else {
+            $dupeStmt->bind_param('s', $userName);
+        }
         $dupeStmt->execute();
         $dupeRes = $dupeStmt->get_result();
         while ($dupeRes && ($row = $dupeRes->fetch_assoc())) {
@@ -198,17 +272,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         $dupeStmt->close();
     }
 
-    $stmt = $db->prepare('INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)');
+    $stmt = $hasFeedbackUserId
+        ? $db->prepare('INSERT INTO feedback (user_id, user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        : $db->prepare('INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)');
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Unable to submit feedback right now.']);
         $db->close();
         exit;
     }
 
-    $stmt->bind_param('ssssss', $userName, $subject, $category, $location, $description, $status);
+    if ($hasFeedbackUserId) {
+        $stmt->bind_param('issssss', $userId, $userName, $subject, $category, $location, $description, $status);
+    } else {
+        $stmt->bind_param('ssssss', $userName, $subject, $category, $location, $description, $status);
+    }
     $ok = $stmt->execute();
     $stmt->close();
     record_attempt('user_feedback_submit');
+    record_user_attempt('user_feedback_submit', $userId);
 
     echo json_encode([
         'success' => $ok,
@@ -219,8 +300,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     exit;
 }
 
-$listStmt = $db->prepare('SELECT subject, category, location, description, status, date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 20');
-$listStmt->bind_param('s', $userName);
+$hasFeedbackUserId = feedback_table_has_user_id($db);
+$listStmt = $hasFeedbackUserId
+    ? $db->prepare('SELECT subject, category, location, description, status, date_submitted FROM feedback WHERE user_id = ? ORDER BY date_submitted DESC LIMIT 20')
+    : $db->prepare('SELECT subject, category, location, description, status, date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 20');
+if ($hasFeedbackUserId) {
+    $listStmt->bind_param('i', $userId);
+} else {
+    $listStmt->bind_param('s', $userName);
+}
 $listStmt->execute();
 $feedbackRows = $listStmt->get_result();
 $listStmt->close();
@@ -315,9 +403,15 @@ $csrfToken = generate_csrf_token();
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                 <input type="text" name="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">
                 <?php if (!$canAccessFeedback): ?>
-                    <p style="margin:0 0 12px;color:#92400e;font-weight:600;">
-                        Reminder: Your ID verification is still pending. You can view this page, but form inputs are locked until your account is verified.
-                    </p>
+                    <div style="margin:0 0 14px;padding:12px 14px;border-radius:12px;border:1px solid #f59e0b;border-left:5px solid #d97706;background:linear-gradient(135deg,#fff7ed,#fffbeb);color:#7c2d12;box-shadow:0 6px 18px rgba(217,119,6,.12);">
+                        <div style="display:flex;align-items:flex-start;gap:10px;">
+                            <span aria-hidden="true" style="flex:0 0 auto;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:999px;background:#f59e0b;color:#fff;font-size:13px;font-weight:700;">!</span>
+                            <div>
+                                <strong style="display:block;margin-bottom:2px;">Verification Required</strong>
+                                <span style="font-weight:600;">Reminder: Your ID verification is still pending. You can view this page, but form inputs are locked until your account is verified.</span>
+                            </div>
+                        </div>
+                    </div>
                 <?php endif; ?>
                 <fieldset <?php echo $canAccessFeedback ? '' : 'disabled'; ?> style="border:0;padding:0;margin:0;">
 
@@ -411,67 +505,83 @@ $csrfToken = generate_csrf_token();
 
         <div class="card">
             <h3 style="margin-bottom:12px;">Your Submissions</h3>
-            <div class="table-wrap">
-                <table class="projects-table" id="feedbackHistoryList">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Subject</th>
-                            <th>Category</th>
-                            <th>Location</th>
-                            <th>Status</th>
-                            <th>Photo</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if ($feedbackRows && $feedbackRows->num_rows > 0): ?>
-                            <?php while ($row = $feedbackRows->fetch_assoc()): ?>
-                                <?php
-                                $statusValue = (string) ($row['status'] ?? 'Pending');
-                                $statusLower = strtolower(trim($statusValue));
-                                $statusClass = 'pending';
-                                if (in_array($statusLower, ['addressed', 'resolved', 'completed'], true)) {
-                                    $statusClass = 'approved';
-                                } elseif (in_array($statusLower, ['rejected', 'invalid', 'closed'], true)) {
-                                    $statusClass = 'cancelled';
-                                } elseif ($statusLower === 'on-hold') {
-                                    $statusClass = 'onhold';
-                                }
-                                ?>
-                                <tr>
-                                    <td><?php echo date('M d, Y', strtotime((string) $row['date_submitted'])); ?></td>
-                                    <td><?php echo htmlspecialchars((string) $row['subject']); ?></td>
-                                    <td><?php echo htmlspecialchars((string) $row['category']); ?></td>
-                                    <td><?php echo htmlspecialchars((string) $row['location']); ?></td>
-                                    <td><span class="status-badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($statusValue); ?></span></td>
-                                    <?php $desc = (string) ($row['description'] ?? ''); $photoPath = ''; if (preg_match('/\[Photo Attachment\]\s+(\/uploads\/feedback\/[\w\-.]+\.((jpg)|(jpeg)|(png)|(webp)))/i', $desc, $m)) { $photoPath = $m[1]; } ?>
-                                    <td>
-                                        <?php if ($photoPath !== ''): ?>
-                                            <button type="button" class="ac-f84d9680 feedback-photo-view-btn" data-photo-url="<?php echo htmlspecialchars($photoPath, ENT_QUOTES, 'UTF-8'); ?>">View Photo</button>
-                                        <?php else: ?>
-                                            -
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <button
-                                            type="button"
-                                            class="ac-f84d9680 feedback-details-view-btn"
-                                            data-date="<?php echo htmlspecialchars(date('M d, Y h:i A', strtotime((string) $row['date_submitted'])), ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-subject="<?php echo htmlspecialchars((string) $row['subject'], ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-category="<?php echo htmlspecialchars((string) $row['category'], ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-location="<?php echo htmlspecialchars((string) $row['location'], ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-status="<?php echo htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-description="<?php echo htmlspecialchars((string) $row['description'], ENT_QUOTES, 'UTF-8'); ?>"
-                                        >View</button>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr><td colspan="7" class="ac-a004b216">No feedback submitted yet.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+            <style>
+                .feedback-inbox { border:1px solid #dbe7f3;border-radius:12px;overflow:hidden;background:#fff; }
+                .feedback-inbox-head { display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;background:#f8fbff;border-bottom:1px solid #dbe7f3; }
+                .feedback-inbox-head strong { color:#1e3a8a;font-size:.92rem; }
+                .feedback-inbox-list { max-height:520px;overflow:auto; }
+                .feedback-mail-row { display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid #eef2f7; }
+                .feedback-mail-row:hover { background:#f9fbff; }
+                .feedback-mail-dot { width:8px;height:8px;border-radius:999px;background:#94a3b8; }
+                .feedback-mail-dot.approved { background:#16a34a; }
+                .feedback-mail-dot.pending { background:#f59e0b; }
+                .feedback-mail-dot.cancelled { background:#dc2626; }
+                .feedback-mail-dot.onhold { background:#0ea5e9; }
+                .feedback-mail-main { min-width:0;display:flex;flex-direction:column;gap:4px; }
+                .feedback-mail-subject { font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+                .feedback-mail-meta { color:#64748b;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+                .feedback-mail-actions { display:flex;align-items:center;gap:8px; }
+                .feedback-mail-time { color:#64748b;font-size:.8rem;white-space:nowrap; }
+                @media (max-width: 768px) {
+                    .feedback-mail-row { grid-template-columns:12px 1fr; }
+                    .feedback-mail-actions { grid-column:2 / 3;justify-content:flex-start;flex-wrap:wrap; }
+                }
+            </style>
+            <div class="feedback-inbox" id="feedbackHistoryList">
+                <div class="feedback-inbox-head">
+                    <strong>Inbox View</strong>
+                    <span style="font-size:.82rem;color:#64748b;">Newest submissions first</span>
+                </div>
+                <div class="feedback-inbox-list">
+                    <?php if ($feedbackRows && $feedbackRows->num_rows > 0): ?>
+                        <?php while ($row = $feedbackRows->fetch_assoc()): ?>
+                            <?php
+                            $statusValue = (string) ($row['status'] ?? 'Pending');
+                            $statusLower = strtolower(trim($statusValue));
+                            $statusClass = 'pending';
+                            if (in_array($statusLower, ['addressed', 'resolved', 'completed'], true)) {
+                                $statusClass = 'approved';
+                            } elseif (in_array($statusLower, ['rejected', 'invalid', 'closed'], true)) {
+                                $statusClass = 'cancelled';
+                            } elseif ($statusLower === 'on-hold') {
+                                $statusClass = 'onhold';
+                            }
+                            $desc = (string) ($row['description'] ?? '');
+                            $photoPath = '';
+                            if (preg_match('/\[Photo Attachment\]\s+(\/uploads\/feedback\/[\w\-.]+\.((jpg)|(jpeg)|(png)|(webp)))/i', $desc, $m)) {
+                                $photoPath = $m[1];
+                            }
+                            ?>
+                            <div
+                                class="feedback-mail-row"
+                                data-feedback-open="1"
+                                data-date="<?php echo htmlspecialchars(date('M d, Y h:i A', strtotime((string) $row['date_submitted'])), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-subject="<?php echo htmlspecialchars((string) $row['subject'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-category="<?php echo htmlspecialchars((string) $row['category'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-location="<?php echo htmlspecialchars((string) $row['location'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-status="<?php echo htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8'); ?>"
+                                data-description="<?php echo htmlspecialchars((string) $row['description'], ENT_QUOTES, 'UTF-8'); ?>"
+                                style="cursor:pointer;"
+                            >
+                                <span class="feedback-mail-dot <?php echo $statusClass; ?>"></span>
+                                <div class="feedback-mail-main">
+                                    <div class="feedback-mail-subject"><?php echo htmlspecialchars((string) $row['subject']); ?></div>
+                                    <div class="feedback-mail-meta">
+                                        <?php echo htmlspecialchars((string) $row['category']); ?> | <?php echo htmlspecialchars((string) $row['location']); ?> | <?php echo htmlspecialchars($statusValue); ?>
+                                    </div>
+                                </div>
+                                <div class="feedback-mail-actions">
+                                    <span class="feedback-mail-time"><?php echo date('M d, Y', strtotime((string) $row['date_submitted'])); ?></span>
+                                    <?php if ($photoPath !== ''): ?>
+                                        <button type="button" class="ac-f84d9680 feedback-photo-view-btn" data-photo-url="<?php echo htmlspecialchars($photoPath, ENT_QUOTES, 'UTF-8'); ?>">Photo</button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div style="padding:14px;color:#64748b;">No feedback submitted yet.</div>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </section>
