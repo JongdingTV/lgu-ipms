@@ -22,7 +22,7 @@ $stmt = $db->prepare(
     "SELECT 1
      FROM feedback
      WHERE (user_id = ? OR user_name = ?)
-       AND description LIKE CONCAT('%[Photo Attachment Private] ', ?, '%')
+       AND LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0
      LIMIT 1"
 );
 $userName = trim((string) ($_SESSION['user_name'] ?? ''));

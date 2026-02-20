@@ -164,7 +164,7 @@ if ($userId > 0 || $userName !== '') {
         ? $db->prepare(
             "SELECT id, subject, status, date_submitted
              FROM feedback
-             WHERE user_id = ?
+             WHERE (user_id = ? OR (user_id IS NULL AND user_name = ?))
              ORDER BY date_submitted DESC, id DESC
              LIMIT 20"
         )
@@ -177,7 +177,7 @@ if ($userId > 0 || $userName !== '') {
         );
     if ($fbStmt) {
         if ($hasFeedbackUserId) {
-            $fbStmt->bind_param('i', $userId);
+            $fbStmt->bind_param('is', $userId, $userName);
         } else {
             $fbStmt->bind_param('s', $userName);
         }
@@ -201,7 +201,16 @@ if ($userId > 0 || $userName !== '') {
                 $level = 'warning';
             }
 
-            $nid = 500000000 + $feedbackId;
+            $statusVersion = 1;
+            if (in_array($statusLower, ['addressed', 'resolved', 'completed'], true)) {
+                $statusVersion = 3;
+            } elseif (in_array($statusLower, ['rejected', 'invalid', 'closed'], true)) {
+                $statusVersion = 4;
+            } elseif ($statusLower === 'on-hold') {
+                $statusVersion = 2;
+            }
+            // Include status version so status changes create a new notification event.
+            $nid = 500000000 + ($feedbackId * 10) + $statusVersion;
             $items[] = [
                 'id' => $nid,
                 'level' => $level,
