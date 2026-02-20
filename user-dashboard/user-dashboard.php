@@ -92,22 +92,6 @@ $db->close();
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
 </head>
 <body>
-    <style>
-        .verification-reminder {
-            margin-top: 10px;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid #fcd34d;
-            background: #fffbeb;
-            color: #92400e;
-            font-weight: 600;
-        }
-        .limited-view .sensitive-data {
-            filter: blur(6px);
-            user-select: none;
-            pointer-events: none;
-        }
-    </style>
     <div class="sidebar-toggle-wrapper">
         <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -175,14 +159,14 @@ $db->close();
         </a>
     </div>
 
-    <section class="main-content<?php echo $canAccessFeedback ? '' : ' limited-view'; ?>">
+    <section class="main-content">
         <div class="dash-header">
             <h1>User Dashboard</h1>
             <p>Transparent project updates from the admin side.</p>
-            <?php if (!$canAccessFeedback): ?>
-                <div class="verification-reminder">Limited view mode is active. Verify your ID to unlock full project details.</div>
-            <?php endif; ?>
         </div>
+        <?php if (!$canAccessFeedback): ?>
+            <p style="margin:0 0 14px;color:#92400e;font-weight:600;">Your account can view all public project information. Verify your ID to unlock feedback submission.</p>
+        <?php endif; ?>
 
         <div class="metrics-container">
             <div class="metric-card card">
@@ -225,9 +209,9 @@ $db->close();
                 <div class="chart-placeholder">
                     <div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="statusStackBar" style="width:0%;"></div></div>
                     <div class="status-legend">
-                        <div class="legend-item"><span class="legend-color" style="background:#16a34a;"></span><span id="completedPercent" class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>">Completed: 0%</span></div>
-                        <div class="legend-item"><span class="legend-color" style="background:#2563eb;"></span><span id="inProgressPercent" class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>">In Progress: 0%</span></div>
-                        <div class="legend-item"><span class="legend-color" style="background:#f59e0b;"></span><span id="otherPercent" class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>">Other: 0%</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#16a34a;"></span><span id="completedPercent">Completed: 0%</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#2563eb;"></span><span id="inProgressPercent">In Progress: 0%</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#f59e0b;"></span><span id="otherPercent">Other: 0%</span></div>
                     </div>
                 </div>
             </div>
@@ -237,7 +221,7 @@ $db->close();
                     <svg id="monthlyActivityChart" viewBox="0 0 320 120" role="img" aria-label="Monthly project activity chart">
                         <polyline id="monthlyActivityLine" fill="none" stroke="#1d4ed8" stroke-width="3" points="0,110 320,110"></polyline>
                     </svg>
-                    <p id="monthlyActivityText" class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>">No monthly activity yet.</p>
+                    <p id="monthlyActivityText">No monthly activity yet.</p>
                 </div>
             </div>
         </div>
@@ -267,11 +251,11 @@ $db->close();
                                 elseif ($project['status'] === 'Cancelled') $statusColor = 'cancelled';
                                 ?>
                                 <tr>
-                                    <td class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>"><?php echo htmlspecialchars($project['name']); ?></td>
-                                    <td class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>"><?php echo htmlspecialchars($project['location']); ?></td>
+                                    <td><?php echo htmlspecialchars($project['name']); ?></td>
+                                    <td><?php echo htmlspecialchars($project['location']); ?></td>
                                     <td><span class="status-badge <?php echo $statusColor; ?>"><?php echo htmlspecialchars($project['status']); ?></span></td>
                                     <td><div class="progress-small"><div class="progress-fill-small" style="width:0%;"></div></div></td>
-                                    <td class="<?php echo $canAccessFeedback ? '' : 'sensitive-data'; ?>">PHP <?php echo number_format((float) $project['budget'], 2); ?></td>
+                                    <td>PHP <?php echo number_format((float) $project['budget'], 2); ?></td>
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>

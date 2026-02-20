@@ -7,6 +7,8 @@
     const altName = document.getElementById('alt_name');
     const locationInput = document.getElementById('location');
     const gpsPinBtn = document.getElementById('gpsPinBtn');
+    const improveAccuracyBtn = document.getElementById('improveAccuracyBtn');
+    const streetViewBtn = document.getElementById('streetViewBtn');
     const gpsLat = document.getElementById('gps_lat');
     const gpsLng = document.getElementById('gps_lng');
     const gpsAccuracy = document.getElementById('gps_accuracy');
@@ -19,6 +21,9 @@
     const mapSearchBtn = document.getElementById('mapSearchBtn');
     const pinnedAddress = document.getElementById('pinnedAddress');
     const gpsAddress = document.getElementById('gps_address');
+    const streetViewWrap = document.getElementById('streetViewWrap');
+    const streetViewFrame = document.getElementById('streetViewFrame');
+    const openStreetViewExternal = document.getElementById('openStreetViewExternal');
 
     if (!form) return;
 
@@ -255,6 +260,101 @@
         }
     }
 
+    function updateStreetView(latText, lngText) {
+        const externalUrl = 'https://www.google.com/maps?layer=c&cbll=' + encodeURIComponent(latText + ',' + lngText);
+        const embedUrl = 'https://maps.google.com/maps?q=&layer=c&cbll=' + encodeURIComponent(latText + ',' + lngText) + '&output=embed';
+        if (streetViewFrame) streetViewFrame.src = embedUrl;
+        if (openStreetViewExternal) openStreetViewExternal.href = externalUrl;
+    }
+
+    function toggleStreetView() {
+        if (!streetViewWrap) return;
+        const isHidden = streetViewWrap.style.display === '' || streetViewWrap.style.display === 'none';
+        streetViewWrap.style.display = isHidden ? 'block' : 'none';
+    }
+
+    async function pinToLocation(lat, lng, accuracyMeters) {
+        if (map) {
+            map.setView([lat, lng], 17);
+            if (!marker) {
+                marker = window.L.marker([lat, lng], { draggable: true }).addTo(map);
+                marker.on('dragend', function (dragEvent) {
+                    const p = dragEvent.target.getLatLng();
+                    updateMapFields(p.lat, p.lng, null);
+                    buildLocationValue();
+                });
+            } else {
+                marker.setLatLng([lat, lng]);
+            }
+        }
+        await updateMapFields(lat, lng, accuracyMeters);
+        buildLocationValue();
+    }
+
+    async function resolveAndPinSelection() {
+        if (!district || !barangay || !altName) return;
+        const districtValue = district.value || '';
+        const barangayValue = barangay.value || '';
+        const altValue = altName.value || '';
+        if (!districtValue || !barangayValue) return;
+
+        const query = [altValue, barangayValue, 'District ' + districtValue, 'Quezon City, Metro Manila, Philippines']
+            .filter(Boolean)
+            .join(', ');
+        try {
+            const result = await searchLocation(query);
+            if (!result) return;
+            await pinToLocation(result.lat, result.lng, null);
+            if (pinnedAddress && result.address) pinnedAddress.textContent = result.address;
+            if (gpsAddress && result.address) gpsAddress.value = result.address;
+        } catch (_error) {
+            // Ignore geocoding errors; keep form interactive.
+        }
+    }
+
+    function getBestCurrentLocation() {
+        return new Promise(function (resolve, reject) {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported by your browser.'));
+                return;
+            }
+            let best = null;
+            let watchId = null;
+            const timeoutMs = 8000;
+            const startedAt = Date.now();
+
+            function finish() {
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                if (best) resolve(best);
+                else reject(new Error('Unable to get your current location.'));
+            }
+
+            watchId = navigator.geolocation.watchPosition(function (position) {
+                const candidate = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    accuracy: position.coords.accuracy || null
+                };
+                if (!best || (candidate.accuracy && best.accuracy && candidate.accuracy < best.accuracy) || (!best.accuracy && candidate.accuracy)) {
+                    best = candidate;
+                }
+                if (candidate.accuracy && candidate.accuracy <= 15) {
+                    finish();
+                    return;
+                }
+                if (Date.now() - startedAt >= timeoutMs) finish();
+            }, function (error) {
+                reject(error);
+            }, {
+                enableHighAccuracy: true,
+                timeout: timeoutMs,
+                maximumAge: 0
+            });
+
+            setTimeout(finish, timeoutMs + 200);
+        });
+    }
+
     if (district && barangay && altName && locationInput) {
         district.addEventListener('change', function () {
             const selectedDistrict = district.value;
@@ -283,6 +383,7 @@
             });
 
             buildLocationValue();
+            resolveAndPinSelection();
         });
 
         barangay.addEventListener('change', function () {
@@ -306,50 +407,52 @@
             });
 
             buildLocationValue();
+            resolveAndPinSelection();
         });
 
-        altName.addEventListener('change', buildLocationValue);
+        altName.addEventListener('change', function () {
+            buildLocationValue();
+            resolveAndPinSelection();
+        });
     }
 
 
     if (gpsPinBtn) {
-        gpsPinBtn.addEventListener('click', function () {
-            if (!navigator.geolocation) {
-                showMessage('Geolocation is not supported by your browser.', false);
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(function (position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                const acc = position.coords.accuracy || null;
-                updateMapFields(lat, lng, acc);
-
-                if (map) {
-                    map.setView([lat, lng], 17);
-                    if (!marker) {
-                        marker = window.L.marker([lat, lng], { draggable: true }).addTo(map);
-                        marker.on('dragend', function (dragEvent) {
-                            const p = dragEvent.target.getLatLng();
-                            updateMapFields(p.lat, p.lng, null);
-                            buildLocationValue();
-                        });
-                    } else {
-                        marker.setLatLng([lat, lng]);
-                    }
-                }
-
-                buildLocationValue();
-                const accText = acc ? Math.round(acc) + 'm' : 'unknown';
+        gpsPinBtn.addEventListener('click', async function () {
+            try {
+                const best = await getBestCurrentLocation();
+                await pinToLocation(best.lat, best.lng, best.accuracy);
+                const accText = best.accuracy ? Math.round(best.accuracy) + 'm' : 'unknown';
                 showMessage('Used your GPS as a starting pin (~' + accText + ' accuracy). Drag the pin for exact spot.', true);
-            }, function (error) {
+            } catch (error) {
                 const msg = error && error.message ? error.message : 'Unable to get your current location.';
                 showMessage(msg, false);
-            }, {
-                enableHighAccuracy: true,
-                timeout: 12000,
-                maximumAge: 0
-            });
+            }
+        });
+    }
+
+    if (improveAccuracyBtn) {
+        improveAccuracyBtn.addEventListener('click', async function () {
+            try {
+                const best = await getBestCurrentLocation();
+                await pinToLocation(best.lat, best.lng, best.accuracy);
+                const accText = best.accuracy ? Math.round(best.accuracy) + 'm' : 'unknown';
+                showMessage('GPS accuracy improved (~' + accText + ').', true);
+            } catch (error) {
+                const msg = error && error.message ? error.message : 'Unable to improve GPS accuracy right now.';
+                showMessage(msg, false);
+            }
+        });
+    }
+
+    if (streetViewBtn) {
+        streetViewBtn.addEventListener('click', function () {
+            if (!gpsLat || !gpsLng || gpsLat.value === '' || gpsLng.value === '') {
+                showMessage('Set a map pin first to view street-level imagery.', false);
+                return;
+            }
+            toggleStreetView();
+            updateStreetView(gpsLat.value, gpsLng.value);
         });
     }
 
@@ -364,6 +467,7 @@
         const addressText = await reverseGeocode(latText, lngText);
         if (gpsAddress) gpsAddress.value = addressText;
         if (pinnedAddress) pinnedAddress.textContent = addressText !== '' ? addressText : 'Pinned location found, but address is unavailable.';
+        updateStreetView(latText, lngText);
     }
 
     if (photoInput && photoStatus) {
@@ -393,18 +497,7 @@
         map.on('click', function (event) {
             const lat = event.latlng.lat;
             const lng = event.latlng.lng;
-            if (!marker) {
-                marker = window.L.marker([lat, lng], { draggable: true }).addTo(map);
-                marker.on('dragend', function (dragEvent) {
-                    const p = dragEvent.target.getLatLng();
-                    updateMapFields(p.lat, p.lng, null);
-                    buildLocationValue();
-                });
-            } else {
-                marker.setLatLng([lat, lng]);
-            }
-            updateMapFields(lat, lng, null);
-            buildLocationValue();
+            pinToLocation(lat, lng, null);
         });
     }
 
@@ -425,17 +518,7 @@
                 }
 
                 if (map) {
-                    map.setView([result.lat, result.lng], 17);
-                    if (!marker) {
-                        marker = window.L.marker([result.lat, result.lng], { draggable: true }).addTo(map);
-                        marker.on('dragend', function (dragEvent) {
-                            const p = dragEvent.target.getLatLng();
-                            updateMapFields(p.lat, p.lng, null);
-                            buildLocationValue();
-                        });
-                    } else {
-                        marker.setLatLng([result.lat, result.lng]);
-                    }
+                    await pinToLocation(result.lat, result.lng, null);
                 }
 
                 if (pinnedAddress && result.address) {
@@ -445,7 +528,7 @@
                     gpsAddress.value = result.address;
                 }
 
-                updateMapFields(result.lat, result.lng, null);
+                await updateMapFields(result.lat, result.lng, null);
                 buildLocationValue();
             } catch (_error) {
                 showMessage('Unable to search location right now.', false);

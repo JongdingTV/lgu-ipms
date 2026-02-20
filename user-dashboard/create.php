@@ -51,6 +51,11 @@ function create_users_has_verification_status(mysqli $db): bool
     return $exists;
 }
 
+function normalize_mobile_number(string $mobile): string
+{
+    return preg_replace('/[^0-9]/', '', $mobile) ?? '';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_submit'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Invalid request. Please refresh and try again.';
@@ -170,6 +175,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_submit'])) {
                     $errors[] = 'This email is already registered.';
                 }
                 $checkStmt->close();
+            }
+        }
+        if (empty($errors)) {
+            $normalizedMobile = normalize_mobile_number($form['mobile']);
+            if ($normalizedMobile === '' || strlen($normalizedMobile) < 10) {
+                $errors[] = 'Please enter a valid mobile number.';
+            } else {
+                $mobileStmt = $db->prepare(
+                    "SELECT id FROM users
+                     WHERE REPLACE(REPLACE(REPLACE(COALESCE(mobile,''), ' ', ''), '-', ''), '+', '') = ?
+                     LIMIT 1"
+                );
+                if ($mobileStmt) {
+                    $mobileStmt->bind_param('s', $normalizedMobile);
+                    $mobileStmt->execute();
+                    $mobileRes = $mobileStmt->get_result();
+                    if ($mobileRes && $mobileRes->num_rows > 0) {
+                        $errors[] = 'This mobile number is already registered.';
+                    }
+                    $mobileStmt->close();
+                }
+            }
+        }
+        if (empty($errors)) {
+            $idStmt = $db->prepare('SELECT id FROM users WHERE id_type = ? AND id_number = ? LIMIT 1');
+            if ($idStmt) {
+                $idStmt->bind_param('ss', $form['idType'], $form['idNumber']);
+                $idStmt->execute();
+                $idRes = $idStmt->get_result();
+                if ($idRes && $idRes->num_rows > 0) {
+                    $errors[] = 'This ID has already been used for another account.';
+                }
+                $idStmt->close();
             }
         }
 

@@ -1,7 +1,6 @@
 (function () {
     let allProjects = [];
     let activeQuickStatus = '';
-    const isVerified = Boolean(window.USER_IS_VERIFIED);
 
     function normalizeStatus(status) {
         return (status || '').toLowerCase().trim();
@@ -143,17 +142,17 @@
                     <article class="project-card ${riskClass}">
                         <div class="project-header">
                             <div class="project-title-section">
-                                <h4 class="${isVerified ? '' : 'sensitive-data'}">${project.code || 'N/A'} - ${project.name || 'Unnamed Project'}</h4>
+                                <h4>${project.code || 'N/A'} - ${project.name || 'Unnamed Project'}</h4>
                                 <span class="project-status ${statusClass}">${project.status || 'Draft'}</span>
                             </div>
                         </div>
 
                         <div class="project-meta">
-                            <div class="project-meta-item"><span class="project-meta-label">Location:</span><span class="project-meta-value ${isVerified ? '' : 'sensitive-data'}">${project.location || '-'}</span></div>
+                            <div class="project-meta-item"><span class="project-meta-label">Location:</span><span class="project-meta-value">${project.location || '-'}</span></div>
                             <div class="project-meta-item"><span class="project-meta-label">Sector:</span><span class="project-meta-value">${project.sector || '-'}</span></div>
-                            <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value ${isVerified ? '' : 'sensitive-data'}">${formatCurrency(project.budget)}</span></div>
+                            <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value">${formatCurrency(project.budget)}</span></div>
                             <div class="project-meta-item"><span class="project-meta-label">Duration:</span><span class="project-meta-value">${project.duration_months || '-'} months</span></div>
-                            <div class="project-meta-item"><span class="project-meta-label">Process Update:</span><span class="project-meta-value ${isVerified ? '' : 'sensitive-data'}">${processUpdate}</span></div>
+                            <div class="project-meta-item"><span class="project-meta-label">Process Update:</span><span class="project-meta-value">${processUpdate}</span></div>
                         </div>
 
                         <div class="progress-container">

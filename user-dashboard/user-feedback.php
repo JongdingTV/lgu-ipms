@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -29,6 +29,11 @@ $userInitials = user_avatar_initials($userName);
 $avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
 $profileImageWebPath = user_profile_photo_web_path($userId);
 
+function normalize_feedback_text(string $value): string
+{
+    return strtolower(trim(preg_replace('/\s+/', ' ', $value) ?? ''));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     header('Content-Type: application/json');
 
@@ -39,6 +44,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     }
     if (!$canAccessFeedback) {
         echo json_encode(['success' => false, 'message' => 'Your account is pending ID verification. Feedback submission is locked until verification is approved.']);
+        $db->close();
+        exit;
+    }
+    if (is_rate_limited('user_feedback_submit', 8, 600)) {
+        echo json_encode(['success' => false, 'message' => 'Too many submission attempts. Please wait a few minutes before trying again.']);
+        $db->close();
+        exit;
+    }
+    if (trim((string) ($_POST['website'] ?? '')) !== '') {
+        record_attempt('user_feedback_submit');
+        echo json_encode(['success' => false, 'message' => 'Invalid submission detected.']);
         $db->close();
         exit;
     }
@@ -117,6 +133,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         $db->close();
         exit;
     }
+    if (mb_strlen($subject) > 100 || mb_strlen($category) > 100 || mb_strlen($location) > 255) {
+        record_attempt('user_feedback_submit');
+        echo json_encode(['success' => false, 'message' => 'Some fields are too long.']);
+        $db->close();
+        exit;
+    }
+    if (mb_strlen($description) < 12 || mb_strlen($description) > 5000) {
+        record_attempt('user_feedback_submit');
+        echo json_encode(['success' => false, 'message' => 'Feedback must be between 12 and 5000 characters.']);
+        $db->close();
+        exit;
+    }
+
+    $cooldownStmt = $db->prepare('SELECT date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 1');
+    if ($cooldownStmt) {
+        $cooldownStmt->bind_param('s', $userName);
+        $cooldownStmt->execute();
+        $cooldownRes = $cooldownStmt->get_result();
+        $latest = $cooldownRes ? $cooldownRes->fetch_assoc() : null;
+        $cooldownStmt->close();
+
+        if ($latest && !empty($latest['date_submitted'])) {
+            $lastTs = strtotime((string) $latest['date_submitted']) ?: 0;
+            if ($lastTs > 0 && (time() - $lastTs) < 90) {
+                echo json_encode(['success' => false, 'message' => 'Please wait at least 90 seconds before submitting another feedback.']);
+                $db->close();
+                exit;
+            }
+        }
+    }
+
+    $dailyStmt = $db->prepare('SELECT COUNT(*) AS total FROM feedback WHERE user_name = ? AND date_submitted >= (NOW() - INTERVAL 1 DAY)');
+    if ($dailyStmt) {
+        $dailyStmt->bind_param('s', $userName);
+        $dailyStmt->execute();
+        $dailyRes = $dailyStmt->get_result();
+        $dailyCount = (int) (($dailyRes ? $dailyRes->fetch_assoc()['total'] : 0) ?? 0);
+        $dailyStmt->close();
+        if ($dailyCount >= 5) {
+            echo json_encode(['success' => false, 'message' => 'Daily submission limit reached (5 per 24 hours). Please try again tomorrow.']);
+            $db->close();
+            exit;
+        }
+    }
+
+    $normSubject = normalize_feedback_text($subject);
+    $normDescription = normalize_feedback_text($description);
+    $dupeStmt = $db->prepare('SELECT subject, description FROM feedback WHERE user_name = ? AND date_submitted >= (NOW() - INTERVAL 1 DAY)');
+    if ($dupeStmt) {
+        $dupeStmt->bind_param('s', $userName);
+        $dupeStmt->execute();
+        $dupeRes = $dupeStmt->get_result();
+        while ($dupeRes && ($row = $dupeRes->fetch_assoc())) {
+            $existingSubject = normalize_feedback_text((string) ($row['subject'] ?? ''));
+            $existingDescription = normalize_feedback_text((string) ($row['description'] ?? ''));
+            if ($existingSubject === $normSubject && $existingDescription === $normDescription) {
+                $dupeStmt->close();
+                echo json_encode(['success' => false, 'message' => 'This looks like a duplicate feedback. Please update details before submitting again.']);
+                $db->close();
+                exit;
+            }
+        }
+        $dupeStmt->close();
+    }
 
     $stmt = $db->prepare('INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)');
     if (!$stmt) {
@@ -128,6 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     $stmt->bind_param('ssssss', $userName, $subject, $category, $location, $description, $status);
     $ok = $stmt->execute();
     $stmt->close();
+    record_attempt('user_feedback_submit');
 
     echo json_encode([
         'success' => $ok,
@@ -225,11 +306,6 @@ $csrfToken = generate_csrf_token();
         <div class="dash-header">
             <h1>Submit Feedback</h1>
             <p>Share concerns and suggestions that will be reviewed by the admin prioritization team.</p>
-            <?php if (!$canAccessFeedback): ?>
-                <p style="margin-top:8px;padding:10px 12px;border-radius:10px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;font-weight:600;">
-                    Reminder: Your ID verification is still pending. You can view this page, but form inputs are locked until your account is verified.
-                </p>
-            <?php endif; ?>
         </div>
 
         <div class="card" style="margin-bottom:18px;">
@@ -237,6 +313,12 @@ $csrfToken = generate_csrf_token();
             <form id="userFeedbackForm" class="user-feedback-form" method="post" action="user-feedback.php" enctype="multipart/form-data">
                 <input type="hidden" name="feedback_submit" value="1">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="text" name="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">
+                <?php if (!$canAccessFeedback): ?>
+                    <p style="margin:0 0 12px;color:#92400e;font-weight:600;">
+                        Reminder: Your ID verification is still pending. You can view this page, but form inputs are locked until your account is verified.
+                    </p>
+                <?php endif; ?>
                 <fieldset <?php echo $canAccessFeedback ? '' : 'disabled'; ?> style="border:0;padding:0;margin:0;">
 
                 <div class="user-feedback-form-grid">
@@ -307,8 +389,16 @@ $csrfToken = generate_csrf_token();
                             <input type="text" id="mapSearchInput" placeholder="Search place or address" style="flex:1 1 320px;">
                             <button type="button" id="mapSearchBtn" class="ac-f84d9680">Search</button>
                             <button type="button" id="gpsPinBtn" class="ac-f84d9680">Use Current Location</button>
+                            <button type="button" id="improveAccuracyBtn" class="ac-f84d9680">Improve Accuracy</button>
+                            <button type="button" id="streetViewBtn" class="ac-f84d9680">Street View</button>
                         </div>
                         <div id="concernMap" style="height:320px;border:1px solid #d1d5db;border-radius:10px;"></div>
+                        <div id="streetViewWrap" style="display:none;margin-top:10px;">
+                            <iframe id="streetViewFrame" title="Street View" style="width:100%;height:280px;border:1px solid #d1d5db;border-radius:10px;" loading="lazy"></iframe>
+                            <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;">
+                                <a id="openStreetViewExternal" class="ac-f84d9680" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;">Open in Google Street View</a>
+                            </div>
+                        </div>
                         <small id="pinnedAddress" style="display:block;margin-top:8px;color:#334155;">No pinned address yet.</small>
                         <input type="hidden" id="gps_lat" name="gps_lat" value="">
                         <input type="hidden" id="gps_lng" name="gps_lng" value="">
@@ -387,6 +477,7 @@ $csrfToken = generate_csrf_token();
     <script src="/user-dashboard/user-feedback.js?v=<?php echo filemtime(__DIR__ . '/user-feedback.js'); ?>"></script>
 </body>
 </html>
+
 
 
 

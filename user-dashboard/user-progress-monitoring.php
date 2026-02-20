@@ -95,12 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'load_pr
             if (!isset($row['progress'])) {
                 $row['progress'] = 0;
             }
-            if (!$canAccessFeedback) {
-                $row['code'] = 'Locked';
-                $row['name'] = 'Verify ID to unlock details';
-                $row['location'] = 'Restricted';
-                $row['budget'] = 0;
-            }
             $projects[] = $row;
         }
         $result->free();
@@ -206,12 +200,12 @@ $db->close();
         <div class="dash-header">
             <h1>Progress Monitoring</h1>
             <p>Track projects in your area, <?php echo htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'); ?></p>
-            <?php if (!$canAccessFeedback): ?>
-                <p style="margin-top:8px;padding:10px 12px;border-radius:10px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;font-weight:600;">Limited view mode is active. Verify your ID to unlock full details.</p>
-            <?php endif; ?>
         </div>
 
         <div class="pm-section card">
+            <?php if (!$canAccessFeedback): ?>
+                <p style="margin:0 0 14px;color:#92400e;font-weight:600;">You can view all public project details. Verify your ID to unlock feedback submission.</p>
+            <?php endif; ?>
             <div class="pm-stats-wrapper">
                 <div class="stat-box stat-total"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Total Projects</div></div>
                 <div class="stat-box stat-approved"><div class="stat-number" id="statApproved">0</div><div class="stat-label">Approved</div></div>
@@ -278,12 +272,6 @@ $db->close();
     </section>
 
     <style>
-        .main-content .sensitive-data {
-            filter: blur(6px);
-            user-select: none;
-            pointer-events: none;
-        }
-
         .main-content .dash-header {
             background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.18), rgba(14, 116, 144, 0) 44%), linear-gradient(145deg, #ffffff, #f7fbff);
             border: 1px solid #d9e7f7;
@@ -789,7 +777,6 @@ $db->close();
     <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <script src="/assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
     <script src="/user-dashboard/user-shell.js?v=<?php echo filemtime(__DIR__ . '/user-shell.js'); ?>"></script>
-    <script>window.USER_IS_VERIFIED = <?php echo $canAccessFeedback ? 'true' : 'false'; ?>;</script>
     <script src="/user-dashboard/user-progress-monitoring.js?v=<?php echo filemtime(__DIR__ . '/user-progress-monitoring.js'); ?>"></script>
 </body>
 </html>

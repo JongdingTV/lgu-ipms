@@ -6,6 +6,10 @@ require dirname(__DIR__) . '/config/email.php';
 
 set_no_cache_headers();
 
+if (!isset($_SESSION['user_id'])) {
+    try_auto_login_from_remember_cookie();
+}
+
 if (isset($_SESSION['user_id'])) {
     header('Location: /user-dashboard/user-dashboard.php');
     exit;
@@ -25,7 +29,8 @@ function clear_user_login_otp_session(): void
         $_SESSION['user_login_otp_email'],
         $_SESSION['user_login_otp_code'],
         $_SESSION['user_login_otp_expires'],
-        $_SESSION['user_login_otp_attempts']
+        $_SESSION['user_login_otp_attempts'],
+        $_SESSION['user_login_otp_remember']
     );
 }
 
@@ -72,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
                         $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
                         clear_user_login_otp_session();
                         if (issue_user_login_otp((int) $user['id'], $fullName, $email)) {
+                            $_SESSION['user_login_otp_remember'] = !empty($_POST['remember_device']) ? 1 : 0;
                             $otpPending = true;
                             $otpEmail = $email;
                             $otpMessage = 'A verification code was sent to your email. Enter it below to finish login.';
@@ -124,6 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_otp_submit']))
         } else {
             $userId = (int) ($_SESSION['user_login_otp_user_id'] ?? 0);
             $userName = (string) ($_SESSION['user_login_otp_name'] ?? '');
+            $rememberRequested = !empty($_SESSION['user_login_otp_remember']);
             clear_user_login_otp_session();
             session_regenerate_id(true);
             $_SESSION['user_id'] = $userId;
@@ -131,6 +138,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_otp_submit']))
             $_SESSION['user_type'] = 'citizen';
             $_SESSION['last_activity'] = time();
             $_SESSION['login_time'] = time();
+            if ($rememberRequested) {
+                remember_user_device($userId, REMEMBER_DEVICE_DAYS);
+            }
 
             header('Location: /user-dashboard/user-dashboard.php');
             exit;
@@ -383,6 +393,12 @@ body.user-login-page .error-box {
                 <div class="input-box">
                     <label for="loginPassword">Password</label>
                     <input type="password" name="password" id="loginPassword" placeholder="********" required autocomplete="current-password">
+                </div>
+                <div class="input-box" style="margin-top:-4px;margin-bottom:8px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" name="remember_device" value="1" style="width:16px;height:16px;">
+                        <span style="font-size:0.86rem;color:#334155;">Remember this device for 10 days</span>
+                    </label>
                 </div>
 
                 <button class="btn-primary" type="submit" name="login_submit">Sign In</button>

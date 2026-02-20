@@ -1158,6 +1158,111 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-bt
     font-weight: 700 !important;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-utility-badge {
+    display: none;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    align-items: center;
+    justify-content: center;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-panel {
+    position: absolute;
+    top: 66px;
+    right: 14px;
+    width: min(380px, 92vw);
+    max-height: 420px;
+    overflow: auto;
+    background: #ffffff;
+    border: 1px solid #dbe7f3;
+    border-radius: 12px;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+    padding: 8px;
+    z-index: 1330;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 4px 8px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-head strong {
+    color: #0f172a;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-head button {
+    border: 1px solid #c8d9ec;
+    background: #f8fbff;
+    color: #1d4e89;
+    border-radius: 8px;
+    min-height: 30px;
+    padding: 0 10px;
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item {
+    display: flex;
+    gap: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #f8fbff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item.unread {
+    border-color: #60a5fa;
+    background: #eff6ff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    margin-top: 6px;
+    background: #2563eb;
+    flex: 0 0 9px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item.is-success .dot { background: #16a34a; }
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item.is-warning .dot { background: #f59e0b; }
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item.is-danger .dot { background: #dc2626; }
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item strong {
+    display: block;
+    color: #0f172a;
+    font-size: 0.84rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item small {
+    display: block;
+    color: #475569;
+    font-size: 0.78rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-notif-item em {
+    display: block;
+    color: #64748b;
+    font-size: 0.72rem;
+    margin-top: 2px;
+    font-style: normal;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .top-sidebar-toggle {
     display: inline-flex !important;
     position: fixed !important;
@@ -1230,6 +1335,165 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).sidebar-hidden .t
         width: 34px !important;
         height: 34px !important;
     }
+}
+
+/* User dark mode readability patch */
+body.theme-dark .main-content {
+    color: #e5edf8;
+}
+
+body.theme-dark .main-content .dash-header,
+body.theme-dark .main-content .card,
+body.theme-dark .main-content .recent-projects,
+body.theme-dark .main-content .table-wrap,
+body.theme-dark .main-content .user-feedback-form {
+    background: #0f172a !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 10px 28px rgba(2, 6, 23, 0.45) !important;
+}
+
+body.theme-dark .main-content h1,
+body.theme-dark .main-content h2,
+body.theme-dark .main-content h3,
+body.theme-dark .main-content h4,
+body.theme-dark .main-content label,
+body.theme-dark .main-content th,
+body.theme-dark .main-content td {
+    color: #e2e8f0 !important;
+}
+
+body.theme-dark .main-content p,
+body.theme-dark .main-content small,
+body.theme-dark .main-content span {
+    color: #cbd5e1 !important;
+}
+
+body.theme-dark .user-feedback-form input,
+body.theme-dark .user-feedback-form select,
+body.theme-dark .user-feedback-form textarea,
+body.theme-dark .user-feedback-form #mapSearchInput {
+    background: #111827 !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #475569 !important;
+}
+
+body.theme-dark .user-feedback-form input::placeholder,
+body.theme-dark .user-feedback-form textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+body.theme-dark .user-feedback-form input:focus,
+body.theme-dark .user-feedback-form select:focus,
+body.theme-dark .user-feedback-form textarea:focus {
+    border-color: #60a5fa !important;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+}
+
+body.theme-dark .projects-table thead {
+    background: #1e293b !important;
+}
+
+body.theme-dark .projects-table tbody tr {
+    background: #0b1220 !important;
+}
+
+body.theme-dark .projects-table tbody tr:hover {
+    background: #1f2937 !important;
+}
+
+body.theme-dark .projects-table td,
+body.theme-dark .projects-table th {
+    border-color: #334155 !important;
+}
+
+body.theme-dark .status-badge.pending {
+    background: #7c2d12 !important;
+    color: #fdba74 !important;
+}
+
+body.theme-dark .status-badge.approved,
+body.theme-dark .status-badge.completed {
+    background: #064e3b !important;
+    color: #86efac !important;
+}
+
+body.theme-dark .status-badge.cancelled {
+    background: #7f1d1d !important;
+    color: #fecaca !important;
+}
+
+body.theme-dark .user-feedback-form #removePhotoBtn,
+body.theme-dark .user-feedback-form #mapSearchBtn,
+body.theme-dark .user-feedback-form #gpsPinBtn,
+body.theme-dark .user-feedback-form #improveAccuracyBtn,
+body.theme-dark .user-feedback-form #streetViewBtn,
+body.theme-dark .feedback-submit-row .ac-f84d9680 {
+    background: linear-gradient(135deg, #1d4ed8, #1e3a8a) !important;
+    border-color: #3b82f6 !important;
+    color: #ffffff !important;
+}
+
+body.theme-dark .user-feedback-form #removePhotoBtn:hover,
+body.theme-dark .user-feedback-form #mapSearchBtn:hover,
+body.theme-dark .user-feedback-form #gpsPinBtn:hover,
+body.theme-dark .user-feedback-form #improveAccuracyBtn:hover,
+body.theme-dark .user-feedback-form #streetViewBtn:hover,
+body.theme-dark .feedback-submit-row .ac-f84d9680:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af) !important;
+}
+
+body.theme-dark .user-feedback-form fieldset[disabled] {
+    opacity: 0.82;
+}
+
+body.theme-dark .user-feedback-form #concernMap,
+body.theme-dark .user-feedback-form #streetViewFrame {
+    border-color: #475569 !important;
+    background: #020617 !important;
+}
+
+body.theme-dark .avatar-crop-dialog {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+}
+
+body.theme-dark .avatar-crop-header,
+body.theme-dark .avatar-crop-body,
+body.theme-dark .avatar-crop-actions {
+    background: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-color: #334155 !important;
+}
+
+body.theme-dark .admin-notif-panel {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+}
+
+body.theme-dark .admin-notif-item {
+    background: #111827 !important;
+    border-color: #334155 !important;
+}
+
+body.theme-dark .admin-notif-item.unread {
+    background: #172554 !important;
+    border-color: #3b82f6 !important;
+}
+
+body.theme-dark .admin-notif-head strong,
+body.theme-dark .admin-notif-item strong {
+    color: #e2e8f0 !important;
+}
+
+body.theme-dark .admin-notif-item small,
+body.theme-dark .admin-notif-item em {
+    color: #cbd5e1 !important;
+}
+
+body.theme-dark .admin-notif-head button {
+    background: #1e293b !important;
+    border-color: #475569 !important;
+    color: #cfe3ff !important;
 }
 
 

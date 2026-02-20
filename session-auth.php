@@ -17,6 +17,173 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Session timeout configuration (30 minutes of inactivity)
 define('SESSION_TIMEOUT', 30 * 60); // 30 minutes in seconds
+define('REMEMBER_DEVICE_DAYS', 10);
+define('REMEMBER_COOKIE_NAME', 'lgu_remember_device');
+
+function set_auth_cookie(string $name, string $value, int $expiresAt): void
+{
+    setcookie($name, $value, [
+        'expires' => $expiresAt,
+        'path' => '/',
+        'secure' => false,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+}
+
+function clear_remember_device_cookie(): void
+{
+    if (!empty($_COOKIE[REMEMBER_COOKIE_NAME])) {
+        set_auth_cookie(REMEMBER_COOKIE_NAME, '', time() - 3600);
+        unset($_COOKIE[REMEMBER_COOKIE_NAME]);
+    }
+}
+
+function ensure_remember_device_table(): void
+{
+    global $db;
+    if (!isset($db) || !($db instanceof mysqli)) {
+        return;
+    }
+
+    $db->query("CREATE TABLE IF NOT EXISTS user_remember_tokens (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        selector VARCHAR(24) NOT NULL UNIQUE,
+        token_hash CHAR(64) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_used_at TIMESTAMP NULL DEFAULT NULL,
+        INDEX idx_user_expires (user_id, expires_at),
+        CONSTRAINT fk_user_remember_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )");
+}
+
+function remember_user_device(int $userId, int $days = REMEMBER_DEVICE_DAYS): bool
+{
+    global $db;
+    if (!isset($db) || !($db instanceof mysqli) || $userId <= 0) {
+        return false;
+    }
+
+    ensure_remember_device_table();
+
+    $selector = bin2hex(random_bytes(6));
+    $validator = bin2hex(random_bytes(32));
+    $tokenHash = hash('sha256', $validator);
+    $expiresAt = time() + ($days * 86400);
+    $expiresSql = date('Y-m-d H:i:s', $expiresAt);
+
+    $stmt = $db->prepare("INSERT INTO user_remember_tokens (user_id, selector, token_hash, expires_at) VALUES (?, ?, ?, ?)");
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('isss', $userId, $selector, $tokenHash, $expiresSql);
+    $ok = $stmt->execute();
+    $stmt->close();
+    if (!$ok) {
+        return false;
+    }
+
+    set_auth_cookie(REMEMBER_COOKIE_NAME, $selector . ':' . $validator, $expiresAt);
+    $_SESSION['remember_until'] = $expiresAt;
+    return true;
+}
+
+function clear_remember_device_token_for_current_user(): void
+{
+    global $db;
+    if (!isset($db) || !($db instanceof mysqli)) {
+        clear_remember_device_cookie();
+        return;
+    }
+
+    ensure_remember_device_table();
+
+    if (!empty($_COOKIE[REMEMBER_COOKIE_NAME])) {
+        $parts = explode(':', (string) $_COOKIE[REMEMBER_COOKIE_NAME], 2);
+        $selector = $parts[0] ?? '';
+        if ($selector !== '') {
+            $stmt = $db->prepare("DELETE FROM user_remember_tokens WHERE selector = ?");
+            if ($stmt) {
+                $stmt->bind_param('s', $selector);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+    }
+
+    clear_remember_device_cookie();
+}
+
+function try_auto_login_from_remember_cookie(): bool
+{
+    global $db;
+    if (isset($_SESSION['user_id']) || empty($_COOKIE[REMEMBER_COOKIE_NAME])) {
+        return false;
+    }
+    if (!isset($db) || !($db instanceof mysqli)) {
+        return false;
+    }
+
+    $parts = explode(':', (string) $_COOKIE[REMEMBER_COOKIE_NAME], 2);
+    $selector = $parts[0] ?? '';
+    $validator = $parts[1] ?? '';
+    if ($selector === '' || $validator === '') {
+        clear_remember_device_cookie();
+        return false;
+    }
+
+    ensure_remember_device_table();
+
+    $stmt = $db->prepare("SELECT t.user_id, t.token_hash, t.expires_at, u.first_name, u.last_name
+                          FROM user_remember_tokens t
+                          JOIN users u ON u.id = t.user_id
+                          WHERE t.selector = ?
+                          LIMIT 1");
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $selector);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    if (!$row) {
+        clear_remember_device_cookie();
+        return false;
+    }
+
+    $expiresTs = strtotime((string) $row['expires_at']);
+    $validHash = hash_equals((string) $row['token_hash'], hash('sha256', $validator));
+    if ($expiresTs === false || $expiresTs < time() || !$validHash) {
+        $stmt = $db->prepare("DELETE FROM user_remember_tokens WHERE selector = ?");
+        if ($stmt) {
+            $stmt->bind_param('s', $selector);
+            $stmt->execute();
+            $stmt->close();
+        }
+        clear_remember_device_cookie();
+        return false;
+    }
+
+    session_regenerate_id(true);
+    $_SESSION['user_id'] = (int) $row['user_id'];
+    $_SESSION['user_name'] = trim((string) (($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')));
+    $_SESSION['user_type'] = 'citizen';
+    $_SESSION['last_activity'] = time();
+    $_SESSION['login_time'] = time();
+    $_SESSION['remember_until'] = $expiresTs;
+
+    $update = $db->prepare("UPDATE user_remember_tokens SET last_used_at = NOW() WHERE selector = ?");
+    if ($update) {
+        $update->bind_param('s', $selector);
+        $update->execute();
+        $update->close();
+    }
+    return true;
+}
 
 /**
  * Check if user is authenticated
@@ -25,11 +192,25 @@ define('SESSION_TIMEOUT', 30 * 60); // 30 minutes in seconds
 function check_auth() {
     // Check if session has a user_id (for citizen) or employee_id (for admin/employee)
     if (!isset($_SESSION['user_id']) && !isset($_SESSION['employee_id'])) {
+        try_auto_login_from_remember_cookie();
+    }
+
+    if (!isset($_SESSION['user_id']) && !isset($_SESSION['employee_id'])) {
         header('Location: ' . get_login_url());
         exit();
     }
+
+    if (isset($_SESSION['user_id'], $_SESSION['remember_until'])) {
+        if (time() > (int) $_SESSION['remember_until']) {
+            clear_remember_device_token_for_current_user();
+            destroy_session();
+            header('Location: ' . get_login_url() . '?expired=1');
+            exit();
+        }
+    }
+
     // Session timeout
-    if (isset($_SESSION['last_activity'])) {
+    if (!isset($_SESSION['remember_until']) && isset($_SESSION['last_activity'])) {
         $idle_time = time() - $_SESSION['last_activity'];
         if ($idle_time > SESSION_TIMEOUT) {
             destroy_session();
@@ -74,6 +255,8 @@ function get_login_url() {
  * Destroy session completely
  */
 function destroy_session() {
+    clear_remember_device_token_for_current_user();
+
     // Clear all session variables
     $_SESSION = array();
     

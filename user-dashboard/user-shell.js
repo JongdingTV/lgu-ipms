@@ -217,10 +217,22 @@
             '    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>' +
             '    <span class="admin-utility-label" id="userCalendarLabel">Calendar</span>' +
             '  </button>' +
+            '  <button type="button" class="admin-utility-btn" id="userNotifBtn" aria-expanded="false" aria-controls="userNotifPanel" title="Notifications">' +
+            '    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path><path d="M9 17a3 3 0 0 0 6 0"></path></svg>' +
+            '    <span class="admin-utility-label">Alerts</span>' +
+            '    <span class="admin-utility-badge" id="userNotifCount">0</span>' +
+            '  </button>' +
             '  <button type="button" class="admin-utility-btn" id="userThemeBtn" title="Toggle dark mode">' +
             '    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>' +
             '    <span class="admin-utility-label" id="userThemeLabel">Dark</span>' +
             '  </button>' +
+            '</div>' +
+            '<div class="admin-notif-panel" id="userNotifPanel" hidden>' +
+            '  <div class="admin-notif-head">' +
+            '    <strong>Notifications</strong>' +
+            '    <button type="button" id="userNotifMarkRead">Mark all read</button>' +
+            '  </div>' +
+            '  <ul class="admin-notif-list" id="userNotifList"></ul>' +
             '</div>' +
             '<div class="admin-calendar-panel" id="userCalendarPanel" hidden>' +
             '  <div class="admin-calendar-head">' +
@@ -258,9 +270,15 @@
         var calPrev = document.getElementById('userCalPrev');
         var calNext = document.getElementById('userCalNext');
         var calToday = document.getElementById('userCalToday');
+        var notifBtn = document.getElementById('userNotifBtn');
+        var notifPanel = document.getElementById('userNotifPanel');
+        var notifList = document.getElementById('userNotifList');
+        var notifCount = document.getElementById('userNotifCount');
+        var notifMarkRead = document.getElementById('userNotifMarkRead');
         var themeBtn = document.getElementById('userThemeBtn');
         var themeLabel = document.getElementById('userThemeLabel');
         var topMenuBtn = document.getElementById('userTopMenuBtn');
+        var userNotifSeenKey = 'ipms_user_notifications_seen_id';
 
         var isDarkTheme = body.classList.contains('theme-dark');
         if (themeLabel) {
@@ -316,12 +334,105 @@
         setInterval(clockTick, 1000);
         renderCalendar();
 
+        var userNotifications = [];
+        var latestUserNotificationId = 0;
+
+        function getSeenNotifId() {
+            return Number(window.localStorage.getItem(userNotifSeenKey) || 0) || 0;
+        }
+
+        function setSeenNotifId(id) {
+            window.localStorage.setItem(userNotifSeenKey, String(Number(id) || 0));
+        }
+
+        function relativeTime(value) {
+            if (!value) return '';
+            var ts = new Date(value);
+            if (Number.isNaN(ts.getTime())) return '';
+            var secs = Math.floor((Date.now() - ts.getTime()) / 1000);
+            if (secs < 60) return 'just now';
+            var mins = Math.floor(secs / 60);
+            if (mins < 60) return mins + 'm ago';
+            var hrs = Math.floor(mins / 60);
+            if (hrs < 24) return hrs + 'h ago';
+            var days = Math.floor(hrs / 24);
+            return days + 'd ago';
+        }
+
+        function renderUserNotifications() {
+            if (!notifList || !notifCount) return;
+            var seenId = getSeenNotifId();
+            var unreadCount = userNotifications.filter(function (item) { return Number(item.id) > seenId; }).length;
+
+            notifList.innerHTML = userNotifications.map(function (item) {
+                var unread = Number(item.id) > seenId;
+                return '' +
+                    '<li class="admin-notif-item is-' + (item.level || 'info') + (unread ? ' unread' : '') + '">' +
+                    '  <span class="dot"></span>' +
+                    '  <span>' +
+                    '    <strong>' + (item.title || 'Update') + '</strong>' +
+                    '    <small>' + (item.message || '') + '</small>' +
+                    '    <em>' + relativeTime(item.created_at) + '</em>' +
+                    '  </span>' +
+                    '</li>';
+            }).join('');
+
+            notifCount.textContent = String(unreadCount);
+            notifCount.style.display = unreadCount ? 'inline-flex' : 'none';
+        }
+
+        function fetchUserNotifications() {
+            var url = window.getApiUrl ? window.getApiUrl('user-dashboard/user-notifications-api.php') : '/user-dashboard/user-notifications-api.php';
+            fetch(url + '?_=' + Date.now(), { credentials: 'same-origin' })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (!data || data.success !== true) return;
+                    userNotifications = Array.isArray(data.items) ? data.items : [];
+                    latestUserNotificationId = Number(data.latest_id || 0) || 0;
+                    if (!userNotifications.length) {
+                        userNotifications = [{ id: 0, level: 'info', title: 'No new updates', message: 'No project updates at the moment.', created_at: null }];
+                    }
+                    renderUserNotifications();
+                })
+                .catch(function () {
+                    userNotifications = [{ id: 0, level: 'danger', title: 'Notifications unavailable', message: 'Unable to load updates right now.', created_at: null }];
+                    renderUserNotifications();
+                });
+        }
+
+        fetchUserNotifications();
+        window.setInterval(fetchUserNotifications, 30000);
+
         if (calendarBtn && calendarPanel) {
             calendarBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 var willOpen = calendarPanel.hasAttribute('hidden');
                 calendarPanel.toggleAttribute('hidden', !willOpen);
                 calendarBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+                if (willOpen && notifPanel) {
+                    notifPanel.setAttribute('hidden', 'hidden');
+                    if (notifBtn) notifBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
+        if (notifBtn && notifPanel) {
+            notifBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                var willOpen = notifPanel.hasAttribute('hidden');
+                notifPanel.toggleAttribute('hidden', !willOpen);
+                notifBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+                if (willOpen && calendarPanel) {
+                    calendarPanel.setAttribute('hidden', 'hidden');
+                    if (calendarBtn) calendarBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
+        if (notifMarkRead) {
+            notifMarkRead.addEventListener('click', function () {
+                setSeenNotifId(latestUserNotificationId);
+                renderUserNotifications();
             });
         }
 
@@ -365,9 +476,15 @@
         }
 
         document.addEventListener('click', function (e) {
-            if (!util.contains(e.target) && calendarPanel && !calendarPanel.hasAttribute('hidden')) {
-                calendarPanel.setAttribute('hidden', 'hidden');
-                if (calendarBtn) calendarBtn.setAttribute('aria-expanded', 'false');
+            if (!util.contains(e.target)) {
+                if (calendarPanel && !calendarPanel.hasAttribute('hidden')) {
+                    calendarPanel.setAttribute('hidden', 'hidden');
+                    if (calendarBtn) calendarBtn.setAttribute('aria-expanded', 'false');
+                }
+                if (notifPanel && !notifPanel.hasAttribute('hidden')) {
+                    notifPanel.setAttribute('hidden', 'hidden');
+                    if (notifBtn) notifBtn.setAttribute('aria-expanded', 'false');
+                }
             }
         });
     }
