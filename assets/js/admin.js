@@ -1105,7 +1105,6 @@ function renderProjects() {
 
   <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 0.85rem; color: #9ca3af;">
     <strong>Description:</strong> ${p.description || 'No description available'}
-    ${p.project_manager ? '<br><strong>Manager:</strong> ' + p.project_manager : ''}
   </div>
 </div>`;
     }).join('');
@@ -1667,7 +1666,6 @@ function editProject(index) {
     document.getElementById('endDate').value = project.end_date;
     document.getElementById('projDuration').value = project.duration_months;
     document.getElementById('projBudget').value = project.budget;
-    document.getElementById('projManager').value = project.project_manager;
     document.getElementById('status').value = project.status;
 
     const submitBtn = document.getElementById('submitBtn');
@@ -1734,8 +1732,19 @@ document.getElementById('projectForm').addEventListener('submit', function(e) {
     formData.append('end_date', document.getElementById('endDate').value);
     formData.append('duration_months', document.getElementById('projDuration').value);
     formData.append('budget', document.getElementById('projBudget').value);
-    formData.append('project_manager', document.getElementById('projManager').value);
     formData.append('status', document.getElementById('status').value);
+    const licenseFile = document.getElementById('engineerLicenseDoc');
+    const certificationFile = document.getElementById('engineerCertificationDoc');
+    const credentialsFile = document.getElementById('engineerCredentialsDoc');
+    if (licenseFile && licenseFile.files && licenseFile.files[0]) {
+        formData.append('engineer_license_doc', licenseFile.files[0]);
+    }
+    if (certificationFile && certificationFile.files && certificationFile.files[0]) {
+        formData.append('engineer_certification_doc', certificationFile.files[0]);
+    }
+    if (credentialsFile && credentialsFile.files && credentialsFile.files[0]) {
+        formData.append('engineer_credentials_doc', credentialsFile.files[0]);
+    }
     
     if (editingIndex >= 0) {
         formData.append('id', projects[editingIndex].id);
@@ -3395,7 +3404,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             document.getElementById('endDate').value = project.end_date || '';
                             document.getElementById('projDuration').value = project.duration_months || '';
                             document.getElementById('projBudget').value = project.budget || '';
-                            document.getElementById('projManager').value = project.project_manager || '';
                             document.getElementById('status').value = project.status || 'Draft';
                             form.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             editProjectId = id;
@@ -3423,8 +3431,19 @@ document.addEventListener('DOMContentLoaded', function() {
             fd.set('end_date', document.getElementById('endDate').value);
             fd.set('duration_months', document.getElementById('projDuration').value);
             fd.set('budget', document.getElementById('projBudget').value);
-            fd.set('project_manager', document.getElementById('projManager').value);
             fd.set('status', document.getElementById('status').value);
+            const licenseFile = document.getElementById('engineerLicenseDoc');
+            const certificationFile = document.getElementById('engineerCertificationDoc');
+            const credentialsFile = document.getElementById('engineerCredentialsDoc');
+            if (licenseFile && licenseFile.files && licenseFile.files[0]) {
+                fd.set('engineer_license_doc', licenseFile.files[0]);
+            }
+            if (certificationFile && certificationFile.files && certificationFile.files[0]) {
+                fd.set('engineer_certification_doc', certificationFile.files[0]);
+            }
+            if (credentialsFile && credentialsFile.files && credentialsFile.files[0]) {
+                fd.set('engineer_credentials_doc', credentialsFile.files[0]);
+            }
             if (editProjectId) {
                 fd.set('id', editProjectId);
             }
@@ -4343,6 +4362,7 @@ document.addEventListener('click', function (event) {
     renderEmptyStates();
   });
 })();
+
 
 
 

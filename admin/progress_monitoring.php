@@ -45,6 +45,27 @@ function progress_projects_has_created_at(mysqli $db): bool
     return $exists;
 }
 
+function progress_table_exists(mysqli $db, string $tableName): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $tableName);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) $result->free();
+    $stmt->close();
+    return $exists;
+}
+
 // Handle API requests first (before rendering HTML)
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
@@ -63,7 +84,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $hasCreatedAt = progress_projects_has_created_at($db);
     $selectCreatedAt = $hasCreatedAt ? ", created_at" : "";
     $orderBy = $hasCreatedAt ? "created_at DESC" : "id DESC";
-    $result = $db->query("SELECT id, code, name, description, location, province, sector, budget, status, project_manager, start_date, end_date, duration_months{$selectCreatedAt} FROM projects ORDER BY {$orderBy} LIMIT 500");
+    $result = $db->query("SELECT id, code, name, description, location, province, sector, budget, status, priority, priority_percent, start_date, end_date, duration_months{$selectCreatedAt} FROM projects ORDER BY {$orderBy} LIMIT 500");
+    $hasTaskTable = progress_table_exists($db, 'project_tasks');
+    $hasMilestoneTable = progress_table_exists($db, 'project_milestones');
     
     $projects = [];
     
@@ -92,6 +115,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             }
             
             $row['assigned_contractors'] = $Engineers;
+            $row['task_summary'] = [
+                'total' => 0,
+                'completed' => 0,
+                'planned' => 0,
+                'actual' => 0
+            ];
+            $row['milestone_summary'] = [
+                'total' => 0,
+                'completed' => 0,
+                'planned' => 0,
+                'actual' => 0
+            ];
+
+            if ($hasTaskTable) {
+                $taskSql = "SELECT COUNT(*) AS total, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS completed, SUM(CASE WHEN planned_start IS NOT NULL OR planned_end IS NOT NULL THEN 1 ELSE 0 END) AS planned, SUM(CASE WHEN actual_start IS NOT NULL OR actual_end IS NOT NULL THEN 1 ELSE 0 END) AS actual FROM project_tasks WHERE project_id = " . intval($row['id']);
+                $taskRes = $db->query($taskSql);
+                if ($taskRes) {
+                    $taskStats = $taskRes->fetch_assoc();
+                    $taskRes->free();
+                    if ($taskStats) {
+                        $row['task_summary'] = [
+                            'total' => (int) ($taskStats['total'] ?? 0),
+                            'completed' => (int) ($taskStats['completed'] ?? 0),
+                            'planned' => (int) ($taskStats['planned'] ?? 0),
+                            'actual' => (int) ($taskStats['actual'] ?? 0)
+                        ];
+                    }
+                }
+            }
+            if ($hasMilestoneTable) {
+                $mileSql = "SELECT COUNT(*) AS total, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS completed, SUM(CASE WHEN planned_date IS NOT NULL THEN 1 ELSE 0 END) AS planned, SUM(CASE WHEN actual_date IS NOT NULL THEN 1 ELSE 0 END) AS actual FROM project_milestones WHERE project_id = " . intval($row['id']);
+                $mileRes = $db->query($mileSql);
+                if ($mileRes) {
+                    $mileStats = $mileRes->fetch_assoc();
+                    $mileRes->free();
+                    if ($mileStats) {
+                        $row['milestone_summary'] = [
+                            'total' => (int) ($mileStats['total'] ?? 0),
+                            'completed' => (int) ($mileStats['completed'] ?? 0),
+                            'planned' => (int) ($mileStats['planned'] ?? 0),
+                            'actual' => (int) ($mileStats['actual'] ?? 0)
+                        ];
+                    }
+                }
+            }
             $projects[] = $row;
         }
         $result->free();
@@ -123,6 +191,7 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/table-redesign-base.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+        <link rel="stylesheet" href="../assets/css/admin-progress-monitoring.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-progress-monitoring.css'); ?>">
     </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -341,560 +410,14 @@ $db->close();
         </div>
     </section>
 
-    <style>
-        .main-content .dash-header {
-            background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.18), rgba(14, 116, 144, 0) 44%), linear-gradient(145deg, #ffffff, #f7fbff);
-            border: 1px solid #d9e7f7;
-            border-radius: 16px;
-            padding: 18px 22px;
-            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
-            margin-bottom: 14px;
-        }
-
-        .main-content .dash-header h1 {
-            margin: 0 0 4px;
-            color: #12355b;
-            font-size: 1.85rem;
-            letter-spacing: 0.2px;
-        }
-
-        .main-content .dash-header p {
-            margin: 0;
-            color: #4d6480;
-            font-weight: 500;
-        }
-
-        .main-content .pm-section.card {
-            border-radius: 16px;
-            border: 1px solid #d8e6f4;
-            background: linear-gradient(165deg, #ffffff 0%, #f8fbff 72%);
-            box-shadow: 0 18px 34px rgba(15, 23, 42, 0.1);
-            padding: 16px;
-        }
-
-        .main-content .pm-stats-wrapper {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(140px, 1fr));
-            gap: 12px;
-            margin-bottom: 14px;
-        }
-
-        .main-content .stat-box {
-            border-radius: 14px;
-            border: 1px solid #dae6f5;
-            background: #ffffff;
-            min-height: 88px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 14px 12px;
-            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.07);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .main-content .stat-box::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 3px;
-            width: 100%;
-            background: #3b82f6;
-            opacity: 0.85;
-        }
-
-        .main-content .stat-box.stat-total::before { background: #2563eb; }
-        .main-content .stat-box.stat-approved::before { background: #16a34a; }
-        .main-content .stat-box.stat-progress::before { background: #f59e0b; }
-        .main-content .stat-box.stat-completed::before { background: #0ea5e9; }
-        .main-content .stat-box.stat-contractors::before { background: #7c3aed; }
-
-        .main-content .stat-number {
-            font-size: 1.7rem;
-            line-height: 1;
-            font-weight: 700;
-            color: #12355b;
-            margin-bottom: 6px;
-        }
-
-        .main-content .stat-label {
-            font-size: 0.8rem;
-            color: #5a728f;
-            font-weight: 600;
-            letter-spacing: 0.35px;
-            text-transform: uppercase;
-        }
-
-        .main-content .pm-controls-wrapper {
-            position: sticky;
-            top: 10px;
-            z-index: 20;
-            background: rgba(248, 251, 255, 0.92);
-            backdrop-filter: blur(4px);
-            border: 1px solid #dce8f6;
-            border-radius: 14px;
-            padding: 12px;
-            margin-bottom: 14px;
-            overflow: hidden;
-        }
-
-        .main-content .pm-controls {
-            display: grid;
-            gap: 12px;
-            min-width: 0;
-        }
-
-        .main-content .pm-top-row {
-            display: grid;
-            grid-template-columns: minmax(260px, 1fr) auto;
-            gap: 10px;
-            align-items: end;
-            min-width: 0;
-        }
-
-        .main-content .pm-left {
-            min-width: 0;
-        }
-
-        .main-content .pm-right {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(130px, 1fr));
-            gap: 10px;
-            align-items: end;
-            min-width: 0;
-        }
-
-        .main-content .filter-group {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        .main-content .pm-bottom-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .main-content .pm-quick-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .main-content .pm-quick-filters button {
-            border: 1px solid #c8d9ec;
-            background: #fff;
-            color: #355678;
-            border-radius: 999px;
-            padding: 6px 12px;
-            font-size: 0.74rem;
-            font-weight: 700;
-            letter-spacing: 0.2px;
-            transition: all 0.18s ease;
-        }
-
-        .main-content .pm-quick-filters button:hover {
-            border-color: #93b8e1;
-            background: #eef5ff;
-            color: #1d4f86;
-        }
-
-        .main-content .pm-quick-filters button.active {
-            background: linear-gradient(135deg, #1d4ed8, #1e40af);
-            border-color: #1e40af;
-            color: #fff;
-            box-shadow: 0 8px 16px rgba(29, 78, 216, 0.24);
-        }
-
-        .main-content .pm-utility-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-left: auto;
-        }
-
-        .main-content .pm-result-summary {
-            color: #516f90;
-            font-size: 0.82rem;
-            font-weight: 600;
-        }
-
-        .main-content .btn-clear-filters {
-            border: 1px solid #cfdced;
-            background: #fff;
-            color: #365679;
-            border-radius: 9px;
-            min-height: 36px;
-            padding: 0 12px;
-            font-weight: 700;
-        }
-
-        .main-content .btn-clear-filters:hover {
-            border-color: #98b9dd;
-            background: #eef5ff;
-            color: #214c7d;
-        }
-
-        .main-content .pm-left label,
-        .main-content .filter-group label {
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.55px;
-            color: #5f7691;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .main-content .pm-left input,
-        .main-content .pm-controls select {
-            width: 100%;
-            border: 1px solid #cddced;
-            background: #fff;
-            border-radius: 10px;
-            color: #1f3858;
-            min-height: 38px;
-            padding: 0 12px;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-        }
-
-        .main-content .pm-left input:focus,
-        .main-content .pm-controls select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
-        }
-
-        .main-content .btn-export {
-            align-self: end;
-            min-height: 38px;
-            padding: 0 16px;
-            border: 1px solid #1d4ed8;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: #fff;
-            border-radius: 10px;
-            font-weight: 700;
-            letter-spacing: 0.2px;
-            white-space: nowrap;
-            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
-            width: auto;
-        }
-
-        .main-content .btn-export:hover {
-            background: linear-gradient(135deg, #1d4ed8, #1e40af);
-            box-shadow: 0 12px 22px rgba(29, 78, 216, 0.28);
-            transform: translateY(-1px);
-        }
-
-        .main-content .pm-content h3 {
-            margin: 2px 0 12px;
-            color: #1d3654;
-            font-size: 1.02rem;
-            letter-spacing: 0.2px;
-        }
-
-        .main-content .projects-list {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
-        }
-
-        .main-content .project-card {
-            border: 1px solid #d8e5f4;
-            border-radius: 16px;
-            background: linear-gradient(165deg, #ffffff, #f7fbff);
-            padding: 14px 14px 12px;
-            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-
-        .main-content .project-card:hover {
-            transform: translateY(-2px);
-            border-color: #8bb8e5;
-            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14);
-        }
-
-        .main-content .project-card.risk-critical { border-left: 5px solid #dc2626; }
-        .main-content .project-card.risk-high { border-left: 5px solid #f97316; }
-        .main-content .project-card.risk-medium { border-left: 5px solid #f59e0b; }
-        .main-content .project-card.risk-low { border-left: 5px solid #16a34a; }
-
-        .main-content .project-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-
-        .main-content .project-title-section {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 6px;
-            min-width: 0;
-        }
-
-        .main-content .project-code-badge {
-            display: inline-flex;
-            align-items: center;
-            border: 1px solid #c6dbf1;
-            border-radius: 999px;
-            padding: 2px 8px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.25px;
-            color: #355c86;
-            background: #edf5ff;
-            margin-bottom: 6px;
-        }
-
-        .main-content .project-title-section h4 {
-            color: #14385c;
-            margin: 0;
-            font-size: 1.2rem;
-            line-height: 1.15;
-        }
-
-        .main-content .project-description {
-            margin: 8px 0 12px;
-            color: #516783;
-            font-size: 0.86rem;
-            line-height: 1.45;
-            min-height: 38px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .main-content .project-meta {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8px 12px;
-        }
-
-        .main-content .project-meta-item {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            background: rgba(237, 245, 255, 0.45);
-            border: 1px solid #d8e7f8;
-            border-radius: 10px;
-            padding: 8px 10px;
-        }
-
-        .main-content .project-meta-label {
-            font-size: 0.68rem;
-            letter-spacing: 0.45px;
-            text-transform: uppercase;
-            color: #6a819d;
-            font-weight: 700;
-        }
-
-        .main-content .project-meta-value {
-            color: #1f3f65;
-            font-weight: 600;
-            line-height: 1.25;
-        }
-
-        .main-content .project-status {
-            border-radius: 999px;
-            padding: 5px 11px;
-            font-weight: 700;
-            font-size: 0.72rem;
-            border: 1px solid #c8d7ea;
-            background: #f8fbff;
-            color: #29496d;
-            white-space: nowrap;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .main-content .project-status.draft {
-            background: #eef2f7;
-            border-color: #d4dee9;
-            color: #4a5d75;
-        }
-
-        .main-content .project-status.for-approval {
-            background: #fff7e6;
-            border-color: #f5d28a;
-            color: #8a5a08;
-        }
-
-        .main-content .project-status.approved {
-            background: #e9f8ef;
-            border-color: #9edbb6;
-            color: #136b3a;
-        }
-
-        .main-content .project-status.on-hold {
-            background: #fff1f2;
-            border-color: #f7b4be;
-            color: #9f1239;
-        }
-
-        .main-content .project-status.cancelled {
-            background: #f3f4f6;
-            border-color: #d2d6dc;
-            color: #4b5563;
-        }
-
-        .main-content .project-status.completed {
-            background: #e8f4ff;
-            border-color: #9bc8f6;
-            color: #0b4c8c;
-        }
-
-        .main-content .progress-container {
-            margin-top: 12px;
-            border: 1px solid #e0eaf5;
-            background: #fbfdff;
-            border-radius: 11px;
-            padding: 10px;
-        }
-
-        .main-content .progress-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-            color: #3f5f83;
-            font-size: 0.82rem;
-        }
-
-        .main-content .progress-bar {
-            background: #e6eef8;
-            border-radius: 999px;
-            height: 8px;
-        }
-
-        .main-content .progress-fill {
-            border-radius: 999px;
-            background: linear-gradient(90deg, #22c55e 0%, #3b82f6 55%, #2563eb 100%);
-        }
-
-        .main-content .project-click-hint {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed #d8e6f4;
-            color: #5b7697;
-            font-size: 0.82rem;
-            font-weight: 600;
-        }
-
-        .main-content .contractors-section {
-            margin-top: 10px;
-            border-top: 1px dashed #d7e5f4;
-            padding-top: 10px;
-        }
-
-        .main-content .contractors-title {
-            color: #36597f;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .main-content .pm-empty .empty-state {
-            border: 1px dashed #c7d9ee;
-            background: #f7fbff;
-            border-radius: 12px;
-            min-height: 170px;
-        }
-
-        .main-content .pm-empty .empty-icon {
-            width: 84px;
-            height: 84px;
-            border-radius: 999px;
-            border: 1px solid #cfe0f4;
-            background: #fff;
-            color: #5a7697;
-            font-size: 0.9rem;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-
-        @media (max-width: 1240px) {
-            .main-content .pm-stats-wrapper {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-            }
-
-            .main-content .pm-right {
-                grid-template-columns: repeat(3, minmax(150px, 1fr));
-            }
-
-            .main-content .projects-list {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 860px) {
-            .main-content .pm-stats-wrapper {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .main-content .pm-top-row {
-                grid-template-columns: 1fr;
-            }
-
-            .main-content .pm-right {
-                grid-template-columns: repeat(2, minmax(140px, 1fr));
-            }
-
-            .main-content .pm-bottom-row {
-                align-items: flex-start;
-            }
-
-            .main-content .pm-utility-row {
-                margin-left: 0;
-            }
-
-            .main-content .pm-controls-wrapper {
-                position: static;
-            }
-        }
-
-        @media (max-width: 620px) {
-            .main-content .pm-stats-wrapper {
-                grid-template-columns: 1fr;
-            }
-
-            .main-content .pm-right {
-                grid-template-columns: 1fr;
-            }
-
-            .main-content .pm-bottom-row,
-            .main-content .pm-utility-row {
-                width: 100%;
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .main-content .project-meta {
-                grid-template-columns: 1fr;
-            }
-
-            .main-content .btn-export {
-                width: 100%;
-            }
-
-            .main-content .btn-clear-filters {
-                width: 100%;
-            }
-        }
-    </style>
+    
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
+
 
 
 

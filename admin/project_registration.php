@@ -4,6 +4,7 @@ require dirname(__DIR__) . '/session-auth.php';
 // Database connection
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
+require dirname(__DIR__) . '/config/app.php';
 
 // Protect page
 set_no_cache_headers();
@@ -43,6 +44,10 @@ function project_has_column(mysqli $db, string $columnName): bool
 }
 
 $projectsHasCreatedAt = project_has_column($db, 'created_at');
+$projectsHasPriorityPercent = project_has_column($db, 'priority_percent');
+$projectsHasLicenseDoc = project_has_column($db, 'engineer_license_doc');
+$projectsHasCertificationDoc = project_has_column($db, 'engineer_certification_doc');
+$projectsHasCredentialsDoc = project_has_column($db, 'engineer_credentials_doc');
 
 function build_db_debug_error(mysqli $db, string $context, string $stmtError = ''): string
 {
@@ -84,6 +89,75 @@ function respond_project_registration(bool $success, string $message, array $ext
     exit;
 }
 
+function sanitize_relative_upload_path(string $path): string
+{
+    return ltrim(str_replace(['..\\', '../', '\\'], ['', '', '/'], $path), '/');
+}
+
+function handle_engineer_doc_upload(string $field, string $prefix): ?string
+{
+    if (!isset($_FILES[$field]) || !is_array($_FILES[$field])) {
+        return null;
+    }
+    $upload = $_FILES[$field];
+    $error = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($error === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    if ($error !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Failed uploading ' . $prefix . ' document.');
+    }
+
+    $tmpName = (string) ($upload['tmp_name'] ?? '');
+    $original = (string) ($upload['name'] ?? '');
+    $size = (int) ($upload['size'] ?? 0);
+    $ext = strtolower((string) pathinfo($original, PATHINFO_EXTENSION));
+
+    if (!in_array($ext, ENGINEER_DOC_ALLOWED_EXT, true)) {
+        throw new RuntimeException('Invalid file type for ' . $prefix . ' document. Allowed: PDF, JPG, JPEG, PNG.');
+    }
+    if ($size <= 0 || $size > ENGINEER_DOC_MAX_SIZE) {
+        throw new RuntimeException('Invalid file size for ' . $prefix . ' document. Max file size is 5MB.');
+    }
+    if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+        throw new RuntimeException('Invalid upload source for ' . $prefix . ' document.');
+    }
+
+    $dir = rtrim(UPLOADS_PATH, '/\\') . '/engineer-docs';
+    if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+        throw new RuntimeException('Unable to create upload directory for engineer documents.');
+    }
+
+    $name = $prefix . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+    $fullPath = $dir . '/' . $name;
+    if (!move_uploaded_file($tmpName, $fullPath)) {
+        throw new RuntimeException('Unable to save uploaded ' . $prefix . ' document.');
+    }
+
+    return sanitize_relative_upload_path('uploads/engineer-docs/' . $name);
+}
+
+function priority_to_percent(string $priority): float
+{
+    $map = [
+        'crucial' => 100.0,
+        'high' => 75.0,
+        'medium' => 50.0,
+        'low' => 25.0
+    ];
+    $key = strtolower(trim($priority));
+    return $map[$key] ?? 50.0;
+}
+
+function bind_stmt_params(mysqli_stmt $stmt, string $types, array &$params): bool
+{
+    $bindParams = [$types];
+    foreach ($params as $idx => &$value) {
+        $bindParams[] = &$value;
+    }
+    return call_user_func_array([$stmt, 'bind_param'], $bindParams);
+}
+
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     error_reporting(E_ALL);
@@ -100,6 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $sector = isset($_POST['sector']) ? trim($_POST['sector']) : '';
         $description = isset($_POST['description']) ? trim($_POST['description']) : '';
         $priority = isset($_POST['priority']) ? trim($_POST['priority']) : 'Medium';
+        $priorityPercent = priority_to_percent($priority);
         $province = isset($_POST['province']) ? trim($_POST['province']) : '';
         $barangay = isset($_POST['barangay']) ? trim($_POST['barangay']) : '';
         $location = isset($_POST['location']) ? trim($_POST['location']) : '';
@@ -107,37 +182,151 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $end_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
         $duration_months = !empty($_POST['duration_months']) ? (int)$_POST['duration_months'] : null;
         $budget = !empty($_POST['budget']) ? (float)$_POST['budget'] : null;
-        $project_manager = isset($_POST['project_manager']) ? trim($_POST['project_manager']) : '';
         $status = isset($_POST['status']) ? trim($_POST['status']) : 'Draft';
+        
+        if ($budget !== null && $budget > MAX_PROJECT_BUDGET) {
+            respond_project_registration(false, 'Budget exceeds the maximum allowed amount of PHP ' . number_format((float) MAX_PROJECT_BUDGET, 2) . '.');
+        }
+
+        $allowedPriority = ['Crucial', 'High', 'Medium', 'Low'];
+        if (!in_array($priority, $allowedPriority, true)) {
+            $priority = 'Medium';
+            $priorityPercent = 50.0;
+        }
+
+        $licenseDoc = null;
+        $certificationDoc = null;
+        $credentialsDoc = null;
+
+        try {
+            $licenseDoc = handle_engineer_doc_upload('engineer_license_doc', 'license');
+            $certificationDoc = handle_engineer_doc_upload('engineer_certification_doc', 'certification');
+            $credentialsDoc = handle_engineer_doc_upload('engineer_credentials_doc', 'credentials');
+        } catch (RuntimeException $e) {
+            respond_project_registration(false, $e->getMessage());
+        }
         
         if (isset($_POST['id']) && !empty($_POST['id'])) {
             // Update existing project
             $id = (int)$_POST['id'];
-            $stmt = $db->prepare("UPDATE projects SET code=?, name=?, type=?, sector=?, description=?, priority=?, province=?, barangay=?, location=?, start_date=?, end_date=?, duration_months=?, budget=?, project_manager=?, status=? WHERE id=?");
+            $existingLicenseDoc = null;
+            $existingCertificationDoc = null;
+            $existingCredentialsDoc = null;
+            if ($projectsHasLicenseDoc || $projectsHasCertificationDoc || $projectsHasCredentialsDoc) {
+                $cols = ['id'];
+                if ($projectsHasLicenseDoc) $cols[] = 'engineer_license_doc';
+                if ($projectsHasCertificationDoc) $cols[] = 'engineer_certification_doc';
+                if ($projectsHasCredentialsDoc) $cols[] = 'engineer_credentials_doc';
+                $docStmt = $db->prepare('SELECT ' . implode(', ', $cols) . ' FROM projects WHERE id = ? LIMIT 1');
+                if ($docStmt) {
+                    $docStmt->bind_param('i', $id);
+                    $docStmt->execute();
+                    $docRow = $docStmt->get_result()->fetch_assoc();
+                    $docStmt->close();
+                    if ($docRow) {
+                        $existingLicenseDoc = $docRow['engineer_license_doc'] ?? null;
+                        $existingCertificationDoc = $docRow['engineer_certification_doc'] ?? null;
+                        $existingCredentialsDoc = $docRow['engineer_credentials_doc'] ?? null;
+                    }
+                }
+            }
+
+            if ($projectsHasLicenseDoc && $licenseDoc === null) $licenseDoc = $existingLicenseDoc;
+            if ($projectsHasCertificationDoc && $certificationDoc === null) $certificationDoc = $existingCertificationDoc;
+            if ($projectsHasCredentialsDoc && $credentialsDoc === null) $credentialsDoc = $existingCredentialsDoc;
+
+            if (($projectsHasLicenseDoc && !$licenseDoc) || ($projectsHasCertificationDoc && !$certificationDoc) || ($projectsHasCredentialsDoc && !$credentialsDoc)) {
+                respond_project_registration(false, 'All required engineer documents must be uploaded before saving this project.');
+            }
+
+            $sql = "UPDATE projects SET code=?, name=?, type=?, sector=?, description=?, priority=?";
+            $types = 'ssssss';
+            $params = [$code, $name, $type, $sector, $description, $priority];
+            if ($projectsHasPriorityPercent) {
+                $sql .= ", priority_percent=?";
+                $types .= 'd';
+                $params[] = $priorityPercent;
+            }
+            $sql .= ", province=?, barangay=?, location=?, start_date=?, end_date=?, duration_months=?, budget=?, status=?";
+            $types .= 'sssssids';
+            $params = array_merge($params, [$province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $status]);
+
+            if ($projectsHasLicenseDoc) {
+                $sql .= ", engineer_license_doc=?";
+                $types .= 's';
+                $params[] = $licenseDoc;
+            }
+            if ($projectsHasCertificationDoc) {
+                $sql .= ", engineer_certification_doc=?";
+                $types .= 's';
+                $params[] = $certificationDoc;
+            }
+            if ($projectsHasCredentialsDoc) {
+                $sql .= ", engineer_credentials_doc=?";
+                $types .= 's';
+                $params[] = $credentialsDoc;
+            }
+            $sql .= " WHERE id=?";
+            $types .= 'i';
+            $params[] = $id;
+            $stmt = $db->prepare($sql);
             if (!$stmt) {
                 $debugError = build_db_debug_error($db, 'Failed to prepare project update');
                 error_log('[project_registration] ' . $debugError);
                 respond_project_registration(false, $debugError);
             }
-            $stmt->bind_param('sssssssssssidssi', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status, $id);
+            bind_stmt_params($stmt, $types, $params);
         } else {
+            if (($projectsHasLicenseDoc && $licenseDoc === null) || ($projectsHasCertificationDoc && $certificationDoc === null) || ($projectsHasCredentialsDoc && $credentialsDoc === null)) {
+                respond_project_registration(false, 'License, certification, and credentials documents are required before project registration.');
+            }
+
             // Insert new project; support schemas with or without created_at.
+            $columns = ['code', 'name', 'type', 'sector', 'description', 'priority'];
+            $types = 'ssssss';
+            $params = [$code, $name, $type, $sector, $description, $priority];
+            if ($projectsHasPriorityPercent) {
+                $columns[] = 'priority_percent';
+                $types .= 'd';
+                $params[] = $priorityPercent;
+            }
+            $columns = array_merge($columns, ['province', 'barangay', 'location', 'start_date', 'end_date', 'duration_months', 'budget', 'status']);
+            $types .= 'sssssids';
+            $params = array_merge($params, [$province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $status]);
+            if ($projectsHasLicenseDoc) {
+                $columns[] = 'engineer_license_doc';
+                $types .= 's';
+                $params[] = $licenseDoc;
+            }
+            if ($projectsHasCertificationDoc) {
+                $columns[] = 'engineer_certification_doc';
+                $types .= 's';
+                $params[] = $certificationDoc;
+            }
+            if ($projectsHasCredentialsDoc) {
+                $columns[] = 'engineer_credentials_doc';
+                $types .= 's';
+                $params[] = $credentialsDoc;
+            }
+
             if ($projectsHasCreatedAt) {
-                $stmt = $db->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+                $sql = "INSERT INTO projects (" . implode(', ', $columns) . ", created_at) VALUES (" . implode(', ', array_fill(0, count($columns), '?')) . ", NOW())";
+                $stmt = $db->prepare($sql);
                 if (!$stmt) {
                     $debugError = build_db_debug_error($db, 'Failed to prepare project insert (with created_at)');
                     error_log('[project_registration] ' . $debugError);
                     respond_project_registration(false, $debugError);
                 }
-                $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
+                bind_stmt_params($stmt, $types, $params);
             } else {
-                $stmt = $db->prepare("INSERT INTO projects (code, name, type, sector, description, priority, province, barangay, location, start_date, end_date, duration_months, budget, project_manager, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $sql = "INSERT INTO projects (" . implode(', ', $columns) . ") VALUES (" . implode(', ', array_fill(0, count($columns), '?')) . ")";
+                $stmt = $db->prepare($sql);
                 if (!$stmt) {
                     $debugError = build_db_debug_error($db, 'Failed to prepare project insert (without created_at)');
                     error_log('[project_registration] ' . $debugError);
                     respond_project_registration(false, $debugError);
                 }
-                $stmt->bind_param('sssssssssssidss', $code, $name, $type, $sector, $description, $priority, $province, $barangay, $location, $start_date, $end_date, $duration_months, $budget, $project_manager, $status);
+                bind_stmt_params($stmt, $types, $params);
             }
         }
         
@@ -372,8 +561,9 @@ $db->close();
 
                     <label for="projPriority">Priority Level</label>
                     <select id="projPriority" name="priority">
+                        <option>Crucial</option>
                         <option>High</option>
-                        <option>Medium</option>
+                        <option selected>Medium</option>
                         <option>Low</option>
                     </select>
                 </fieldset>
@@ -409,13 +599,19 @@ $db->close();
                     <legend>Budget</legend>
                     <label for="projBudget">Total Estimated Cost</label>
                     <input type="number" id="projBudget" name="budget" min="0" step="0.01" required>
+                    <small>Maximum allowed budget: PHP <?php echo number_format((float) MAX_PROJECT_BUDGET, 2); ?></small>
                 </fieldset>
 
-                <!-- Implementation -->
                 <fieldset>
-                    <legend>Implementation</legend>
-                    <label for="projManager">Project Manager / Engineer In-Charge</label>
-                    <input type="text" id="projManager" name="project_manager" placeholder="Name">
+                    <legend>Engineer Requirements (Required)</legend>
+                    <label for="engineerLicenseDoc">License Document (PDF/JPG/PNG, max 5MB)</label>
+                    <input type="file" id="engineerLicenseDoc" name="engineer_license_doc" accept=".pdf,.jpg,.jpeg,.png">
+
+                    <label for="engineerCertificationDoc">Certification Document (PDF/JPG/PNG, max 5MB)</label>
+                    <input type="file" id="engineerCertificationDoc" name="engineer_certification_doc" accept=".pdf,.jpg,.jpeg,.png">
+
+                    <label for="engineerCredentialsDoc">Other Credentials (PDF/JPG/PNG, max 5MB)</label>
+                    <input type="file" id="engineerCredentialsDoc" name="engineer_credentials_doc" accept=".pdf,.jpg,.jpeg,.png">
                 </fieldset>
 
                 <!-- Status -->
@@ -444,192 +640,13 @@ $db->close();
             <div id="formMessage" class="ac-133c5402"></div>
         </div>
     </section>
-
-    <div id="projectNoticeModal" class="project-notice-modal" aria-hidden="true">
-        <div class="project-notice-card" role="alertdialog" aria-modal="true" aria-labelledby="projectNoticeTitle">
-            <div class="project-notice-head">
-                <div id="projectNoticeIcon" class="project-notice-icon">i</div>
-                <h3 id="projectNoticeTitle">Notice</h3>
-            </div>
-            <p id="projectNoticeText" class="project-notice-text"></p>
-            <div class="project-notice-actions">
-                <button type="button" id="projectNoticeOk" class="btn-primary">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        .project-notice-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 4000;
-            padding: 16px;
-        }
-
-        .project-notice-modal.show {
-            display: flex;
-        }
-
-        .project-notice-card {
-            width: min(96vw, 460px);
-            border-radius: 14px;
-            border: 1px solid #dbe5f1;
-            background: #fff;
-            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.3);
-            padding: 18px;
-        }
-
-        .project-notice-head {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-
-        .project-notice-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 14px;
-            color: #fff;
-            background: #1d4ed8;
-        }
-
-        .project-notice-card.success .project-notice-icon {
-            background: #16a34a;
-        }
-
-        .project-notice-card.error .project-notice-icon {
-            background: #dc2626;
-        }
-
-        .project-notice-head h3 {
-            margin: 0;
-            color: #0f172a;
-            font-size: 1.15rem;
-        }
-
-        .project-notice-text {
-            margin: 0;
-            color: #334155;
-            line-height: 1.45;
-        }
-
-        .project-notice-actions {
-            margin-top: 14px;
-            display: flex;
-            justify-content: flex-end;
-        }
-    </style>
-
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
-    <script>
-    (function () {
-        const params = new URLSearchParams(window.location.search);
-        const saved = params.get('saved');
-        const error = params.get('error');
-        const savedMsg = params.get('msg') || 'Project has been added successfully.';
-        const formMsg = document.getElementById('formMessage');
-        const noticeModal = document.getElementById('projectNoticeModal');
-        const noticeCard = noticeModal ? noticeModal.querySelector('.project-notice-card') : null;
-        const noticeIcon = document.getElementById('projectNoticeIcon');
-        const noticeTitle = document.getElementById('projectNoticeTitle');
-        const noticeText = document.getElementById('projectNoticeText');
-        const noticeOk = document.getElementById('projectNoticeOk');
-
-        function showProjectNotice(message, type) {
-            if (!noticeModal || !noticeCard || !noticeText || !noticeTitle || !noticeIcon) {
-                if (typeof window.showConfirmation === 'function') {
-                    showConfirmation({
-                        title: type === 'success' ? 'Success' : 'Notice',
-                        message: message || '',
-                        icon: type === 'success' ? 'Success' : 'Info',
-                        confirmText: 'OK',
-                        cancelText: 'Close',
-                        onConfirm: function () {},
-                        onCancel: function () {}
-                    });
-                }
-                return;
-            }
-            noticeCard.classList.remove('success', 'error');
-            if (type === 'success') {
-                noticeCard.classList.add('success');
-                noticeTitle.textContent = 'Success';
-                noticeIcon.textContent = '✓';
-            } else if (type === 'error') {
-                noticeCard.classList.add('error');
-                noticeTitle.textContent = 'Unable to Save';
-                noticeIcon.textContent = '!';
-            } else {
-                noticeTitle.textContent = 'Notice';
-                noticeIcon.textContent = 'i';
-            }
-            noticeText.textContent = message || '';
-            noticeModal.classList.add('show');
-            noticeModal.setAttribute('aria-hidden', 'false');
-            if (noticeOk) noticeOk.focus();
-        }
-
-        function closeProjectNotice() {
-            if (!noticeModal) return;
-            noticeModal.classList.remove('show');
-            noticeModal.setAttribute('aria-hidden', 'true');
-        }
-
-        window.showProjectNotice = showProjectNotice;
-
-        if (saved === '1') {
-            if (formMsg) {
-                formMsg.textContent = savedMsg;
-                formMsg.style.display = 'block';
-                formMsg.style.color = '#0b5';
-            }
-            if (!window.__projectRegPopupShown) {
-                window.__projectRegPopupShown = true;
-                showProjectNotice(savedMsg, 'success');
-            }
-        } else if (error) {
-            let errText = decodeURIComponent(error);
-            if (/already exists|duplicate/i.test(errText)) {
-                errText = 'Project already exists. Please try again with a different Project Code.';
-            }
-            if (formMsg) {
-                formMsg.textContent = errText;
-                formMsg.style.display = 'block';
-                formMsg.style.color = '#f00';
-            }
-            if (!window.__projectRegPopupShown) {
-                window.__projectRegPopupShown = true;
-                showProjectNotice(errText, 'error');
-            }
-        }
-
-        if (noticeOk) {
-            noticeOk.addEventListener('click', closeProjectNotice);
-        }
-        if (noticeModal) {
-            noticeModal.addEventListener('click', function (e) {
-                if (e.target === noticeModal) closeProjectNotice();
-            });
-        }
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeProjectNotice();
-        });
-    })();
-    </script>
+    <script src="../assets/js/admin-project-registration.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-project-registration.js'); ?>"></script>
 </body>
 </html>
+
 
 
 

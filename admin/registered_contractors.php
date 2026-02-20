@@ -16,6 +16,49 @@ if ($db->connect_error) {
     exit;
 }
 
+function registered_projects_has_column(mysqli $db, string $column): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'projects'
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $exists;
+}
+
+function registered_table_exists(mysqli $db, string $table): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $table);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $exists;
+}
+
 // Create Engineer_project_assignments table if it doesn't exist
 $db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -51,12 +94,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 // Handle GET request for loading projects
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
-    
-    $result = $db->query("SELECT id, code, name, type, sector, status FROM projects ORDER BY created_at DESC");
+
+    $hasCreatedAt = registered_projects_has_column($db, 'created_at');
+    $hasPriorityPercent = registered_projects_has_column($db, 'priority_percent');
+    $hasExactAddress = registered_projects_has_column($db, 'location');
+    $hasTaskTable = registered_table_exists($db, 'project_tasks');
+    $hasMilestoneTable = registered_table_exists($db, 'project_milestones');
+    $orderBy = $hasCreatedAt ? 'created_at DESC' : 'id DESC';
+    $prioritySelect = $hasPriorityPercent ? 'priority_percent' : '0 AS priority_percent';
+    $result = $db->query("SELECT id, code, name, type, sector, status, priority, " . $prioritySelect . ", location, province, barangay, budget, start_date, end_date, duration_months, engineer_license_doc, engineer_certification_doc, engineer_credentials_doc FROM projects ORDER BY {$orderBy}");
     $projects = [];
     
     if ($result) {
         while ($row = $result->fetch_assoc()) {
+            $row['allocated_budget'] = (float) ($row['budget'] ?? 0);
+            $row['spent_budget'] = 0.0;
+            $row['remaining_budget'] = max(0, $row['allocated_budget'] - $row['spent_budget']);
+            $row['location_exact'] = $hasExactAddress ? (string) ($row['location'] ?? '') : '';
+            $row['full_address'] = trim(((string) ($row['province'] ?? '')) . ' / ' . ((string) ($row['barangay'] ?? '')) . ' / ' . ((string) ($row['location'] ?? '')));
+            $row['task_summary'] = ['total' => 0, 'completed' => 0];
+            $row['milestone_summary'] = ['total' => 0, 'completed' => 0];
+            if ($hasTaskTable) {
+                $taskRes = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS completed FROM project_tasks WHERE project_id = " . (int)$row['id']);
+                if ($taskRes) {
+                    $taskRow = $taskRes->fetch_assoc();
+                    $taskRes->free();
+                    $row['task_summary'] = ['total' => (int)($taskRow['total'] ?? 0), 'completed' => (int)($taskRow['completed'] ?? 0)];
+                }
+            }
+            if ($hasMilestoneTable) {
+                $mileRes = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS completed FROM project_milestones WHERE project_id = " . (int)$row['id']);
+                if ($mileRes) {
+                    $mileRow = $mileRes->fetch_assoc();
+                    $mileRes->free();
+                    $row['milestone_summary'] = ['total' => (int)($mileRow['total'] ?? 0), 'completed' => (int)($mileRow['completed'] ?? 0)];
+                }
+            }
+            $row['documents'] = array_values(array_filter([
+                $row['engineer_license_doc'] ?? '',
+                $row['engineer_certification_doc'] ?? '',
+                $row['engineer_credentials_doc'] ?? ''
+            ]));
             $projects[] = $row;
         }
         $result->free();
@@ -155,7 +233,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $contractor_id = isset($_GET['contractor_id']) ? (int)$_GET['contractor_id'] : 0;
     
     if ($contractor_id > 0) {
-        $stmt = $db->prepare("SELECT p.id, p.code, p.name FROM projects p 
+        $hasPriorityPercent = registered_projects_has_column($db, 'priority_percent');
+        $prioritySelect = $hasPriorityPercent ? 'p.priority_percent' : '0 AS priority_percent';
+        $stmt = $db->prepare("SELECT p.id, p.code, p.name, p.type, p.sector, p.status, p.priority, " . $prioritySelect . ", p.location, p.province, p.barangay, p.budget, p.start_date, p.end_date, p.duration_months, p.engineer_license_doc, p.engineer_certification_doc, p.engineer_credentials_doc FROM projects p 
                                INNER JOIN contractor_project_assignments cpa ON p.id = cpa.project_id 
                                WHERE cpa.contractor_id = ?");
         $stmt->bind_param("i", $contractor_id);
@@ -163,7 +243,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         $result = $stmt->get_result();
         $projects = [];
         
+        $hasTaskTable = registered_table_exists($db, 'project_tasks');
+        $hasMilestoneTable = registered_table_exists($db, 'project_milestones');
         while ($row = $result->fetch_assoc()) {
+            $row['allocated_budget'] = (float) ($row['budget'] ?? 0);
+            $row['spent_budget'] = 0.0;
+            $row['remaining_budget'] = max(0, $row['allocated_budget'] - $row['spent_budget']);
+            $row['location_exact'] = (string) ($row['location'] ?? '');
+            $row['full_address'] = trim(((string) ($row['province'] ?? '')) . ' / ' . ((string) ($row['barangay'] ?? '')) . ' / ' . ((string) ($row['location'] ?? '')));
+            $row['task_summary'] = ['total' => 0, 'completed' => 0];
+            $row['milestone_summary'] = ['total' => 0, 'completed' => 0];
+            if ($hasTaskTable) {
+                $taskRes = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS completed FROM project_tasks WHERE project_id = " . (int)$row['id']);
+                if ($taskRes) {
+                    $taskRow = $taskRes->fetch_assoc();
+                    $taskRes->free();
+                    $row['task_summary'] = ['total' => (int)($taskRow['total'] ?? 0), 'completed' => (int)($taskRow['completed'] ?? 0)];
+                }
+            }
+            if ($hasMilestoneTable) {
+                $mileRes = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS completed FROM project_milestones WHERE project_id = " . (int)$row['id']);
+                if ($mileRes) {
+                    $mileRow = $mileRes->fetch_assoc();
+                    $mileRes->free();
+                    $row['milestone_summary'] = ['total' => (int)($mileRow['total'] ?? 0), 'completed' => (int)($mileRow['completed'] ?? 0)];
+                }
+            }
+            $row['documents'] = array_values(array_filter([
+                $row['engineer_license_doc'] ?? '',
+                $row['engineer_certification_doc'] ?? '',
+                $row['engineer_credentials_doc'] ?? ''
+            ]));
             $projects[] = $row;
         }
         
@@ -424,483 +534,10 @@ $db->close();
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
-    <script>
-    (function () {
-        if (!location.pathname.endsWith('/registered_contractors.php')) return;
-
-        const contractorsTbody = document.querySelector('#contractorsTable tbody');
-        const projectsTbody = document.querySelector('#projectsTable tbody');
-        const searchInput = document.getElementById('searchContractors');
-        const statusFilter = document.getElementById('filterStatus');
-        const countEl = document.getElementById('contractorsCount');
-        const formMessage = document.getElementById('formMessage');
-        const lastSyncEl = document.getElementById('contractorLastSync');
-        const refreshBtn = document.getElementById('refreshContractorsBtn');
-        const exportCsvBtn = document.getElementById('exportContractorsCsvBtn');
-        const statTotalEl = document.getElementById('contractorStatTotal');
-        const statActiveEl = document.getElementById('contractorStatActive');
-        const statSuspendedEl = document.getElementById('contractorStatSuspended');
-        const statBlacklistedEl = document.getElementById('contractorStatBlacklisted');
-        const statAvgRatingEl = document.getElementById('contractorStatAvgRating');
-
-        const assignmentModal = document.getElementById('assignmentModal');
-        const projectsViewModal = document.getElementById('projectsViewModal');
-        const assignmentTitle = document.getElementById('assignmentTitle');
-        const projectsListEl = document.getElementById('projectsList');
-        const projectsViewTitle = document.getElementById('projectsViewTitle');
-        const projectsViewList = document.getElementById('projectsViewList');
-        const assignContractorId = document.getElementById('assignContractorId');
-        const saveAssignmentsBtn = document.getElementById('saveAssignments');
-        const assignCancelBtn = document.getElementById('assignCancelBtn');
-        const projectsCloseBtn = document.getElementById('projectsCloseBtn');
-
-        const contractorDeleteModal = document.getElementById('contractorDeleteModal');
-        const contractorDeleteName = document.getElementById('contractorDeleteName');
-        const contractorDeleteCancel = document.getElementById('contractorDeleteCancel');
-        const contractorDeleteConfirm = document.getElementById('contractorDeleteConfirm');
-
-        let contractorsCache = [];
-        let projectsCache = [];
-        let visibleContractors = [];
-        let currentAssignedIds = [];
-
-        function esc(v) {
-            return String(v ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        function apiCandidates(query) {
-            const list = ['registered_contractors.php?' + query, '/admin/registered_contractors.php?' + query];
-            if (typeof window.getApiUrl === 'function') {
-                list.unshift(window.getApiUrl('admin/registered_contractors.php?' + query));
-            }
-            return Array.from(new Set(list));
-        }
-
-        function postApiCandidates() {
-            const list = ['registered_contractors.php', '/admin/registered_contractors.php'];
-            if (typeof window.getApiUrl === 'function') {
-                list.unshift(window.getApiUrl('admin/registered_contractors.php'));
-            }
-            return Array.from(new Set(list));
-        }
-
-        async function fetchJsonWithFallback(query) {
-            const urls = apiCandidates(query);
-            for (const url of urls) {
-                try {
-                    const res = await fetch(url, { credentials: 'same-origin' });
-                    if (!res.ok) continue;
-                    const text = await res.text();
-                    return JSON.parse(text);
-                } catch (_) {}
-            }
-            throw new Error('Unable to load data from API');
-        }
-
-        async function postJsonWithFallback(formBody) {
-            const urls = postApiCandidates();
-            for (const url of urls) {
-                try {
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: formBody,
-                        credentials: 'same-origin'
-                    });
-                    if (!res.ok) continue;
-                    return await res.json();
-                } catch (_) {}
-            }
-            throw new Error('Unable to save data to API');
-        }
-
-        function renderContractors(rows) {
-            if (!contractorsTbody) return;
-            contractorsTbody.innerHTML = '';
-            const list = Array.isArray(rows) ? rows : [];
-            visibleContractors = list;
-
-            if (countEl) countEl.textContent = `${list.length} Engineer${list.length === 1 ? '' : 's'}`;
-
-            if (!list.length) {
-                contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#6b7280;">No Engineers found.</td></tr>';
-                return;
-            }
-
-            for (const c of list) {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${esc(c.company || 'N/A')}</strong></td>
-                    <td>${esc(c.license || 'N/A')}</td>
-                    <td>${esc(c.email || c.phone || 'N/A')}</td>
-                    <td><span class="status-badge ${esc(String(c.status || '').toLowerCase().replace(/\s+/g, '-'))}">${esc(c.status || 'N/A')}</span></td>
-                    <td>${c.rating ? Number(c.rating).toFixed(1) + '/5' : '-'}</td>
-                    <td><button class="btn-view-projects" data-id="${esc(c.id)}">View Projects</button></td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-assign" data-id="${esc(c.id)}">Assign Projects</button>
-                            <button class="btn-delete" data-id="${esc(c.id)}">Delete</button>
-                        </div>
-                    </td>
-                `;
-                contractorsTbody.appendChild(tr);
-            }
-        }
-
-        function updateStats(rows) {
-            const list = Array.isArray(rows) ? rows : [];
-            let active = 0;
-            let suspended = 0;
-            let blacklisted = 0;
-            let ratingSum = 0;
-            let ratingCount = 0;
-
-            for (const c of list) {
-                const status = String(c.status || '').toLowerCase();
-                if (status === 'active') active += 1;
-                if (status === 'suspended') suspended += 1;
-                if (status === 'blacklisted') blacklisted += 1;
-                const r = Number(c.rating);
-                if (Number.isFinite(r) && r > 0) {
-                    ratingSum += r;
-                    ratingCount += 1;
-                }
-            }
-
-            if (statTotalEl) statTotalEl.textContent = String(list.length);
-            if (statActiveEl) statActiveEl.textContent = String(active);
-            if (statSuspendedEl) statSuspendedEl.textContent = String(suspended);
-            if (statBlacklistedEl) statBlacklistedEl.textContent = String(blacklisted);
-            if (statAvgRatingEl) statAvgRatingEl.textContent = ratingCount ? (ratingSum / ratingCount).toFixed(1) : '0.0';
-        }
-
-        function updateLastSync() {
-            if (!lastSyncEl) return;
-            const now = new Date();
-            const stamp = now.toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit'
-            });
-            lastSyncEl.textContent = `Last synced: ${stamp}`;
-        }
-
-        function exportVisibleContractorsCsv() {
-            const list = Array.isArray(visibleContractors) ? visibleContractors : [];
-            if (!list.length) {
-                setMessage('No Engineers to export.', true);
-                return;
-            }
-            const escCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-            const header = ['Company', 'License', 'Email', 'Phone', 'Status', 'Rating'];
-            const rows = list.map((c) => [
-                c.company || '',
-                c.license || '',
-                c.email || '',
-                c.phone || '',
-                c.status || '',
-                c.rating || ''
-            ]);
-            const csv = [header, ...rows].map((r) => r.map(escCsv).join(',')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `Engineers-${new Date().toISOString().slice(0, 10)}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(a.href);
-        }
-
-        function renderProjects(rows) {
-            if (!projectsTbody) return;
-            projectsTbody.innerHTML = '';
-            const list = Array.isArray(rows) ? rows : [];
-            if (!list.length) {
-                projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#6b7280;">No projects available.</td></tr>';
-                return;
-            }
-
-            for (const p of list) {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${esc(p.code || '')}</td>
-                    <td>${esc(p.name || '')}</td>
-                    <td>${esc(p.type || '')}</td>
-                    <td>${esc(p.sector || '')}</td>
-                    <td><span class="status-badge ${esc(String(p.status || '').toLowerCase().replace(/\s+/g, '-'))}">${esc(p.status || 'N/A')}</span></td>
-                `;
-                projectsTbody.appendChild(tr);
-            }
-        }
-
-        function setMessage(text, isError) {
-            if (!formMessage) return;
-            formMessage.style.display = 'block';
-            formMessage.style.color = isError ? '#c00' : '#166534';
-            formMessage.textContent = text;
-            setTimeout(() => { formMessage.style.display = 'none'; }, 3000);
-        }
-
-        function openAssignModal(contractorId, contractorName) {
-            if (!assignmentModal) return;
-            assignContractorId.value = contractorId;
-            assignmentTitle.textContent = `Assign "${contractorName}" to Projects`;
-            projectsListEl.innerHTML = '<p style="text-align:center; color:#6b7280;">Loading projects...</p>';
-            assignmentModal.style.display = 'flex';
-            loadProjectsForAssignment(contractorId);
-        }
-
-        function closeAssignModal() {
-            if (assignmentModal) assignmentModal.style.display = 'none';
-        }
-
-        function openProjectsModal(contractorId, contractorName) {
-            if (!projectsViewModal) return;
-            projectsViewTitle.textContent = `Projects Assigned to ${contractorName}`;
-            projectsViewList.innerHTML = '<p style="text-align:center; color:#6b7280;">Loading projects...</p>';
-            projectsViewModal.style.display = 'flex';
-
-            fetchJsonWithFallback(`action=get_assigned_projects&contractor_id=${encodeURIComponent(contractorId)}&_=${Date.now()}`)
-                .then((rows) => {
-                    const list = Array.isArray(rows) ? rows : [];
-                    if (!list.length) {
-                        projectsViewList.innerHTML = '<p style="text-align:center; color:#6b7280; padding:12px 0;">No Projects Assigned</p>';
-                        return;
-                    }
-                    projectsViewList.innerHTML = list.map((p) => `
-                        <div style="padding:12px 14px; margin:8px 0; background:#f0f9ff; border-left:4px solid #3b82f6; border-radius:8px;">
-                            <strong>${esc(p.code || '')}</strong> - ${esc(p.name || '')}
-                        </div>
-                    `).join('');
-                })
-                .catch(() => {
-                    projectsViewList.innerHTML = '<p style="color:#c00;">Failed to load assigned projects.</p>';
-                });
-        }
-
-        function closeProjectsModal() {
-            if (projectsViewModal) projectsViewModal.style.display = 'none';
-        }
-
-        function closeDeleteModal() {
-            if (contractorDeleteModal) contractorDeleteModal.style.display = 'none';
-        }
-
-        function confirmDeleteContractor(contractorName) {
-            return new Promise((resolve) => {
-                if (!contractorDeleteModal) {
-                    resolve(window.confirm(`Delete ${contractorName}? This cannot be undone.`));
-                    return;
-                }
-                contractorDeleteName.textContent = contractorName || 'Selected Engineer';
-                contractorDeleteModal.style.display = 'flex';
-
-                const cancel = () => {
-                    closeDeleteModal();
-                    contractorDeleteCancel?.removeEventListener('click', onCancel);
-                    contractorDeleteConfirm?.removeEventListener('click', onConfirm);
-                    contractorDeleteModal?.removeEventListener('click', onBackdrop);
-                    resolve(false);
-                };
-                const confirm = () => {
-                    closeDeleteModal();
-                    contractorDeleteCancel?.removeEventListener('click', onCancel);
-                    contractorDeleteConfirm?.removeEventListener('click', onConfirm);
-                    contractorDeleteModal?.removeEventListener('click', onBackdrop);
-                    resolve(true);
-                };
-                const onCancel = () => cancel();
-                const onConfirm = () => confirm();
-                const onBackdrop = (e) => { if (e.target === contractorDeleteModal) cancel(); };
-
-                contractorDeleteCancel?.addEventListener('click', onCancel);
-                contractorDeleteConfirm?.addEventListener('click', onConfirm);
-                contractorDeleteModal?.addEventListener('click', onBackdrop);
-            });
-        }
-
-        async function loadProjectsForAssignment(contractorId) {
-            try {
-                const [assigned, allProjects] = await Promise.all([
-                    fetchJsonWithFallback(`action=get_assigned_projects&contractor_id=${encodeURIComponent(contractorId)}&_=${Date.now()}`),
-                    fetchJsonWithFallback(`action=load_projects&_=${Date.now()}`)
-                ]);
-                const assignedSet = new Set((Array.isArray(assigned) ? assigned : []).map((p) => String(p.id)));
-                currentAssignedIds = Array.from(assignedSet);
-                projectsCache = Array.isArray(allProjects) ? allProjects : [];
-
-                if (!projectsCache.length) {
-                    projectsListEl.innerHTML = '<p style="text-align:center; color:#6b7280;">No projects available.</p>';
-                    return;
-                }
-
-                projectsListEl.innerHTML = projectsCache.map((p) => {
-                    const pid = String(p.id);
-                    const checked = assignedSet.has(pid) ? 'checked' : '';
-                    return `
-                        <label style="display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid #dbe6f3; border-radius:8px; margin:8px 0; background:#fff;">
-                            <input type="checkbox" class="project-checkbox" value="${esc(pid)}" ${checked} style="margin-top:3px;">
-                            <span>
-                                <strong>${esc(p.code || '')}</strong> - ${esc(p.name || '')}
-                                <br><small style="color:#64748b;">${esc(p.type || 'N/A')} • ${esc(p.sector || 'N/A')}</small>
-                            </span>
-                        </label>
-                    `;
-                }).join('');
-            } catch (_) {
-                projectsListEl.innerHTML = '<p style="color:#c00;">Failed to load projects for assignment.</p>';
-            }
-        }
-
-        async function saveAssignmentsHandler() {
-            const contractorId = assignContractorId?.value;
-            if (!contractorId) return;
-            if (!saveAssignmentsBtn) return;
-
-            saveAssignmentsBtn.disabled = true;
-            saveAssignmentsBtn.textContent = 'Saving...';
-
-            try {
-                const checkedNow = Array.from(document.querySelectorAll('.project-checkbox:checked')).map((el) => String(el.value));
-                const prevSet = new Set(currentAssignedIds);
-                const nextSet = new Set(checkedNow);
-                const toAssign = checkedNow.filter((id) => !prevSet.has(id));
-                const toUnassign = currentAssignedIds.filter((id) => !nextSet.has(id));
-
-                for (const id of toAssign) {
-                    await postJsonWithFallback(`action=assign_contractor&contractor_id=${encodeURIComponent(contractorId)}&project_id=${encodeURIComponent(id)}`);
-                }
-                for (const id of toUnassign) {
-                    await postJsonWithFallback(`action=unassign_contractor&contractor_id=${encodeURIComponent(contractorId)}&project_id=${encodeURIComponent(id)}`);
-                }
-
-                closeAssignModal();
-                setMessage('Assignments updated successfully.', false);
-            } catch (e) {
-                setMessage(e.message || 'Failed to update assignments.', true);
-            } finally {
-                saveAssignmentsBtn.disabled = false;
-                saveAssignmentsBtn.textContent = 'Save Assignments';
-            }
-        }
-
-        function applyFilters() {
-            const q = (searchInput?.value || '').trim().toLowerCase();
-            const s = (statusFilter?.value || '').trim();
-            const filtered = contractorsCache.filter((c) => {
-                const hitSearch = !q || `${c.company || ''} ${c.license || ''} ${c.email || ''} ${c.phone || ''}`.toLowerCase().includes(q);
-                const hitStatus = !s || String(c.status || '') === s;
-                return hitSearch && hitStatus;
-            });
-            renderContractors(filtered);
-        }
-
-        let booted = false;
-        async function loadAllData() {
-            if (refreshBtn) {
-                refreshBtn.disabled = true;
-                refreshBtn.textContent = 'Refreshing...';
-            }
-            try {
-                const [Engineers, projects] = await Promise.all([
-                    fetchJsonWithFallback('action=load_contractors&_=' + Date.now()),
-                    fetchJsonWithFallback('action=load_projects&_=' + Date.now())
-                ]);
-                contractorsCache = Array.isArray(Engineers) ? Engineers : [];
-                projectsCache = Array.isArray(projects) ? projects : [];
-                updateStats(contractorsCache);
-                updateLastSync();
-                renderContractors(contractorsCache);
-                renderProjects(projectsCache);
-            } catch (err) {
-                if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#c00;">Failed to load Engineers data.</td></tr>';
-                if (projectsTbody) projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#c00;">Failed to load projects data.</td></tr>';
-                if (formMessage) {
-                    formMessage.style.display = 'block';
-                    formMessage.style.color = '#c00';
-                    formMessage.textContent = err.message || 'Failed to load data.';
-                }
-            } finally {
-                if (refreshBtn) {
-                    refreshBtn.disabled = false;
-                    refreshBtn.textContent = 'Refresh';
-                }
-            }
-        }
-
-        async function boot() {
-            if (booted) return;
-            booted = true;
-            await loadAllData();
-        }
-
-        searchInput?.addEventListener('input', applyFilters);
-        statusFilter?.addEventListener('change', applyFilters);
-        contractorsTbody?.addEventListener('click', async (e) => {
-            const btn = e.target.closest('button');
-            if (!btn) return;
-            const contractorId = btn.getAttribute('data-id');
-            const row = btn.closest('tr');
-            const contractorName = row ? row.querySelector('td:first-child')?.textContent.trim() : 'Engineer';
-            if (!contractorId) return;
-
-            if (btn.classList.contains('btn-view-projects')) {
-                openProjectsModal(contractorId, contractorName || 'Engineer');
-                return;
-            }
-            if (btn.classList.contains('btn-assign')) {
-                openAssignModal(contractorId, contractorName || 'Engineer');
-                return;
-            }
-            if (btn.classList.contains('btn-delete')) {
-                const proceed = await confirmDeleteContractor(contractorName);
-                if (!proceed) return;
-
-                try {
-                    const result = await postJsonWithFallback(`action=delete_contractor&id=${encodeURIComponent(contractorId)}`);
-                    if (!result || result.success === false) throw new Error((result && result.message) || 'Delete failed');
-                    contractorsCache = contractorsCache.filter((c) => String(c.id) !== String(contractorId));
-                    updateStats(contractorsCache);
-                    applyFilters();
-                    setMessage('Engineer deleted successfully.', false);
-                } catch (err) {
-                    setMessage(err.message || 'Failed to delete Engineer.', true);
-                }
-            }
-        });
-
-        saveAssignmentsBtn?.addEventListener('click', saveAssignmentsHandler);
-        refreshBtn?.addEventListener('click', loadAllData);
-        exportCsvBtn?.addEventListener('click', exportVisibleContractorsCsv);
-        assignCancelBtn?.addEventListener('click', closeAssignModal);
-        projectsCloseBtn?.addEventListener('click', closeProjectsModal);
-        assignmentModal?.addEventListener('click', (e) => { if (e.target === assignmentModal) closeAssignModal(); });
-        projectsViewModal?.addEventListener('click', (e) => { if (e.target === projectsViewModal) closeProjectsModal(); });
-        document.addEventListener('keydown', (e) => {
-            if (e.key !== 'Escape') return;
-            closeAssignModal();
-            closeProjectsModal();
-            closeDeleteModal();
-        });
-
-        window.closeAssignModal = closeAssignModal;
-        window.closeProjectsModal = closeProjectsModal;
-        window.saveAssignmentsHandler = saveAssignmentsHandler;
-
-        document.addEventListener('DOMContentLoaded', boot);
-        if (document.readyState !== 'loading') boot();
-    })();
-    </script>
+    <script src="../assets/js/admin-registered-engineers.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-registered-engineers.js'); ?>"></script>
 </body>
 </html>
+
 
 
 

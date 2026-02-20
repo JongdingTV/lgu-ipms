@@ -348,7 +348,12 @@ $db->close();
                                         <td><?php echo htmlspecialchars($p['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td><?php echo htmlspecialchars($p['type'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td><?php echo htmlspecialchars($p['sector'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td><span class="priority-badge <?php echo strtolower(str_replace(' ', '', $p['priority'] ?? 'medium')); ?>"><?php echo htmlspecialchars($p['priority'] ?? 'Medium', ENT_QUOTES, 'UTF-8'); ?></span></td>
+                                        <?php
+                                        $priorityLevel = (string)($p['priority'] ?? 'Medium');
+                                        $priorityMap = ['crucial' => 100, 'high' => 75, 'medium' => 50, 'low' => 25];
+                                        $priorityPct = $priorityMap[strtolower($priorityLevel)] ?? 50;
+                                        ?>
+                                        <td><span class="priority-badge <?php echo strtolower(str_replace(' ', '', $priorityLevel)); ?>"><?php echo htmlspecialchars($priorityLevel . ' ' . $priorityPct . '%', ENT_QUOTES, 'UTF-8'); ?></span></td>
                                         <td><span class="status-badge <?php echo strtolower(str_replace(' ', '', $p['status'] ?? 'draft')); ?>"><?php echo htmlspecialchars($p['status'] ?? 'Draft', ENT_QUOTES, 'UTF-8'); ?></span></td>
                                         <td><?php echo !empty($p['created_at']) ? date('n/j/Y', strtotime($p['created_at'])) : 'N/A'; ?></td>
                                         <td>
@@ -821,13 +826,15 @@ $db->close();
                 const row = document.createElement('tr');
                 const createdDate = p.created_at ? new Date(p.created_at).toLocaleDateString() : 'N/A';
                 const priority = p.priority || 'Medium';
+                const priorityMap = { crucial: 100, high: 75, medium: 50, low: 25 };
+                const priorityPct = priorityMap[String(priority).toLowerCase()] || 50;
                 const status = p.status || 'Draft';
                 row.innerHTML = `
                     <td>${esc(p.code)}</td>
                     <td>${esc(p.name)}</td>
                     <td>${esc(p.type)}</td>
                     <td>${esc(p.sector)}</td>
-                    <td><span class="priority-badge ${toKey(priority)}">${esc(priority)}</span></td>
+                    <td><span class="priority-badge ${toKey(priority)}">${esc(priority)} ${priorityPct}%</span></td>
                     <td><span class="status-badge ${toKey(status)}">${esc(status)}</span></td>
                     <td>${esc(createdDate)}</td>
                     <td>

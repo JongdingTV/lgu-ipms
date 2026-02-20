@@ -63,6 +63,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     exit;
 }
 
+function feedback_has_column(mysqli $db, string $column): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'feedback'
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $exists;
+}
+
 // Fetch feedback for display with pagination
 $offset = 0;
 $limit = 50;
@@ -70,7 +92,35 @@ if (isset($_GET['page']) && is_numeric($_GET['page'])) {
     $offset = (intval($_GET['page']) - 1) * $limit;
 }
 
-$stmt = $db->prepare("SELECT id, user_name, subject, description, category, location, status, date_submitted FROM feedback ORDER BY date_submitted DESC LIMIT ? OFFSET ?");
+$hasDistrict = feedback_has_column($db, 'district');
+$hasBarangay = feedback_has_column($db, 'barangay');
+$hasAlternativeName = feedback_has_column($db, 'alternative_name');
+$hasExactAddress = feedback_has_column($db, 'exact_address');
+$hasPhotoPath = feedback_has_column($db, 'photo_path');
+$hasMapLat = feedback_has_column($db, 'map_lat');
+$hasMapLng = feedback_has_column($db, 'map_lng');
+$hasMapLink = feedback_has_column($db, 'map_link');
+
+$selectFields = [
+    'id',
+    'user_name',
+    'subject',
+    'description',
+    'category',
+    'location',
+    'status',
+    'date_submitted'
+];
+if ($hasDistrict) $selectFields[] = 'district';
+if ($hasBarangay) $selectFields[] = 'barangay';
+if ($hasAlternativeName) $selectFields[] = 'alternative_name';
+if ($hasExactAddress) $selectFields[] = 'exact_address';
+if ($hasPhotoPath) $selectFields[] = 'photo_path';
+if ($hasMapLat) $selectFields[] = 'map_lat';
+if ($hasMapLng) $selectFields[] = 'map_lng';
+if ($hasMapLink) $selectFields[] = 'map_link';
+
+$stmt = $db->prepare("SELECT " . implode(', ', $selectFields) . " FROM feedback ORDER BY date_submitted DESC LIMIT ? OFFSET ?");
 if ($stmt) {
     $stmt->bind_param('ii', $limit, $offset);
     $stmt->execute();
@@ -92,6 +142,11 @@ $pendingInputs = 0;
 $reviewedInputs = 0;
 $addressedInputs = 0;
 $oldestPendingDays = 0;
+$topPriority = [
+    'location_group' => 'No data',
+    'category' => 'N/A',
+    'total' => 0
+];
 foreach ($feedbacks as $fb) {
     if (isset($fb['category']) && strtolower($fb['category']) === 'critical') $criticalInputs++;
     if (isset($fb['category']) && strtolower($fb['category']) === 'high') $highInputs++;
@@ -105,6 +160,57 @@ foreach ($feedbacks as $fb) {
             if ($age > $oldestPendingDays) $oldestPendingDays = $age;
         }
     }
+}
+
+$priorityRows = [];
+if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
+    $prioritySelect = [];
+    $priorityGroup = [];
+    if ($hasDistrict) {
+        $prioritySelect[] = "COALESCE(NULLIF(district,''), 'N/A') AS district_name";
+        $priorityGroup[] = "COALESCE(NULLIF(district,''), 'N/A')";
+    } else {
+        $prioritySelect[] = "'N/A' AS district_name";
+    }
+    if ($hasBarangay) {
+        $prioritySelect[] = "COALESCE(NULLIF(barangay,''), 'N/A') AS barangay_name";
+        $priorityGroup[] = "COALESCE(NULLIF(barangay,''), 'N/A')";
+    } else {
+        $prioritySelect[] = "'N/A' AS barangay_name";
+    }
+    if ($hasAlternativeName) {
+        $prioritySelect[] = "COALESCE(NULLIF(alternative_name,''), 'N/A') AS alternative_name";
+        $priorityGroup[] = "COALESCE(NULLIF(alternative_name,''), 'N/A')";
+    } else {
+        $prioritySelect[] = "'N/A' AS alternative_name";
+    }
+    $prioritySql = "SELECT "
+        . implode(', ', $prioritySelect)
+        . ", COALESCE(NULLIF(category,''), 'Uncategorized') AS category_name, COALESCE(NULLIF(subject,''), 'No Subject') AS subject_name, COUNT(*) AS report_total "
+        . "FROM feedback "
+        . "GROUP BY " . implode(', ', array_merge($priorityGroup, ["COALESCE(NULLIF(category,''), 'Uncategorized')", "COALESCE(NULLIF(subject,''), 'No Subject')"]))
+        . " ORDER BY report_total DESC LIMIT 1";
+    $priorityRes = $db->query($prioritySql);
+    if ($priorityRes) {
+        $priorityRows = $priorityRes->fetch_all(MYSQLI_ASSOC);
+        $priorityRes->free();
+    }
+} else {
+    $priorityRes = $db->query("SELECT COALESCE(NULLIF(location,''), 'No location') AS location_name, COALESCE(NULLIF(category,''), 'Uncategorized') AS category_name, COALESCE(NULLIF(subject,''), 'No Subject') AS subject_name, COUNT(*) AS report_total FROM feedback GROUP BY COALESCE(NULLIF(location,''), 'No location'), COALESCE(NULLIF(category,''), 'Uncategorized'), COALESCE(NULLIF(subject,''), 'No Subject') ORDER BY report_total DESC LIMIT 1");
+    if ($priorityRes) {
+        $priorityRows = $priorityRes->fetch_all(MYSQLI_ASSOC);
+        $priorityRes->free();
+    }
+}
+if (!empty($priorityRows)) {
+    $top = $priorityRows[0];
+    if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
+        $topPriority['location_group'] = trim(($top['district_name'] ?? 'N/A') . ' / ' . ($top['barangay_name'] ?? 'N/A') . ' / ' . ($top['alternative_name'] ?? 'N/A'));
+    } else {
+        $topPriority['location_group'] = $top['location_name'] ?? 'No data';
+    }
+    $topPriority['category'] = trim(($top['category_name'] ?? 'Uncategorized') . ' / ' . ($top['subject_name'] ?? 'No Subject'));
+    $topPriority['total'] = (int) ($top['report_total'] ?? 0);
 }
 
 $db->close();
@@ -273,6 +379,12 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                     <span>Oldest Pending</span>
                     <strong><?= (int)$oldestPendingDays ?> day<?= ((int)$oldestPendingDays === 1 ? '' : 's') ?></strong>
                 </article>
+                <article class="priority-kpi critical">
+                    <span>Priority</span>
+                    <strong><?= htmlspecialchars($topPriority['total'] . ' report' . ($topPriority['total'] === 1 ? '' : 's')) ?></strong>
+                    <small><?= htmlspecialchars($topPriority['location_group']) ?></small>
+                    <small><?= htmlspecialchars($topPriority['category']) ?></small>
+                </article>
             </div>
 
             <!-- Feedback Table -->
@@ -332,7 +444,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     <td><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></td>
                                     <td><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></td>
                                     <td><?= isset($fb_lc['category']) ? htmlspecialchars($fb_lc['category']) : '-' ?></td>
-                                    <td><?= isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-' ?></td>
+                                    <td><?= isset($fb_lc['exact_address']) && trim((string)$fb_lc['exact_address']) !== '' ? htmlspecialchars($fb_lc['exact_address']) : (isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-') ?></td>
                                     <td>
                                         <span class="badge <?= (isset($fb_lc['status']) ? strtolower($fb_lc['status']) : '') ?>">
                                             <?= isset($fb_lc['status']) ? htmlspecialchars($fb_lc['status']) : '-' ?>
@@ -347,6 +459,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     </td>
                                     <td>
                                         <button type="button" class="copy-btn" data-copy-control="CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?>">Copy #</button>
+                                        <button type="button" class="view-btn" data-address-modal="address-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Full Address</button>
                                         <button type="button" class="edit-btn" data-edit-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Edit</button>
                                         <button type="button" class="view-btn" data-view-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Details</button>
                                     </td>
@@ -428,8 +541,34 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                         <div class="modal-value"><?= isset($fb_lc['category']) ? htmlspecialchars($fb_lc['category']) : '-' ?></div>
                                     </div>
                                     <div class="modal-field">
-                                        <span class="modal-label">Location:</span>
-                                        <div class="modal-value"><?= isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-' ?></div>
+                                        <span class="modal-label">Exact Address:</span>
+                                        <div class="modal-value"><?= isset($fb_lc['exact_address']) && trim((string)$fb_lc['exact_address']) !== '' ? htmlspecialchars($fb_lc['exact_address']) : (isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-') ?></div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">District:</span>
+                                        <div class="modal-value"><?= isset($fb_lc['district']) && $fb_lc['district'] !== '' ? htmlspecialchars($fb_lc['district']) : '-' ?></div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Barangay:</span>
+                                        <div class="modal-value"><?= isset($fb_lc['barangay']) && $fb_lc['barangay'] !== '' ? htmlspecialchars($fb_lc['barangay']) : '-' ?></div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Alternative Name:</span>
+                                        <div class="modal-value"><?= isset($fb_lc['alternative_name']) && $fb_lc['alternative_name'] !== '' ? htmlspecialchars($fb_lc['alternative_name']) : '-' ?></div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Full Address Breakdown:</span>
+                                        <div class="modal-value">
+                                            <?= htmlspecialchars(
+                                                trim(
+                                                    ((isset($fb_lc['district']) && $fb_lc['district'] !== '') ? $fb_lc['district'] : 'N/A')
+                                                    . ' / '
+                                                    . ((isset($fb_lc['barangay']) && $fb_lc['barangay'] !== '') ? $fb_lc['barangay'] : 'N/A')
+                                                    . ' / '
+                                                    . ((isset($fb_lc['alternative_name']) && $fb_lc['alternative_name'] !== '') ? $fb_lc['alternative_name'] : 'N/A')
+                                                )
+                                            ) ?>
+                                        </div>
                                     </div>
                                     <div class="modal-field">
                                         <span class="modal-label">Status:</span>
@@ -443,9 +582,64 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                         <span class="modal-label">Message / Description:</span>
                                         <div class="modal-value"><?= isset($fb_lc['description']) ? htmlspecialchars($fb_lc['description']) : '-' ?></div>
                                     </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Citizen Photo:</span>
+                                        <div class="modal-value">
+                                            <?php if (!empty($fb_lc['photo_path'])): ?>
+                                                <a href="/user-dashboard/feedback-photo.php?file=<?= rawurlencode((string) $fb_lc['photo_path']) ?>" target="_blank" rel="noopener">View Uploaded Photo</a>
+                                            <?php else: ?>
+                                                No photo attached.
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Pinned Map:</span>
+                                        <div class="modal-value">
+                                            <?php if (!empty($fb_lc['map_link'])): ?>
+                                                <a href="<?= htmlspecialchars((string) $fb_lc['map_link']) ?>" target="_blank" rel="noopener">Open pinned map</a>
+                                            <?php elseif (!empty($fb_lc['map_lat']) && !empty($fb_lc['map_lng'])): ?>
+                                                <a href="https://maps.google.com/?q=<?= rawurlencode((string) $fb_lc['map_lat'] . ',' . (string) $fb_lc['map_lng']) ?>" target="_blank" rel="noopener">
+                                                    Open map (<?= htmlspecialchars((string) $fb_lc['map_lat']) ?>, <?= htmlspecialchars((string) $fb_lc['map_lng']) ?>)
+                                                </a>
+                                            <?php else: ?>
+                                                No map pin available.
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="modal-btn modal-btn-close" data-close-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="address-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h2>Full Address Details</h2>
+                                    <button type="button" class="modal-close" data-close-modal="address-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="modal-field"><span class="modal-label">Exact Address:</span><div class="modal-value"><?= isset($fb_lc['exact_address']) && trim((string)$fb_lc['exact_address']) !== '' ? htmlspecialchars($fb_lc['exact_address']) : (isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-') ?></div></div>
+                                    <div class="modal-field"><span class="modal-label">District:</span><div class="modal-value"><?= isset($fb_lc['district']) && $fb_lc['district'] !== '' ? htmlspecialchars($fb_lc['district']) : '-' ?></div></div>
+                                    <div class="modal-field"><span class="modal-label">Barangay:</span><div class="modal-value"><?= isset($fb_lc['barangay']) && $fb_lc['barangay'] !== '' ? htmlspecialchars($fb_lc['barangay']) : '-' ?></div></div>
+                                    <div class="modal-field"><span class="modal-label">Alternative Name:</span><div class="modal-value"><?= isset($fb_lc['alternative_name']) && $fb_lc['alternative_name'] !== '' ? htmlspecialchars($fb_lc['alternative_name']) : '-' ?></div></div>
+                                    <div class="modal-field">
+                                        <span class="modal-label">Pinned Map / Coordinates:</span>
+                                        <div class="modal-value">
+                                            <?php if (!empty($fb_lc['map_link'])): ?>
+                                                <a href="<?= htmlspecialchars((string) $fb_lc['map_link']) ?>" target="_blank" rel="noopener">Open map link</a>
+                                            <?php elseif (!empty($fb_lc['map_lat']) && !empty($fb_lc['map_lng'])): ?>
+                                                <a href="https://maps.google.com/?q=<?= rawurlencode((string) $fb_lc['map_lat'] . ',' . (string) $fb_lc['map_lng']) ?>" target="_blank" rel="noopener">
+                                                    <?= htmlspecialchars((string) $fb_lc['map_lat']) ?>, <?= htmlspecialchars((string) $fb_lc['map_lng']) ?>
+                                                </a>
+                                            <?php else: ?>
+                                                Not provided.
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="modal-btn modal-btn-close" data-close-modal="address-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Close</button>
                                 </div>
                             </div>
                         </div>
@@ -480,161 +674,8 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
     </section>
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
-    
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
-    <script>
-    (function () {
-        if (!location.pathname.endsWith('/project-prioritization.php')) return;
-
-        function openModalById(modalId) {
-            const modal = document.getElementById(modalId);
-            if (!modal) return;
-            document.querySelectorAll('.modal.show').forEach((m) => m.classList.remove('show'));
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModalById(modalId) {
-            const modal = document.getElementById(modalId);
-            if (!modal) return;
-            modal.classList.remove('show');
-            if (!document.querySelector('.modal.show')) {
-                document.body.style.overflow = '';
-            }
-        }
-
-        document.addEventListener('click', function (e) {
-            const editBtn = e.target.closest('[data-edit-modal]');
-            if (editBtn) {
-                openModalById(editBtn.getAttribute('data-edit-modal'));
-                return;
-            }
-
-            const viewBtn = e.target.closest('[data-view-modal]');
-            if (viewBtn) {
-                openModalById(viewBtn.getAttribute('data-view-modal'));
-                return;
-            }
-
-            const closeBtn = e.target.closest('[data-close-modal]');
-            if (closeBtn) {
-                closeModalById(closeBtn.getAttribute('data-close-modal'));
-                return;
-            }
-
-            const overlay = e.target.classList && e.target.classList.contains('modal') ? e.target : null;
-            if (overlay) {
-                overlay.classList.remove('show');
-                if (!document.querySelector('.modal.show')) document.body.style.overflow = '';
-            }
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key !== 'Escape') return;
-            document.querySelectorAll('.modal.show').forEach((m) => m.classList.remove('show'));
-            document.body.style.overflow = '';
-        });
-
-        // Expose compatibility functions used elsewhere
-        window.openModal = openModalById;
-        window.closeModal = closeModalById;
-        window.openEditModal = openModalById;
-        window.closeEditModal = closeModalById;
-
-        const searchInput = document.getElementById('fbSearch');
-        const statusFilter = document.getElementById('fbStatusFilter');
-        const categoryFilter = document.getElementById('fbCategoryFilter');
-        const visibleCount = document.getElementById('fbVisibleCount');
-        const rows = Array.from(document.querySelectorAll('#inputsTable tbody tr')).filter((row) => !row.querySelector('.no-results'));
-
-        function showTinyToast(title, text, isError) {
-            const toast = document.createElement('div');
-            toast.className = 'prioritization-toast ' + (isError ? 'is-error' : 'is-success');
-            toast.innerHTML = '<strong>' + title + '</strong><span>' + text + '</span>';
-            document.body.appendChild(toast);
-            requestAnimationFrame(() => toast.classList.add('show'));
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 220);
-            }, 2000);
-        }
-
-        function applyFeedbackFilters() {
-            const query = (searchInput?.value || '').trim().toLowerCase();
-            const status = (statusFilter?.value || '').trim().toLowerCase();
-            const category = (categoryFilter?.value || '').trim().toLowerCase();
-            let shown = 0;
-
-            rows.forEach((row) => {
-                const haystack = row.textContent.toLowerCase();
-                const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
-                const rowCategory = (row.getAttribute('data-category') || '').toLowerCase();
-                const matchQuery = !query || haystack.includes(query);
-                const matchStatus = !status || rowStatus === status;
-                const matchCategory = !category || rowCategory === category;
-                const visible = matchQuery && matchStatus && matchCategory;
-                row.style.display = visible ? '' : 'none';
-                if (visible) shown++;
-            });
-
-            if (visibleCount) {
-                visibleCount.textContent = 'Showing ' + shown + ' of ' + rows.length;
-            }
-        }
-
-        const statusFlash = <?php echo json_encode($status_flash); ?>;
-        if (statusFlash) {
-            const toast = document.createElement('div');
-            toast.className = 'prioritization-toast ' + (statusFlash === 'updated' ? 'is-success' : 'is-error');
-            toast.innerHTML = statusFlash === 'updated'
-                ? '<strong>Success</strong><span>Feedback status has been updated.</span>'
-                : statusFlash === 'invalid'
-                    ? '<strong>Invalid Status</strong><span>Please choose a valid status and try again.</span>'
-                    : '<strong>Update Failed</strong><span>Unable to save changes. Please try again.</span>';
-            document.body.appendChild(toast);
-            requestAnimationFrame(() => toast.classList.add('show'));
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 220);
-            }, 3200);
-
-            const cleanUrl = new URL(window.location.href);
-            cleanUrl.searchParams.delete('status');
-            history.replaceState({}, '', cleanUrl.toString());
-        }
-
-        document.addEventListener('click', function (e) {
-            const copyBtn = e.target.closest('[data-copy-control]');
-            if (!copyBtn) return;
-            const controlNumber = copyBtn.getAttribute('data-copy-control');
-            if (!controlNumber) return;
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(controlNumber).then(() => {
-                    showTinyToast('Control Number Copied', controlNumber, false);
-                }).catch(() => {
-                    showTinyToast('Copy Failed', 'Please copy manually.', true);
-                });
-            } else {
-                showTinyToast('Copy Not Supported', 'Your browser does not support clipboard.', true);
-            }
-        });
-
-        searchInput?.addEventListener('input', applyFeedbackFilters);
-        statusFilter?.addEventListener('change', applyFeedbackFilters);
-        categoryFilter?.addEventListener('change', applyFeedbackFilters);
-
-        const clearBtn = document.getElementById('clearSearch');
-        clearBtn?.addEventListener('click', function () {
-            if (searchInput) searchInput.value = '';
-            if (statusFilter) statusFilter.value = '';
-            if (categoryFilter) categoryFilter.value = '';
-            applyFeedbackFilters();
-        });
-
-        applyFeedbackFilters();
-    })();
-    </script>
+    <script src="../assets/js/admin-project-prioritization.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-project-prioritization.js'); ?>"></script>
 </body>
 </html>
 

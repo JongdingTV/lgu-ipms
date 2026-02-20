@@ -26,6 +26,37 @@ function landing_verify_csrf_token($token): bool
     return $stored !== '' && $given !== '' && hash_equals($stored, $given);
 }
 
+function landing_feedback_has_column(mysqli $db, string $column): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'feedback'
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $exists;
+}
+
+function landing_bind_params(mysqli_stmt $stmt, string $types, array &$values): bool
+{
+    $bindParams = [$types];
+    foreach ($values as $i => &$value) {
+        $bindParams[] = &$value;
+    }
+    return call_user_func_array([$stmt, 'bind_param'], $bindParams);
+}
+
 function landing_send_recommendation_email(string $senderName, string $senderEmail, string $subject, string $message): bool
 {
     try {
@@ -119,17 +150,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback_subm
             $category = 'System Recommendation';
             $location = 'Landing Page';
             $description = "Sender Email: " . $feedbackForm['email'] . "\n\n" . $feedbackForm['message'];
-            $stmt = $db->prepare('INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)');
+            $hasDistrict = landing_feedback_has_column($db, 'district');
+            $hasBarangay = landing_feedback_has_column($db, 'barangay');
+            $hasAlternativeName = landing_feedback_has_column($db, 'alternative_name');
+            $hasExactAddress = landing_feedback_has_column($db, 'exact_address');
+            $hasMapLink = landing_feedback_has_column($db, 'map_link');
+
+            $columns = ['user_name', 'subject', 'category', 'location', 'description', 'status'];
+            $types = 'ssssss';
+            $values = [$userName, $feedbackForm['subject'], $category, $location, $description, $status];
+            if ($hasDistrict) {
+                $columns[] = 'district';
+                $types .= 's';
+                $values[] = 'N/A';
+            }
+            if ($hasBarangay) {
+                $columns[] = 'barangay';
+                $types .= 's';
+                $values[] = 'N/A';
+            }
+            if ($hasAlternativeName) {
+                $columns[] = 'alternative_name';
+                $types .= 's';
+                $values[] = 'Landing Page';
+            }
+            if ($hasExactAddress) {
+                $columns[] = 'exact_address';
+                $types .= 's';
+                $values[] = 'Landing Page';
+            }
+            if ($hasMapLink) {
+                $columns[] = 'map_link';
+                $types .= 's';
+                $values[] = null;
+            }
+            $stmt = $db->prepare('INSERT INTO feedback (' . implode(', ', $columns) . ') VALUES (' . implode(', ', array_fill(0, count($columns), '?')) . ')');
             if ($stmt) {
-                $stmt->bind_param(
-                    'ssssss',
-                    $userName,
-                    $feedbackForm['subject'],
-                    $category,
-                    $location,
-                    $description,
-                    $status
-                );
+                landing_bind_params($stmt, $types, $values);
                 $ok = $stmt->execute();
                 $stmt->close();
 

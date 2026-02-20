@@ -57,6 +57,9 @@ if (!defined('LOGIN_ATTEMPT_TIMEOUT')) define('LOGIN_ATTEMPT_TIMEOUT', 15 * 60);
 // ========== FILE UPLOAD SETTINGS ==========
 if (!defined('MAX_UPLOAD_SIZE')) define('MAX_UPLOAD_SIZE', 5242880); // 5MB in bytes
 if (!defined('ALLOWED_FILE_TYPES')) define('ALLOWED_FILE_TYPES', ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'xls', 'xlsx']);
+if (!defined('MAX_PROJECT_BUDGET')) define('MAX_PROJECT_BUDGET', (float) (getenv('MAX_PROJECT_BUDGET') ?: 50000000)); // 50M default
+if (!defined('ENGINEER_DOC_MAX_SIZE')) define('ENGINEER_DOC_MAX_SIZE', 5242880); // 5MB
+if (!defined('ENGINEER_DOC_ALLOWED_EXT')) define('ENGINEER_DOC_ALLOWED_EXT', ['pdf', 'jpg', 'jpeg', 'png']);
 
 // ========== APPLICATION CONSTANTS ==========
 if (!defined('PROJECT_STATUS')) define('PROJECT_STATUS', [

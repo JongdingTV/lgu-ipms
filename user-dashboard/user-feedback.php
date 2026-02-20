@@ -57,6 +57,39 @@ function feedback_table_has_user_id(mysqli $db): bool
     return $exists;
 }
 
+function feedback_table_has_column(mysqli $db, string $column): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'feedback'
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $column);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+    return $exists;
+}
+
+function feedback_bind_params(mysqli_stmt $stmt, string $types, array &$values): bool
+{
+    $bindParams = [$types];
+    foreach ($values as $i => &$value) {
+        $bindParams[] = &$value;
+    }
+    return call_user_func_array([$stmt, 'bind_param'], $bindParams);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     header('Content-Type: application/json');
 
@@ -102,6 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     $gpsAddress = trim($_POST['gps_address'] ?? '');
     $status = 'Pending';
 
+    $photoSavedName = '';
     if (isset($_FILES['photo']) && (int) ($_FILES['photo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
         if ((int) $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
             echo json_encode(['success' => false, 'message' => 'Photo upload failed. Please try another image.']);
@@ -169,10 +203,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
             $db->close();
             exit;
         }
-
+        $photoSavedName = $savedName;
         $description .= "\n\n[Photo Attachment Private] " . $savedName;
     }
 
+    $mapLink = $gpsMapUrl !== '' ? $gpsMapUrl : null;
     if ($gpsLat !== '' && $gpsLng !== '') {
         $location .= ' | GPS: ' . $gpsLat . ', ' . $gpsLng;
         if ($gpsAccuracy !== '') {
@@ -290,20 +325,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
         $dupeStmt->close();
     }
 
-    $stmt = $hasFeedbackUserId
-        ? $db->prepare('INSERT INTO feedback (user_id, user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?, ?)')
-        : $db->prepare('INSERT INTO feedback (user_name, subject, category, location, description, status) VALUES (?, ?, ?, ?, ?, ?)');
+    $hasDistrictCol = feedback_table_has_column($db, 'district');
+    $hasBarangayCol = feedback_table_has_column($db, 'barangay');
+    $hasAlternativeNameCol = feedback_table_has_column($db, 'alternative_name');
+    $hasExactAddressCol = feedback_table_has_column($db, 'exact_address');
+    $hasPhotoPathCol = feedback_table_has_column($db, 'photo_path');
+    $hasMapLatCol = feedback_table_has_column($db, 'map_lat');
+    $hasMapLngCol = feedback_table_has_column($db, 'map_lng');
+    $hasMapLinkCol = feedback_table_has_column($db, 'map_link');
+
+    $columns = [];
+    $types = '';
+    $values = [];
+    if ($hasFeedbackUserId) {
+        $columns[] = 'user_id';
+        $types .= 'i';
+        $values[] = $userId;
+    }
+    $columns = array_merge($columns, ['user_name', 'subject', 'category', 'location', 'description', 'status']);
+    $types .= 'ssssss';
+    $values = array_merge($values, [$userName, $subject, $category, $location, $description, $status]);
+    if ($hasDistrictCol) {
+        $columns[] = 'district';
+        $types .= 's';
+        $values[] = 'District ' . $district;
+    }
+    if ($hasBarangayCol) {
+        $columns[] = 'barangay';
+        $types .= 's';
+        $values[] = $barangay;
+    }
+    if ($hasAlternativeNameCol) {
+        $columns[] = 'alternative_name';
+        $types .= 's';
+        $values[] = $altName;
+    }
+    if ($hasExactAddressCol) {
+        $columns[] = 'exact_address';
+        $types .= 's';
+        $values[] = $completeAddress;
+    }
+    if ($hasPhotoPathCol) {
+        $columns[] = 'photo_path';
+        $types .= 's';
+        $values[] = $photoSavedName;
+    }
+    if ($hasMapLatCol) {
+        $columns[] = 'map_lat';
+        $types .= 'd';
+        $values[] = ($gpsLat !== '' ? (float) $gpsLat : null);
+    }
+    if ($hasMapLngCol) {
+        $columns[] = 'map_lng';
+        $types .= 'd';
+        $values[] = ($gpsLng !== '' ? (float) $gpsLng : null);
+    }
+    if ($hasMapLinkCol) {
+        $columns[] = 'map_link';
+        $types .= 's';
+        $values[] = $mapLink;
+    }
+
+    $stmt = $db->prepare('INSERT INTO feedback (' . implode(', ', $columns) . ') VALUES (' . implode(', ', array_fill(0, count($columns), '?')) . ')');
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Unable to submit feedback right now.']);
         $db->close();
         exit;
     }
 
-    if ($hasFeedbackUserId) {
-        $stmt->bind_param('issssss', $userId, $userName, $subject, $category, $location, $description, $status);
-    } else {
-        $stmt->bind_param('ssssss', $userName, $subject, $category, $location, $description, $status);
-    }
+    feedback_bind_params($stmt, $types, $values);
     $ok = $stmt->execute();
     $stmt->close();
     record_attempt('user_feedback_submit');

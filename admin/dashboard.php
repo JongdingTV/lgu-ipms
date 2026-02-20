@@ -48,6 +48,51 @@ $totalProjects = $db->query("SELECT COUNT(*) as count FROM projects")->fetch_ass
 $inProgressProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'];
 $completedProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed'")->fetch_assoc()['count'];
 $totalBudget = $db->query("SELECT COALESCE(SUM(budget), 0) as total FROM projects")->fetch_assoc()['total'];
+$pendingFeedback = 0;
+$reviewedFeedback = 0;
+$addressedFeedback = 0;
+$feedbackCounts = $db->query("SELECT LOWER(COALESCE(status,'')) AS status_key, COUNT(*) AS total FROM feedback GROUP BY LOWER(COALESCE(status,''))");
+if ($feedbackCounts) {
+    while ($row = $feedbackCounts->fetch_assoc()) {
+        $key = (string) ($row['status_key'] ?? '');
+        $count = (int) ($row['total'] ?? 0);
+        if ($key === 'pending') $pendingFeedback = $count;
+        if ($key === 'reviewed') $reviewedFeedback = $count;
+        if ($key === 'addressed') $addressedFeedback = $count;
+    }
+    $feedbackCounts->free();
+}
+
+$priorityCounts = [
+    'crucial' => 0,
+    'high' => 0,
+    'medium' => 0,
+    'low' => 0
+];
+$priorityRes = $db->query("SELECT LOWER(COALESCE(priority,'')) AS priority_key, COUNT(*) AS total FROM projects GROUP BY LOWER(COALESCE(priority,''))");
+if ($priorityRes) {
+    while ($row = $priorityRes->fetch_assoc()) {
+        $key = (string) ($row['priority_key'] ?? '');
+        if (array_key_exists($key, $priorityCounts)) {
+            $priorityCounts[$key] = (int) ($row['total'] ?? 0);
+        }
+    }
+    $priorityRes->free();
+}
+
+$budgetTrendPoints = [];
+$trendDateExpr = dashboard_projects_has_created_at($db) ? "COALESCE(created_at, NOW())" : "COALESCE(start_date, NOW())";
+$budgetTrendSql = "SELECT DATE_FORMAT(" . $trendDateExpr . ", '%Y-%m') AS period, SUM(COALESCE(budget, 0)) AS total_budget FROM projects GROUP BY DATE_FORMAT(" . $trendDateExpr . ", '%Y-%m') ORDER BY period ASC LIMIT 12";
+$budgetTrendRes = $db->query($budgetTrendSql);
+if ($budgetTrendRes) {
+    while ($row = $budgetTrendRes->fetch_assoc()) {
+        $budgetTrendPoints[] = [
+            'label' => (string) ($row['period'] ?? ''),
+            'value' => (float) ($row['total_budget'] ?? 0)
+        ];
+    }
+    $budgetTrendRes->free();
+}
 
 // Get recent projects
 $recentOrder = dashboard_projects_has_created_at($db) ? 'created_at DESC' : 'id DESC';
@@ -236,6 +281,45 @@ $db->close();
             </div>
         </div>
 
+        <div class="card dashboard-analytics-shell">
+            <h3>Budget Trend and Priority Analytics</h3>
+            <div class="dashboard-analytics-grid">
+                <div class="dashboard-analytics-chart">
+                    <div id="budgetTrendChart" data-points='<?php echo htmlspecialchars(json_encode($budgetTrendPoints), ENT_QUOTES, "UTF-8"); ?>'></div>
+                </div>
+                <div class="dashboard-analytics-kpis">
+                    <article class="dashboard-analytics-kpi crucial">
+                        <span>Crucial Priority</span>
+                        <strong><?php echo (int) $priorityCounts['crucial']; ?></strong>
+                    </article>
+                    <article class="dashboard-analytics-kpi high">
+                        <span>High Priority</span>
+                        <strong><?php echo (int) $priorityCounts['high']; ?></strong>
+                    </article>
+                    <article class="dashboard-analytics-kpi medium">
+                        <span>Medium Priority</span>
+                        <strong><?php echo (int) $priorityCounts['medium']; ?></strong>
+                    </article>
+                    <article class="dashboard-analytics-kpi low">
+                        <span>Low Priority</span>
+                        <strong><?php echo (int) $priorityCounts['low']; ?></strong>
+                    </article>
+                    <article class="dashboard-analytics-kpi pending">
+                        <span>Pending Concerns</span>
+                        <strong><?php echo (int) $pendingFeedback; ?></strong>
+                    </article>
+                    <article class="dashboard-analytics-kpi reviewed">
+                        <span>Reviewed Concerns</span>
+                        <strong><?php echo (int) $reviewedFeedback; ?></strong>
+                    </article>
+                    <article class="dashboard-analytics-kpi addressed">
+                        <span>Addressed Concerns</span>
+                        <strong><?php echo (int) $addressedFeedback; ?></strong>
+                    </article>
+                </div>
+            </div>
+        </div>
+
         <!-- Recent Projects Section -->
         <div class="recent-projects card">
             <h3>Recent Projects</h3>
@@ -306,8 +390,8 @@ $db->close();
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <!-- Component Utilities: Dropdowns, Modals, Toast, Sidebar Toggle -->
-    
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
 
