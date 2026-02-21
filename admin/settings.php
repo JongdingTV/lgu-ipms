@@ -14,10 +14,6 @@ check_auth();
 // Check for suspicious activity (user-agent changes, etc.)
 check_suspicious_activity();
 
-// Settings module retired: direct admins to Citizen Verification.
-header('Location: citizen-verification.php');
-exit;
-
 if ($db->connect_error) {
     die('Database connection failed: ' . $db->connect_error);
 }
