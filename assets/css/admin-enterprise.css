@@ -3443,6 +3443,52 @@ body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.sign
     font-family: 'Poppins', sans-serif !important;
 }
 
+/* Unified dropdown arrow design across all admin pages */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item::after {
+    content: none !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dropdown-arrow {
+    margin-left: auto !important;
+    width: 18px !important;
+    min-width: 18px !important;
+    height: 18px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0 !important; /* hide encoded text arrows like â–¼ */
+    color: transparent !important;
+    border-radius: 6px !important;
+    transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease !important;
+    border: 1px solid rgba(148, 163, 184, 0.35) !important;
+    background: linear-gradient(180deg, #f8fbff, #eef4fb) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dropdown-arrow::before {
+    content: '' !important;
+    width: 6px !important;
+    height: 6px !important;
+    border-right: 2px solid #557aa4 !important;
+    border-bottom: 2px solid #557aa4 !important;
+    transform: rotate(45deg) translateY(-1px) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-item-group.open .dropdown-arrow {
+    transform: rotate(180deg) !important;
+    background: linear-gradient(180deg, #ecf3ff, #e3edfb) !important;
+    border-color: rgba(96, 132, 176, 0.45) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dropdown-arrow {
+    border-color: rgba(108, 149, 194, 0.45) !important;
+    background: linear-gradient(180deg, rgba(21, 44, 75, 0.95), rgba(15, 35, 63, 0.95)) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dropdown-arrow::before {
+    border-right-color: #b4c9e3 !important;
+    border-bottom-color: #b4c9e3 !important;
+}
+
 @media (max-width: 760px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-banner {
         top: 8px;
