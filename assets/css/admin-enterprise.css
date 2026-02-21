@@ -3489,6 +3489,151 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dropd
     border-bottom-color: #b4c9e3 !important;
 }
 
+/* Comprehensive dark-mode readability pass */
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark {
+    color: #d8e7f8 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark::after {
+    background: linear-gradient(180deg, rgba(7, 18, 33, 0.48), rgba(6, 16, 30, 0.72)) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dash-header,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .metric-card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .recent-projects,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .projects-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .contractors-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .summary-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .budget-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .allocation-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .expense-section,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .table-wrap,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .contractor-modal-panel,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .modal-content,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engineer-section {
+    background: linear-gradient(160deg, rgba(10, 27, 49, 0.95), rgba(8, 22, 42, 0.95)) !important;
+    border-color: #2e4a6a !important;
+    color: #dbe8f8 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark h1,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark h2,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark h3,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark h4,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark th,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark label,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .modal-label {
+    color: #eaf3ff !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark p,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark small,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark td,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .modal-value,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .contractor-subtext,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engineer-help-text {
+    color: #c4d7ee !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark textarea,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .contractors-filter input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .contractors-filter select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .search-box input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .pm-search input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .feedback-controls input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .feedback-controls select {
+    background: #0f2745 !important;
+    color: #e8f3ff !important;
+    border-color: #3a5b80 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark input::placeholder,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark textarea::placeholder {
+    color: #8fa9c7 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark input:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark select:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark textarea:focus {
+    border-color: #6ea2d8 !important;
+    box-shadow: 0 0 0 3px rgba(110, 162, 216, 0.25) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark table,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .projects-table,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .feedback-table {
+    background: #0d233f !important;
+    color: #d9e8fa !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .projects-table thead th,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .feedback-table thead th,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark table thead th {
+    background: #15365f !important;
+    color: #ebf4ff !important;
+    border-color: #2d4f74 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark table tbody tr,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .projects-table tbody tr,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .feedback-table tbody tr {
+    background: rgba(8, 25, 45, 0.88) !important;
+    border-color: #2a496c !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark table tbody tr:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .projects-table tbody tr:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .feedback-table tbody tr:hover {
+    background: rgba(22, 48, 78, 0.95) !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-top-utilities {
+    background: linear-gradient(160deg, rgba(10, 23, 42, 0.98), rgba(8, 20, 37, 0.98)) !important;
+    border-bottom-color: #254363 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-time-chip,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-utility-btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-top-menu {
+    background: #102844 !important;
+    border-color: #345274 !important;
+    color: #d6e7fb !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-panel,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-calendar-panel {
+    background: #0f2743 !important;
+    border-color: #345474 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-calendar-grid span {
+    background: #123252 !important;
+    border-color: #2c4f74 !important;
+    color: #cfe3fa !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .admin-notif-item {
+    background: #112d4b !important;
+    border-color: #2c4f74 !important;
+    color: #d0e3f9 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .btn-contractor-secondary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .btn-reset-engineer {
+    background: #14355d !important;
+    border-color: #3d6188 !important;
+    color: #d6e8fb !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .btn-contractor-primary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .btn-submit-engineer {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    color: #ffffff !important;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-eval-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
