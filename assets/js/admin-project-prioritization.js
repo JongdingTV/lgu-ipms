@@ -40,6 +40,9 @@
         var addressBtn = e.target.closest('[data-address-modal]');
         if (addressBtn) return openModalById(addressBtn.getAttribute('data-address-modal'));
 
+        var photoBtn = e.target.closest('[data-photo-modal]');
+        if (photoBtn) return openModalById(photoBtn.getAttribute('data-photo-modal'));
+
         var closeBtn = e.target.closest('[data-close-modal]');
         if (closeBtn) return closeModalById(closeBtn.getAttribute('data-close-modal'));
 

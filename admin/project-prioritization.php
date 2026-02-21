@@ -642,7 +642,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                             }
                                             ?>
                                             <?php if ($photoFile !== ''): ?>
-                                                <a href="/admin/feedback-photo.php?file=<?= rawurlencode($photoFile) ?>" target="_blank" rel="noopener">View Uploaded Photo</a>
+                                                <button type="button" class="view-btn" data-photo-modal="photo-modal-<?= (int) ($fb_lc['id'] ?? 0) ?>">View Uploaded Photo</button>
                                             <?php else: ?>
                                                 No photo attached.
                                             <?php endif; ?>
@@ -697,6 +697,28 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 </div>
                             </div>
                         </div>
+                        <?php if ($photoFile !== ''): ?>
+                        <div id="photo-modal-<?= (int) ($fb_lc['id'] ?? 0) ?>" class="modal">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h2>Uploaded Photo</h2>
+                                    <button type="button" class="modal-close" data-close-modal="photo-modal-<?= (int) ($fb_lc['id'] ?? 0) ?>">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <img
+                                        class="feedback-photo-preview"
+                                        src="/admin/feedback-photo.php?feedback_id=<?= (int) ($fb_lc['id'] ?? 0) ?>"
+                                        alt="Feedback Photo"
+                                        loading="lazy"
+                                        referrerpolicy="no-referrer"
+                                    >
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="modal-btn modal-btn-close" data-close-modal="photo-modal-<?= (int) ($fb_lc['id'] ?? 0) ?>">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     <?php $count++; endforeach; ?>
                 </div>
             <?php endif; ?>

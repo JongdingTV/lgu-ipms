@@ -11,8 +11,14 @@ if (!isset($db) || $db->connect_error) {
     exit('Database connection failed');
 }
 
+@ini_set('display_errors', '0');
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
+
+$feedbackId = (int) ($_GET['feedback_id'] ?? 0);
 $file = trim((string) ($_GET['file'] ?? ''));
-if ($file === '' || !preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)) {
+if ($feedbackId <= 0 && ($file === '' || !preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file))) {
     http_response_code(400);
     exit('Invalid request');
 }
@@ -38,26 +44,74 @@ function admin_feedback_photo_has_column(mysqli $db, string $column): bool
 }
 
 $hasPhotoPath = admin_feedback_photo_has_column($db, 'photo_path');
-$sql = $hasPhotoPath
-    ? "SELECT 1 FROM feedback WHERE photo_path = ? OR LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0 LIMIT 1"
-    : "SELECT 1 FROM feedback WHERE LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0 LIMIT 1";
-$stmt = $db->prepare($sql);
-$allowed = false;
-if ($stmt) {
+$photoPathRaw = '';
+$descriptionRaw = '';
+
+if ($feedbackId > 0) {
+    $selectParts = ['description'];
     if ($hasPhotoPath) {
-        $stmt->bind_param('ss', $file, $file);
-    } else {
-        $stmt->bind_param('s', $file);
+        $selectParts[] = 'photo_path';
     }
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $allowed = $res && $res->num_rows > 0;
-    if ($res) $res->free();
-    $stmt->close();
+    $stmt = $db->prepare('SELECT ' . implode(', ', $selectParts) . ' FROM feedback WHERE id = ? LIMIT 1');
+    if ($stmt) {
+        $stmt->bind_param('i', $feedbackId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $row = $res->fetch_assoc()) {
+            $photoPathRaw = trim((string) ($row['photo_path'] ?? ''));
+            $descriptionRaw = (string) ($row['description'] ?? '');
+        }
+        if ($res) {
+            $res->free();
+        }
+        $stmt->close();
+    }
+
+    if ($file === '' && $photoPathRaw !== '') {
+        $file = basename(str_replace('\\', '/', $photoPathRaw));
+    }
+
+    if ($file === '' && preg_match('/\[Photo Attachment Private\]\s+([\w\-.]+\.(?:jpg|jpeg|png|webp))/i', $descriptionRaw, $m)) {
+        $file = (string) ($m[1] ?? '');
+    }
+} else {
+    $sql = $hasPhotoPath
+        ? "SELECT photo_path, description FROM feedback
+           WHERE photo_path = ?
+              OR photo_path LIKE ?
+              OR REPLACE(photo_path, '\\\\', '/') LIKE ?
+              OR LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0
+           LIMIT 1"
+        : "SELECT description FROM feedback
+           WHERE LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0
+           LIMIT 1";
+    $stmt = $db->prepare($sql);
+    if ($stmt) {
+        if ($hasPhotoPath) {
+            $likeTail = '%/' . $file;
+            $stmt->bind_param('ssss', $file, $likeTail, $likeTail, $file);
+        } else {
+            $stmt->bind_param('s', $file);
+        }
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $row = $res->fetch_assoc()) {
+            $photoPathRaw = trim((string) ($row['photo_path'] ?? ''));
+            $descriptionRaw = (string) ($row['description'] ?? '');
+            if ($file === '' && $photoPathRaw !== '') {
+                $file = basename(str_replace('\\', '/', $photoPathRaw));
+            }
+        }
+        if ($res) {
+            $res->free();
+        }
+        $stmt->close();
+    }
 }
+
 $db->close();
 
-if (!$allowed) {
+if ($file === '' || !preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)) {
     http_response_code(404);
     exit('Not found');
 }
