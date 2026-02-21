@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Import security functions - go up 2 levels to root
 require dirname(__DIR__) . '/session-auth.php';
 // Database connection
@@ -144,31 +144,24 @@ $db->close();
         <div class="nav-links">
             <a href="dashboard.php" class="active" data-section="dashboard"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
             <div class="nav-item-group">
-                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle" data-section="projects"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">▼</span></a>
+                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle" data-section="projects"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">â–¼</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
-                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>New Project</span></a>
-                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
+                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">âž•</span><span>New Project</span></a>
+                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">ðŸ“‹</span><span>View All</span></a>
                 </div>
             </div>
             <a href="progress_monitoring.php" data-section="monitoring"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
             <a href="budget_resources.php" data-section="budget"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php" data-section="tasks"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
-                <a href="contractors.php" class="nav-main-item" id="contractorsToggle" data-section="contractors"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">▼</span></a>
+                <a href="contractors.php" class="nav-main-item" id="contractorsToggle" data-section="contractors"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">â–¼</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Engineer</span></a>
-                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>View All</span></a>
+                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">âž•</span><span>Add Engineer</span></a>
+                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">ðŸ“‹</span><span>View All</span></a>
                 </div>
             </div>
             <a href="project-prioritization.php" data-section="priorities"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
-            <div class="nav-item-group">
-                <a href="settings.php" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="../assets/images/admin/person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
-                <div class="nav-submenu" id="userSubmenu">
-                    <a href="settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
-                    <a href="settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
-                    <a href="citizen-verification.php" class="nav-submenu-item"><span class="submenu-icon">ID</span><span>Citizen Verification</span></a>
-                </div>
-            </div>
+                        <a href="citizen-verification.php" class="nav-citizen-verification"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
@@ -236,7 +229,7 @@ $db->close();
                 <div class="metric-content">
                     <h3>Total Budget</h3>
                     <div class="ac-9b373689">
-                        <p class="metric-value ac-03320d86" id="budgetValue">●●●●●●●●</p>
+                        <p class="metric-value ac-03320d86" id="budgetValue">â—â—â—â—â—â—â—â—</p>
                         <button type="button" id="budgetVisibilityToggle" class="ac-d278272f" title="Hold to reveal budget" aria-label="Hold to reveal total budget">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ac-8a303121">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -354,7 +347,7 @@ $db->close();
                                         <div class="progress-fill-small ac-a8a5341d"></div>
                                     </div>
                                 </td>
-                                <td>₱<?php echo number_format($project['budget'], 2); ?></td>
+                                <td>â‚±<?php echo number_format($project['budget'], 2); ?></td>
                             </tr>
                             <?php
                         }
@@ -394,6 +387,7 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
+
 
 
 

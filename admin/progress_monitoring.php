@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Import security functions first
 require dirname(__DIR__) . '/session-auth.php';
 // Database connection
@@ -308,14 +308,7 @@ $db->close();
                 </div>
             </div>
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
-            <div class="nav-item-group">
-                <a href="settings.php" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="../assets/images/admin/person.png" class="nav-icon">Settings<span class="dropdown-arrow">&#9662;</span></a>
-                <div class="nav-submenu" id="userSubmenu">
-                    <a href="settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">&#128272;</span><span>Change Password</span></a>
-                    <a href="settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">&#128274;</span><span>Security Logs</span></a>
-                    <a href="citizen-verification.php" class="nav-submenu-item"><span class="submenu-icon">ID</span><span>Citizen Verification</span></a>
-                </div>
-            </div>
+                        <a href="citizen-verification.php" class="nav-citizen-verification"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
@@ -490,6 +483,7 @@ $db->close();
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
+
 
 
 

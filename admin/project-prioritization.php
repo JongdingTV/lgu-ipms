@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Import security functions
 require dirname(__DIR__) . '/session-auth.php';
 // Database connection
@@ -93,6 +93,32 @@ function clean_feedback_description(string $description): string
     return $cleaned !== '' ? $cleaned : '-';
 }
 
+function feedback_extract_marker_value(string $description, string $marker): ?string
+{
+    $pattern = '/\[' . preg_quote($marker, '/') . '\]\s*(.*?)(?=\s*\[[^\]]+\]|$)/is';
+    if (preg_match($pattern, $description, $matches)) {
+        $value = trim((string) ($matches[1] ?? ''));
+        return $value !== '' ? $value : null;
+    }
+    return null;
+}
+
+function feedback_photo_file(array $feedback): ?string
+{
+    $photoPath = trim((string) ($feedback['photo_path'] ?? ''));
+    if ($photoPath !== '') {
+        $photoPath = basename($photoPath);
+    }
+    if ($photoPath !== '' && preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $photoPath)) {
+        return $photoPath;
+    }
+    $markerFile = feedback_extract_marker_value((string) ($feedback['description'] ?? ''), 'Photo Attachment Private');
+    if ($markerFile !== null && preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $markerFile)) {
+        return $markerFile;
+    }
+    return null;
+}
+
 function feedback_map_embed_url(array $feedback): ?string
 {
     $lat = null;
@@ -105,6 +131,12 @@ function feedback_map_embed_url(array $feedback): ?string
         $lng = (float) $lngRaw;
     } else {
         $mapLink = trim((string) ($feedback['map_link'] ?? ''));
+        if ($mapLink === '') {
+            $fromDescription = feedback_extract_marker_value((string) ($feedback['description'] ?? ''), 'Google Maps Pin');
+            if ($fromDescription !== null) {
+                $mapLink = $fromDescription;
+            }
+        }
         if ($mapLink !== '') {
             if (preg_match('/[?&]mlat=([-0-9.]+).*?[?&]mlon=([-0-9.]+)/i', $mapLink, $m)) {
                 $lat = (float) $m[1];
@@ -285,7 +317,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
     
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
     </head>
-<body>
+<body class="project-prioritization-page">
     <!-- Sidebar Toggle Button (Floating) -->
     <div class="sidebar-toggle-wrapper">
         <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
@@ -310,31 +342,24 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
         <div class="nav-links">
             <a href="dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
             <div class="nav-item-group">
-                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">▼</span></a>
+                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">â–¼</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
-                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>New Project</span></a>
-                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Projects</span></a>
+                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">âž•</span><span>New Project</span></a>
+                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">ðŸ“‹</span><span>Registered Projects</span></a>
                 </div>
             </div>
             <a href="progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
             <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
-                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">▼</span></a>
+                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">â–¼</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Engineer</span></a>
-                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Engineers</span></a>
+                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">âž•</span><span>Add Engineer</span></a>
+                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">ðŸ“‹</span><span>Registered Engineers</span></a>
                 </div>
             </div>
             <a href="project-prioritization.php" class="active"><img src="../assets/images/admin/prioritization.png" alt="Priority Icon" class="nav-icon">Project Prioritization</a>
-            <div class="nav-item-group">
-                <a href="settings.php" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="../assets/images/admin/person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
-                <div class="nav-submenu" id="userSubmenu">
-                    <a href="settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
-                    <a href="settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
-                    <a href="citizen-verification.php" class="nav-submenu-item"><span class="submenu-icon">ID</span><span>Citizen Verification</span></a>
-                </div>
-            </div>
+                        <a href="citizen-verification.php" class="nav-citizen-verification"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
@@ -376,7 +401,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
             <div class="feedback-controls">
                 <div class="search-group">
                     <label for="fbSearch">Search by Control Number or Name</label>
-                    <input id="fbSearch" type="search" placeholder="e.g., CTL-001 or John Doe">
+                    <input id="fbSearch" type="search" placeholder="e.g., CTL-00015 or John Doe">
                 </div>
                 <div class="search-group">
                     <label for="fbStatusFilter">Status</label>
@@ -459,18 +484,23 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                             <tr>
                                 <td colspan="9">
                                     <div class="no-results">
-                                        <div class="no-results-icon">📋</div>
+                                        <div class="no-results-icon">ðŸ“‹</div>
                                         <div class="no-results-title">No Feedback Found</div>
                                         <div class="no-results-text">No feedback submitted yet. Please check back later.</div>
                                     </div>
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php $count = 1; foreach ($feedbacks as $fb): ?>
+                            <?php foreach ($feedbacks as $fb): ?>
                                 <?php
                                 $fb_lc = array_change_key_case($fb, CASE_LOWER);
+                                $feedbackId = (int) ($fb_lc['id'] ?? 0);
+                                $controlNumber = $feedbackId > 0
+                                    ? 'CTL-' . str_pad((string) $feedbackId, 5, '0', STR_PAD_LEFT)
+                                    : 'CTL-NA';
                                 $cleanDescription = clean_feedback_description((string) ($fb_lc['description'] ?? ''));
                                 $mapEmbedUrl = feedback_map_embed_url($fb_lc);
+                                $photoFile = feedback_photo_file($fb_lc);
                                 $rowStatus = strtolower(trim((string)($fb_lc['status'] ?? '')));
                                 $rowCategory = strtolower(trim((string)($fb_lc['category'] ?? '')));
                                 $rowDays = null;
@@ -490,7 +520,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 <tr class="<?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ? 'pending-row' : '' ?>"
                                     data-status="<?= htmlspecialchars($rowStatus) ?>"
                                     data-category="<?= htmlspecialchars($rowCategory) ?>">
-                                    <td><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></td>
+                                    <td><strong><?= htmlspecialchars($controlNumber) ?></strong></td>
                                     <td><?= isset($fb_lc['date_submitted']) ? htmlspecialchars($fb_lc['date_submitted']) : '-' ?></td>
                                     <td><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></td>
                                     <td><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></td>
@@ -512,12 +542,12 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <button type="button" class="copy-btn" data-copy-control="CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?>">Copy #</button>
+                                        <button type="button" class="copy-btn" data-copy-control="<?= htmlspecialchars($controlNumber) ?>">Copy #</button>
                                         <button type="button" class="edit-btn" data-edit-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Edit</button>
                                         <button type="button" class="view-btn" data-view-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Details</button>
                                     </td>
                                 </tr>
-                            <?php $count++; endforeach; ?>
+                            <?php endforeach; ?>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -526,8 +556,17 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
 
             <?php if (!empty($feedbacks)): ?>
                 <div id="prioritizationModalRoot">
-                    <?php $count = 1; foreach ($feedbacks as $fb): ?>
-                        <?php $fb_lc = array_change_key_case($fb, CASE_LOWER); ?>
+                    <?php foreach ($feedbacks as $fb): ?>
+                        <?php
+                        $fb_lc = array_change_key_case($fb, CASE_LOWER);
+                        $feedbackId = (int) ($fb_lc['id'] ?? 0);
+                        $controlNumber = $feedbackId > 0
+                            ? 'CTL-' . str_pad((string) $feedbackId, 5, '0', STR_PAD_LEFT)
+                            : 'CTL-NA';
+                        $cleanDescription = clean_feedback_description((string) ($fb_lc['description'] ?? ''));
+                        $mapEmbedUrl = feedback_map_embed_url($fb_lc);
+                        $photoFile = feedback_photo_file($fb_lc);
+                        ?>
                         <div id="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
                             <div class="modal-content">
                                 <div class="modal-header">
@@ -538,7 +577,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     <div class="modal-body">
                                         <div class="modal-field">
                                             <span class="modal-label">Control Number:</span>
-                                            <div class="modal-value"><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></div>
+                                            <div class="modal-value"><strong><?= htmlspecialchars($controlNumber) ?></strong></div>
                                         </div>
                                         <div class="modal-field">
                                             <span class="modal-label">From:</span>
@@ -575,7 +614,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 <div class="modal-body">
                                     <div class="modal-field">
                                         <span class="modal-label">Control Number:</span>
-                                        <div class="modal-value"><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></div>
+                                        <div class="modal-value"><strong><?= htmlspecialchars($controlNumber) ?></strong></div>
                                     </div>
                                     <div class="modal-field">
                                         <span class="modal-label">Submitted By:</span>
@@ -638,8 +677,8 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     <div class="modal-field">
                                         <span class="modal-label">Citizen Photo:</span>
                                         <div class="modal-value">
-                                            <?php if (!empty($fb_lc['photo_path'])): ?>
-                                                <a href="/user-dashboard/feedback-photo.php?file=<?= rawurlencode((string) $fb_lc['photo_path']) ?>" target="_blank" rel="noopener">View Uploaded Photo</a>
+                                            <?php if ($photoFile !== null): ?>
+                                                <button type="button" class="view-btn" data-photo-modal="photo-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Uploaded Photo</button>
                                             <?php else: ?>
                                                 No photo attached.
                                             <?php endif; ?>
@@ -694,7 +733,27 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 </div>
                             </div>
                         </div>
-                    <?php $count++; endforeach; ?>
+                        <?php if ($photoFile !== null): ?>
+                        <div id="photo-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h2>Uploaded Photo</h2>
+                                    <button type="button" class="modal-close" data-close-modal="photo-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <img class="feedback-photo-preview" src="/user-dashboard/feedback-photo.php?feedback_id=<?= (int) ($fb_lc['id'] ?? 0) ?>" alt="Feedback Photo" loading="lazy" data-feedback-id="<?= (int) ($fb_lc['id'] ?? 0) ?>">
+                                    <div class="feedback-photo-error" hidden>
+                                        <strong>Photo failed to load.</strong>
+                                        <a class="feedback-photo-debug-link" href="/user-dashboard/feedback-photo.php?feedback_id=<?= (int) ($fb_lc['id'] ?? 0) ?>&debug=1" target="_blank" rel="noopener">Open debug output</a>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="modal-btn modal-btn-close" data-close-modal="photo-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -729,6 +788,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
     <script src="../assets/js/admin-project-prioritization.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-project-prioritization.js'); ?>"></script>
 </body>
 </html>
+
 
 
 

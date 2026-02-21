@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Import security functions
 require dirname(__DIR__) . '/session-auth.php';
 // Database connection
@@ -373,31 +373,24 @@ $db->close();
         <div class="nav-links">
             <a href="dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
             <div class="nav-item-group">
-                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">▼</span></a>
+                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">â–¼</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
-                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>New Project</span></a>
-                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Projects</span></a>
+                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">âž•</span><span>New Project</span></a>
+                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">ðŸ“‹</span><span>Registered Projects</span></a>
                 </div>
             </div>
             <a href="progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
             <a href="budget_resources.php" class="active"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
-                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">▼</span></a>
+                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">â–¼</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Engineer</span></a>
-                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Engineers</span></a>
+                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">âž•</span><span>Add Engineer</span></a>
+                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">ðŸ“‹</span><span>Registered Engineers</span></a>
                 </div>
             </div>
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
-            <div class="nav-item-group">
-                <a href="settings.php" class="nav-main-item" id="userMenuToggle" data-section="user"><img src="../assets/images/admin/person.png" class="nav-icon">Settings<span class="dropdown-arrow">▼</span></a>
-                <div class="nav-submenu" id="userSubmenu">
-                    <a href="settings.php?tab=password" class="nav-submenu-item"><span class="submenu-icon">🔐</span><span>Change Password</span></a>
-                    <a href="settings.php?tab=security" class="nav-submenu-item"><span class="submenu-icon">🔒</span><span>Security Logs</span></a>
-                    <a href="citizen-verification.php" class="nav-submenu-item"><span class="submenu-icon">ID</span><span>Citizen Verification</span></a>
-                </div>
-            </div>
+                        <a href="citizen-verification.php" class="nav-citizen-verification"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
@@ -469,7 +462,7 @@ $db->close();
                 <select id="expenseMilestone" required>
                     <option value="">Select project</option>
                 </select>
-                <input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount ₱" required>
+                <input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount â‚±" required>
                 <input id="expenseDesc" type="text" placeholder="Description (optional)">
                 <button type="button" id="addExpense">Add Expense</button>
             </form>
@@ -479,7 +472,7 @@ $db->close();
             <div class="table-wrap">
                 <table id="expensesTable" class="table">
                     <thead>
-                        <tr><th>Date</th><th>Project</th><th>Description</th><th>Amount (₱)</th><th>Actions</th></tr>
+                        <tr><th>Date</th><th>Project</th><th>Description</th><th>Amount (â‚±)</th><th>Actions</th></tr>
                     </thead>
                     <tbody></tbody>
                 </table>
@@ -491,15 +484,15 @@ $db->close();
             <h2>Budget Overview</h2>
             <div class="summary">
                 <div class="stat">
-                    <div id="summaryAllocated">₱0</div>
+                    <div id="summaryAllocated">â‚±0</div>
                     <small>Allocated</small>
                 </div>
                 <div class="stat">
-                    <div id="summarySpent">₱0</div>
+                    <div id="summarySpent">â‚±0</div>
                     <small>Spent</small>
                 </div>
                 <div class="stat">
-                    <div id="summaryRemaining">₱0</div>
+                    <div id="summaryRemaining">â‚±0</div>
                     <small>Remaining</small>
                 </div>
                 <div class="stat">
@@ -1581,6 +1574,7 @@ $db->close();
     </script>
 </body>
 </html>
+
 
 
 

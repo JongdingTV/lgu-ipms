@@ -40,6 +40,9 @@
         var addressBtn = e.target.closest('[data-address-modal]');
         if (addressBtn) return openModalById(addressBtn.getAttribute('data-address-modal'));
 
+        var photoBtn = e.target.closest('[data-photo-modal]');
+        if (photoBtn) return openModalById(photoBtn.getAttribute('data-photo-modal'));
+
         var closeBtn = e.target.closest('[data-close-modal]');
         if (closeBtn) return closeModalById(closeBtn.getAttribute('data-close-modal'));
 
@@ -69,6 +72,24 @@
         if (e.key !== 'Escape') return;
         document.querySelectorAll('.modal.show').forEach(function (m) { m.classList.remove('show'); });
         document.body.style.overflow = '';
+    });
+
+    function togglePhotoError(img, show) {
+        if (!img) return;
+        var wrap = img.closest('.modal-body');
+        if (!wrap) return;
+        var box = wrap.querySelector('.feedback-photo-error');
+        if (!box) return;
+        box.hidden = !show;
+    }
+
+    document.querySelectorAll('.feedback-photo-preview').forEach(function (img) {
+        img.addEventListener('load', function () {
+            togglePhotoError(img, false);
+        });
+        img.addEventListener('error', function () {
+            togglePhotoError(img, true);
+        });
     });
 
     var searchInput = document.getElementById('fbSearch');
