@@ -360,7 +360,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h1>Engineer Registration Form</h1>
                 <p>LGU Infrastructure Project Management System - Admin Side</p>
             </div>
-            <a href="registered_engineers.php" class="engineer-back-link">Back to Registered Engineers</a>
         </header>
 
         <?php if (!empty($errors)): ?>
