@@ -64,7 +64,8 @@ try {
                 'title' => $subject,
                 'message' => $location !== '' ? ($user . ' • ' . $location) : $user,
                 'status' => $row['status'] ?? 'Pending',
-                'created_at' => $row['date_submitted'] ?? null
+                'created_at' => $row['date_submitted'] ?? null,
+                'created_at_ts' => !empty($row['date_submitted']) ? strtotime((string) $row['date_submitted']) : null
             ];
         }
         $stmt->close();

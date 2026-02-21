@@ -86,7 +86,8 @@ if ($projectQuery) {
             'level' => $level,
             'title' => 'Project Update: ' . $projectName,
             'message' => $location !== '' ? ($statusText . ' | ' . $location) : $statusText,
-            'created_at' => $row['created_at'] ?? null
+            'created_at' => $row['created_at'] ?? null,
+            'created_at_ts' => !empty($row['created_at']) ? strtotime((string) $row['created_at']) : null
         ];
         if ($nid > $latestId) {
             $latestId = $nid;
@@ -97,7 +98,11 @@ if ($projectQuery) {
 
 // User verification status updates
 if (user_table_has_column($db, 'users', 'verification_status')) {
-    $stmt = $db->prepare('SELECT verification_status, created_at FROM users WHERE id = ? LIMIT 1');
+    $hasVerificationUpdatedAt = user_table_has_column($db, 'users', 'verification_updated_at');
+    $selectVerificationSql = $hasVerificationUpdatedAt
+        ? 'SELECT verification_status, verification_updated_at, created_at FROM users WHERE id = ? LIMIT 1'
+        : 'SELECT verification_status, created_at FROM users WHERE id = ? LIMIT 1';
+    $stmt = $db->prepare($selectVerificationSql);
     if ($stmt) {
         $stmt->bind_param('i', $userId);
         $stmt->execute();
@@ -109,6 +114,8 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
         $stmt->close();
 
         $status = strtolower(trim((string) ($row['verification_status'] ?? 'pending')));
+        $verificationTime = (string) ($row['verification_updated_at'] ?? $row['created_at'] ?? '');
+        $verificationTs = $verificationTime !== '' ? strtotime($verificationTime) : time();
         if (in_array($status, ['verified', 'rejected'], true)) {
             $nid = 900000000 + $userId;
             $items[] = [
@@ -118,7 +125,8 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
                 'message' => $status === 'verified'
                     ? 'Your account is now fully unlocked.'
                     : 'Please review your ID details and upload a valid document.',
-                'created_at' => $row['created_at'] ?? null
+                'created_at' => $verificationTime !== '' ? $verificationTime : date('Y-m-d H:i:s'),
+                'created_at_ts' => $verificationTs
             ];
             if ($nid > $latestId) {
                 $latestId = $nid;
@@ -130,7 +138,8 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
                 'level' => 'warning',
                 'title' => 'ID Verification Pending',
                 'message' => 'Your account is in limited mode until verification is approved.',
-                'created_at' => $row['created_at'] ?? null
+                'created_at' => $verificationTime !== '' ? $verificationTime : date('Y-m-d H:i:s'),
+                'created_at_ts' => $verificationTs
             ];
             if ($nid > $latestId) {
                 $latestId = $nid;
@@ -216,7 +225,8 @@ if ($userId > 0 || $userName !== '') {
                 'level' => $level,
                 'title' => 'Feedback Update: ' . $subject,
                 'message' => 'Current status: ' . ($statusText !== '' ? $statusText : 'Pending'),
-                'created_at' => $fbRow['date_submitted'] ?? null
+                'created_at' => $fbRow['date_submitted'] ?? null,
+                'created_at_ts' => !empty($fbRow['date_submitted']) ? strtotime((string) $fbRow['date_submitted']) : null
             ];
             if ($nid > $latestId) {
                 $latestId = $nid;
