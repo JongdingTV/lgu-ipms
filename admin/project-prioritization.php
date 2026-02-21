@@ -213,81 +213,99 @@ foreach ($feedbacks as $fb) {
 
 $priorityRows = [];
 if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
+    $districtExpr = $hasDistrict ? "COALESCE(NULLIF(TRIM(district),''), 'N/A')" : "'N/A'";
+    $barangayExpr = $hasBarangay ? "COALESCE(NULLIF(TRIM(barangay),''), 'N/A')" : "'N/A'";
+    $altExpr = $hasAlternativeName ? "COALESCE(NULLIF(TRIM(alternative_name),''), 'N/A')" : "'N/A'";
     $categoryExpr = "COALESCE(NULLIF(TRIM(category),''), NULLIF(TRIM(subject),''), 'Uncategorized')";
-    $categoryKeyExpr = "LOWER(" . $categoryExpr . ")";
-    $prioritySelect = [];
-    $priorityGroup = [];
-    if ($hasDistrict) {
-        $prioritySelect[] = "COALESCE(NULLIF(TRIM(district),''), 'N/A') AS district_name";
-        $priorityGroup[] = "COALESCE(NULLIF(TRIM(district),''), 'N/A')";
-    } else {
-        $prioritySelect[] = "'N/A' AS district_name";
-    }
-    if ($hasBarangay) {
-        $prioritySelect[] = "COALESCE(NULLIF(TRIM(barangay),''), 'N/A') AS barangay_name";
-        $priorityGroup[] = "COALESCE(NULLIF(TRIM(barangay),''), 'N/A')";
-    } else {
-        $prioritySelect[] = "'N/A' AS barangay_name";
-    }
-    if ($hasAlternativeName) {
-        $prioritySelect[] = "COALESCE(NULLIF(TRIM(alternative_name),''), 'N/A') AS alternative_name";
-        $priorityGroup[] = "COALESCE(NULLIF(TRIM(alternative_name),''), 'N/A')";
-    } else {
-        $prioritySelect[] = "'N/A' AS alternative_name";
+
+    // 1) Top area first (not split by category)
+    $areaSql = "SELECT {$districtExpr} AS district_name, {$barangayExpr} AS barangay_name, {$altExpr} AS alternative_name, COUNT(*) AS area_total
+                FROM feedback
+                GROUP BY {$districtExpr}, {$barangayExpr}, {$altExpr}
+                ORDER BY area_total DESC, district_name ASC, barangay_name ASC, alternative_name ASC
+                LIMIT 1";
+    $areaRes = $db->query($areaSql);
+    $topArea = null;
+    if ($areaRes) {
+        $topArea = $areaRes->fetch_assoc();
+        $areaRes->free();
     }
 
-    // Strict grouping (district + barangay + alternative + category/subject)
-    $prioritySql = "SELECT "
-        . implode(', ', $prioritySelect)
-        . ", MAX(" . $categoryExpr . ") AS category_name, COUNT(*) AS report_total "
-        . "FROM feedback "
-        . "GROUP BY " . implode(', ', array_merge($priorityGroup, [$categoryKeyExpr]))
-        . " ORDER BY report_total DESC, district_name ASC, barangay_name ASC, alternative_name ASC, category_name ASC LIMIT 1";
-    $priorityRes = $db->query($prioritySql);
-    if ($priorityRes) {
-        $priorityRows = $priorityRes->fetch_all(MYSQLI_ASSOC);
-        $priorityRes->free();
-    }
+    if (!empty($topArea)) {
+        $districtVal = (string)($topArea['district_name'] ?? 'N/A');
+        $barangayVal = (string)($topArea['barangay_name'] ?? 'N/A');
+        $altVal = (string)($topArea['alternative_name'] ?? 'N/A');
+        $topTotal = (int)($topArea['area_total'] ?? 0);
 
-    // Fallback grouping when strict grouping is too fragmented (mostly 1 each):
-    // aggregate by district + barangay + category/subject and keep alternative as "Multiple".
-    if (empty($priorityRows) || (int)($priorityRows[0]['report_total'] ?? 0) <= 1) {
-        $fallbackSelect = [];
-        $fallbackGroup = [];
+        $whereParts = [];
         if ($hasDistrict) {
-            $fallbackSelect[] = "COALESCE(NULLIF(TRIM(district),''), 'N/A') AS district_name";
-            $fallbackGroup[] = "COALESCE(NULLIF(TRIM(district),''), 'N/A')";
-        } else {
-            $fallbackSelect[] = "'N/A' AS district_name";
+            $whereParts[] = $districtExpr . " = '" . $db->real_escape_string($districtVal) . "'";
         }
         if ($hasBarangay) {
-            $fallbackSelect[] = "COALESCE(NULLIF(TRIM(barangay),''), 'N/A') AS barangay_name";
-            $fallbackGroup[] = "COALESCE(NULLIF(TRIM(barangay),''), 'N/A')";
-        } else {
-            $fallbackSelect[] = "'N/A' AS barangay_name";
+            $whereParts[] = $barangayExpr . " = '" . $db->real_escape_string($barangayVal) . "'";
         }
-        $fallbackSelect[] = "'Multiple' AS alternative_name";
+        if ($hasAlternativeName) {
+            $whereParts[] = $altExpr . " = '" . $db->real_escape_string($altVal) . "'";
+        }
+        $whereSql = !empty($whereParts) ? implode(' AND ', $whereParts) : '1=1';
 
-        $fallbackSql = "SELECT "
-            . implode(', ', $fallbackSelect)
-            . ", MAX(" . $categoryExpr . ") AS category_name, COUNT(*) AS report_total "
-            . "FROM feedback "
-            . "GROUP BY " . implode(', ', array_merge($fallbackGroup, [$categoryKeyExpr]))
-            . " ORDER BY report_total DESC, district_name ASC, barangay_name ASC, category_name ASC LIMIT 1";
-        $fallbackRes = $db->query($fallbackSql);
-        if ($fallbackRes) {
-            $fallbackRows = $fallbackRes->fetch_all(MYSQLI_ASSOC);
-            $fallbackRes->free();
-            if (!empty($fallbackRows) && (int)($fallbackRows[0]['report_total'] ?? 0) >= (int)($priorityRows[0]['report_total'] ?? 0)) {
-                $priorityRows = $fallbackRows;
-            }
+        // 2) Top category/subject inside the top area
+        $catSql = "SELECT MAX({$categoryExpr}) AS category_name, COUNT(*) AS category_total
+                   FROM feedback
+                   WHERE {$whereSql}
+                   GROUP BY LOWER({$categoryExpr})
+                   ORDER BY category_total DESC, category_name ASC
+                   LIMIT 1";
+        $catRes = $db->query($catSql);
+        $topCategory = null;
+        if ($catRes) {
+            $topCategory = $catRes->fetch_assoc();
+            $catRes->free();
         }
+
+        $priorityRows[] = [
+            'district_name' => $districtVal,
+            'barangay_name' => $barangayVal,
+            'alternative_name' => $altVal,
+            'category_name' => (string)($topCategory['category_name'] ?? 'Uncategorized'),
+            'report_total' => $topTotal
+        ];
     }
 } else {
-    $priorityRes = $db->query("SELECT COALESCE(NULLIF(TRIM(location),''), 'No location') AS location_name, MAX(COALESCE(NULLIF(TRIM(category),''), NULLIF(TRIM(subject),''), 'Uncategorized')) AS category_name, COUNT(*) AS report_total FROM feedback GROUP BY COALESCE(NULLIF(TRIM(location),''), 'No location'), LOWER(COALESCE(NULLIF(TRIM(category),''), NULLIF(TRIM(subject),''), 'Uncategorized')) ORDER BY report_total DESC, location_name ASC, category_name ASC LIMIT 1");
-    if ($priorityRes) {
-        $priorityRows = $priorityRes->fetch_all(MYSQLI_ASSOC);
-        $priorityRes->free();
+    // Legacy fallback (no district/barangay/alternative columns)
+    $categoryExpr = "COALESCE(NULLIF(TRIM(category),''), NULLIF(TRIM(subject),''), 'Uncategorized')";
+    $locationExpr = "COALESCE(NULLIF(TRIM(location),''), 'No location')";
+    $areaSql = "SELECT {$locationExpr} AS location_name, COUNT(*) AS area_total
+                FROM feedback
+                GROUP BY {$locationExpr}
+                ORDER BY area_total DESC, location_name ASC
+                LIMIT 1";
+    $areaRes = $db->query($areaSql);
+    $topArea = null;
+    if ($areaRes) {
+        $topArea = $areaRes->fetch_assoc();
+        $areaRes->free();
+    }
+    if (!empty($topArea)) {
+        $locationVal = (string)($topArea['location_name'] ?? 'No location');
+        $topTotal = (int)($topArea['area_total'] ?? 0);
+        $catSql = "SELECT MAX({$categoryExpr}) AS category_name, COUNT(*) AS category_total
+                   FROM feedback
+                   WHERE {$locationExpr} = '" . $db->real_escape_string($locationVal) . "'
+                   GROUP BY LOWER({$categoryExpr})
+                   ORDER BY category_total DESC, category_name ASC
+                   LIMIT 1";
+        $catRes = $db->query($catSql);
+        $topCategory = null;
+        if ($catRes) {
+            $topCategory = $catRes->fetch_assoc();
+            $catRes->free();
+        }
+        $priorityRows[] = [
+            'location_name' => $locationVal,
+            'category_name' => (string)($topCategory['category_name'] ?? 'Uncategorized'),
+            'report_total' => $topTotal
+        ];
     }
 }
 if (!empty($priorityRows)) {
