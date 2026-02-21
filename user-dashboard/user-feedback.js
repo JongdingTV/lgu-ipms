@@ -637,6 +637,8 @@
         btn.addEventListener('click', function () {
             const url = btn.getAttribute('data-photo-url') || '';
             if (!photoModal || !photoPreview || url === '') return;
+            if (detailsModal) detailsModal.style.zIndex = '1300';
+            photoModal.style.zIndex = '1400';
             photoPreview.src = url;
             photoModal.hidden = false;
             document.body.style.overflow = 'hidden';
@@ -710,6 +712,8 @@
     if (fdTopPhotoPreview) {
         fdTopPhotoPreview.addEventListener('click', function () {
             if (!currentDetailsPhotoUrl || !photoModal || !photoPreview) return;
+            if (detailsModal) detailsModal.style.zIndex = '1300';
+            photoModal.style.zIndex = '1400';
             photoPreview.src = currentDetailsPhotoUrl;
             photoModal.hidden = false;
             document.body.style.overflow = 'hidden';

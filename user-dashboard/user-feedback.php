@@ -754,7 +754,7 @@ $csrfToken = generate_csrf_token();
     </section>
 
 
-    <div id="feedbackPhotoModal" class="avatar-crop-modal" hidden>
+    <div id="feedbackPhotoModal" class="avatar-crop-modal" hidden style="z-index:1400;">
         <div class="avatar-crop-dialog" style="max-width:820px;width:min(92vw,820px);">
             <div class="avatar-crop-header">
                 <h3>Submitted Photo</h3>
@@ -766,7 +766,7 @@ $csrfToken = generate_csrf_token();
         </div>
     </div>
 
-    <div id="feedbackDetailsModal" class="avatar-crop-modal" hidden>
+    <div id="feedbackDetailsModal" class="avatar-crop-modal" hidden style="z-index:1300;">
         <div class="avatar-crop-dialog" style="max-width:760px;width:min(94vw,760px);">
             <div class="avatar-crop-header">
                 <h3>Feedback Details</h3>
