@@ -369,7 +369,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
             <div class="feedback-controls">
                 <div class="search-group">
                     <label for="fbSearch">Search by Control Number or Name</label>
-                    <input id="fbSearch" type="search" placeholder="e.g., CTL-001 or John Doe">
+                    <input id="fbSearch" type="search" placeholder="e.g., CTL-00015 or John Doe">
                 </div>
                 <div class="search-group">
                     <label for="fbStatusFilter">Status</label>
@@ -459,9 +459,13 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php $count = 1; foreach ($feedbacks as $fb): ?>
+                            <?php foreach ($feedbacks as $fb): ?>
                                 <?php
                                 $fb_lc = array_change_key_case($fb, CASE_LOWER);
+                                $feedbackId = (int) ($fb_lc['id'] ?? 0);
+                                $controlNumber = $feedbackId > 0
+                                    ? 'CTL-' . str_pad((string) $feedbackId, 5, '0', STR_PAD_LEFT)
+                                    : 'CTL-NA';
                                 $cleanDescription = clean_feedback_description((string) ($fb_lc['description'] ?? ''));
                                 $mapEmbedUrl = feedback_map_embed_url($fb_lc);
                                 $rowStatus = strtolower(trim((string)($fb_lc['status'] ?? '')));
@@ -483,7 +487,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 <tr class="<?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ? 'pending-row' : '' ?>"
                                     data-status="<?= htmlspecialchars($rowStatus) ?>"
                                     data-category="<?= htmlspecialchars($rowCategory) ?>">
-                                    <td><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></td>
+                                    <td><strong><?= htmlspecialchars($controlNumber) ?></strong></td>
                                     <td><?= isset($fb_lc['date_submitted']) ? htmlspecialchars($fb_lc['date_submitted']) : '-' ?></td>
                                     <td><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></td>
                                     <td><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></td>
@@ -505,12 +509,12 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <button type="button" class="copy-btn" data-copy-control="CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?>">Copy #</button>
+                                        <button type="button" class="copy-btn" data-copy-control="<?= htmlspecialchars($controlNumber) ?>">Copy #</button>
                                         <button type="button" class="edit-btn" data-edit-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Edit</button>
                                         <button type="button" class="view-btn" data-view-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Details</button>
                                     </td>
                                 </tr>
-                            <?php $count++; endforeach; ?>
+                            <?php endforeach; ?>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -519,8 +523,16 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
 
             <?php if (!empty($feedbacks)): ?>
                 <div id="prioritizationModalRoot">
-                    <?php $count = 1; foreach ($feedbacks as $fb): ?>
-                        <?php $fb_lc = array_change_key_case($fb, CASE_LOWER); ?>
+                    <?php foreach ($feedbacks as $fb): ?>
+                        <?php
+                        $fb_lc = array_change_key_case($fb, CASE_LOWER);
+                        $feedbackId = (int) ($fb_lc['id'] ?? 0);
+                        $controlNumber = $feedbackId > 0
+                            ? 'CTL-' . str_pad((string) $feedbackId, 5, '0', STR_PAD_LEFT)
+                            : 'CTL-NA';
+                        $cleanDescription = clean_feedback_description((string) ($fb_lc['description'] ?? ''));
+                        $mapEmbedUrl = feedback_map_embed_url($fb_lc);
+                        ?>
                         <div id="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal">
                             <div class="modal-content">
                                 <div class="modal-header">
@@ -531,7 +543,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     <div class="modal-body">
                                         <div class="modal-field">
                                             <span class="modal-label">Control Number:</span>
-                                            <div class="modal-value"><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></div>
+                                            <div class="modal-value"><strong><?= htmlspecialchars($controlNumber) ?></strong></div>
                                         </div>
                                         <div class="modal-field">
                                             <span class="modal-label">From:</span>
@@ -568,7 +580,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 <div class="modal-body">
                                     <div class="modal-field">
                                         <span class="modal-label">Control Number:</span>
-                                        <div class="modal-value"><strong>CTL-<?= str_pad($count, 3, '0', STR_PAD_LEFT) ?></strong></div>
+                                        <div class="modal-value"><strong><?= htmlspecialchars($controlNumber) ?></strong></div>
                                     </div>
                                     <div class="modal-field">
                                         <span class="modal-label">Submitted By:</span>
@@ -719,7 +731,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                             </div>
                         </div>
                         <?php endif; ?>
-                    <?php $count++; endforeach; ?>
+                    <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </div>
