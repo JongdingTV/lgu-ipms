@@ -235,10 +235,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if ($projectsHasCertificationDoc && $certificationDoc === null) $certificationDoc = $existingCertificationDoc;
             if ($projectsHasCredentialsDoc && $credentialsDoc === null) $credentialsDoc = $existingCredentialsDoc;
 
-            if (($projectsHasLicenseDoc && !$licenseDoc) || ($projectsHasCertificationDoc && !$certificationDoc) || ($projectsHasCredentialsDoc && !$credentialsDoc)) {
-                respond_project_registration(false, 'All required engineer documents must be uploaded before saving this project.');
-            }
-
             $sql = "UPDATE projects SET code=?, name=?, type=?, sector=?, description=?, priority=?";
             $types = 'ssssss';
             $params = [$code, $name, $type, $sector, $description, $priority];
@@ -277,10 +273,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             bind_stmt_params($stmt, $types, $params);
         } else {
-            if (($projectsHasLicenseDoc && $licenseDoc === null) || ($projectsHasCertificationDoc && $certificationDoc === null) || ($projectsHasCredentialsDoc && $credentialsDoc === null)) {
-                respond_project_registration(false, 'License, certification, and credentials documents are required before project registration.');
-            }
-
             // Insert new project; support schemas with or without created_at.
             $columns = ['code', 'name', 'type', 'sector', 'description', 'priority'];
             $types = 'ssssss';
@@ -593,18 +585,6 @@ $db->close();
                     <label for="projBudget">Total Estimated Cost</label>
                     <input type="number" id="projBudget" name="budget" min="0" step="0.01" required>
                     <small>Maximum allowed budget: PHP <?php echo number_format((float) MAX_PROJECT_BUDGET, 2); ?></small>
-                </fieldset>
-
-                <fieldset>
-                    <legend>Engineer Requirements (Required)</legend>
-                    <label for="engineerLicenseDoc">License Document (PDF/JPG/PNG, max 5MB)</label>
-                    <input type="file" id="engineerLicenseDoc" name="engineer_license_doc" accept=".pdf,.jpg,.jpeg,.png">
-
-                    <label for="engineerCertificationDoc">Certification Document (PDF/JPG/PNG, max 5MB)</label>
-                    <input type="file" id="engineerCertificationDoc" name="engineer_certification_doc" accept=".pdf,.jpg,.jpeg,.png">
-
-                    <label for="engineerCredentialsDoc">Other Credentials (PDF/JPG/PNG, max 5MB)</label>
-                    <input type="file" id="engineerCredentialsDoc" name="engineer_credentials_doc" accept=".pdf,.jpg,.jpeg,.png">
                 </fieldset>
 
                 <!-- Status -->
