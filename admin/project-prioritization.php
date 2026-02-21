@@ -631,8 +631,18 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     <div class="modal-field">
                                         <span class="modal-label">Citizen Photo:</span>
                                         <div class="modal-value">
-                                            <?php if (!empty($fb_lc['photo_path'])): ?>
-                                                <a href="/admin/feedback-photo.php?file=<?= rawurlencode((string) $fb_lc['photo_path']) ?>" target="_blank" rel="noopener">View Uploaded Photo</a>
+                                            <?php
+                                            $photoFile = '';
+                                            $photoPathRaw = trim((string) ($fb_lc['photo_path'] ?? ''));
+                                            if ($photoPathRaw !== '') {
+                                                $photoFile = basename(str_replace('\\', '/', $photoPathRaw));
+                                            }
+                                            if ($photoFile === '' && preg_match('/\[Photo Attachment Private\]\s+([\w\-.]+\.(?:jpg|jpeg|png|webp))/i', (string) ($fb_lc['description'] ?? ''), $pm)) {
+                                                $photoFile = (string) ($pm[1] ?? '');
+                                            }
+                                            ?>
+                                            <?php if ($photoFile !== ''): ?>
+                                                <a href="/admin/feedback-photo.php?file=<?= rawurlencode($photoFile) ?>" target="_blank" rel="noopener">View Uploaded Photo</a>
                                             <?php else: ?>
                                                 No photo attached.
                                             <?php endif; ?>
