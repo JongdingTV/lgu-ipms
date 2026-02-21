@@ -198,6 +198,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_contractor_documents') {
+    header('Content-Type: application/json');
+    $contractorId = isset($_GET['contractor_id']) ? (int) $_GET['contractor_id'] : 0;
+    if ($contractorId <= 0 || !registered_table_exists($db, 'contractor_documents')) {
+        echo json_encode([]);
+        exit;
+    }
+
+    $stmt = $db->prepare(
+        "SELECT id, contractor_id, document_type, file_path, original_name, mime_type, file_size, expires_on, is_verified, verified_at, uploaded_at
+         FROM contractor_documents
+         WHERE contractor_id = ?
+         ORDER BY uploaded_at DESC, id DESC"
+    );
+    if (!$stmt) {
+        echo json_encode([]);
+        exit;
+    }
+    $stmt->bind_param('i', $contractorId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = [];
+    while ($res && ($row = $res->fetch_assoc())) {
+        $row['viewer_url'] = 'contractor-document.php?id=' . (int)($row['id'] ?? 0);
+        $rows[] = $row;
+    }
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+    echo json_encode($rows);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'recommended_engineers') {
     header('Content-Type: application/json');
 
@@ -259,6 +293,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $stmt->close();
 
     echo json_encode($rows);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_contractor_document') {
+    header('Content-Type: application/json');
+    $documentId = isset($_POST['document_id']) ? (int) $_POST['document_id'] : 0;
+    $isVerified = isset($_POST['is_verified']) ? (int) $_POST['is_verified'] : 1;
+    $isVerified = $isVerified === 1 ? 1 : 0;
+
+    if ($documentId <= 0 || !registered_table_exists($db, 'contractor_documents')) {
+        echo json_encode(['success' => false, 'message' => 'Invalid document or table missing.']);
+        exit;
+    }
+
+    $employeeId = isset($_SESSION['employee_id']) ? (int) $_SESSION['employee_id'] : null;
+    $stmt = $db->prepare(
+        "UPDATE contractor_documents
+         SET is_verified = ?, verified_by = ?, verified_at = CASE WHEN ? = 1 THEN NOW() ELSE NULL END
+         WHERE id = ?"
+    );
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Failed to prepare verification update.']);
+        exit;
+    }
+    $stmt->bind_param('iiii', $isVerified, $employeeId, $isVerified, $documentId);
+    $ok = $stmt->execute();
+    $stmt->close();
+
+    echo json_encode([
+        'success' => $ok,
+        'message' => $ok ? ($isVerified ? 'Document verified.' : 'Document marked as unverified.') : 'Unable to update document status.'
+    ]);
     exit;
 }
 
@@ -746,6 +812,7 @@ $db->close();
                                 <th>Status</th>
                                 <th>Performance / Risk</th>
                                 <th>Projects Assigned</th>
+                                <th>Documents</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -795,6 +862,16 @@ $db->close();
             <div id="projectsViewList" class="contractor-modal-list"></div>
             <div class="contractor-modal-actions">
                 <button type="button" id="projectsCloseBtn" class="btn-contractor-primary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="contractorDocsModal" class="contractor-modal" role="dialog" aria-modal="true" aria-labelledby="contractorDocsTitle">
+        <div class="contractor-modal-panel">
+            <h2 id="contractorDocsTitle">Engineer Documents</h2>
+            <div id="contractorDocsList" class="contractor-modal-list"></div>
+            <div class="contractor-modal-actions">
+                <button type="button" id="contractorDocsCloseBtn" class="btn-contractor-primary">Close</button>
             </div>
         </div>
     </div>

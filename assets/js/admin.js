@@ -1574,18 +1574,58 @@ if (contractorForm && resetBtn && formMessage) {
     contractorForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = {
+            full_name: document.getElementById('ctrFullName')?.value.trim() || '',
             company: document.getElementById('ctrCompany')?.value.trim() || '',
             owner: document.getElementById('ctrOwner')?.value.trim() || '',
             license: document.getElementById('ctrLicense')?.value.trim() || '',
+            license_expiration_date: document.getElementById('ctrLicenseExpiry')?.value || '',
             email: document.getElementById('ctrEmail')?.value.trim() || '',
             phone: document.getElementById('ctrPhone')?.value.trim() || '',
             address: document.getElementById('ctrAddress')?.value.trim() || '',
             specialization: document.getElementById('ctrSpecialization')?.value.trim() || '',
+            certifications_text: document.getElementById('ctrCertifications')?.value.trim() || '',
             experience: parseInt(document.getElementById('ctrExperience')?.value, 10) || 0,
             rating: parseFloat(document.getElementById('ctrRating')?.value) || 0,
             status: document.getElementById('ctrStatus')?.value.trim() || 'Active',
+            compliance_status: document.getElementById('ctrComplianceStatus')?.value.trim() || 'Compliant',
             notes: document.getElementById('ctrNotes')?.value.trim() || ''
         };
+
+        const licenseFile = document.getElementById('ctrDocLicense')?.files?.[0] || null;
+        const resumeFile = document.getElementById('ctrDocResume')?.files?.[0] || null;
+        const certFile = document.getElementById('ctrDocCertificate')?.files?.[0] || null;
+        const maxSizeBytes = 5 * 1024 * 1024;
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+
+        if (!data.full_name || !data.license || !data.license_expiration_date) {
+            formMessage.style.color = '#d00';
+            formMessage.textContent = 'Full name, license number, and license expiration date are required.';
+            formMessage.style.display = 'block';
+            return;
+        }
+
+        if (!editingId && (!licenseFile || !resumeFile || !certFile)) {
+            formMessage.style.color = '#d00';
+            formMessage.textContent = 'License, resume, and certificate uploads are required.';
+            formMessage.style.display = 'block';
+            return;
+        }
+
+        for (const file of [licenseFile, resumeFile, certFile]) {
+            if (!file) continue;
+            if (file.size > maxSizeBytes) {
+                formMessage.style.color = '#d00';
+                formMessage.textContent = `File "${file.name}" exceeds 5MB limit.`;
+                formMessage.style.display = 'block';
+                return;
+            }
+            if (!allowedTypes.includes(String(file.type || '').toLowerCase())) {
+                formMessage.style.color = '#d00';
+                formMessage.textContent = `Invalid file type for "${file.name}". Allowed: PDF/JPG/PNG.`;
+                formMessage.style.display = 'block';
+                return;
+            }
+        }
 
         try {
             let response;
@@ -1597,10 +1637,16 @@ if (contractorForm && resetBtn && formMessage) {
                     body: JSON.stringify(data)
                 });
             } else {
+                const formData = new FormData();
+                Object.keys(data).forEach((key) => formData.append(key, data[key]));
+                formData.append('action', 'create_with_docs');
+                if (licenseFile) formData.append('license_document', licenseFile);
+                if (resumeFile) formData.append('resume_document', resumeFile);
+                if (certFile) formData.append('certificate_document', certFile);
+
                 response = await fetch(getApiUrl('admin/contractors-api.php'), {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: formData
                 });
             }
 

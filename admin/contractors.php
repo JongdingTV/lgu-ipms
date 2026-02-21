@@ -170,8 +170,12 @@ $db->close();
                     <legend>Basic Information</legend>
                     <div class="contractor-grid contractor-grid-3">
                         <div class="contractor-field">
+                            <label for="ctrFullName">Full Name</label>
+                            <input type="text" id="ctrFullName" placeholder="Enter full name" required>
+                        </div>
+                        <div class="contractor-field">
                             <label for="ctrCompany">Company Name</label>
-                            <input type="text" id="ctrCompany" placeholder="Enter company name" required>
+                            <input type="text" id="ctrCompany" placeholder="Enter company name">
                         </div>
                         <div class="contractor-field">
                             <label for="ctrOwner">Owner Name</label>
@@ -191,6 +195,20 @@ $db->close();
                         <div class="contractor-field">
                             <label for="ctrPhone">Phone Number</label>
                             <input type="tel" id="ctrPhone" placeholder="09xx xxx xxxx">
+                        </div>
+                    </div>
+                    <div class="contractor-grid contractor-grid-2">
+                        <div class="contractor-field">
+                            <label for="ctrLicenseExpiry">License Expiration Date</label>
+                            <input type="date" id="ctrLicenseExpiry" required>
+                        </div>
+                        <div class="contractor-field">
+                            <label for="ctrComplianceStatus">Compliance Status</label>
+                            <select id="ctrComplianceStatus">
+                                <option value="Compliant">Compliant</option>
+                                <option value="Needs Review">Needs Review</option>
+                                <option value="Non-compliant">Non-compliant</option>
+                            </select>
                         </div>
                     </div>
                 </fieldset>
@@ -221,6 +239,10 @@ $db->close();
 
                     <div class="contractor-grid contractor-grid-2">
                         <div class="contractor-field">
+                            <label for="ctrCertifications">Certifications</label>
+                            <input type="text" id="ctrCertifications" placeholder="e.g. Safety Officer II, QA/QC">
+                        </div>
+                        <div class="contractor-field">
                             <label for="ctrRating">Rating (1-5)</label>
                             <input type="number" id="ctrRating" min="1" max="5" step="0.1" placeholder="4.5">
                         </div>
@@ -237,6 +259,25 @@ $db->close();
                     <div class="contractor-field">
                         <label for="ctrNotes">Notes</label>
                         <textarea id="ctrNotes" rows="3" placeholder="Additional notes about this Engineer"></textarea>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Required Documents</legend>
+                    <p class="contractor-subtext">Upload clear files (PDF/JPG/PNG, max 5MB each) for verification and approval.</p>
+                    <div class="contractor-grid contractor-grid-3">
+                        <div class="contractor-field">
+                            <label for="ctrDocLicense">License Document</label>
+                            <input type="file" id="ctrDocLicense" accept=".pdf,.jpg,.jpeg,.png" required>
+                        </div>
+                        <div class="contractor-field">
+                            <label for="ctrDocResume">Resume/CV</label>
+                            <input type="file" id="ctrDocResume" accept=".pdf,.jpg,.jpeg,.png" required>
+                        </div>
+                        <div class="contractor-field">
+                            <label for="ctrDocCertificate">Certificates</label>
+                            <input type="file" id="ctrDocCertificate" accept=".pdf,.jpg,.jpeg,.png" required>
+                        </div>
                     </div>
                 </fieldset>
 

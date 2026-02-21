@@ -28,6 +28,10 @@
         const projectsListEl = document.getElementById('projectsList');
         const projectsViewTitle = document.getElementById('projectsViewTitle');
         const projectsViewList = document.getElementById('projectsViewList');
+        const contractorDocsModal = document.getElementById('contractorDocsModal');
+        const contractorDocsTitle = document.getElementById('contractorDocsTitle');
+        const contractorDocsList = document.getElementById('contractorDocsList');
+        const contractorDocsCloseBtn = document.getElementById('contractorDocsCloseBtn');
         const assignContractorId = document.getElementById('assignContractorId');
         const saveAssignmentsBtn = document.getElementById('saveAssignments');
         const assignCancelBtn = document.getElementById('assignCancelBtn');
@@ -42,6 +46,8 @@
         let projectsCache = [];
         let visibleContractors = [];
         let currentAssignedIds = [];
+        let currentDocsContractorId = null;
+        let currentDocsContractorName = 'Engineer';
 
         function esc(v) {
             return String(v ?? '')
@@ -150,7 +156,7 @@
             if (countEl) countEl.textContent = `${list.length} Engineer${list.length === 1 ? '' : 's'}`;
 
             if (!list.length) {
-                contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#6b7280;">No Engineers found.</td></tr>';
+                contractorsTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:18px; color:#6b7280;">No Engineers found.</td></tr>';
                 return;
             }
 
@@ -163,6 +169,7 @@
                     <td><span class="status-badge ${esc(String(c.status || '').toLowerCase().replace(/\s+/g, '-'))}">${esc(c.status || 'N/A')}</span></td>
                     <td>${Number(c.performance_score || c.rating || 0).toFixed(1)} | ${esc(c.risk_level || 'Medium')}</td>
                     <td><button class="btn-view-projects" data-id="${esc(c.id)}">View Projects</button></td>
+                    <td><button class="btn-contractor-secondary btn-docs" data-id="${esc(c.id)}">Documents</button></td>
                     <td>
                         <div class="action-buttons">
                             <button class="btn-assign" data-id="${esc(c.id)}">Assign Projects</button>
@@ -355,6 +362,49 @@
             if (projectsViewModal) projectsViewModal.style.display = 'none';
         }
 
+        function closeDocsModal() {
+            if (contractorDocsModal) contractorDocsModal.style.display = 'none';
+            currentDocsContractorId = null;
+        }
+
+        async function openDocsModal(contractorId, contractorName) {
+            if (!contractorDocsModal || !contractorDocsList || !contractorDocsTitle) return;
+            currentDocsContractorId = String(contractorId);
+            currentDocsContractorName = contractorName || currentDocsContractorName || 'Engineer';
+            contractorDocsTitle.textContent = `Engineer Documents - ${currentDocsContractorName}`;
+            contractorDocsList.innerHTML = '<p class="engineer-modal-message">Loading documents...</p>';
+            contractorDocsModal.style.display = 'flex';
+
+            try {
+                const docs = await fetchJsonWithFallback(`action=load_contractor_documents&contractor_id=${encodeURIComponent(contractorId)}&_=${Date.now()}`);
+                if (!Array.isArray(docs) || docs.length === 0) {
+                    contractorDocsList.innerHTML = '<p class="engineer-modal-message">No uploaded documents found.</p>';
+                    return;
+                }
+                contractorDocsList.innerHTML = docs.map((d) => {
+                    const verified = Number(d.is_verified || 0) === 1;
+                    return `<div class="engineer-project-card">
+                        <div class="engineer-project-head">
+                            <strong>${esc(String(d.document_type || 'document').toUpperCase())}</strong>
+                            <span class="engineer-project-priority ${verified ? 'low' : 'high'}">${verified ? 'Verified' : 'Pending Verification'}</span>
+                        </div>
+                        <div class="engineer-project-grid">
+                            <div><span class="engineer-project-label">Original Name</span><span class="engineer-project-value">${esc(d.original_name || '-')}</span></div>
+                            <div><span class="engineer-project-label">Uploaded</span><span class="engineer-project-value">${esc(d.uploaded_at || '-')}</span></div>
+                            <div><span class="engineer-project-label">Expires On</span><span class="engineer-project-value">${esc(d.expires_on || '-')}</span></div>
+                            <div><span class="engineer-project-label">Size</span><span class="engineer-project-value">${Number(d.file_size || 0).toLocaleString()} bytes</span></div>
+                            <div class="engineer-project-full">
+                                <a class="engineer-project-doc" href="${esc(d.viewer_url || '#')}" target="_blank" rel="noopener">View Document</a>
+                                <button type="button" class="btn-contractor-secondary btn-verify-doc" data-doc-id="${esc(d.id)}" data-verify="${verified ? '0' : '1'}">${verified ? 'Mark Unverified' : 'Verify Document'}</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (_) {
+                contractorDocsList.innerHTML = '<p class="engineer-modal-message error">Failed to load documents.</p>';
+            }
+        }
+
         function closeDeleteModal() {
             if (contractorDeleteModal) contractorDeleteModal.style.display = 'none';
         }
@@ -475,7 +525,7 @@
                 renderProjects(projectsCache);
                 await loadEvaluationOverview();
             } catch (err) {
-                if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#c00;">Failed to load Engineers data.</td></tr>';
+                if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:18px; color:#c00;">Failed to load Engineers data.</td></tr>';
                 if (projectsTbody) projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#c00;">Failed to load projects data.</td></tr>';
                 if (formMessage) {
                     formMessage.style.display = 'block';
@@ -510,6 +560,10 @@
                 openProjectsModal(contractorId, contractorName || 'Engineer');
                 return;
             }
+            if (btn.classList.contains('btn-docs')) {
+                openDocsModal(contractorId, contractorName || 'Engineer');
+                return;
+            }
             if (btn.classList.contains('btn-assign')) {
                 openAssignModal(contractorId, contractorName || 'Engineer');
                 return;
@@ -535,14 +589,31 @@
         refreshBtn?.addEventListener('click', loadAllData);
         exportCsvBtn?.addEventListener('click', exportVisibleContractorsCsv);
         recommendEngineerBtn?.addEventListener('click', loadRecommendedEngineers);
+        contractorDocsCloseBtn?.addEventListener('click', closeDocsModal);
         assignCancelBtn?.addEventListener('click', closeAssignModal);
         projectsCloseBtn?.addEventListener('click', closeProjectsModal);
         assignmentModal?.addEventListener('click', (e) => { if (e.target === assignmentModal) closeAssignModal(); });
         projectsViewModal?.addEventListener('click', (e) => { if (e.target === projectsViewModal) closeProjectsModal(); });
+        contractorDocsModal?.addEventListener('click', (e) => { if (e.target === contractorDocsModal) closeDocsModal(); });
+        contractorDocsList?.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.btn-verify-doc');
+            if (!btn || !currentDocsContractorId) return;
+            const docId = btn.getAttribute('data-doc-id');
+            const verifyValue = btn.getAttribute('data-verify') || '1';
+            if (!docId) return;
+            try {
+                const resp = await postJsonWithFallback(`action=verify_contractor_document&document_id=${encodeURIComponent(docId)}&is_verified=${encodeURIComponent(verifyValue)}`);
+                if (!resp || resp.success === false) throw new Error((resp && resp.message) || 'Unable to update document status.');
+                await openDocsModal(currentDocsContractorId, currentDocsContractorName);
+            } catch (err) {
+                setMessage(err.message || 'Failed to update document verification.', true);
+            }
+        });
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
             closeAssignModal();
             closeProjectsModal();
+            closeDocsModal();
             closeDeleteModal();
         });
 
