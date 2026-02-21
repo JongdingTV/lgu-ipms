@@ -78,9 +78,11 @@
     var statusFilter = document.getElementById('fbStatusFilter');
     var categoryFilter = document.getElementById('fbCategoryFilter');
     var visibleCount = document.getElementById('fbVisibleCount');
+    var priorityCard = document.getElementById('priorityTopCard');
     var rows = Array.from(document.querySelectorAll('#inputsTable tbody tr')).filter(function (row) {
         return !row.querySelector('.no-results');
     });
+    var activePriorityFilter = null;
 
     function applyFeedbackFilters() {
         var query = (searchInput && searchInput.value ? searchInput.value : '').trim().toLowerCase();
@@ -92,14 +94,33 @@
             var haystack = row.textContent.toLowerCase();
             var rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
             var rowCategory = (row.getAttribute('data-category') || '').toLowerCase();
+            var rowDistrict = (row.getAttribute('data-district') || '').toLowerCase();
+            var rowBarangay = (row.getAttribute('data-barangay') || '').toLowerCase();
+            var rowAlternative = (row.getAttribute('data-alternative-name') || '').toLowerCase();
+            var rowLocation = (row.getAttribute('data-location') || '').toLowerCase();
+            var matchesPriority = true;
+
+            if (activePriorityFilter) {
+                if (activePriorityFilter.district || activePriorityFilter.barangay || activePriorityFilter.alternative) {
+                    matchesPriority = (!activePriorityFilter.district || rowDistrict === activePriorityFilter.district)
+                        && (!activePriorityFilter.barangay || rowBarangay === activePriorityFilter.barangay)
+                        && (!activePriorityFilter.alternative || rowAlternative === activePriorityFilter.alternative);
+                } else if (activePriorityFilter.location) {
+                    matchesPriority = rowLocation === activePriorityFilter.location;
+                }
+            }
+
             var visible = (!query || haystack.indexOf(query) >= 0)
                 && (!status || rowStatus === status)
                 && (!category || rowCategory === category);
+            visible = visible && matchesPriority;
             row.style.display = visible ? '' : 'none';
             if (visible) shown += 1;
         });
 
-        if (visibleCount) visibleCount.textContent = 'Showing ' + shown + ' of ' + rows.length;
+        if (visibleCount) {
+            visibleCount.textContent = 'Showing ' + shown + ' of ' + rows.length + (activePriorityFilter ? ' | Priority filter active' : '');
+        }
     }
 
     var statusFlash = new URLSearchParams(window.location.search).get('status');
@@ -126,7 +147,45 @@
             if (searchInput) searchInput.value = '';
             if (statusFilter) statusFilter.value = '';
             if (categoryFilter) categoryFilter.value = '';
+            activePriorityFilter = null;
+            if (priorityCard) priorityCard.classList.remove('is-active');
             applyFeedbackFilters();
+        });
+    }
+
+    function togglePriorityFilter() {
+        if (!priorityCard) return;
+        if (activePriorityFilter) {
+            activePriorityFilter = null;
+            priorityCard.classList.remove('is-active');
+            applyFeedbackFilters();
+            return;
+        }
+        var district = (priorityCard.getAttribute('data-district') || '').trim().toLowerCase();
+        var barangay = (priorityCard.getAttribute('data-barangay') || '').trim().toLowerCase();
+        var alternative = (priorityCard.getAttribute('data-alternative-name') || '').trim().toLowerCase();
+        var location = (priorityCard.getAttribute('data-location') || '').trim().toLowerCase();
+        activePriorityFilter = {
+            district: district,
+            barangay: barangay,
+            alternative: alternative,
+            location: location
+        };
+        priorityCard.classList.add('is-active');
+        applyFeedbackFilters();
+        var table = document.getElementById('inputsTable');
+        if (table && table.scrollIntoView) {
+            table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    if (priorityCard) {
+        priorityCard.addEventListener('click', togglePriorityFilter);
+        priorityCard.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                togglePriorityFilter();
+            }
         });
     }
 

@@ -2994,6 +2994,15 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-
     color: #f0f7ff !important;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .prioritization-insights .priority-kpi.is-clickable:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .prioritization-insights .priority-kpi.is-clickable.is-active {
+    border-color: #5ea1ff !important;
+    box-shadow: 0 0 0 2px rgba(94, 161, 255, 0.24);
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .pm-controls-wrapper,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .feedback-controls,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-content .recent-projects,
@@ -3076,6 +3085,21 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .main-
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-insights .priority-kpi.critical {
     border-color: #f59e0b;
     background: linear-gradient(165deg, #fff7ed, #fffbeb);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-insights .priority-kpi.is-clickable {
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-insights .priority-kpi.is-clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(17, 56, 103, 0.16);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-insights .priority-kpi.is-clickable.is-active {
+    border-color: #1f5fd3;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .prioritization-insights .priority-kpi small {

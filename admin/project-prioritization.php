@@ -194,7 +194,11 @@ $oldestPendingDays = 0;
 $topPriority = [
     'location_group' => 'No data',
     'category' => 'N/A',
-    'total' => 0
+    'total' => 0,
+    'district' => '',
+    'barangay' => '',
+    'alternative_name' => '',
+    'location' => ''
 ];
 foreach ($feedbacks as $fb) {
     if (isset($fb['category']) && strtolower($fb['category']) === 'critical') $criticalInputs++;
@@ -311,9 +315,13 @@ if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
 if (!empty($priorityRows)) {
     $top = $priorityRows[0];
     if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
-        $topPriority['location_group'] = trim(($top['district_name'] ?? 'N/A') . ' / ' . ($top['barangay_name'] ?? 'N/A') . ' / ' . ($top['alternative_name'] ?? 'N/A'));
+        $topPriority['district'] = trim((string) ($top['district_name'] ?? ''));
+        $topPriority['barangay'] = trim((string) ($top['barangay_name'] ?? ''));
+        $topPriority['alternative_name'] = trim((string) ($top['alternative_name'] ?? ''));
+        $topPriority['location_group'] = trim(($topPriority['district'] !== '' ? $topPriority['district'] : 'N/A') . ' / ' . ($topPriority['barangay'] !== '' ? $topPriority['barangay'] : 'N/A') . ' / ' . ($topPriority['alternative_name'] !== '' ? $topPriority['alternative_name'] : 'N/A'));
     } else {
-        $topPriority['location_group'] = $top['location_name'] ?? 'No data';
+        $topPriority['location'] = trim((string) ($top['location_name'] ?? ''));
+        $topPriority['location_group'] = $topPriority['location'] !== '' ? $topPriority['location'] : 'No data';
     }
     $topPriority['category'] = trim((string)($top['category_name'] ?? 'Uncategorized'));
     $topPriority['total'] = (int) ($top['report_total'] ?? 0);
@@ -478,11 +486,22 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                     <span>Oldest Pending</span>
                     <strong><?= (int)$oldestPendingDays ?> day<?= ((int)$oldestPendingDays === 1 ? '' : 's') ?></strong>
                 </article>
-                <article class="priority-kpi critical">
+                <article
+                    id="priorityTopCard"
+                    class="priority-kpi critical is-clickable"
+                    role="button"
+                    tabindex="0"
+                    data-district="<?= htmlspecialchars(strtolower($topPriority['district'])) ?>"
+                    data-barangay="<?= htmlspecialchars(strtolower($topPriority['barangay'])) ?>"
+                    data-alternative-name="<?= htmlspecialchars(strtolower($topPriority['alternative_name'])) ?>"
+                    data-location="<?= htmlspecialchars(strtolower($topPriority['location'])) ?>"
+                    data-category="<?= htmlspecialchars(strtolower($topPriority['category'])) ?>"
+                >
                     <span>Priority</span>
                     <strong><?= htmlspecialchars($topPriority['total'] . ' report' . ($topPriority['total'] === 1 ? '' : 's')) ?></strong>
                     <small><?= htmlspecialchars($topPriority['location_group']) ?></small>
                     <small><?= htmlspecialchars($topPriority['category']) ?></small>
+                    <small>Click to view matching reports</small>
                 </article>
             </div>
 
@@ -527,6 +546,10 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 $mapEmbedUrl = feedback_map_embed_url($fb_lc);
                                 $rowStatus = strtolower(trim((string)($fb_lc['status'] ?? '')));
                                 $rowCategory = strtolower(trim((string)($fb_lc['category'] ?? '')));
+                                $rowDistrict = strtolower(trim((string)($fb_lc['district'] ?? '')));
+                                $rowBarangay = strtolower(trim((string)($fb_lc['barangay'] ?? '')));
+                                $rowAlternativeName = strtolower(trim((string)($fb_lc['alternative_name'] ?? '')));
+                                $rowLocation = strtolower(trim((string)($fb_lc['location'] ?? '')));
                                 $rowDays = null;
                                 if (!empty($fb_lc['date_submitted'])) {
                                     $rowTs = strtotime((string)$fb_lc['date_submitted']);
@@ -543,7 +566,11 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 ?>
                                 <tr class="<?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ? 'pending-row' : '' ?>"
                                     data-status="<?= htmlspecialchars($rowStatus) ?>"
-                                    data-category="<?= htmlspecialchars($rowCategory) ?>">
+                                    data-category="<?= htmlspecialchars($rowCategory) ?>"
+                                    data-district="<?= htmlspecialchars($rowDistrict) ?>"
+                                    data-barangay="<?= htmlspecialchars($rowBarangay) ?>"
+                                    data-alternative-name="<?= htmlspecialchars($rowAlternativeName) ?>"
+                                    data-location="<?= htmlspecialchars($rowLocation) ?>">
                                     <td><strong><?= htmlspecialchars($controlNumber) ?></strong></td>
                                     <td><?= isset($fb_lc['date_submitted']) ? htmlspecialchars($fb_lc['date_submitted']) : '-' ?></td>
                                     <td><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></td>
