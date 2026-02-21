@@ -353,20 +353,11 @@
             }).catch(function () { /* ignore transient failure; next poll will resync */ });
         }
 
-        function relativeTime(value, tsValue) {
-            var ts = null;
-            var unixSeconds = Number(tsValue || 0);
-            if (unixSeconds > 0) {
-                ts = new Date(unixSeconds * 1000);
-            } else if (value) {
-                var normalized = String(value).trim().replace(' ', 'T');
-                if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(normalized)) normalized += 'Z';
-                ts = new Date(normalized);
-            }
-            if (!ts) return '';
+        function relativeTime(value) {
+            if (!value) return '';
+            var ts = new Date(value);
             if (Number.isNaN(ts.getTime())) return '';
             var secs = Math.floor((Date.now() - ts.getTime()) / 1000);
-            if (secs < 0) secs = 0;
             if (secs < 60) return 'just now';
             var mins = Math.floor(secs / 60);
             if (mins < 60) return mins + 'm ago';
@@ -389,7 +380,7 @@
                     '  <span>' +
                     '    <strong>' + (item.title || 'Update') + '</strong>' +
                     '    <small>' + (item.message || '') + '</small>' +
-                    '    <em>' + relativeTime(item.created_at, item.created_at_ts) + '</em>' +
+                    '    <em>' + relativeTime(item.created_at) + '</em>' +
                     '  </span>' +
                     '</li>';
             }).join('');

@@ -432,20 +432,11 @@
     let notifications = [];
     let latestNotificationId = 0;
 
-    const formatRelativeTime = (value, tsValue) => {
-      let ts = null;
-      const unixSeconds = Number(tsValue || 0);
-      if (unixSeconds > 0) {
-        ts = new Date(unixSeconds * 1000);
-      } else if (value) {
-        let normalized = String(value).trim().replace(' ', 'T');
-        if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(normalized)) normalized += 'Z';
-        ts = new Date(normalized);
-      }
-      if (!ts) return '';
+    const formatRelativeTime = (value) => {
+      if (!value) return '';
+      const ts = new Date(value);
       if (Number.isNaN(ts.getTime())) return '';
       const secs = Math.floor((Date.now() - ts.getTime()) / 1000);
-      if (secs < 0) return 'just now';
       if (secs < 60) return 'just now';
       const mins = Math.floor(secs / 60);
       if (mins < 60) return mins + 'm ago';
@@ -468,7 +459,7 @@
           <span>
             <strong>${item.title || 'Citizen concern submitted'}</strong>
             <small>${item.message || ''}</small>
-            <em>${formatRelativeTime(item.created_at, item.created_at_ts)}</em>
+            <em>${formatRelativeTime(item.created_at)}</em>
           </span>
         </li>`;
       }).join('');
