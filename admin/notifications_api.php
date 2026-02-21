@@ -31,7 +31,7 @@ try {
     $stmt = $db->prepare("
         SELECT id, user_name, subject, category, location, status, date_submitted
         FROM feedback
-        ORDER BY id DESC
+        ORDER BY date_submitted DESC, id DESC
         LIMIT 12
     ");
 
@@ -64,7 +64,8 @@ try {
                 'title' => $subject,
                 'message' => $location !== '' ? ($user . ' • ' . $location) : $user,
                 'status' => $row['status'] ?? 'Pending',
-                'created_at' => $row['date_submitted'] ?? null
+                'created_at' => $row['date_submitted'] ?? null,
+                'created_at_ts' => !empty($row['date_submitted']) ? strtotime((string) $row['date_submitted']) : null
             ];
         }
         $stmt->close();
@@ -76,6 +77,15 @@ try {
     ]);
     exit;
 }
+
+usort($items, static function (array $a, array $b): int {
+    $aTs = (int) ($a['created_at_ts'] ?? 0);
+    $bTs = (int) ($b['created_at_ts'] ?? 0);
+    if ($aTs !== $bTs) {
+        return $bTs <=> $aTs;
+    }
+    return ((int) ($b['id'] ?? 0)) <=> ((int) ($a['id'] ?? 0));
+});
 
 echo json_encode([
     'success' => true,
