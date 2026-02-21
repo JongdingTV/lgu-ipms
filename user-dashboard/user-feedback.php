@@ -447,9 +447,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
 }
 
 $hasFeedbackUserId = feedback_table_has_user_id($db);
-$listStmt = $hasFeedbackUserId
-    ? $db->prepare('SELECT subject, category, location, description, status, date_submitted FROM feedback WHERE user_id = ? ORDER BY date_submitted DESC LIMIT 20')
-    : $db->prepare('SELECT subject, category, location, description, status, date_submitted FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 20');
+$hasFeedbackPhotoPath = feedback_table_has_column($db, 'photo_path');
+$listFields = $hasFeedbackPhotoPath
+    ? 'subject, category, location, description, status, date_submitted, photo_path'
+    : 'subject, category, location, description, status, date_submitted';
+$listSql = $hasFeedbackUserId
+    ? "SELECT {$listFields} FROM feedback WHERE user_id = ? ORDER BY date_submitted DESC LIMIT 20"
+    : "SELECT {$listFields} FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 20";
+$listStmt = $db->prepare($listSql);
 if ($hasFeedbackUserId) {
     $listStmt->bind_param('i', $userId);
 } else {
@@ -710,9 +715,17 @@ $csrfToken = generate_csrf_token();
                             }
                             $desc = (string) ($row['description'] ?? '');
                             $photoPath = '';
-                            if (preg_match('/\[Photo Attachment Private\]\s+([\w\-.]+\.(?:jpg|jpeg|png|webp))/i', $desc, $m)) {
+                            $photoPathCol = trim((string) ($row['photo_path'] ?? ''));
+                            if ($photoPathCol !== '') {
+                                if (preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $photoPathCol)) {
+                                    $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($photoPathCol);
+                                } elseif (preg_match('#^/uploads/feedback/[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$#i', $photoPathCol)) {
+                                    $photoPath = $photoPathCol;
+                                }
+                            }
+                            if ($photoPath === '' && preg_match('/\[Photo Attachment Private\]\s+([\w\-.]+\.(?:jpg|jpeg|png|webp))/i', $desc, $m)) {
                                 $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($m[1]);
-                            } elseif (preg_match('/\[Photo Attachment\]\s+(\/uploads\/feedback\/[\w\-.]+\.((jpg)|(jpeg)|(png)|(webp)))/i', $desc, $m)) {
+                            } elseif ($photoPath === '' && preg_match('/\[Photo Attachment\]\s+(\/uploads\/feedback\/[\w\-.]+\.((jpg)|(jpeg)|(png)|(webp)))/i', $desc, $m)) {
                                 $photoPath = $m[1];
                             }
                             ?>
@@ -773,9 +786,6 @@ $csrfToken = generate_csrf_token();
                 <button type="button" class="avatar-crop-close" id="feedbackDetailsClose" aria-label="Close details viewer">&times;</button>
             </div>
             <div class="avatar-crop-body" style="padding:14px;display:grid;gap:10px;">
-                <div id="fdTopPhotoWrap" style="display:none;">
-                    <img id="fdTopPhotoPreview" src="" alt="Attached feedback photo" style="max-height:42vh;width:auto;max-width:100%;display:block;margin:0 auto;border-radius:8px;border:1px solid #dbe7f3;background:#fff;">
-                </div>
                 <div><strong>Date:</strong> <span id="fdDate">-</span></div>
                 <div><strong>Subject:</strong> <span id="fdSubject">-</span></div>
                 <div><strong>Category:</strong> <span id="fdCategory">-</span></div>
@@ -784,6 +794,9 @@ $csrfToken = generate_csrf_token();
                 <div>
                     <strong>Description:</strong>
                     <pre id="fdDescription" style="margin:8px 0 0;padding:10px;border:1px solid #dbe7f3;border-radius:10px;background:#f8fbff;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto;">-</pre>
+                </div>
+                <div id="fdPhotoRow" style="display:none;">
+                    <button type="button" id="fdViewPhotoBtn" class="ac-f84d9680">View Attached Photo</button>
                 </div>
             </div>
         </div>

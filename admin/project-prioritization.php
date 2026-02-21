@@ -632,7 +632,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                         <span class="modal-label">Citizen Photo:</span>
                                         <div class="modal-value">
                                             <?php if (!empty($fb_lc['photo_path'])): ?>
-                                                <a href="/user-dashboard/feedback-photo.php?file=<?= rawurlencode((string) $fb_lc['photo_path']) ?>" target="_blank" rel="noopener">View Uploaded Photo</a>
+                                                <a href="/admin/feedback-photo.php?file=<?= rawurlencode((string) $fb_lc['photo_path']) ?>" target="_blank" rel="noopener">View Uploaded Photo</a>
                                             <?php else: ?>
                                                 No photo attached.
                                             <?php endif; ?>
