@@ -84,11 +84,17 @@ $db->close();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Citizen Verification - LGU IPMS</title>
     <link rel="icon" type="image/png" href="../logocityhall.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
     <style>
+        body.citizen-verification-page,
+        body.citizen-verification-page *:not(svg):not(path) { font-family:'Poppins',sans-serif !important; }
+
         .verify-toolbar { display:grid; grid-template-columns:minmax(220px,1.2fr) minmax(160px,.7fr); gap:10px; margin:8px 0 14px; }
         .verify-input, .verify-select { border:1px solid #cbd5e1; border-radius:10px; padding:10px 12px; font-size:.92rem; }
         .verify-layout { display:grid; grid-template-columns:minmax(320px,42%) minmax(460px,58%); gap:14px; min-height:70vh; }
@@ -120,7 +126,7 @@ $db->close();
         @media (max-width: 860px) { .verify-grid, .verify-toolbar { grid-template-columns:1fr; } }
     </style>
 </head>
-<body>
+<body class="citizen-verification-page">
 <header class="nav" id="navbar">
     <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
