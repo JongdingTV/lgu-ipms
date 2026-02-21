@@ -97,6 +97,51 @@ if ($budgetTrendRes) {
 // Get recent projects
 $recentOrder = dashboard_projects_has_created_at($db) ? 'created_at DESC' : 'id DESC';
 $recentProjects = $db->query("SELECT id, name, location, status, budget FROM projects ORDER BY {$recentOrder} LIMIT 5");
+
+$distributionCompletedPct = 0;
+$distributionInProgressPct = 0;
+$distributionOtherPct = 0;
+if ((int) $totalProjects > 0) {
+    $distributionCompletedPct = (int) round(((int) $completedProjects / (int) $totalProjects) * 100);
+    $distributionInProgressPct = (int) round(((int) $inProgressProjects / (int) $totalProjects) * 100);
+    $distributionOtherPct = max(0, 100 - $distributionCompletedPct - $distributionInProgressPct);
+}
+
+$monthlyActivityMap = [];
+$monthlyActivityKeys = [];
+for ($i = 5; $i >= 0; $i--) {
+    $monthlyActivityKeys[] = date('Y-m', strtotime("-{$i} months"));
+}
+
+$monthlyDateExpr = dashboard_projects_has_created_at($db) ? "COALESCE(created_at, NOW())" : "COALESCE(start_date, NOW())";
+$monthlyActivitySql = "SELECT DATE_FORMAT({$monthlyDateExpr}, '%Y-%m') AS period, COUNT(*) AS total
+    FROM projects
+    WHERE {$monthlyDateExpr} >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 5 MONTH)
+    GROUP BY DATE_FORMAT({$monthlyDateExpr}, '%Y-%m')";
+$monthlyActivityRes = $db->query($monthlyActivitySql);
+if ($monthlyActivityRes) {
+    while ($row = $monthlyActivityRes->fetch_assoc()) {
+        $period = (string) ($row['period'] ?? '');
+        $monthlyActivityMap[$period] = (int) ($row['total'] ?? 0);
+    }
+    $monthlyActivityRes->free();
+}
+
+$monthlyActivityValues = [];
+foreach ($monthlyActivityKeys as $key) {
+    $monthlyActivityValues[] = (int) ($monthlyActivityMap[$key] ?? 0);
+}
+$monthlyActivityTotal = array_sum($monthlyActivityValues);
+
+$maxActivity = max(1, ...$monthlyActivityValues);
+$monthlyPoints = [];
+foreach ($monthlyActivityValues as $index => $value) {
+    $x = (int) round(($index / 5) * 320);
+    $y = (int) round(110 - (($value / $maxActivity) * 100));
+    $monthlyPoints[] = $x . ',' . $y;
+}
+$monthlyPolylinePoints = implode(' ', $monthlyPoints);
+
 $db->close();
 ?>
 <html>
@@ -247,29 +292,32 @@ $db->close();
             <div class="chart-box card">
                 <h3>Project Status Distribution</h3>
                 <div class="chart-placeholder">
+                    <div class="progress-bar" aria-hidden="true">
+                        <div class="progress-fill" id="statusStackBar" style="width:100%;background:linear-gradient(90deg,#16a34a 0% <?php echo (int) $distributionCompletedPct; ?>%,#2563eb <?php echo (int) $distributionCompletedPct; ?>% <?php echo (int) ($distributionCompletedPct + $distributionInProgressPct); ?>%,#f59e0b <?php echo (int) ($distributionCompletedPct + $distributionInProgressPct); ?>% 100%);"></div>
+                    </div>
                     <div class="status-legend">
                         <div class="legend-item">
                             <span class="legend-color ac-31e9dda2"></span>
-                            <span>Completed: 0%</span>
+                            <span id="completedPercent">Completed: <?php echo (int) $distributionCompletedPct; ?>%</span>
                         </div>
                         <div class="legend-item">
-                            <span class="legend-color ac-ce87414f"></span>
-                            <span>In Progress: 0%</span>
+                            <span class="legend-color" style="background:#2563eb;"></span>
+                            <span id="inProgressPercent">In Progress: <?php echo (int) $distributionInProgressPct; ?>%</span>
                         </div>
                         <div class="legend-item">
-                            <span class="legend-color ac-ab589ae3"></span>
-                            <span>Delayed: 0%</span>
+                            <span class="legend-color" style="background:#f59e0b;"></span>
+                            <span id="otherPercent">Other: <?php echo (int) $distributionOtherPct; ?>%</span>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="chart-box card">
-                <h3>Budget Utilization</h3>
+                <h3>Monthly Project Activity</h3>
                 <div class="chart-placeholder">
-                    <div class="progress-bar">
-                        <div class="progress-fill ac-a8a5341d"></div>
-                    </div>
-                    <p class="ac-39f9429c">Budget utilization: 0% Used</p>
+                    <svg id="monthlyActivityChart" viewBox="0 0 320 120" role="img" aria-label="Monthly project activity chart">
+                        <polyline id="monthlyActivityLine" fill="none" stroke="#1d4ed8" stroke-width="3" points="<?php echo htmlspecialchars($monthlyPolylinePoints, ENT_QUOTES, 'UTF-8'); ?>"></polyline>
+                    </svg>
+                    <p id="monthlyActivityText">Projects created in last 6 months: <?php echo (int) $monthlyActivityTotal; ?></p>
                 </div>
             </div>
         </div>
