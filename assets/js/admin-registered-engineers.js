@@ -1,5 +1,5 @@
 (function () {
-        if (!location.pathname.endsWith('/registered_contractors.php')) return;
+        if (!location.pathname.endsWith('/registered_contractors.php') && !location.pathname.endsWith('/registered_engineers.php')) return;
 
         const contractorsTbody = document.querySelector('#contractorsTable tbody');
         const projectsTbody = document.querySelector('#projectsTable tbody');
@@ -110,17 +110,24 @@
         }
 
         function apiCandidates(query) {
-            const list = ['registered_contractors.php?' + query, '/admin/registered_contractors.php?' + query];
+            const list = [
+                'registered_engineers.php?' + query,
+                '/admin/registered_engineers.php?' + query,
+                'registered_contractors.php?' + query,
+                '/admin/registered_contractors.php?' + query
+            ];
             if (typeof window.getApiUrl === 'function') {
-                list.unshift(window.getApiUrl('admin/registered_contractors.php?' + query));
+                list.unshift(window.getApiUrl('admin/registered_engineers.php?' + query));
+                list.push(window.getApiUrl('admin/registered_contractors.php?' + query));
             }
             return Array.from(new Set(list));
         }
 
         function postApiCandidates() {
-            const list = ['registered_contractors.php', '/admin/registered_contractors.php'];
+            const list = ['registered_engineers.php', '/admin/registered_engineers.php', 'registered_contractors.php', '/admin/registered_contractors.php'];
             if (typeof window.getApiUrl === 'function') {
-                list.unshift(window.getApiUrl('admin/registered_contractors.php'));
+                list.unshift(window.getApiUrl('admin/registered_engineers.php'));
+                list.push(window.getApiUrl('admin/registered_contractors.php'));
             }
             return Array.from(new Set(list));
         }

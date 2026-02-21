@@ -1631,7 +1631,7 @@ if (contractorForm && resetBtn && formMessage) {
             let response;
             if (editingId) {
                 data.id = editingId;
-                response = await fetch(getApiUrl('admin/contractors-api.php'), {
+                response = await fetch(getApiUrl('admin/engineers-api.php'), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -1644,7 +1644,7 @@ if (contractorForm && resetBtn && formMessage) {
                 if (resumeFile) formData.append('resume_document', resumeFile);
                 if (certFile) formData.append('certificate_document', certFile);
 
-                response = await fetch(getApiUrl('admin/contractors-api.php'), {
+                response = await fetch(getApiUrl('admin/engineers-api.php'), {
                     method: 'POST',
                     body: formData
                 });
