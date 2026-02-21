@@ -699,7 +699,22 @@ $db->close();
         </div>
         <div class="nav-links">
             <a href="dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
-            <a href="project_registration.php"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration    ▼</a>
+            <div class="nav-item-group">
+                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle">
+                    <img src="../assets/images/admin/list.png" class="nav-icon">Project Registration
+                    <span class="dropdown-arrow"></span>
+                </a>
+                <div class="nav-submenu" id="projectRegSubmenu">
+                    <a href="project_registration.php" class="nav-submenu-item">
+                        <span class="submenu-icon">+</span>
+                        <span>New Project</span>
+                    </a>
+                    <a href="registered_projects.php" class="nav-submenu-item">
+                        <span class="submenu-icon">&#128203;</span>
+                        <span>Registered Projects</span>
+                    </a>
+                </div>
+            </div>
             <a href="progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
             <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
@@ -708,15 +723,15 @@ $db->close();
             <div class="nav-item-group">
                 <a href="engineers.php" class="nav-main-item" id="contractorsToggle">
                     <img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers
-                    <span class="dropdown-arrow">▼</span>
+                    <span class="dropdown-arrow"></span>
                 </a>
                 <div class="nav-submenu" id="contractorsSubmenu">
                     <a href="engineers.php" class="nav-submenu-item">
-                        <span class="submenu-icon">➕</span>
+                        <span class="submenu-icon">+</span>
                         <span>Add Engineer</span>
                     </a>
                     <a href="registered_engineers.php" class="nav-submenu-item active">
-                        <span class="submenu-icon">👷</span>
+                        <span class="submenu-icon">&#128100;</span>
                         <span>Registered Engineers</span>
                     </a>
                 </div>
@@ -724,6 +739,7 @@ $db->close();
             
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
                 <a href="citizen-verification.php" class="nav-main-item"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
+        </div>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
