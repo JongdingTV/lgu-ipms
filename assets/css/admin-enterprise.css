@@ -3549,6 +3549,55 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engin
     color: #c7dcf5;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .verification-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 110px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+    line-height: 1;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .verification-badge.is-complete {
+    background: #e8f8ef;
+    color: #166534;
+    border-color: #86efac;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .verification-badge.is-incomplete {
+    background: #fff7e6;
+    color: #9a3412;
+    border-color: #fdba74;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .verification-badge.is-expired {
+    background: #ffe8e8;
+    color: #b91c1c;
+    border-color: #fca5a5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .verification-badge.is-complete {
+    background: rgba(22, 101, 52, 0.28);
+    color: #bbf7d0;
+    border-color: rgba(134, 239, 172, 0.48);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .verification-badge.is-incomplete {
+    background: rgba(154, 52, 18, 0.28);
+    color: #fed7aa;
+    border-color: rgba(251, 146, 60, 0.45);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .verification-badge.is-expired {
+    background: rgba(185, 28, 28, 0.3);
+    color: #fecaca;
+    border-color: rgba(248, 113, 113, 0.48);
+}
+
 @media (max-width: 760px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-banner {
         top: 8px;

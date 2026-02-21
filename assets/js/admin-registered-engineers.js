@@ -66,6 +66,14 @@
             return 'medium';
         }
 
+        function verificationBadgeClass(status) {
+            const key = String(status || '').toLowerCase();
+            if (key.includes('incomplete')) return 'is-incomplete';
+            if (key.includes('complete')) return 'is-complete';
+            if (key.includes('expired')) return 'is-expired';
+            return 'is-incomplete';
+        }
+
         function projectDetailCardMarkup(p, withCheckbox, assignedSet) {
             const pid = String(p.id || '');
             const checked = assignedSet && assignedSet.has(pid) ? 'checked' : '';
@@ -156,7 +164,7 @@
             if (countEl) countEl.textContent = `${list.length} Engineer${list.length === 1 ? '' : 's'}`;
 
             if (!list.length) {
-                contractorsTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:18px; color:#6b7280;">No Engineers found.</td></tr>';
+                contractorsTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:18px; color:#6b7280;">No Engineers found.</td></tr>';
                 return;
             }
 
@@ -167,6 +175,7 @@
                     <td>${esc(c.license || 'N/A')}</td>
                     <td>${esc(c.email || c.phone || 'N/A')}</td>
                     <td><span class="status-badge ${esc(String(c.status || '').toLowerCase().replace(/\s+/g, '-'))}">${esc(c.status || 'N/A')}</span></td>
+                    <td><span class="verification-badge ${verificationBadgeClass(c.verification_status)}">${esc(c.verification_status || 'Incomplete')}</span></td>
                     <td>${Number(c.performance_score || c.rating || 0).toFixed(1)} | ${esc(c.risk_level || 'Medium')}</td>
                     <td><button class="btn-view-projects" data-id="${esc(c.id)}">View Projects</button></td>
                     <td><button class="btn-contractor-secondary btn-docs" data-id="${esc(c.id)}">Documents</button></td>
@@ -525,7 +534,7 @@
                 renderProjects(projectsCache);
                 await loadEvaluationOverview();
             } catch (err) {
-                if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:18px; color:#c00;">Failed to load Engineers data.</td></tr>';
+                if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:18px; color:#c00;">Failed to load Engineers data.</td></tr>';
                 if (projectsTbody) projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#c00;">Failed to load projects data.</td></tr>';
                 if (formMessage) {
                     formMessage.style.display = 'block';

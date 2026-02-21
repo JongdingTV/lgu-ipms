@@ -151,6 +151,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $selectParts[] = $reliabilityCol ? "{$reliabilityCol} AS reliability_score" : "0 AS reliability_score";
 
     $Engineers = [];
+    $hasDocumentsTable = registered_table_exists($db, 'contractor_documents');
+    $todayDate = date('Y-m-d');
+    $docsStmt = null;
+    if ($hasDocumentsTable) {
+        $docsStmt = $db->prepare(
+            "SELECT
+                COUNT(*) AS total_docs,
+                SUM(CASE WHEN LOWER(COALESCE(document_type,''))='license' THEN 1 ELSE 0 END) AS license_docs,
+                SUM(CASE WHEN LOWER(COALESCE(document_type,''))='resume' THEN 1 ELSE 0 END) AS resume_docs,
+                SUM(CASE WHEN LOWER(COALESCE(document_type,''))='certificate' THEN 1 ELSE 0 END) AS certificate_docs,
+                SUM(CASE WHEN is_verified = 1 THEN 1 ELSE 0 END) AS verified_docs
+             FROM contractor_documents
+             WHERE contractor_id = ?"
+        );
+    }
 
     try {
         $result = $db->query("SELECT " . implode(', ', $selectParts) . " FROM contractors ORDER BY id DESC LIMIT 100");
@@ -178,12 +193,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
                 $row['risk_score'] = (float) ($scores['risk_score'] ?? 0);
                 $row['risk_level'] = (string) ($scores['risk_level'] ?? 'Medium');
                 $row['compliance_status'] = (string) ($scores['compliance_status'] ?? ($row['compliance_status'] ?? 'Compliant'));
+
+                $licenseExpiry = trim((string) ($row['license_expiration_date'] ?? ''));
+                $isExpiredLicense = $licenseExpiry !== '' && strtotime($licenseExpiry) !== false && $licenseExpiry < $todayDate;
+                $verificationStatus = 'Incomplete';
+                if ($isExpiredLicense) {
+                    $verificationStatus = 'Expired License';
+                } elseif ($docsStmt) {
+                    $contractorId = (int) ($row['id'] ?? 0);
+                    $docsStmt->bind_param('i', $contractorId);
+                    $docsStmt->execute();
+                    $docsRes = $docsStmt->get_result();
+                    $docsRow = $docsRes ? $docsRes->fetch_assoc() : null;
+                    if ($docsRes) {
+                        $docsRes->free();
+                    }
+                    $hasAllRequiredDocs =
+                        (int)($docsRow['license_docs'] ?? 0) > 0 &&
+                        (int)($docsRow['resume_docs'] ?? 0) > 0 &&
+                        (int)($docsRow['certificate_docs'] ?? 0) > 0;
+                    $allVerified = (int)($docsRow['verified_docs'] ?? 0) >= 3;
+                    if ($hasAllRequiredDocs && $allVerified) {
+                        $verificationStatus = 'Complete';
+                    }
+                }
+                $row['verification_status'] = $verificationStatus;
                 $Engineers[] = $row;
             }
             $result->free();
         }
+        if ($docsStmt) {
+            $docsStmt->close();
+        }
     } catch (Throwable $e) {
         error_log("Engineers query error: " . $e->getMessage());
+        if ($docsStmt) {
+            $docsStmt->close();
+        }
         echo json_encode([]);
         exit;
     }
@@ -810,6 +856,7 @@ $db->close();
                                 <th>License Number</th>
                                 <th>Contact Email</th>
                                 <th>Status</th>
+                                <th>Verification</th>
                                 <th>Performance / Risk</th>
                                 <th>Projects Assigned</th>
                                 <th>Documents</th>
