@@ -264,7 +264,97 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../assets/css/admin-engineers-add.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-engineers-add.css'); ?>">
 </head>
 <body class="engineer-registration-page">
-    <main class="engineer-form-page">
+    <div class="sidebar-toggle-wrapper">
+        <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+    </div>
+    <header class="nav" id="navbar">
+        <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+        <div class="nav-logo">
+            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <span class="logo-text">IPMS</span>
+        </div>
+        <div class="nav-links">
+            <a href="dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
+            <div class="nav-item-group">
+                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle">
+                    <img src="../assets/images/admin/list.png" class="nav-icon">Project Registration
+                    <span class="dropdown-arrow"></span>
+                </a>
+                <div class="nav-submenu" id="projectRegSubmenu">
+                    <a href="project_registration.php" class="nav-submenu-item">
+                        <span class="submenu-icon">+</span>
+                        <span>New Project</span>
+                    </a>
+                    <a href="registered_projects.php" class="nav-submenu-item">
+                        <span class="submenu-icon">&#128203;</span>
+                        <span>Registered Projects</span>
+                    </a>
+                </div>
+            </div>
+            <a href="progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
+            <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
+            <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
+
+            <div class="nav-item-group">
+                <a href="engineers.php" class="nav-main-item" id="contractorsToggle">
+                    <img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers
+                    <span class="dropdown-arrow"></span>
+                </a>
+                <div class="nav-submenu" id="contractorsSubmenu">
+                    <a href="engineers.php" class="nav-submenu-item active">
+                        <span class="submenu-icon">+</span>
+                        <span>Add Engineer</span>
+                    </a>
+                    <a href="registered_engineers.php" class="nav-submenu-item">
+                        <span class="submenu-icon">&#128100;</span>
+                        <span>Registered Engineers</span>
+                    </a>
+                </div>
+            </div>
+
+            <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
+            <a href="citizen-verification.php" class="nav-main-item"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="nav-action-footer">
+            <a href="/admin/logout.php" class="btn-logout nav-logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
+            </a>
+        </div>
+        <a href="#" id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </a>
+    </header>
+
+    <div class="toggle-btn" id="showSidebarBtn">
+        <a href="#" id="toggleSidebarShow" title="Show sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </a>
+    </div>
+
+    <section class="main-content">
+        <div class="engineer-form-page">
         <header class="engineer-form-header">
             <div>
                 <h1>Engineer Registration Form</h1>
@@ -419,8 +509,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="reset" class="btn-reset-engineer">Reset</button>
             </div>
         </form>
-    </main>
+        </div>
+    </section>
 
+    <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
+    <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
     <script src="../assets/js/admin-engineers-add.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-engineers-add.js'); ?>"></script>
 </body>
 </html>
