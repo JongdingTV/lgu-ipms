@@ -3427,6 +3427,22 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .modal[id^="photo
     background: #f8fbff;
 }
 
+/* Citizen Verification typography alignment */
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page),
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header h1,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .dash-header p,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .recent-projects,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .recent-projects h3,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-table th,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .projects-table td,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .verify-actions .btn,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .verify-modal,
+body.citizen-verification-page:not(.admin-login-page):not(.login-page):not(.signup-page) .verify-modal *:not(svg):not(path) {
+    font-family: 'Poppins', sans-serif !important;
+}
+
 @media (max-width: 760px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-banner {
         top: 8px;
