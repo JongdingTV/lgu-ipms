@@ -1,0 +1,212 @@
+body.engineer-registration-page {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(180deg, #f3f8ff 0%, #eaf2fc 100%);
+    color: #183b64;
+}
+
+.engineer-form-page {
+    max-width: 1200px;
+    margin: 24px auto;
+    padding: 0 16px 24px;
+}
+
+.engineer-form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    border: 1px solid #d3e3f6;
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: 0 12px 26px rgba(12, 48, 90, 0.08);
+}
+
+.engineer-form-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #123f74;
+}
+
+.engineer-form-header p {
+    margin: 4px 0 0;
+    color: #4d6b8f;
+    font-size: 0.95rem;
+}
+
+.engineer-back-link {
+    text-decoration: none;
+    color: #ffffff;
+    background: #1d4e89;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.engineer-alert {
+    margin-top: 16px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    padding: 12px 14px;
+    font-size: 0.93rem;
+}
+
+.engineer-alert.error {
+    background: #fff2f2;
+    border-color: #f8b4b4;
+    color: #9a1d1d;
+}
+
+.engineer-alert.success {
+    background: #edfaf2;
+    border-color: #9ae6b4;
+    color: #146b3a;
+}
+
+.engineer-alert ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+}
+
+.engineer-form {
+    margin-top: 16px;
+    display: grid;
+    gap: 14px;
+}
+
+.engineer-section {
+    background: #ffffff;
+    border: 1px solid #d3e3f6;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 10px 20px rgba(12, 48, 90, 0.06);
+}
+
+.engineer-section h2 {
+    margin: 0 0 12px;
+    font-size: 1.1rem;
+    color: #174777;
+}
+
+.engineer-help-text {
+    margin: -4px 0 12px;
+    color: #4b698a;
+    font-size: 0.86rem;
+}
+
+.engineer-grid {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.engineer-grid:last-child {
+    margin-bottom: 0;
+}
+
+.engineer-grid.cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.engineer-grid.cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.engineer-grid.cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.engineer-grid.cols-1 {
+    grid-template-columns: 1fr;
+}
+
+.engineer-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #355676;
+    font-weight: 600;
+    font-size: 0.86rem;
+}
+
+.engineer-grid input,
+.engineer-grid select,
+.engineer-grid textarea {
+    width: 100%;
+    border: 1px solid #bcd1ea;
+    border-radius: 10px;
+    background: #f9fcff;
+    color: #14385c;
+    padding: 10px 11px;
+    font-size: 0.95rem;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box;
+}
+
+.engineer-grid select[multiple] {
+    min-height: 110px;
+}
+
+.engineer-grid input:focus,
+.engineer-grid select:focus,
+.engineer-grid textarea:focus {
+    outline: none;
+    border-color: #4f89ca;
+    box-shadow: 0 0 0 3px rgba(79, 137, 202, 0.16);
+}
+
+.engineer-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-submit-engineer,
+.btn-reset-engineer {
+    border: none;
+    border-radius: 10px;
+    padding: 11px 16px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 0.92rem;
+    cursor: pointer;
+}
+
+.btn-submit-engineer {
+    background: #1d4e89;
+    color: #ffffff;
+}
+
+.btn-reset-engineer {
+    background: #e8f0fb;
+    color: #1d4e89;
+}
+
+@media (max-width: 1024px) {
+    .engineer-grid.cols-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .engineer-grid.cols-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 680px) {
+    .engineer-form-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .engineer-grid.cols-4,
+    .engineer-grid.cols-3,
+    .engineer-grid.cols-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .engineer-form-actions {
+        flex-direction: column;
+    }
+}
+

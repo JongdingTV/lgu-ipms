@@ -1,0 +1,62 @@
+-- Engineers Registration module schema
+-- Run this in phpMyAdmin before using admin/engineers_add.php
+
+CREATE TABLE IF NOT EXISTS engineers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(80) NOT NULL,
+    middle_name VARCHAR(80) NULL,
+    last_name VARCHAR(80) NOT NULL,
+    suffix VARCHAR(20) NULL,
+    full_name VARCHAR(255) NOT NULL,
+    date_of_birth DATE NULL,
+    gender ENUM('male','female','other','prefer_not') NULL,
+    civil_status ENUM('single','married','widowed','separated') NULL,
+    address TEXT NULL,
+    contact_number VARCHAR(30) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    prc_license_number VARCHAR(80) NOT NULL,
+    license_expiry_date DATE NOT NULL,
+    specialization VARCHAR(120) NOT NULL,
+    years_experience INT NOT NULL DEFAULT 0,
+    position_title VARCHAR(120) NULL,
+    skills_json JSON NULL,
+    availability_status ENUM('Available','Assigned','On Leave') NOT NULL DEFAULT 'Available',
+    highest_education VARCHAR(150) NOT NULL,
+    school_university VARCHAR(200) NULL,
+    certifications_trainings TEXT NULL,
+    past_projects_count INT NOT NULL DEFAULT 0,
+    notes TEXT NULL,
+    emergency_contact_name VARCHAR(120) NULL,
+    emergency_contact_number VARCHAR(30) NULL,
+    emergency_contact_relationship VARCHAR(60) NULL,
+    username VARCHAR(80) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role ENUM('Engineer','Admin') NOT NULL DEFAULT 'Engineer',
+    account_status ENUM('active','inactive','suspended') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_engineers_email (email),
+    UNIQUE KEY uq_engineers_username (username),
+    UNIQUE KEY uq_engineers_prc_license (prc_license_number),
+    INDEX idx_engineers_specialization (specialization),
+    INDEX idx_engineers_availability (availability_status),
+    INDEX idx_engineers_license_expiry (license_expiry_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS engineer_documents (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    engineer_id INT NOT NULL,
+    document_type ENUM('prc_license','resume_cv','government_id','certificate') NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    original_name VARCHAR(255) NULL,
+    mime_type VARCHAR(120) NULL,
+    file_size INT UNSIGNED NULL,
+    is_verified TINYINT(1) NOT NULL DEFAULT 0,
+    verified_by INT NULL,
+    verified_at DATETIME NULL,
+    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_eng_docs_engineer (engineer_id),
+    INDEX idx_eng_docs_type (document_type),
+    CONSTRAINT fk_engineer_documents_engineer FOREIGN KEY (engineer_id) REFERENCES engineers(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
