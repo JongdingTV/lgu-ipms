@@ -4,6 +4,7 @@ require dirname(__DIR__) . '/session-auth.php';
 // Database connection
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
+require __DIR__ . '/engineer-evaluation-service.php';
 
 // Set no-cache headers to prevent back button access to protected pages
 set_no_cache_headers();
@@ -141,6 +142,8 @@ foreach ($monthlyActivityValues as $index => $value) {
     $monthlyPoints[] = $x . ',' . $y;
 }
 $monthlyPolylinePoints = implode(' ', $monthlyPoints);
+
+$engineerEvaluationOverview = ee_build_dashboard_lists($db);
 
 $db->close();
 ?>
@@ -359,6 +362,45 @@ $db->close();
                     </article>
                 </div>
             </div>
+        </div>
+
+        <div class="engineer-eval-grid">
+            <article class="engineer-eval-card">
+                <h4>Top Performing Engineers</h4>
+                <ul class="engineer-eval-list">
+                    <?php if (!empty($engineerEvaluationOverview['top_performing'])): ?>
+                        <?php foreach ($engineerEvaluationOverview['top_performing'] as $item): ?>
+                            <li><strong><?php echo htmlspecialchars((string) ($item['display_name'] ?? 'Engineer')); ?></strong> - Score <?php echo number_format((float) ($item['performance_rating'] ?? 0), 1); ?></li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li>No data yet.</li>
+                    <?php endif; ?>
+                </ul>
+            </article>
+            <article class="engineer-eval-card">
+                <h4>High Risk Engineers</h4>
+                <ul class="engineer-eval-list">
+                    <?php if (!empty($engineerEvaluationOverview['high_risk'])): ?>
+                        <?php foreach ($engineerEvaluationOverview['high_risk'] as $item): ?>
+                            <li><strong><?php echo htmlspecialchars((string) ($item['display_name'] ?? 'Engineer')); ?></strong> - <?php echo htmlspecialchars((string) ($item['risk_level'] ?? 'High')); ?> (<?php echo number_format((float) ($item['risk_score'] ?? 0), 1); ?>)</li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li>No high-risk engineers.</li>
+                    <?php endif; ?>
+                </ul>
+            </article>
+            <article class="engineer-eval-card">
+                <h4>Most Delayed Engineers</h4>
+                <ul class="engineer-eval-list">
+                    <?php if (!empty($engineerEvaluationOverview['most_delayed'])): ?>
+                        <?php foreach ($engineerEvaluationOverview['most_delayed'] as $item): ?>
+                            <li><strong><?php echo htmlspecialchars((string) ($item['display_name'] ?? 'Engineer')); ?></strong> - Delayed <?php echo (int) ($item['delayed_project_count'] ?? 0); ?> / <?php echo (int) ($item['past_project_count'] ?? 0); ?></li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li>No delay records yet.</li>
+                    <?php endif; ?>
+                </ul>
+            </article>
         </div>
 
         <!-- Recent Projects Section -->

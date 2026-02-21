@@ -78,7 +78,11 @@ $requiredTables = [
     'contractors',
     'contractor_project_assignments',
     'project_tasks',
-    'project_milestones'
+    'project_milestones',
+    'contractor_documents',
+    'contractor_project_history',
+    'contractor_violations',
+    'contractor_evaluation_logs'
 ];
 
 $requiredColumns = [
@@ -97,6 +101,18 @@ $requiredColumns = [
         'map_lat',
         'map_lng',
         'map_link'
+    ],
+    'contractors' => [
+        'full_name',
+        'license_expiration_date',
+        'past_project_count',
+        'delayed_project_count',
+        'performance_rating',
+        'compliance_status',
+        'reliability_score',
+        'risk_score',
+        'risk_level',
+        'last_evaluated_at'
     ]
 ];
 
@@ -131,5 +147,6 @@ echo json_encode([
         'columns' => $missingColumns
     ],
     'recommended_migration' => '/database/migrations/2026_02_20_admin_enhancements_compat.sql'
+    ,
+    'recommended_engineer_module_migration' => '/database/migrations/2026_02_21_engineer_hiring_module.sql'
 ]);
-

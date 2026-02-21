@@ -3489,10 +3489,78 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .dropd
     border-bottom-color: #b4c9e3 !important;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-eval-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin: 14px 0;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-eval-card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-recommend-card {
+    background: #f8fbff;
+    border: 1px solid #d6e6fb;
+    border-radius: 14px;
+    padding: 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-eval-card h4,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-recommend-card h4 {
+    margin: 0 0 10px;
+    font-size: 1rem;
+    color: #143f72;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-eval-list {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+    color: #2c4a6f;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-eval-list li {
+    line-height: 1.35;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-recommend-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #recommendProjectSelect {
+    flex: 1;
+    min-width: 220px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engineer-eval-card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engineer-recommend-card {
+    background: rgba(8, 24, 49, 0.8);
+    border-color: rgba(89, 130, 177, 0.4);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engineer-eval-card h4,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engineer-recommend-card h4 {
+    color: #e8f2ff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engineer-eval-list {
+    color: #c7dcf5;
+}
+
 @media (max-width: 760px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .db-health-banner {
         top: 8px;
         grid-template-columns: 1fr;
         gap: 6px;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-eval-grid {
+        grid-template-columns: 1fr;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineer-recommend-controls {
+        flex-direction: column;
     }
 }

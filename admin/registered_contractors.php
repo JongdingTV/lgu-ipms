@@ -4,6 +4,7 @@ require dirname(__DIR__) . '/session-auth.php';
 // Database connection
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
+require __DIR__ . '/engineer-evaluation-service.php';
 
 // Protect page
 set_no_cache_headers();
@@ -117,19 +118,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     header('Content-Type: application/json');
     
     $companyCol = registered_pick_column($db, 'contractors', ['company', 'company_name', 'name']);
+    $fullNameCol = registered_pick_column($db, 'contractors', ['full_name']);
     $licenseCol = registered_pick_column($db, 'contractors', ['license', 'license_number', 'prc_license_no']);
+    $licenseExpiryCol = registered_pick_column($db, 'contractors', ['license_expiration_date']);
     $emailCol = registered_pick_column($db, 'contractors', ['email', 'contact_email']);
     $phoneCol = registered_pick_column($db, 'contractors', ['phone', 'contact_number', 'mobile']);
     $statusCol = registered_pick_column($db, 'contractors', ['status']);
     $ratingCol = registered_pick_column($db, 'contractors', ['rating']);
+    $specializationCol = registered_pick_column($db, 'contractors', ['specialization']);
+    $experienceCol = registered_pick_column($db, 'contractors', ['experience']);
+    $complianceCol = registered_pick_column($db, 'contractors', ['compliance_status']);
+    $riskLevelCol = registered_pick_column($db, 'contractors', ['risk_level']);
+    $riskScoreCol = registered_pick_column($db, 'contractors', ['risk_score']);
+    $performanceCol = registered_pick_column($db, 'contractors', ['performance_rating']);
+    $reliabilityCol = registered_pick_column($db, 'contractors', ['reliability_score']);
 
     $selectParts = ['id'];
     $selectParts[] = $companyCol ? "{$companyCol} AS company" : "'' AS company";
+    $selectParts[] = $fullNameCol ? "{$fullNameCol} AS full_name" : "'' AS full_name";
     $selectParts[] = $licenseCol ? "{$licenseCol} AS license" : "'' AS license";
+    $selectParts[] = $licenseExpiryCol ? "{$licenseExpiryCol} AS license_expiration_date" : "NULL AS license_expiration_date";
     $selectParts[] = $emailCol ? "{$emailCol} AS email" : "'' AS email";
     $selectParts[] = $phoneCol ? "{$phoneCol} AS phone" : "'' AS phone";
     $selectParts[] = $statusCol ? "{$statusCol} AS status" : "'active' AS status";
     $selectParts[] = $ratingCol ? "{$ratingCol} AS rating" : "0 AS rating";
+    $selectParts[] = $specializationCol ? "{$specializationCol} AS specialization" : "'' AS specialization";
+    $selectParts[] = $experienceCol ? "{$experienceCol} AS experience" : "0 AS experience";
+    $selectParts[] = $complianceCol ? "{$complianceCol} AS compliance_status" : "'Compliant' AS compliance_status";
+    $selectParts[] = $riskLevelCol ? "{$riskLevelCol} AS risk_level" : "'Medium' AS risk_level";
+    $selectParts[] = $riskScoreCol ? "{$riskScoreCol} AS risk_score" : "0 AS risk_score";
+    $selectParts[] = $performanceCol ? "{$performanceCol} AS performance_rating" : "0 AS performance_rating";
+    $selectParts[] = $reliabilityCol ? "{$reliabilityCol} AS reliability_score" : "0 AS reliability_score";
 
     $Engineers = [];
 
@@ -137,6 +156,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         $result = $db->query("SELECT " . implode(', ', $selectParts) . " FROM contractors ORDER BY id DESC LIMIT 100");
         if ($result) {
             while ($row = $result->fetch_assoc()) {
+                $row['display_name'] = trim((string)($row['full_name'] ?? '')) !== ''
+                    ? (string) $row['full_name']
+                    : ((trim((string)($row['company'] ?? '')) !== '') ? (string) $row['company'] : ('Engineer #' . (int)($row['id'] ?? 0)));
+
+                $metrics = ee_fetch_metrics($db, (int) ($row['id'] ?? 0));
+                $scores = ee_evaluate_scores($metrics);
+                try {
+                    ee_persist_evaluation($db, (int) ($row['id'] ?? 0), $metrics, $scores);
+                } catch (Throwable $e) {
+                    error_log('contractor evaluation persist failed: ' . $e->getMessage());
+                }
+
+                $row['past_project_count'] = (int) ($metrics['total_projects'] ?? 0);
+                $row['delayed_project_count'] = (int) ($metrics['delayed_projects'] ?? 0);
+                $row['avg_rating'] = (float) ($scores['avg_rating'] ?? 0);
+                $row['completion_rate'] = (float) ($scores['completion_rate'] ?? 0);
+                $row['delay_rate'] = (float) ($scores['delay_rate'] ?? 0);
+                $row['performance_score'] = (float) ($scores['performance_score'] ?? 0);
+                $row['reliability_score'] = (float) ($scores['reliability_score'] ?? 0);
+                $row['risk_score'] = (float) ($scores['risk_score'] ?? 0);
+                $row['risk_level'] = (string) ($scores['risk_level'] ?? 'Medium');
+                $row['compliance_status'] = (string) ($scores['compliance_status'] ?? ($row['compliance_status'] ?? 'Compliant'));
                 $Engineers[] = $row;
             }
             $result->free();
@@ -148,6 +189,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     }
     
     echo json_encode($Engineers);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_evaluation_overview') {
+    header('Content-Type: application/json');
+    echo json_encode(ee_build_dashboard_lists($db));
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'recommended_engineers') {
+    header('Content-Type: application/json');
+
+    $projectId = isset($_GET['project_id']) ? (int) $_GET['project_id'] : 0;
+    $sector = '';
+    if ($projectId > 0) {
+        $stmt = $db->prepare("SELECT COALESCE(sector,'') AS sector FROM projects WHERE id = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param('i', $projectId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && ($row = $res->fetch_assoc())) {
+                $sector = (string) ($row['sector'] ?? '');
+            }
+            if ($res) {
+                $res->free();
+            }
+            $stmt->close();
+        }
+    }
+
+    $nameExpr = registered_table_has_column($db, 'contractors', 'full_name')
+        ? "COALESCE(NULLIF(full_name,''), company, owner, CONCAT('Engineer #', id))"
+        : "COALESCE(NULLIF(company,''), owner, CONCAT('Engineer #', id))";
+    $specializationCol = registered_table_has_column($db, 'contractors', 'specialization') ? 'specialization' : "''";
+    $performanceCol = registered_table_has_column($db, 'contractors', 'performance_rating') ? 'performance_rating' : (registered_table_has_column($db, 'contractors', 'rating') ? 'rating' : '0');
+    $reliabilityCol = registered_table_has_column($db, 'contractors', 'reliability_score') ? 'reliability_score' : '0';
+    $riskLevelCol = registered_table_has_column($db, 'contractors', 'risk_level') ? 'risk_level' : "'Medium'";
+    $riskScoreCol = registered_table_has_column($db, 'contractors', 'risk_score') ? 'risk_score' : '0';
+
+    $query = "SELECT id, {$nameExpr} AS display_name, {$specializationCol} AS specialization, {$performanceCol} AS performance_rating, {$reliabilityCol} AS reliability_score, {$riskLevelCol} AS risk_level, {$riskScoreCol} AS risk_score
+              FROM contractors";
+    $types = '';
+    $params = [];
+    if ($sector !== '') {
+        $query .= " WHERE LOWER(COALESCE({$specializationCol},'')) LIKE ?";
+        $types = 's';
+        $params[] = '%' . strtolower($sector) . '%';
+    }
+    $query .= " ORDER BY (LOWER(COALESCE(risk_level,''))='low') DESC, performance_rating DESC, reliability_score DESC LIMIT 8";
+
+    $stmt = $db->prepare($query);
+    if (!$stmt) {
+        echo json_encode([]);
+        exit;
+    }
+    if ($types !== '') {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = [];
+    while ($res && ($row = $res->fetch_assoc())) {
+        $rows[] = $row;
+    }
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+
+    echo json_encode($rows);
     exit;
 }
 
@@ -317,6 +428,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     $stmt->close();
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'evaluate_contractor') {
+    header('Content-Type: application/json');
+    $contractorId = isset($_POST['contractor_id']) ? (int) $_POST['contractor_id'] : 0;
+    if ($contractorId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid Engineer ID']);
+        exit;
+    }
+
+    $metrics = ee_fetch_metrics($db, $contractorId);
+    $scores = ee_evaluate_scores($metrics);
+    try {
+        ee_persist_evaluation($db, $contractorId, $metrics, $scores);
+    } catch (Throwable $e) {
+        error_log('evaluate_contractor persist error: ' . $e->getMessage());
+    }
+
+    echo json_encode([
+        'success' => true,
+        'contractor_id' => $contractorId,
+        'metrics' => $metrics,
+        'scores' => $scores,
+    ]);
     exit;
 }
 
@@ -563,6 +699,40 @@ $db->close();
                 </article>
             </div>
 
+            <div class="engineer-eval-grid">
+                <article class="engineer-eval-card">
+                    <h4>Top Performing Engineers</h4>
+                    <ul id="topPerformingList" class="engineer-eval-list">
+                        <li>No data yet.</li>
+                    </ul>
+                </article>
+                <article class="engineer-eval-card">
+                    <h4>High Risk Engineers</h4>
+                    <ul id="highRiskList" class="engineer-eval-list">
+                        <li>No data yet.</li>
+                    </ul>
+                </article>
+                <article class="engineer-eval-card">
+                    <h4>Most Delayed Engineers</h4>
+                    <ul id="mostDelayedList" class="engineer-eval-list">
+                        <li>No data yet.</li>
+                    </ul>
+                </article>
+            </div>
+
+            <div class="engineer-recommend-card">
+                <h4>Recommended Engineer for Project</h4>
+                <div class="engineer-recommend-controls">
+                    <select id="recommendProjectSelect">
+                        <option value="">Select a project</option>
+                    </select>
+                    <button type="button" id="recommendEngineerBtn" class="btn-contractor-secondary">Find Recommendation</button>
+                </div>
+                <ul id="recommendedEngineersList" class="engineer-eval-list">
+                    <li>Select a project to load recommendations.</li>
+                </ul>
+            </div>
+
             <div class="contractors-section">
                 <div id="formMessage" class="contractor-form-message" role="status" aria-live="polite"></div>
                 
@@ -574,7 +744,7 @@ $db->close();
                                 <th>License Number</th>
                                 <th>Contact Email</th>
                                 <th>Status</th>
-                                <th>Rating</th>
+                                <th>Performance / Risk</th>
                                 <th>Projects Assigned</th>
                                 <th>Actions</th>
                             </tr>

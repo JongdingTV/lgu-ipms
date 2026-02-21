@@ -15,6 +15,12 @@
         const statSuspendedEl = document.getElementById('contractorStatSuspended');
         const statBlacklistedEl = document.getElementById('contractorStatBlacklisted');
         const statAvgRatingEl = document.getElementById('contractorStatAvgRating');
+        const topPerformingList = document.getElementById('topPerformingList');
+        const highRiskList = document.getElementById('highRiskList');
+        const mostDelayedList = document.getElementById('mostDelayedList');
+        const recommendProjectSelect = document.getElementById('recommendProjectSelect');
+        const recommendEngineerBtn = document.getElementById('recommendEngineerBtn');
+        const recommendedEngineersList = document.getElementById('recommendedEngineersList');
 
         const assignmentModal = document.getElementById('assignmentModal');
         const projectsViewModal = document.getElementById('projectsViewModal');
@@ -151,11 +157,11 @@
             for (const c of list) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><strong>${esc(c.company || 'N/A')}</strong></td>
+                    <td><strong>${esc(c.display_name || c.company || 'N/A')}</strong></td>
                     <td>${esc(c.license || 'N/A')}</td>
                     <td>${esc(c.email || c.phone || 'N/A')}</td>
                     <td><span class="status-badge ${esc(String(c.status || '').toLowerCase().replace(/\s+/g, '-'))}">${esc(c.status || 'N/A')}</span></td>
-                    <td>${c.rating ? Number(c.rating).toFixed(1) + '/5' : '-'}</td>
+                    <td>${Number(c.performance_score || c.rating || 0).toFixed(1)} | ${esc(c.risk_level || 'Medium')}</td>
                     <td><button class="btn-view-projects" data-id="${esc(c.id)}">View Projects</button></td>
                     <td>
                         <div class="action-buttons">
@@ -254,6 +260,53 @@
                     <td><span class="status-badge ${esc(String(p.status || '').toLowerCase().replace(/\s+/g, '-'))}">${esc(p.status || 'N/A')}</span></td>
                 `;
                 projectsTbody.appendChild(tr);
+            }
+
+            if (recommendProjectSelect) {
+                const options = ['<option value=\"\">Select a project</option>'].concat(
+                    list.map((p) => `<option value=\"${esc(p.id)}\">${esc((p.code || 'N/A') + ' - ' + (p.name || 'Untitled'))}</option>`)
+                );
+                recommendProjectSelect.innerHTML = options.join('');
+            }
+        }
+
+        function fillEvalList(el, rows, mapper) {
+            if (!el) return;
+            const list = Array.isArray(rows) ? rows : [];
+            if (!list.length) {
+                el.innerHTML = '<li>No data yet.</li>';
+                return;
+            }
+            el.innerHTML = list.map(mapper).join('');
+        }
+
+        async function loadEvaluationOverview() {
+            try {
+                const overview = await fetchJsonWithFallback('action=load_evaluation_overview&_=' + Date.now());
+                fillEvalList(topPerformingList, overview.top_performing, (r) => `<li><strong>${esc(r.display_name || 'Engineer')}</strong> - Score ${Number(r.performance_rating || 0).toFixed(1)}</li>`);
+                fillEvalList(highRiskList, overview.high_risk, (r) => `<li><strong>${esc(r.display_name || 'Engineer')}</strong> - ${esc(r.risk_level || 'High')} (${Number(r.risk_score || 0).toFixed(1)})</li>`);
+                fillEvalList(mostDelayedList, overview.most_delayed, (r) => `<li><strong>${esc(r.display_name || 'Engineer')}</strong> - Delayed ${Number(r.delayed_project_count || 0)} / ${Number(r.past_project_count || 0)} projects</li>`);
+            } catch (_) {
+                fillEvalList(topPerformingList, [], () => '');
+                fillEvalList(highRiskList, [], () => '');
+                fillEvalList(mostDelayedList, [], () => '');
+            }
+        }
+
+        async function loadRecommendedEngineers() {
+            if (!recommendedEngineersList) return;
+            const projectId = recommendProjectSelect?.value || '';
+            if (!projectId) {
+                recommendedEngineersList.innerHTML = '<li>Select a project to load recommendations.</li>';
+                return;
+            }
+
+            recommendedEngineersList.innerHTML = '<li>Loading recommendations...</li>';
+            try {
+                const rows = await fetchJsonWithFallback(`action=recommended_engineers&project_id=${encodeURIComponent(projectId)}&_=${Date.now()}`);
+                fillEvalList(recommendedEngineersList, rows, (r) => `<li><strong>${esc(r.display_name || 'Engineer')}</strong> - ${esc(r.specialization || 'General')} | Perf ${Number(r.performance_rating || 0).toFixed(1)} | Risk ${esc(r.risk_level || 'Medium')}</li>`);
+            } catch (_) {
+                recommendedEngineersList.innerHTML = '<li>Unable to load recommendations.</li>';
             }
         }
 
@@ -420,6 +473,7 @@
                 updateLastSync();
                 renderContractors(contractorsCache);
                 renderProjects(projectsCache);
+                await loadEvaluationOverview();
             } catch (err) {
                 if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:#c00;">Failed to load Engineers data.</td></tr>';
                 if (projectsTbody) projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#c00;">Failed to load projects data.</td></tr>';
@@ -480,6 +534,7 @@
         saveAssignmentsBtn?.addEventListener('click', saveAssignmentsHandler);
         refreshBtn?.addEventListener('click', loadAllData);
         exportCsvBtn?.addEventListener('click', exportVisibleContractorsCsv);
+        recommendEngineerBtn?.addEventListener('click', loadRecommendedEngineers);
         assignCancelBtn?.addEventListener('click', closeAssignModal);
         projectsCloseBtn?.addEventListener('click', closeProjectsModal);
         assignmentModal?.addEventListener('click', (e) => { if (e.target === assignmentModal) closeAssignModal(); });
