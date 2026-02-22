@@ -69,6 +69,7 @@ if (!function_exists('feedback_extract_photo_files_endpoint')) {
 }
 
 $targetFile = '';
+$photoPathRaw = '';
 if ($feedbackId > 0) {
     $selectCols = ['id', 'description', 'user_name'];
     if ($hasPhotoPath) $selectCols[] = 'photo_path';
@@ -103,6 +104,7 @@ if ($feedbackId > 0) {
         http_response_code(403);
         exit('Forbidden');
     }
+    $photoPathRaw = trim((string)($row['photo_path'] ?? ''));
     $photos = feedback_extract_photo_files_endpoint((string)($row['description'] ?? ''), (string)($row['photo_path'] ?? ''));
     if (!empty($photos) && isset($photos[$photoIndex])) {
         $targetFile = (string)$photos[$photoIndex];
@@ -131,8 +133,26 @@ function feedback_photo_candidate_dirs(): array
 }
 
 $fullPath = null;
+$candidates = [];
+
+// 1) Respect explicit stored path first, if available.
+if ($photoPathRaw !== '') {
+    $normalized = str_replace(['\\', '//'], ['/', '/'], $photoPathRaw);
+    if (preg_match('#^/[A-Za-z]:/#', $normalized) || preg_match('#^[A-Za-z]:/#', $normalized)) {
+        $candidates[] = $normalized;
+    } else {
+        $candidates[] = str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/' . ltrim($normalized, '/'));
+        $candidates[] = str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/../' . ltrim($normalized, '/'));
+    }
+}
+
+// 2) Fallback to filename lookup in known directories.
 foreach (feedback_photo_candidate_dirs() as $baseDir) {
-    $candidate = rtrim($baseDir, '/') . '/' . $targetFile;
+    $candidates[] = rtrim($baseDir, '/') . '/' . $targetFile;
+}
+
+// 3) Try all candidate file paths.
+foreach ($candidates as $candidate) {
     if (@is_file($candidate)) {
         $fullPath = $candidate;
         break;

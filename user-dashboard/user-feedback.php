@@ -244,8 +244,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
 
             $allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
             foreach ($selectedIdx as $idx) {
-                if ((int)($photoErr[$idx] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-                    echo json_encode(['success' => false, 'message' => 'Photo upload failed. Please try another image.']);
+                $errCode = (int)($photoErr[$idx] ?? UPLOAD_ERR_NO_FILE);
+                if ($errCode !== UPLOAD_ERR_OK) {
+                    $errMsg = 'Photo upload failed. Please try another image.';
+                    if ($errCode === UPLOAD_ERR_INI_SIZE || $errCode === UPLOAD_ERR_FORM_SIZE) {
+                        $errMsg = 'One of the photos is too large for server limits. Please use smaller images.';
+                    } elseif ($errCode === UPLOAD_ERR_PARTIAL) {
+                        $errMsg = 'A photo upload was interrupted. Please upload again.';
+                    } elseif ($errCode === UPLOAD_ERR_NO_TMP_DIR || $errCode === UPLOAD_ERR_CANT_WRITE) {
+                        $errMsg = 'Server storage is temporarily unavailable for photo upload.';
+                    }
+                    echo json_encode(['success' => false, 'message' => $errMsg]);
                     $db->close();
                     exit;
                 }
@@ -737,6 +746,38 @@ $csrfToken = generate_csrf_token();
                 <span id="feedbackInboxCount" style="font-size:.82rem;color:#64748b;">Showing 0</span>
             </div>
             <style>
+                #photo {
+                    width: 100%;
+                    min-height: 42px;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 10px;
+                    background: #fff;
+                    color: #334155;
+                    padding: 6px 8px;
+                    font-size: .9rem;
+                }
+                #photo:hover {
+                    border-color: #94a3b8;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+                }
+                #photo::file-selector-button {
+                    appearance: none;
+                    -webkit-appearance: none;
+                    border: 1px solid #2d5f9a;
+                    border-radius: 8px;
+                    background: linear-gradient(135deg, #1d4e89, #3f83c9);
+                    color: #fff;
+                    font-weight: 600;
+                    font-size: .85rem;
+                    padding: 8px 12px;
+                    margin-right: 10px;
+                    cursor: pointer;
+                    transition: all .2s ease;
+                }
+                #photo::file-selector-button:hover {
+                    filter: brightness(1.05);
+                    transform: translateY(-1px);
+                }
                 .feedback-inbox { border:1px solid #dbe7f3;border-radius:12px;overflow:hidden;background:#fff; }
                 .feedback-inbox-head { display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;background:#f8fbff;border-bottom:1px solid #dbe7f3; }
                 .feedback-inbox-head strong { color:#1e3a8a;font-size:.92rem; }
