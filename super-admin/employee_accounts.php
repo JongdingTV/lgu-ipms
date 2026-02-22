@@ -17,7 +17,7 @@ $error = '';
 $hasRole = super_admin_has_column($db, 'role');
 $hasStatus = super_admin_has_column($db, 'account_status');
 
-$allowedRoles = ['super_admin', 'admin', 'employee'];
+$allowedRoles = ['super_admin', 'admin', 'employee', 'engineer'];
 $allowedStatuses = ['active', 'inactive', 'suspended'];
 
 $searchQuery = trim((string)($_GET['q'] ?? ''));

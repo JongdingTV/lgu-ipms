@@ -114,11 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pastProjectsCount = (int)($_POST['past_projects_count'] ?? 0);
     $notes = trim((string)($_POST['notes'] ?? ''));
 
-    $username = trim((string)($_POST['username'] ?? ''));
-    $password = (string)($_POST['password'] ?? '');
-    $confirmPassword = (string)($_POST['confirm_password'] ?? '');
-    $role = trim((string)($_POST['role'] ?? 'Engineer'));
-
     if ($firstName === '') $errors[] = 'First Name is required.';
     if ($lastName === '') $errors[] = 'Last Name is required.';
     if ($contactNumber === '') $errors[] = 'Contact Number is required.';
@@ -132,10 +127,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($specialization === '') $errors[] = 'Field/Specialization is required.';
     if ($education === '') $errors[] = 'Highest Educational Attainment is required.';
-
-    if ($username === '') $errors[] = 'Username is required.';
-    if (strlen($password) < 8) $errors[] = 'Password must be at least 8 characters.';
-    if ($password !== $confirmPassword) $errors[] = 'Password and Confirm Password do not match.';
 
     if (!isset($_FILES['prc_license_file']) || ($_FILES['prc_license_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         $errors[] = 'PRC ID / License File is required.';
@@ -174,7 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
             $skillsJson = json_encode(array_values($skills), JSON_UNESCAPED_SLASHES);
             $fullName = trim($firstName . ' ' . $middleName . ' ' . $lastName . ' ' . $suffix);
 
@@ -186,9 +176,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     date_of_birth, gender, civil_status, address, contact_number, email,
                     prc_license_number, license_expiry_date, specialization, years_experience,
                     position_title, skills_json, availability_status,
-                    highest_education, school_university, certifications_trainings, past_projects_count, notes,
-                    username, password_hash, role
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    highest_education, school_university, certifications_trainings, past_projects_count, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             );
 
             if (!$insert) {
@@ -196,13 +185,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $insert->bind_param(
-                'ssssssssssssssisssssssssss',
+                'ssssssssssssssisssssssss',
                 $firstName, $middleName, $lastName, $suffix, $fullName,
                 $dob, $gender, $civilStatus, $address, $contactNumber, $email,
                 $prcLicense, $licenseExpiry, $specialization, $yearsExperience,
                 $positionTitle, $skillsJson, $availabilityStatus,
-                $education, $school, $certifications, $pastProjectsCount, $notes,
-                $username, $passwordHash, $role
+                $education, $school, $certifications, $pastProjectsCount, $notes
             );
             if (!$insert->execute()) {
                 throw new RuntimeException('Unable to save engineer: ' . $insert->error);
@@ -483,21 +471,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label>Emergency Contact Name<input type="text" name="emergency_contact_name" value="<?php echo eng_old('emergency_contact_name'); ?>"></label>
                     <label>Emergency Contact Number<input type="text" name="emergency_contact_number" value="<?php echo eng_old('emergency_contact_number'); ?>"></label>
                     <label>Emergency Contact Relationship<input type="text" name="emergency_contact_relationship" value="<?php echo eng_old('emergency_contact_relationship'); ?>"></label>
-                </div>
-            </section>
-
-            <section class="engineer-section">
-                <h2>Account Access</h2>
-                <div class="engineer-grid cols-4">
-                    <label>Username *<input type="text" name="username" required value="<?php echo eng_old('username'); ?>"></label>
-                    <label>Password *<input type="password" name="password" required></label>
-                    <label>Confirm Password *<input type="password" name="confirm_password" required></label>
-                    <label>Role
-                        <select name="role">
-                            <option value="Engineer" <?php echo eng_old('role', 'Engineer') === 'Engineer' ? 'selected' : ''; ?>>Engineer</option>
-                            <option value="Admin" <?php echo eng_old('role') === 'Admin' ? 'selected' : ''; ?>>Admin</option>
-                        </select>
-                    </label>
                 </div>
             </section>
 
