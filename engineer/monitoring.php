@@ -6,7 +6,12 @@ set_no_cache_headers();
 check_auth();
 check_suspicious_activity();
 
-if (!isset($_SESSION['employee_id']) || strtolower((string) ($_SESSION['employee_role'] ?? '')) !== 'engineer') {
+if (!isset($_SESSION['employee_id'])) {
+    header('Location: /engineer/index.php');
+    exit;
+}
+$role = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
+if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
     header('Location: /engineer/index.php');
     exit;
 }
@@ -25,7 +30,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/design-system.css">
     <link rel="stylesheet" href="../assets/css/components.css">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
+    <link rel="stylesheet" href="engineer.css?v=<?php echo filemtime(__DIR__ . '/engineer.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
@@ -128,6 +133,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
     load();
 })();
 </script>
+<script src="engineer.js?v=<?php echo filemtime(__DIR__ . '/engineer.js'); ?>"></script>
+<script src="engineer-enterprise.js?v=<?php echo filemtime(__DIR__ . '/engineer-enterprise.js'); ?>"></script>
 </body>
 </html>
-

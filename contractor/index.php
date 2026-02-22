@@ -4,9 +4,12 @@ require dirname(__DIR__) . '/session-auth.php';
 
 set_no_cache_headers();
 
-if (isset($_SESSION['employee_id']) && strtolower((string) ($_SESSION['employee_role'] ?? '')) === 'contractor') {
-    header('Location: /contractor/dashboard.php');
-    exit;
+if (isset($_SESSION['employee_id'])) {
+    $activeRole = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
+    if (in_array($activeRole, ['contractor', 'admin', 'super_admin'], true)) {
+        header('Location: /contractor/dashboard.php');
+        exit;
+    }
 }
 
 $error = '';
@@ -42,20 +45,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$employee || !$validPassword) {
                 record_attempt('contractor_login');
                 $error = 'Invalid email or password.';
-            } elseif (strtolower((string) ($employee['role'] ?? '')) !== 'contractor') {
+            } else {
+                $userRole = strtolower(trim((string) ($employee['role'] ?? '')));
+                if (!in_array($userRole, ['contractor', 'admin', 'super_admin'], true)) {
                 log_security_event('ROLE_DENIED', 'Contractor login blocked for non-contractor role');
                 $error = 'Your account is not assigned to contractor access.';
-            } else {
+                } else {
                 session_regenerate_id(true);
                 $_SESSION['employee_id'] = (int) $employee['id'];
                 $_SESSION['employee_name'] = trim((string) $employee['first_name'] . ' ' . (string) $employee['last_name']);
-                $_SESSION['employee_role'] = strtolower((string) $employee['role']);
+                $_SESSION['employee_role'] = $userRole;
                 $_SESSION['user_type'] = 'employee';
                 $_SESSION['last_activity'] = time();
                 $_SESSION['login_time'] = time();
                 $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                 header('Location: /contractor/dashboard.php');
                 exit;
+                }
             }
         } else {
             $error = 'Database error. Please try again.';
@@ -74,32 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/shared/admin-auth.css">
-    <style>
-        body.admin-login-page {
-            background:
-                linear-gradient(120deg, rgba(8, 28, 52, 0.70), rgba(19, 76, 134, 0.58)),
-                url("../cityhall.jpeg") center/cover no-repeat fixed;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        body.admin-login-page .nav {
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-            border-bottom: 1px solid rgba(15, 23, 42, 0.12);
-            box-shadow: 0 10px 25px rgba(2, 6, 23, 0.14);
-        }
-        body.admin-login-page .nav-logo,
-        body.admin-login-page .home-btn {
-            color: #0f2a4a;
-        }
-        body.admin-login-page .card {
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-            box-shadow: 0 18px 40px rgba(2, 6, 23, 0.26);
-        }
-    </style>
+    <link rel="stylesheet" href="login.css">
 </head>
 <body class="admin-login-page">
 <header class="nav">
@@ -129,5 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 </div>
+<script src="login-security.js?v=<?php echo filemtime(__DIR__ . '/login-security.js'); ?>"></script>
 </body>
 </html>
+

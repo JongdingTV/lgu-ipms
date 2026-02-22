@@ -232,8 +232,9 @@ function get_login_url() {
     
     // Determine if we're in a subdirectory
     $request_uri = $_SERVER['REQUEST_URI'];
-    $employee_dirs = ['dashboard', 'contractors', 'project-registration', 'progress-monitoring', 
-                      'budget-resources', 'task-milestone', 'project-prioritization'];
+    $employee_dirs = ['dashboard', 'contractors', 'project-registration', 'progress-monitoring',
+                      'budget-resources', 'task-milestone', 'project-prioritization',
+                      'contractor', 'engineer'];
     $is_employee_route = false;
     foreach ($employee_dirs as $dir) {
         if (strpos($request_uri, '/' . $dir . '/') !== false) {

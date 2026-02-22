@@ -8,7 +8,13 @@ check_suspicious_activity();
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['employee_id']) || strtolower((string) ($_SESSION['employee_role'] ?? '')) !== 'engineer') {
+if (!isset($_SESSION['employee_id'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Forbidden']);
+    exit;
+}
+$role = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
+if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden']);
     exit;
@@ -64,4 +70,3 @@ if ($res) {
 }
 
 echo json_encode(['success' => true, 'data' => $rows]);
-
