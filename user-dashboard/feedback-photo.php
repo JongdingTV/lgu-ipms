@@ -90,7 +90,10 @@ function feedback_photo_candidate_dirs(): array
 {
     return [
         str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/../private_uploads/lgu-ipms/feedback'),
-        str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/private_uploads/lgu-ipms/feedback')
+        str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/private_uploads/lgu-ipms/feedback'),
+        // Fallback for deployments that store feedback images in public uploads.
+        str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/uploads/feedback'),
+        str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/../uploads/feedback')
     ];
 }
 
