@@ -6,7 +6,12 @@ set_no_cache_headers();
 check_auth();
 check_suspicious_activity();
 
-if (!isset($_SESSION['employee_id']) || strtolower((string) ($_SESSION['employee_role'] ?? '')) !== 'engineer') {
+if (!isset($_SESSION['employee_id'])) {
+    header('Location: /engineer/index.php');
+    exit;
+}
+$role = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
+if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
     header('Location: /engineer/index.php');
     exit;
 }

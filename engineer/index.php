@@ -4,9 +4,12 @@ require dirname(__DIR__) . '/session-auth.php';
 
 set_no_cache_headers();
 
-if (isset($_SESSION['employee_id']) && strtolower((string) ($_SESSION['employee_role'] ?? '')) === 'engineer') {
-    header('Location: /engineer/monitoring.php');
-    exit;
+if (isset($_SESSION['employee_id'])) {
+    $activeRole = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
+    if (in_array($activeRole, ['engineer', 'admin', 'super_admin'], true)) {
+        header('Location: /engineer/monitoring.php');
+        exit;
+    }
 }
 
 $error = '';
@@ -42,20 +45,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$employee || !$validPassword) {
                 record_attempt('engineer_login');
                 $error = 'Invalid email or password.';
-            } elseif (strtolower((string) ($employee['role'] ?? '')) !== 'engineer') {
+            } else {
+                $userRole = strtolower(trim((string) ($employee['role'] ?? '')));
+                if (!in_array($userRole, ['engineer', 'admin', 'super_admin'], true)) {
                 log_security_event('ROLE_DENIED', 'Engineer login blocked for non-engineer role');
                 $error = 'Your account is not assigned to engineer access.';
-            } else {
+                } else {
                 session_regenerate_id(true);
                 $_SESSION['employee_id'] = (int) $employee['id'];
                 $_SESSION['employee_name'] = trim((string) $employee['first_name'] . ' ' . (string) $employee['last_name']);
-                $_SESSION['employee_role'] = strtolower((string) $employee['role']);
+                $_SESSION['employee_role'] = $userRole;
                 $_SESSION['user_type'] = 'employee';
                 $_SESSION['last_activity'] = time();
                 $_SESSION['login_time'] = time();
                 $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                 header('Location: /engineer/monitoring.php');
                 exit;
+                }
             }
         } else {
             $error = 'Database error. Please try again.';
