@@ -671,6 +671,13 @@
         });
     }
 
+    if (photoPreview) {
+        photoPreview.addEventListener('error', function () {
+            showMessage('Unable to load submitted photo. Please re-open the entry or contact support.', false);
+            closePhotoModal();
+        });
+    }
+
     document.querySelectorAll('[data-feedback-open="1"]').forEach(function (row) {
         row.setAttribute('tabindex', '0');
         row.setAttribute('role', 'button');

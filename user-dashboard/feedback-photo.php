@@ -70,31 +70,35 @@ if (!function_exists('feedback_extract_photo_files_endpoint')) {
 
 $targetFile = '';
 if ($feedbackId > 0) {
-    $selectCols = ['id', 'description'];
+    $selectCols = ['id', 'description', 'user_name'];
     if ($hasPhotoPath) $selectCols[] = 'photo_path';
-    $whereSql = '';
-    if ($hasUserId) {
-        $selectCols[] = 'user_id';
-        $whereSql = 'id = ? AND user_id = ?';
-    } else {
-        $whereSql = 'id = ? AND user_name = ?';
-    }
-    $sql = 'SELECT ' . implode(', ', $selectCols) . ' FROM feedback WHERE ' . $whereSql . ' LIMIT 1';
+    if ($hasUserId) $selectCols[] = 'user_id';
+    $sql = 'SELECT ' . implode(', ', $selectCols) . ' FROM feedback WHERE id = ? LIMIT 1';
     $stmt = $db->prepare($sql);
     if (!$stmt) {
         $db->close();
         http_response_code(500);
         exit('Query failed');
     }
-    if ($hasUserId) {
-        $stmt->bind_param('ii', $feedbackId, $userId);
-    } else {
-        $stmt->bind_param('is', $feedbackId, $userName);
-    }
+    $stmt->bind_param('i', $feedbackId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     if (!$row) {
+        $db->close();
+        http_response_code(404);
+        exit('Not found');
+    }
+
+    // Ownership check: prefer user_id match when available, fallback to user_name.
+    $ownerOk = false;
+    if ($hasUserId && isset($row['user_id']) && (int)$row['user_id'] > 0) {
+        $ownerOk = ((int)$row['user_id'] === $userId);
+    }
+    if (!$ownerOk && $userName !== '') {
+        $ownerOk = (strcasecmp(trim((string)($row['user_name'] ?? '')), $userName) === 0);
+    }
+    if (!$ownerOk) {
         $db->close();
         http_response_code(403);
         exit('Forbidden');
