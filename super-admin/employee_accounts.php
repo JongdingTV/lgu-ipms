@@ -267,7 +267,7 @@ if ($result) {
 
         <div class="recent-projects">
             <h3>Create New Employee</h3>
-            <form method="post" class="contractor-form">
+            <form method="post" class="contractor-form sa-create-form">
                 <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
                 <input type="hidden" name="action" value="create">
                 <div class="sa-form-grid">
@@ -296,11 +296,13 @@ if ($result) {
                     </div>
                     <?php endif; ?>
                 </div>
-                <button type="submit" class="view-btn">Create Account</button>
+                <div class="sa-form-actions">
+                    <button type="submit" class="view-btn">Create Account</button>
+                </div>
             </form>
         </div>
 
-        <div class="recent-projects" style="margin-top: 16px;">
+        <div class="recent-projects sa-section-spaced">
             <h3>Existing Employee Accounts</h3>
             <div class="table-wrap">
                 <table class="feedback-table">
@@ -327,47 +329,52 @@ if ($result) {
                                 <td><?php echo sa_escape((string)($row['role'] ?? 'employee')); ?></td>
                                 <td><?php echo sa_escape((string)($row['account_status'] ?? 'active')); ?></td>
                                 <td><?php echo sa_escape((string)($row['created_at'] ?? '-')); ?></td>
-                                <td>
-                                    <form method="post" class="sa-inline-form">
-                                        <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
-                                        <input type="hidden" name="action" value="update">
-                                        <input type="hidden" name="employee_id" value="<?php echo (int)$row['id']; ?>">
-                                        <input type="text" name="first_name" value="<?php echo sa_escape((string)$row['first_name']); ?>" required>
-                                        <input type="text" name="last_name" value="<?php echo sa_escape((string)$row['last_name']); ?>" required>
-                                        <input type="email" name="email" value="<?php echo sa_escape((string)$row['email']); ?>" required>
-                                        <?php if ($hasRole): ?>
-                                        <select name="role">
-                                            <?php foreach ($allowedRoles as $roleName): ?>
-                                                <option value="<?php echo sa_escape($roleName); ?>" <?php echo strtolower((string)($row['role'] ?? '')) === $roleName ? 'selected' : ''; ?>>
-                                                    <?php echo sa_escape($roleName); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <?php endif; ?>
-                                        <?php if ($hasStatus): ?>
-                                        <select name="account_status">
-                                            <?php foreach ($allowedStatuses as $statusName): ?>
-                                                <option value="<?php echo sa_escape($statusName); ?>" <?php echo strtolower((string)($row['account_status'] ?? 'active')) === $statusName ? 'selected' : ''; ?>>
-                                                    <?php echo sa_escape($statusName); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <?php endif; ?>
-                                        <button type="submit" class="view-btn sa-mini-btn">Save</button>
-                                    </form>
-                                    <form method="post" class="sa-inline-form">
-                                        <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
-                                        <input type="hidden" name="action" value="reset_password">
-                                        <input type="hidden" name="employee_id" value="<?php echo (int)$row['id']; ?>">
-                                        <input type="password" name="new_password" minlength="8" placeholder="New password" required>
-                                        <button type="submit" class="view-btn sa-mini-btn">Reset Password</button>
-                                    </form>
-                                    <form method="post" class="sa-inline-form">
-                                        <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="employee_id" value="<?php echo (int)$row['id']; ?>">
-                                        <button type="submit" class="edit-btn sa-mini-btn" onclick="return confirm('Delete this account?')">Delete</button>
-                                    </form>
+                                <td class="sa-actions-cell">
+                                    <div class="sa-action-stack">
+                                        <form method="post" class="sa-inline-form sa-action-card">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
+                                            <input type="hidden" name="action" value="update">
+                                            <input type="hidden" name="employee_id" value="<?php echo (int)$row['id']; ?>">
+                                            <p class="sa-action-title">Update Account</p>
+                                            <div class="sa-action-grid">
+                                                <input type="text" name="first_name" value="<?php echo sa_escape((string)$row['first_name']); ?>" required>
+                                                <input type="text" name="last_name" value="<?php echo sa_escape((string)$row['last_name']); ?>" required>
+                                                <input type="email" name="email" value="<?php echo sa_escape((string)$row['email']); ?>" required class="sa-span-2">
+                                                <?php if ($hasRole): ?>
+                                                <select name="role">
+                                                    <?php foreach ($allowedRoles as $roleName): ?>
+                                                        <option value="<?php echo sa_escape($roleName); ?>" <?php echo strtolower((string)($row['role'] ?? '')) === $roleName ? 'selected' : ''; ?>>
+                                                            <?php echo sa_escape($roleName); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <?php endif; ?>
+                                                <?php if ($hasStatus): ?>
+                                                <select name="account_status">
+                                                    <?php foreach ($allowedStatuses as $statusName): ?>
+                                                        <option value="<?php echo sa_escape($statusName); ?>" <?php echo strtolower((string)($row['account_status'] ?? 'active')) === $statusName ? 'selected' : ''; ?>>
+                                                            <?php echo sa_escape($statusName); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <?php endif; ?>
+                                            </div>
+                                            <button type="submit" class="view-btn sa-mini-btn">Save Changes</button>
+                                        </form>
+                                        <form method="post" class="sa-inline-form sa-action-card sa-action-inline">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
+                                            <input type="hidden" name="action" value="reset_password">
+                                            <input type="hidden" name="employee_id" value="<?php echo (int)$row['id']; ?>">
+                                            <input type="password" name="new_password" minlength="8" placeholder="New password" required>
+                                            <button type="submit" class="view-btn sa-mini-btn">Reset Password</button>
+                                        </form>
+                                        <form method="post" class="sa-inline-form">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="employee_id" value="<?php echo (int)$row['id']; ?>">
+                                            <button type="submit" class="edit-btn sa-mini-btn sa-delete-btn" onclick="return confirm('Delete this account?')">Delete</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
