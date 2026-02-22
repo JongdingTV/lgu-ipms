@@ -153,9 +153,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<td>' + statusChip(row.status || 'For Approval') + '</td>',
                 '<td>' + statusChip(row.decision_status || 'Pending') + '<br><small>' + esc(row.decided_by_name || '') + (row.decided_at ? (' | ' + esc(row.decided_at)) : '') + '</small></td>',
                 '<td><textarea class="dept-note" data-type="note" data-id="' + esc(row.id) + '" placeholder="Decision note for admin and audit trail">' + esc(row.decision_note || '') + '</textarea></td>',
-                '<td><button type="button" class="dept-btn details" data-action="toggle-details" data-id="' + esc(row.id) + '">View Details</button><br>' + (pending
-                    ? '<button type="button" class="dept-btn approve" data-action="approve" data-id="' + esc(row.id) + '">Approve</button> <button type="button" class="dept-btn reject" data-action="reject" data-id="' + esc(row.id) + '">Reject</button>'
-                    : '<span class="ac-a004b216">Finalized</span>') + '</td>'
+                '<td><div class="dept-action-group"><button type="button" class="dept-btn details" data-action="toggle-details" data-id="' + esc(row.id) + '">View Details</button>' + (pending
+                    ? '<button type="button" class="dept-btn approve" data-action="approve" data-id="' + esc(row.id) + '">Approve</button><button type="button" class="dept-btn reject" data-action="reject" data-id="' + esc(row.id) + '">Reject</button>'
+                    : '<span class="ac-a004b216 dept-finalized-badge">Finalized</span>') + '</div></td>'
             ].join('');
             tbody.appendChild(tr);
 
