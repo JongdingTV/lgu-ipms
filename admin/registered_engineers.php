@@ -185,23 +185,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $todayDate = date('Y-m-d');
     $docsStmt = null;
     if ($hasDocumentsTable) {
-        $fkCol = $isEngineerTable ? 'engineer_id' : 'contractor_id';
-        $licenseDocExpr = $isEngineerTable
-            ? "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='prc_license' THEN 1 ELSE 0 END)"
-            : "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='license' THEN 1 ELSE 0 END)";
-        $resumeDocExpr = $isEngineerTable
-            ? "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='resume_cv' THEN 1 ELSE 0 END)"
-            : "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='resume' THEN 1 ELSE 0 END)";
-        $docsStmt = $db->prepare(
-            "SELECT
-                COUNT(*) AS total_docs,
-                {$licenseDocExpr} AS license_docs,
-                {$resumeDocExpr} AS resume_docs,
-                SUM(CASE WHEN LOWER(COALESCE(document_type,''))='certificate' THEN 1 ELSE 0 END) AS certificate_docs,
-                SUM(CASE WHEN is_verified = 1 THEN 1 ELSE 0 END) AS verified_docs
-             FROM {$documentsTable}
-             WHERE {$fkCol} = ?"
-        );
+        try {
+            $fkCol = $isEngineerTable ? 'engineer_id' : 'contractor_id';
+            $licenseDocExpr = $isEngineerTable
+                ? "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='prc_license' THEN 1 ELSE 0 END)"
+                : "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='license' THEN 1 ELSE 0 END)";
+            $resumeDocExpr = $isEngineerTable
+                ? "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='resume_cv' THEN 1 ELSE 0 END)"
+                : "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='resume' THEN 1 ELSE 0 END)";
+            $docsStmt = $db->prepare(
+                "SELECT
+                    COUNT(*) AS total_docs,
+                    {$licenseDocExpr} AS license_docs,
+                    {$resumeDocExpr} AS resume_docs,
+                    SUM(CASE WHEN LOWER(COALESCE(document_type,''))='certificate' THEN 1 ELSE 0 END) AS certificate_docs,
+                    SUM(CASE WHEN is_verified = 1 THEN 1 ELSE 0 END) AS verified_docs
+                 FROM {$documentsTable}
+                 WHERE {$fkCol} = ?"
+            );
+        } catch (Throwable $e) {
+            error_log('registered_engineers docs query prepare failed: ' . $e->getMessage());
+            $docsStmt = null;
+        }
     }
 
     try {
@@ -290,7 +295,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_evaluation_overview') {
     header('Content-Type: application/json');
-    echo json_encode(ee_build_dashboard_lists($db));
+    try {
+        echo json_encode(ee_build_dashboard_lists($db));
+    } catch (Throwable $e) {
+        error_log('registered_engineers load_evaluation_overview error: ' . $e->getMessage());
+        echo json_encode([
+            'top_performing' => [],
+            'high_risk' => [],
+            'most_delayed' => [],
+        ]);
+    }
     exit;
 }
 
@@ -341,6 +355,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'recommended_engineers') {
     header('Content-Type: application/json');
+    if (!registered_table_exists($db, 'contractors')) {
+        echo json_encode([]);
+        exit;
+    }
 
     $projectId = isset($_GET['project_id']) ? (int) $_GET['project_id'] : 0;
     $sector = '';
@@ -380,7 +398,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     }
     $query .= " ORDER BY (LOWER(COALESCE(risk_level,''))='low') DESC, performance_rating DESC, reliability_score DESC LIMIT 8";
 
-    $stmt = $db->prepare($query);
+    try {
+        $stmt = $db->prepare($query);
+    } catch (Throwable $e) {
+        error_log('registered_engineers recommended_engineers prepare error: ' . $e->getMessage());
+        echo json_encode([]);
+        exit;
+    }
     if (!$stmt) {
         echo json_encode([]);
         exit;
@@ -553,19 +577,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             $row['task_summary'] = ['total' => 0, 'completed' => 0];
             $row['milestone_summary'] = ['total' => 0, 'completed' => 0];
             if ($hasTaskTable) {
-                $taskRes = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS completed FROM project_tasks WHERE project_id = " . (int)$row['id']);
-                if ($taskRes) {
-                    $taskRow = $taskRes->fetch_assoc();
-                    $taskRes->free();
-                    $row['task_summary'] = ['total' => (int)($taskRow['total'] ?? 0), 'completed' => (int)($taskRow['completed'] ?? 0)];
+                try {
+                    $taskRes = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS completed FROM project_tasks WHERE project_id = " . (int)$row['id']);
+                    if ($taskRes) {
+                        $taskRow = $taskRes->fetch_assoc();
+                        $taskRes->free();
+                        $row['task_summary'] = ['total' => (int)($taskRow['total'] ?? 0), 'completed' => (int)($taskRow['completed'] ?? 0)];
+                    }
+                } catch (Throwable $e) {
+                    error_log('registered_engineers project_tasks summary error: ' . $e->getMessage());
                 }
             }
             if ($hasMilestoneTable) {
-                $mileRes = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS completed FROM project_milestones WHERE project_id = " . (int)$row['id']);
-                if ($mileRes) {
-                    $mileRow = $mileRes->fetch_assoc();
-                    $mileRes->free();
-                    $row['milestone_summary'] = ['total' => (int)($mileRow['total'] ?? 0), 'completed' => (int)($mileRow['completed'] ?? 0)];
+                try {
+                    $mileRes = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('completed','done') THEN 1 ELSE 0 END) AS completed FROM project_milestones WHERE project_id = " . (int)$row['id']);
+                    if ($mileRes) {
+                        $mileRow = $mileRes->fetch_assoc();
+                        $mileRes->free();
+                        $row['milestone_summary'] = ['total' => (int)($mileRow['total'] ?? 0), 'completed' => (int)($mileRow['completed'] ?? 0)];
+                    }
+                } catch (Throwable $e) {
+                    error_log('registered_engineers project_milestones summary error: ' . $e->getMessage());
                 }
             }
             $row['documents'] = array_values(array_filter([
