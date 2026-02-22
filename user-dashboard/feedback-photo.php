@@ -10,6 +10,10 @@ if (!isset($db) || $db->connect_error) {
     http_response_code(500);
     exit('Database connection failed');
 }
+@ini_set('display_errors', '0');
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
 
 $userId = (int) ($_SESSION['user_id'] ?? 0);
 $file = trim((string) ($_GET['file'] ?? ''));
@@ -127,7 +131,7 @@ if ($feedbackId > 0) {
     $photos = feedback_extract_photo_files_endpoint((string)($row['description'] ?? ''), (string)($row['photo_path'] ?? ''));
     if (!empty($photos) && isset($photos[$photoIndex])) {
         $targetFile = (string)$photos[$photoIndex];
-    } elseif ($file !== '' && preg_match('/^[A-Za-z0-9._()\- ]+\.(jpg|jpeg|png|webp)$/i', $file)) {
+    } elseif ($file !== '' && preg_match('/\.(jpg|jpeg|png|webp)$/i', $file)) {
         // Fallback: trust explicit file name only after ownership already passed.
         $targetFile = $file;
     } else {
@@ -175,6 +179,11 @@ if ($photoPathRaw !== '') {
 // 2) Fallback to filename lookup in known directories.
 if ($targetFile !== '') {
     $targetBase = basename(str_replace('\\', '/', $targetFile));
+    $targetRaw = str_replace(['\\', '//'], ['/', '/'], $targetFile);
+    if (strpos($targetRaw, '/') !== false) {
+        $candidates[] = str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/' . ltrim($targetRaw, '/'));
+        $candidates[] = str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/../' . ltrim($targetRaw, '/'));
+    }
     foreach (feedback_photo_candidate_dirs() as $baseDir) {
         $candidates[] = rtrim($baseDir, '/') . '/' . $targetFile;
         $candidates[] = rtrim($baseDir, '/') . '/' . $targetBase;
@@ -186,6 +195,73 @@ foreach ($candidates as $candidate) {
     if (@is_file($candidate)) {
         $fullPath = $candidate;
         break;
+    }
+}
+
+// 4) Last-resort DB lookup by file token using ownership constraints (matches legacy path formats).
+if ($fullPath === null && $targetFile !== '') {
+    require dirname(__DIR__) . '/database.php';
+    if (isset($db) && !($db->connect_error ?? false)) {
+        $fileToken = basename(str_replace('\\', '/', $targetFile));
+        $selectParts = ['photo_path', 'description'];
+        if ($hasUserId) $selectParts[] = 'user_id';
+        $sql = 'SELECT ' . implode(', ', $selectParts) . ' FROM feedback WHERE ';
+        if ($hasUserId) {
+            $sql .= '(user_id = ? OR ((user_id IS NULL OR user_id = 0) AND user_name = ?)) AND ';
+        } else {
+            $sql .= 'user_name = ? AND ';
+        }
+        $sql .= '('
+            . 'photo_path = ? OR photo_path LIKE ? OR REPLACE(photo_path, \'\\\\\', \'/\') LIKE ? '
+            . 'OR LOCATE(CONCAT(\'[Photo Attachment Private] \', ?), description) > 0 '
+            . 'OR LOCATE(CONCAT(\'[Photo Attachment] \', ?), description) > 0'
+            . ') LIMIT 1';
+
+        $stmt = $db->prepare($sql);
+        if ($stmt) {
+            $likeTail = '%/' . $fileToken;
+            if ($hasUserId) {
+                $stmt->bind_param('issssss', $userId, $userName, $fileToken, $likeTail, $likeTail, $fileToken, $fileToken);
+            } else {
+                $stmt->bind_param('ssssss', $userName, $fileToken, $likeTail, $likeTail, $fileToken, $fileToken);
+            }
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $row = $res ? $res->fetch_assoc() : null;
+            $stmt->close();
+            if ($res) {
+                $res->free();
+            }
+            if ($row) {
+                $rowPhoto = trim((string) ($row['photo_path'] ?? ''));
+                $scanTargets = feedback_extract_photo_files_endpoint((string) ($row['description'] ?? ''), $rowPhoto);
+                if ($rowPhoto !== '') {
+                    $scanTargets[] = $rowPhoto;
+                }
+                $scanTargets[] = $fileToken;
+
+                foreach ($scanTargets as $scan) {
+                    $scanRaw = str_replace(['\\', '//'], ['/', '/'], (string) $scan);
+                    $scanBase = basename($scanRaw);
+                    $probe = [];
+                    if (strpos($scanRaw, '/') !== false) {
+                        $probe[] = str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/' . ltrim($scanRaw, '/'));
+                        $probe[] = str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/../' . ltrim($scanRaw, '/'));
+                    }
+                    foreach (feedback_photo_candidate_dirs() as $baseDir) {
+                        $probe[] = rtrim($baseDir, '/') . '/' . $scanRaw;
+                        $probe[] = rtrim($baseDir, '/') . '/' . $scanBase;
+                    }
+                    foreach ($probe as $candidate) {
+                        if (@is_file($candidate)) {
+                            $fullPath = $candidate;
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+        $db->close();
     }
 }
 
