@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -288,11 +288,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="nav-item-group">
                 <a href="project_registration.php" class="nav-main-item" id="projectRegToggle">
                     <img src="../assets/images/admin/list.png" class="nav-icon">Project Registration
-                    <span class="dropdown-arrow"></span>
+                    <span class="dropdown-arrow">&#9662;</span>
                 </a>
                 <div class="nav-submenu" id="projectRegSubmenu">
                     <a href="project_registration.php" class="nav-submenu-item">
-                        <span class="submenu-icon">+</span>
+                        <span class="submenu-icon">&#10133;</span>
                         <span>New Project</span>
                     </a>
                     <a href="registered_projects.php" class="nav-submenu-item">
@@ -304,24 +304,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
             <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
-
             <div class="nav-item-group">
-                <a href="engineers.php" class="nav-main-item" id="contractorsToggle">
+                <a href="contractors.php" class="nav-main-item active" id="contractorsToggle">
                     <img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers
-                    <span class="dropdown-arrow"></span>
+                    <span class="dropdown-arrow">&#9662;</span>
                 </a>
-                <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="engineers.php" class="nav-submenu-item active">
-                        <span class="submenu-icon">+</span>
+                <div class="nav-submenu show" id="contractorsSubmenu">
+                    <a href="contractors.php" class="nav-submenu-item">
+                        <span class="submenu-icon">&#10133;</span>
                         <span>Add Engineer</span>
                     </a>
-                    <a href="registered_engineers.php" class="nav-submenu-item">
-                        <span class="submenu-icon">&#128100;</span>
+                    <a href="registered_contractors.php" class="nav-submenu-item">
+                        <span class="submenu-icon">&#128203;</span>
                         <span>Registered Engineers</span>
                     </a>
                 </div>
             </div>
-
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
             <a href="citizen-verification.php" class="nav-main-item"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
         </div>

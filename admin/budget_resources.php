@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Import security functions
 require dirname(__DIR__) . '/session-auth.php';
 // Database connection
@@ -373,20 +373,9 @@ $db->close();
         <div class="nav-links">
             <a href="dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
             <div class="nav-item-group">
-                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">â–¼</span></a>
+                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">&#9662;</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
-                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">âž•</span><span>New Project</span></a>
-                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">ðŸ“‹</span><span>Registered Projects</span></a>
-                </div>
-            </div>
-            <a href="progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
-            <a href="budget_resources.php" class="active"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
-            <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
-            <div class="nav-item-group">
-                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">â–¼</span></a>
-                <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">âž•</span><span>Add Engineer</span></a>
-                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">ðŸ“‹</span><span>Registered Engineers</span></a>
+                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Engineers</span></a>
                 </div>
             </div>
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
