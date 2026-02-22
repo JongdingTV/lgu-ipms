@@ -468,18 +468,12 @@ $csrfToken = generate_csrf_token();
                                     <form id="idUploadForm" method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" class="id-upload-form">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="id_action" value="upload">
-                                        <div id="idFrontStage" class="id-upload-row">
-                                            <input type="file" id="idFrontInput" name="id_file_front" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
-                                            <button type="button" id="idFrontNextBtn" class="profile-action-btn profile-action-btn-primary">Next</button>
-                                        </div>
-                                        <div id="idBackStage" class="id-upload-row" style="display:none;">
-                                            <input type="file" id="idBackInput" name="id_file_back" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
-                                            <button type="button" id="idBackPrevBtn" class="profile-action-btn profile-action-btn-ghost">Back</button>
-                                            <button type="submit" id="idUploadSubmitBtn" class="profile-action-btn profile-action-btn-primary">Upload IDs</button>
-                                            <?php if (!empty($user['id_upload'])): ?>
-                                                <button form="removeIdForm" type="submit" class="profile-action-btn profile-action-btn-ghost">Remove ID</button>
-                                            <?php endif; ?>
-                                        </div>
+                                        <button type="button" id="openIdUploadWizard" class="profile-action-btn profile-action-btn-primary">Upload Front and Back ID</button>
+                                        <input type="file" id="idFrontInput" name="id_file_front" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required style="display:none;">
+                                        <input type="file" id="idBackInput" name="id_file_back" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required style="display:none;">
+                                        <?php if (!empty($user['id_upload'])): ?>
+                                            <button form="removeIdForm" type="submit" class="profile-action-btn profile-action-btn-ghost">Remove ID</button>
+                                        <?php endif; ?>
                                     </form>
                                     <?php if (!empty($user['id_upload'])): ?>
                                         <form id="removeIdForm" method="post" action="user-settings.php?tab=profile" class="profile-inline-form">
@@ -600,6 +594,34 @@ $csrfToken = generate_csrf_token();
                     <img id="idViewerImage" src="" alt="Uploaded ID" style="display:none;max-height:none;width:auto;max-width:none;margin:0 auto;border-radius:8px;transform-origin:center center;">
                 </div>
                 <iframe id="idViewerPdf" src="" title="Uploaded ID PDF" style="display:none;width:100%;height:74vh;border:1px solid #dbe7f3;border-radius:8px;background:#fff;"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div class="avatar-crop-modal" id="idUploadWizardModal" hidden>
+        <div class="avatar-crop-dialog" role="dialog" aria-modal="true" aria-labelledby="idUploadWizardTitle" style="max-width:640px;width:min(92vw,640px);">
+            <div class="avatar-crop-header">
+                <h3 id="idUploadWizardTitle">Upload Verification ID</h3>
+                <button type="button" class="avatar-crop-close" id="idUploadWizardClose" aria-label="Close upload wizard">&times;</button>
+            </div>
+            <div class="avatar-crop-body" style="padding:14px;display:grid;gap:12px;">
+                <div id="idWizardFrontPanel">
+                    <label for="idFrontInput" style="display:block;font-weight:600;margin-bottom:6px;">Choose front side of ID</label>
+                    <button type="button" id="pickIdFrontBtn" class="profile-action-btn profile-action-btn-primary">Choose Front Photo</button>
+                    <div id="idFrontPicked" style="margin-top:8px;color:#64748b;">No file selected.</div>
+                    <div style="margin-top:10px;">
+                        <button type="button" id="idWizardNextBtn" class="profile-action-btn profile-action-btn-primary" style="display:none;">Next</button>
+                    </div>
+                </div>
+                <div id="idWizardBackPanel" style="display:none;">
+                    <label for="idBackInput" style="display:block;font-weight:600;margin-bottom:6px;">Choose back side of ID</label>
+                    <button type="button" id="pickIdBackBtn" class="profile-action-btn profile-action-btn-primary">Choose Back Photo</button>
+                    <div id="idBackPicked" style="margin-top:8px;color:#64748b;">No file selected.</div>
+                    <div style="margin-top:10px;display:flex;gap:8px;">
+                        <button type="button" id="idWizardBackBtn" class="profile-action-btn profile-action-btn-ghost">Back</button>
+                        <button type="button" id="idWizardSubmitBtn" class="profile-action-btn profile-action-btn-primary" style="display:none;">Upload ID</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

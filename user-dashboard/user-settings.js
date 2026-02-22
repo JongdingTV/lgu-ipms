@@ -177,47 +177,84 @@
     }
     const idFrontInput = document.getElementById('idFrontInput');
     const idBackInput = document.getElementById('idBackInput');
-    const idFrontStage = document.getElementById('idFrontStage');
-    const idBackStage = document.getElementById('idBackStage');
-    const idFrontNextBtn = document.getElementById('idFrontNextBtn');
-    const idBackPrevBtn = document.getElementById('idBackPrevBtn');
+    const openIdUploadWizard = document.getElementById('openIdUploadWizard');
+    const idUploadWizardModal = document.getElementById('idUploadWizardModal');
+    const idUploadWizardClose = document.getElementById('idUploadWizardClose');
+    const idWizardFrontPanel = document.getElementById('idWizardFrontPanel');
+    const idWizardBackPanel = document.getElementById('idWizardBackPanel');
+    const pickIdFrontBtn = document.getElementById('pickIdFrontBtn');
+    const pickIdBackBtn = document.getElementById('pickIdBackBtn');
+    const idFrontPicked = document.getElementById('idFrontPicked');
+    const idBackPicked = document.getElementById('idBackPicked');
+    const idWizardNextBtn = document.getElementById('idWizardNextBtn');
+    const idWizardBackBtn = document.getElementById('idWizardBackBtn');
+    const idWizardSubmitBtn = document.getElementById('idWizardSubmitBtn');
     const idUploadForm = document.getElementById('idUploadForm');
-    if (idFrontInput && idBackInput && idUploadForm && idFrontStage && idBackStage) {
-        function showFront() {
-            idFrontStage.style.display = '';
-            idBackStage.style.display = 'none';
+    if (idFrontInput && idBackInput && idUploadForm && idUploadWizardModal) {
+        function openWizard() {
+            idUploadWizardModal.hidden = false;
+            document.body.style.overflow = 'hidden';
+            if (idWizardFrontPanel) idWizardFrontPanel.style.display = '';
+            if (idWizardBackPanel) idWizardBackPanel.style.display = 'none';
         }
-        function showBack() {
-            idFrontStage.style.display = 'none';
-            idBackStage.style.display = '';
+        function closeWizard() {
+            idUploadWizardModal.hidden = true;
+            document.body.style.overflow = '';
         }
-        if (idFrontNextBtn) {
-            idFrontNextBtn.addEventListener('click', function () {
+        if (openIdUploadWizard) openIdUploadWizard.addEventListener('click', openWizard);
+        if (idUploadWizardClose) idUploadWizardClose.addEventListener('click', closeWizard);
+        idUploadWizardModal.addEventListener('click', function (event) {
+            if (event.target === idUploadWizardModal) closeWizard();
+        });
+
+        if (pickIdFrontBtn) {
+            pickIdFrontBtn.addEventListener('click', function () { idFrontInput.click(); });
+        }
+        if (pickIdBackBtn) {
+            pickIdBackBtn.addEventListener('click', function () { idBackInput.click(); });
+        }
+
+        idFrontInput.addEventListener('change', function () {
+            const name = idFrontInput.files && idFrontInput.files[0] ? idFrontInput.files[0].name : '';
+            if (idFrontPicked) idFrontPicked.textContent = name ? ('Selected: ' + name) : 'No file selected.';
+            if (idWizardNextBtn) idWizardNextBtn.style.display = name ? '' : 'none';
+        });
+        idBackInput.addEventListener('change', function () {
+            const name = idBackInput.files && idBackInput.files[0] ? idBackInput.files[0].name : '';
+            if (idBackPicked) idBackPicked.textContent = name ? ('Selected: ' + name) : 'No file selected.';
+            if (idWizardSubmitBtn) idWizardSubmitBtn.style.display = name ? '' : 'none';
+        });
+
+        if (idWizardNextBtn) {
+            idWizardNextBtn.addEventListener('click', function () {
                 if (!idFrontInput.files || idFrontInput.files.length === 0) {
                     alert('Please choose the front side of your ID first.');
                     return;
                 }
-                showBack();
+                if (idWizardFrontPanel) idWizardFrontPanel.style.display = 'none';
+                if (idWizardBackPanel) idWizardBackPanel.style.display = '';
             });
         }
-        if (idBackPrevBtn) {
-            idBackPrevBtn.addEventListener('click', function () {
-                showFront();
+        if (idWizardBackBtn) {
+            idWizardBackBtn.addEventListener('click', function () {
+                if (idWizardBackPanel) idWizardBackPanel.style.display = 'none';
+                if (idWizardFrontPanel) idWizardFrontPanel.style.display = '';
             });
         }
-        idUploadForm.addEventListener('submit', function (event) {
-            if (!idFrontInput.files || idFrontInput.files.length === 0) {
-                event.preventDefault();
-                alert('Please choose the front side of your ID.');
-                showFront();
-                return;
-            }
-            if (!idBackInput.files || idBackInput.files.length === 0) {
-                event.preventDefault();
-                alert('Please choose the back side of your ID.');
-                showBack();
-            }
-        });
+        if (idWizardSubmitBtn) {
+            idWizardSubmitBtn.addEventListener('click', function () {
+                if (!idFrontInput.files || idFrontInput.files.length === 0) {
+                    alert('Please choose the front side of your ID.');
+                    return;
+                }
+                if (!idBackInput.files || idBackInput.files.length === 0) {
+                    alert('Please choose the back side of your ID.');
+                    return;
+                }
+                closeWizard();
+                idUploadForm.submit();
+            });
+        }
     }
     const fileInput = document.getElementById('profilePhotoInput');
     const modal = document.getElementById('avatarCropModal');
