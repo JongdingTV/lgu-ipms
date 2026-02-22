@@ -20,6 +20,8 @@ $hasStatus = super_admin_has_column($db, 'account_status');
 $allowedRoles = ['super_admin', 'admin', 'employee'];
 $allowedStatuses = ['active', 'inactive', 'suspended'];
 
+$searchQuery = trim((string)($_GET['q'] ?? ''));
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrf = (string)($_POST['csrf_token'] ?? '');
     if (!hash_equals($csrfToken, $csrf)) {
@@ -182,12 +184,30 @@ $employeeRows = [];
 $fields = "id, first_name, last_name, email, created_at";
 if ($hasRole) $fields .= ", role";
 if ($hasStatus) $fields .= ", account_status";
-$result = $db->query("SELECT {$fields} FROM employees ORDER BY id DESC");
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $employeeRows[] = $row;
+if ($searchQuery !== '' && $db) {
+    $sql = "SELECT {$fields} FROM employees WHERE id = ? OR CONCAT(first_name, ' ', last_name) LIKE ? OR first_name LIKE ? OR last_name LIKE ? ORDER BY id DESC";
+    $stmt = $db->prepare($sql);
+    if ($stmt) {
+        $idQuery = ctype_digit($searchQuery) ? (int)$searchQuery : 0;
+        $likeQuery = '%' . $searchQuery . '%';
+        $stmt->bind_param('isss', $idQuery, $likeQuery, $likeQuery, $likeQuery);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $employeeRows[] = $row;
+            }
+        }
+        $stmt->close();
     }
-    $result->free();
+} else {
+    $result = $db->query("SELECT {$fields} FROM employees ORDER BY id DESC");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $employeeRows[] = $row;
+        }
+        $result->free();
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -301,7 +321,19 @@ if ($result) {
         </div>
 
         <div class="recent-projects sa-section-spaced">
-            <h3>Existing Employee Accounts</h3>
+            <div class="sa-section-header">
+                <div>
+                    <h3>Existing Employee Accounts</h3>
+                    <p class="sa-section-subtext">Search by ID or name to filter results quickly.</p>
+                </div>
+                <form method="get" class="sa-search-form">
+                    <input type="text" name="q" placeholder="Search ID or name..." value="<?php echo sa_escape($searchQuery); ?>">
+                    <button type="submit" class="view-btn sa-mini-btn">Search</button>
+                    <?php if ($searchQuery !== ''): ?>
+                        <a href="/super-admin/employee_accounts.php" class="edit-btn sa-mini-btn sa-clear-btn">Clear</a>
+                    <?php endif; ?>
+                </form>
+            </div>
             <div class="table-wrap">
                 <table class="feedback-table">
                     <thead>
