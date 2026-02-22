@@ -846,7 +846,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                         <div class="modal-value"><?= htmlspecialchars($cleanDescription) ?></div>
                                     </div>
                                     <div class="modal-field">
-                                        <span class="modal-label">Citizen Photo:</span>
+                                        <span class="modal-label">Attached Photo:</span>
                                         <div class="modal-value">
                                             <?php
                                             $photoFile = '';

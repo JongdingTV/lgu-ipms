@@ -120,26 +120,46 @@ function feedback_clean_display_description(string $description): string
 
 function feedback_extract_photo_files(string $description, string $photoPathRaw = ''): array
 {
-    $files = [];
+    $files = ['raw' => [], 'base' => []];
     $add = static function (string $value) use (&$files): void {
-        $base = basename(str_replace('\\', '/', trim($value)));
-        if ($base !== '' && preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $base)) {
-            $files[$base] = true;
+        $normalized = trim(rawurldecode(str_replace('\\', '/', trim($value))), " \t\n\r\0\x0B\"'");
+        if ($normalized === '') {
+            return;
+        }
+        if (preg_match('/\.(?:jpg|jpeg|png|webp)$/i', $normalized)) {
+            $files['raw'][$normalized] = true;
+        }
+        $base = basename($normalized);
+        if ($base !== '' && preg_match('/\.(?:jpg|jpeg|png|webp)$/i', $base)) {
+            $files['base'][$base] = true;
         }
     };
 
     if ($photoPathRaw !== '') {
-        $add($photoPathRaw);
+        $parts = preg_split('/[;,]/', $photoPathRaw) ?: [$photoPathRaw];
+        foreach ($parts as $part) {
+            $add((string) $part);
+        }
     }
 
-    if (preg_match_all('/\[Photo Attachment Private\]\s+([^\s]+\.(?:jpg|jpeg|png|webp))/i', $description, $m1)) {
-        foreach ($m1[1] as $candidate) $add((string)$candidate);
+    if (preg_match_all('/\[Photo Attachment Private\]\s+([^\r\n]+)/i', $description, $m1)) {
+        foreach ($m1[1] as $candidate) {
+            $add((string) $candidate);
+        }
     }
-    if (preg_match_all('/\[Photo Attachment\]\s+([^\s]+\.(?:jpg|jpeg|png|webp))/i', $description, $m2)) {
-        foreach ($m2[1] as $candidate) $add((string)$candidate);
+    if (preg_match_all('/\[Photo Attachment\]\s+([^\r\n]+)/i', $description, $m2)) {
+        foreach ($m2[1] as $candidate) {
+            $add((string) $candidate);
+        }
     }
 
-    return array_keys($files);
+    $ordered = array_values(array_keys($files['raw']));
+    foreach (array_keys($files['base']) as $base) {
+        if (!in_array($base, $ordered, true)) {
+            $ordered[] = $base;
+        }
+    }
+    return $ordered;
 }
 
 function resolve_feedback_upload_dir(): ?string

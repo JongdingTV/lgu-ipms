@@ -13,9 +13,9 @@ if (!isset($db) || $db->connect_error) {
 
 $userId = (int) ($_SESSION['user_id'] ?? 0);
 $file = trim((string) ($_GET['file'] ?? ''));
- $feedbackId = (int) ($_GET['feedback_id'] ?? 0);
+$feedbackId = (int) ($_GET['feedback_id'] ?? 0);
 $photoIndex = max(0, (int) ($_GET['photo_index'] ?? 0));
-if ($userId <= 0 || ($feedbackId <= 0 && ($file === '' || !preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)))) {
+if ($userId <= 0 || ($feedbackId <= 0 && ($file === '' || !preg_match('/^[A-Za-z0-9._()\- ]+\.(jpg|jpeg|png|webp)$/i', $file)))) {
     http_response_code(400);
     exit('Invalid request');
 }
@@ -50,21 +50,43 @@ $userName = trim((string) ($_SESSION['user_name'] ?? ''));
 if (!function_exists('feedback_extract_photo_files_endpoint')) {
     function feedback_extract_photo_files_endpoint(string $description, string $photoPathRaw = ''): array
     {
-        $files = [];
+        $files = ['raw' => [], 'base' => []];
         $add = static function (string $value) use (&$files): void {
-            $base = basename(str_replace('\\', '/', trim($value)));
-            if ($base !== '' && preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $base)) {
-                $files[$base] = true;
+            $normalized = trim(rawurldecode(str_replace('\\', '/', trim($value))), " \t\n\r\0\x0B\"'");
+            if ($normalized === '') {
+                return;
+            }
+            if (preg_match('/\.(?:jpg|jpeg|png|webp)$/i', $normalized)) {
+                $files['raw'][$normalized] = true;
+            }
+            $base = basename($normalized);
+            if ($base !== '' && preg_match('/\.(?:jpg|jpeg|png|webp)$/i', $base)) {
+                $files['base'][$base] = true;
             }
         };
-        if ($photoPathRaw !== '') $add($photoPathRaw);
-        if (preg_match_all('/\[Photo Attachment Private\]\s+([^\s]+\.(?:jpg|jpeg|png|webp))/i', $description, $m1)) {
-            foreach ($m1[1] as $candidate) $add((string)$candidate);
+        if ($photoPathRaw !== '') {
+            $parts = preg_split('/[;,]/', $photoPathRaw) ?: [$photoPathRaw];
+            foreach ($parts as $part) {
+                $add((string) $part);
+            }
         }
-        if (preg_match_all('/\[Photo Attachment\]\s+([^\s]+\.(?:jpg|jpeg|png|webp))/i', $description, $m2)) {
-            foreach ($m2[1] as $candidate) $add((string)$candidate);
+        if (preg_match_all('/\[Photo Attachment Private\]\s+([^\r\n]+)/i', $description, $m1)) {
+            foreach ($m1[1] as $candidate) {
+                $add((string) $candidate);
+            }
         }
-        return array_values(array_keys($files));
+        if (preg_match_all('/\[Photo Attachment\]\s+([^\r\n]+)/i', $description, $m2)) {
+            foreach ($m2[1] as $candidate) {
+                $add((string) $candidate);
+            }
+        }
+        $ordered = array_values(array_keys($files['raw']));
+        foreach (array_keys($files['base']) as $base) {
+            if (!in_array($base, $ordered, true)) {
+                $ordered[] = $base;
+            }
+        }
+        return $ordered;
     }
 }
 
@@ -74,32 +96,29 @@ if ($feedbackId > 0) {
     $selectCols = ['id', 'description', 'user_name'];
     if ($hasPhotoPath) $selectCols[] = 'photo_path';
     if ($hasUserId) $selectCols[] = 'user_id';
-    $sql = 'SELECT ' . implode(', ', $selectCols) . ' FROM feedback WHERE id = ? LIMIT 1';
+    $sql = 'SELECT ' . implode(', ', $selectCols) . ' FROM feedback WHERE id = ?';
+    if ($hasUserId) {
+        // Permit legacy rows with NULL/0 user_id if user_name still matches current account.
+        $sql .= ' AND (user_id = ? OR ((user_id IS NULL OR user_id = 0) AND user_name = ?))';
+    } else {
+        $sql .= ' AND user_name = ?';
+    }
+    $sql .= ' LIMIT 1';
     $stmt = $db->prepare($sql);
     if (!$stmt) {
         $db->close();
         http_response_code(500);
         exit('Query failed');
     }
-    $stmt->bind_param('i', $feedbackId);
+    if ($hasUserId) {
+        $stmt->bind_param('iis', $feedbackId, $userId, $userName);
+    } else {
+        $stmt->bind_param('is', $feedbackId, $userName);
+    }
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     if (!$row) {
-        $db->close();
-        http_response_code(404);
-        exit('Not found');
-    }
-
-    // Ownership check: prefer user_id match when available, fallback to user_name.
-    $ownerOk = false;
-    if ($hasUserId && isset($row['user_id']) && (int)$row['user_id'] > 0) {
-        $ownerOk = ((int)$row['user_id'] === $userId);
-    }
-    if (!$ownerOk && $userName !== '') {
-        $ownerOk = (strcasecmp(trim((string)($row['user_name'] ?? '')), $userName) === 0);
-    }
-    if (!$ownerOk) {
         $db->close();
         http_response_code(403);
         exit('Forbidden');
@@ -108,7 +127,7 @@ if ($feedbackId > 0) {
     $photos = feedback_extract_photo_files_endpoint((string)($row['description'] ?? ''), (string)($row['photo_path'] ?? ''));
     if (!empty($photos) && isset($photos[$photoIndex])) {
         $targetFile = (string)$photos[$photoIndex];
-    } elseif ($file !== '' && preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)) {
+    } elseif ($file !== '' && preg_match('/^[A-Za-z0-9._()\- ]+\.(jpg|jpeg|png|webp)$/i', $file)) {
         // Fallback: trust explicit file name only after ownership already passed.
         $targetFile = $file;
     } else {
@@ -138,17 +157,28 @@ $candidates = [];
 // 1) Respect explicit stored path first, if available.
 if ($photoPathRaw !== '') {
     $normalized = str_replace(['\\', '//'], ['/', '/'], $photoPathRaw);
-    if (preg_match('#^/[A-Za-z]:/#', $normalized) || preg_match('#^[A-Za-z]:/#', $normalized)) {
-        $candidates[] = $normalized;
-    } else {
-        $candidates[] = str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/' . ltrim($normalized, '/'));
-        $candidates[] = str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/../' . ltrim($normalized, '/'));
+    $parts = preg_split('/[;,]/', $normalized) ?: [$normalized];
+    foreach ($parts as $pathPart) {
+        $part = trim((string) $pathPart);
+        if ($part === '') {
+            continue;
+        }
+        if (preg_match('#^/[A-Za-z]:/#', $part) || preg_match('#^[A-Za-z]:/#', $part)) {
+            $candidates[] = $part;
+        } else {
+            $candidates[] = str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/' . ltrim($part, '/'));
+            $candidates[] = str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/../' . ltrim($part, '/'));
+        }
     }
 }
 
 // 2) Fallback to filename lookup in known directories.
-foreach (feedback_photo_candidate_dirs() as $baseDir) {
-    $candidates[] = rtrim($baseDir, '/') . '/' . $targetFile;
+if ($targetFile !== '') {
+    $targetBase = basename(str_replace('\\', '/', $targetFile));
+    foreach (feedback_photo_candidate_dirs() as $baseDir) {
+        $candidates[] = rtrim($baseDir, '/') . '/' . $targetFile;
+        $candidates[] = rtrim($baseDir, '/') . '/' . $targetBase;
+    }
 }
 
 // 3) Try all candidate file paths.

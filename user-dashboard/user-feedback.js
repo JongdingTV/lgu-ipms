@@ -509,25 +509,46 @@
         if (pinnedAddress) pinnedAddress.textContent = addressText !== '' ? addressText : 'Pinned location found, but address is unavailable.';
     }
 
+    var selectedPhotoFiles = [];
+    function syncPhotoInputAndStatus() {
+        if (!photoInput) return;
+        var dt = new DataTransfer();
+        selectedPhotoFiles.forEach(function (f) { dt.items.add(f); });
+        photoInput.files = dt.files;
+        if (photoStatus) {
+            photoStatus.textContent = selectedPhotoFiles.length > 0
+                ? ('Selected (' + selectedPhotoFiles.length + '): ' + selectedPhotoFiles.map(function (f) { return f.name; }).join(', '))
+                : 'No photos selected.';
+        }
+    }
+
     if (photoInput && photoStatus) {
         photoInput.addEventListener('change', function () {
-            const files = photoInput.files ? Array.from(photoInput.files) : [];
-            if (files.length > 3) {
-                photoInput.value = '';
-                photoStatus.textContent = 'No photos selected.';
-                showMessage('You can upload up to 3 photos only.', false);
-                return;
+            var incoming = photoInput.files ? Array.from(photoInput.files) : [];
+            if (incoming.length === 0) return;
+
+            // Merge newly picked photos with existing ones; keep unique by name+size+lastModified.
+            incoming.forEach(function (f) {
+                var key = [f.name, f.size, f.lastModified].join('|');
+                var exists = selectedPhotoFiles.some(function (sf) {
+                    return [sf.name, sf.size, sf.lastModified].join('|') === key;
+                });
+                if (!exists) selectedPhotoFiles.push(f);
+            });
+
+            if (selectedPhotoFiles.length > 3) {
+                selectedPhotoFiles = selectedPhotoFiles.slice(0, 3);
+                showMessage('Maximum is 3 photos. Extra selections were ignored.', false);
             }
-            photoStatus.textContent = files.length > 0
-                ? ('Selected (' + files.length + '): ' + files.map(function (f) { return f.name; }).join(', '))
-                : 'No photos selected.';
+            syncPhotoInputAndStatus();
         });
     }
 
     if (removePhotoBtn && photoInput) {
         removePhotoBtn.addEventListener('click', function () {
+            selectedPhotoFiles = [];
             photoInput.value = '';
-            if (photoStatus) photoStatus.textContent = 'No photos selected.';
+            syncPhotoInputAndStatus();
         });
     }
 
@@ -822,6 +843,7 @@
                 if (gpsMapUrl) gpsMapUrl.value = '';
                 if (gpsAddress) gpsAddress.value = '';
                 if (pinnedAddress) pinnedAddress.textContent = 'No pinned address yet.';
+                selectedPhotoFiles = [];
                 if (photoStatus) photoStatus.textContent = 'No photos selected.';
                 if (marker && map) {
                     map.removeLayer(marker);
