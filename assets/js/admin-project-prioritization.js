@@ -127,6 +127,12 @@
     if (statusFlash) {
         if (statusFlash === 'updated') {
             showTinyToast('Success', 'Feedback status updated.', false);
+        } else if (statusFlash === 'project_created') {
+            showTinyToast('Project added', 'Top priority was added to Project Registration.', false);
+        } else if (statusFlash === 'project_invalid') {
+            showTinyToast('No priority data', 'Unable to create a project from empty priority data.', true);
+        } else if (statusFlash === 'project_failed') {
+            showTinyToast('Project create failed', 'Unable to add top priority to project registration.', true);
         } else if (statusFlash === 'invalid') {
             showTinyToast('Invalid status', 'Please choose a valid status.', true);
         } else {
