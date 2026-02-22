@@ -13,7 +13,9 @@ if (!isset($db) || $db->connect_error) {
 
 $userId = (int) ($_SESSION['user_id'] ?? 0);
 $file = trim((string) ($_GET['file'] ?? ''));
-if ($userId <= 0 || $file === '' || !preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)) {
+ $feedbackId = (int) ($_GET['feedback_id'] ?? 0);
+$photoIndex = max(0, (int) ($_GET['photo_index'] ?? 0));
+if ($userId <= 0 || ($feedbackId <= 0 && ($file === '' || !preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)))) {
     http_response_code(400);
     exit('Invalid request');
 }
@@ -45,46 +47,78 @@ function feedback_photo_has_column(mysqli $db, string $column): bool
 $hasUserId = feedback_photo_has_column($db, 'user_id');
 $hasPhotoPath = feedback_photo_has_column($db, 'photo_path');
 $userName = trim((string) ($_SESSION['user_name'] ?? ''));
-
-$photoMatchSql = $hasPhotoPath
-    ? "(photo_path = ? OR SUBSTRING_INDEX(REPLACE(photo_path, '\\\\', '/'), '/', -1) = ? OR LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0)"
-    : "LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0";
-
-if ($hasUserId) {
-    $sql = "SELECT 1 FROM feedback WHERE (user_id = ? OR user_name = ?) AND {$photoMatchSql} LIMIT 1";
-    $stmt = $db->prepare($sql);
-    if ($stmt) {
-        if ($hasPhotoPath) {
-            $stmt->bind_param('issss', $userId, $userName, $file, $file, $file);
-        } else {
-            $stmt->bind_param('iss', $userId, $userName, $file);
+if (!function_exists('feedback_extract_photo_files_endpoint')) {
+    function feedback_extract_photo_files_endpoint(string $description, string $photoPathRaw = ''): array
+    {
+        $files = [];
+        $add = static function (string $value) use (&$files): void {
+            $base = basename(str_replace('\\', '/', trim($value)));
+            if ($base !== '' && preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $base)) {
+                $files[$base] = true;
+            }
+        };
+        if ($photoPathRaw !== '') $add($photoPathRaw);
+        if (preg_match_all('/\[Photo Attachment Private\]\s+([^\s]+\.(?:jpg|jpeg|png|webp))/i', $description, $m1)) {
+            foreach ($m1[1] as $candidate) $add((string)$candidate);
         }
-    }
-} else {
-    $sql = "SELECT 1 FROM feedback WHERE user_name = ? AND {$photoMatchSql} LIMIT 1";
-    $stmt = $db->prepare($sql);
-    if ($stmt) {
-        if ($hasPhotoPath) {
-            $stmt->bind_param('ssss', $userName, $file, $file, $file);
-        } else {
-            $stmt->bind_param('ss', $userName, $file);
+        if (preg_match_all('/\[Photo Attachment\]\s+([^\s]+\.(?:jpg|jpeg|png|webp))/i', $description, $m2)) {
+            foreach ($m2[1] as $candidate) $add((string)$candidate);
         }
+        return array_values(array_keys($files));
     }
 }
 
-$allowed = false;
-if ($stmt) {
+$targetFile = '';
+if ($feedbackId > 0) {
+    $selectCols = ['id', 'description'];
+    if ($hasPhotoPath) $selectCols[] = 'photo_path';
+    if ($hasUserId) $selectCols[] = 'user_id';
+    $sql = 'SELECT ' . implode(', ', $selectCols) . ' FROM feedback WHERE id = ? LIMIT 1';
+    $stmt = $db->prepare($sql);
+    if (!$stmt) {
+        $db->close();
+        http_response_code(500);
+        exit('Query failed');
+    }
+    $stmt->bind_param('i', $feedbackId);
     $stmt->execute();
-    $res = $stmt->get_result();
-    $allowed = $res && $res->num_rows > 0;
+    $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
+    if (!$row) {
+        $db->close();
+        http_response_code(404);
+        exit('Not found');
+    }
+    $ownerOk = false;
+    if ($hasUserId && isset($row['user_id'])) {
+        $ownerOk = ((int)$row['user_id'] === $userId) || ($userName !== '' && strcasecmp((string)($row['user_name'] ?? ''), $userName) === 0);
+    }
+    if (!$ownerOk && $userName !== '') {
+        $nameStmt = $db->prepare('SELECT 1 FROM feedback WHERE id = ? AND user_name = ? LIMIT 1');
+        if ($nameStmt) {
+            $nameStmt->bind_param('is', $feedbackId, $userName);
+            $nameStmt->execute();
+            $nameRes = $nameStmt->get_result();
+            $ownerOk = $nameRes && $nameRes->num_rows > 0;
+            $nameStmt->close();
+        }
+    }
+    if (!$ownerOk) {
+        $db->close();
+        http_response_code(403);
+        exit('Forbidden');
+    }
+    $photos = feedback_extract_photo_files_endpoint((string)($row['description'] ?? ''), (string)($row['photo_path'] ?? ''));
+    if (empty($photos) || !isset($photos[$photoIndex])) {
+        $db->close();
+        http_response_code(404);
+        exit('Not found');
+    }
+    $targetFile = (string)$photos[$photoIndex];
+} else {
+    $targetFile = $file;
 }
 $db->close();
-
-if (!$allowed) {
-    http_response_code(403);
-    exit('Forbidden');
-}
 
 function feedback_photo_candidate_dirs(): array
 {
@@ -99,7 +133,7 @@ function feedback_photo_candidate_dirs(): array
 
 $fullPath = null;
 foreach (feedback_photo_candidate_dirs() as $baseDir) {
-    $candidate = rtrim($baseDir, '/') . '/' . $file;
+    $candidate = rtrim($baseDir, '/') . '/' . $targetFile;
     if (@is_file($candidate)) {
         $fullPath = $candidate;
         break;
