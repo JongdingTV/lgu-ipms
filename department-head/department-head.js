@@ -85,11 +85,18 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.addEventListener('click', function () {
                 var id = this.getAttribute('data-id');
                 var noteEl = document.querySelector('textarea[data-type="note"][data-id="' + id + '"]');
+                var budgetEl = document.querySelector('input[data-type="budget"][data-id="' + id + '"]');
                 var note = noteEl ? noteEl.value : '';
+                var budget = budgetEl ? Number(budgetEl.value || 0) : 0;
+                if (!(budget > 0)) {
+                    showMessage('err', 'Enter a valid budget before approving.');
+                    return;
+                }
                 apiPost('decide_project', {
                     project_id: id,
                     decision_status: 'Approved',
-                    decision_note: note
+                    decision_note: note,
+                    budget_amount: budget
                 }).then(function (res) {
                     if (!res.ok || !res.json || res.json.success === false) {
                         throw new Error((res.json && res.json.message) ? res.json.message : 'Failed to approve.');
@@ -114,7 +121,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 apiPost('decide_project', {
                     project_id: id,
                     decision_status: 'Rejected',
-                    decision_note: note
+                    decision_note: note,
+                    budget_amount: 0
                 }).then(function (res) {
                     if (!res.ok || !res.json || res.json.success === false) {
                         throw new Error((res.json && res.json.message) ? res.json.message : 'Failed to reject.');
@@ -152,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<td><strong>' + esc(row.name || '-') + '</strong><br><small>' + esc(row.location || '-') + '</small></td>',
                 '<td>' + statusChip(row.status || 'For Approval') + '</td>',
                 '<td>' + statusChip(row.decision_status || 'Pending') + '<br><small>' + esc(row.decided_by_name || '') + (row.decided_at ? (' | ' + esc(row.decided_at)) : '') + '</small></td>',
-                '<td><textarea class="dept-note" data-type="note" data-id="' + esc(row.id) + '" placeholder="Decision note for admin and audit trail">' + esc(row.decision_note || '') + '</textarea></td>',
+                '<td><div class="dept-budget-wrap"><label class="dept-input-label">Project Budget (PHP)</label><input class="dept-budget-input" data-type="budget" data-id="' + esc(row.id) + '" type="number" min="0" step="0.01" placeholder="Enter project budget" value="' + esc(Number(row.budget || 0) > 0 ? row.budget : '') + '"></div><textarea class="dept-note" data-type="note" data-id="' + esc(row.id) + '" placeholder="Decision note for admin and audit trail">' + esc(row.decision_note || '') + '</textarea></td>',
                 '<td><div class="dept-action-group"><button type="button" class="dept-btn details" data-action="toggle-details" data-id="' + esc(row.id) + '">View Details</button>' + (pending
                     ? '<button type="button" class="dept-btn approve" data-action="approve" data-id="' + esc(row.id) + '">Approve</button><button type="button" class="dept-btn reject" data-action="reject" data-id="' + esc(row.id) + '">Reject</button>'
                     : '<span class="ac-a004b216 dept-finalized-badge">Finalized</span>') + '</div></td>'

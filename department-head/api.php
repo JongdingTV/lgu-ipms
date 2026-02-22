@@ -100,10 +100,14 @@ if ($action === 'decide_project') {
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $decision = trim((string) ($_POST['decision_status'] ?? ''));
     $note = trim((string) ($_POST['decision_note'] ?? ''));
+    $budgetAmount = max(0, (float) ($_POST['budget_amount'] ?? 0));
     $allowed = ['Approved', 'Rejected'];
 
     if ($projectId <= 0 || !in_array($decision, $allowed, true)) {
         out(['success' => false, 'message' => 'Invalid decision request.'], 422);
+    }
+    if ($decision === 'Approved' && $budgetAmount <= 0) {
+        out(['success' => false, 'message' => 'Please enter a valid budget before approving the project.'], 422);
     }
 
     $employeeId = (int) $_SESSION['employee_id'];
@@ -128,9 +132,10 @@ if ($action === 'decide_project') {
 
     // Workflow: after department head approval, project is marked Approved for admin assignment.
     $newProjectStatus = $decision === 'Approved' ? 'Approved' : 'Rejected';
-    $up = $db->prepare('UPDATE projects SET status = ? WHERE id = ?');
+    $up = $db->prepare('UPDATE projects SET status = ?, budget = ? WHERE id = ?');
     if ($up) {
-        $up->bind_param('si', $newProjectStatus, $projectId);
+        $effectiveBudget = $decision === 'Approved' ? $budgetAmount : 0;
+        $up->bind_param('sdi', $newProjectStatus, $effectiveBudget, $projectId);
         $up->execute();
         $up->close();
     }

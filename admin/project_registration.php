@@ -230,6 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         // Workflow rule: every newly registered project must pass Department Head approval first.
         if (!$isUpdate) {
             $status = 'For Approval';
+            $budget = 0.0;
         }
         
         if ($budget !== null && $budget > MAX_PROJECT_BUDGET) {

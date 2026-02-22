@@ -42,7 +42,8 @@
 
 .pm-controls input[type="search"]:focus,
 .pm-controls select:focus,
-.dept-note:focus {
+.dept-note:focus,
+.dept-budget-input:focus {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
@@ -88,6 +89,31 @@
     color: #0f172a;
     background: #fff;
     font-size: 0.92rem;
+}
+
+.dept-budget-wrap {
+    margin-bottom: 8px;
+}
+
+.dept-input-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+    color: #355477;
+}
+
+.dept-budget-input {
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid #d6e2f0;
+    border-radius: 10px;
+    background: #fff;
+    padding: 8px 10px;
+    color: #0f172a;
+    font-size: 0.9rem;
 }
 
 .dept-btn {
