@@ -47,7 +47,7 @@ $hasPhotoPath = feedback_photo_has_column($db, 'photo_path');
 $userName = trim((string) ($_SESSION['user_name'] ?? ''));
 
 $photoMatchSql = $hasPhotoPath
-    ? "(photo_path = ? OR LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0)"
+    ? "(photo_path = ? OR SUBSTRING_INDEX(REPLACE(photo_path, '\\\\', '/'), '/', -1) = ? OR LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0)"
     : "LOCATE(CONCAT('[Photo Attachment Private] ', ?), description) > 0";
 
 if ($hasUserId) {
@@ -55,7 +55,7 @@ if ($hasUserId) {
     $stmt = $db->prepare($sql);
     if ($stmt) {
         if ($hasPhotoPath) {
-            $stmt->bind_param('isss', $userId, $userName, $file, $file);
+            $stmt->bind_param('issss', $userId, $userName, $file, $file, $file);
         } else {
             $stmt->bind_param('iss', $userId, $userName, $file);
         }
@@ -65,7 +65,7 @@ if ($hasUserId) {
     $stmt = $db->prepare($sql);
     if ($stmt) {
         if ($hasPhotoPath) {
-            $stmt->bind_param('sss', $userName, $file, $file);
+            $stmt->bind_param('ssss', $userName, $file, $file, $file);
         } else {
             $stmt->bind_param('ss', $userName, $file);
         }
@@ -90,7 +90,10 @@ function feedback_photo_candidate_dirs(): array
 {
     return [
         str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/../private_uploads/lgu-ipms/feedback'),
-        str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/private_uploads/lgu-ipms/feedback')
+        str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/private_uploads/lgu-ipms/feedback'),
+        // Fallback for deployments that store feedback images in public uploads.
+        str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/uploads/feedback'),
+        str_replace(['\\', '//'], ['/', '/'], dirname(__DIR__) . '/../uploads/feedback')
     ];
 }
 
