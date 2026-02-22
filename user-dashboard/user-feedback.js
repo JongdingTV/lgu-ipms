@@ -7,7 +7,6 @@
     const altName = document.getElementById('alt_name');
     const locationInput = document.getElementById('location');
     const gpsPinBtn = document.getElementById('gpsPinBtn');
-    const improveAccuracyBtn = document.getElementById('improveAccuracyBtn');
     const gpsLat = document.getElementById('gps_lat');
     const gpsLng = document.getElementById('gps_lng');
     const gpsAccuracy = document.getElementById('gps_accuracy');
@@ -478,20 +477,6 @@
                 showMessage('Used your GPS as a starting pin (~' + accText + ' accuracy). Drag the pin for exact spot.', true);
             } catch (error) {
                 const msg = error && error.message ? error.message : 'Unable to get your current location.';
-                showMessage(msg, false);
-            }
-        });
-    }
-
-    if (improveAccuracyBtn) {
-        improveAccuracyBtn.addEventListener('click', async function () {
-            try {
-                const best = await getBestCurrentLocation();
-                await pinToLocation(best.lat, best.lng, best.accuracy);
-                const accText = best.accuracy ? Math.round(best.accuracy) + 'm' : 'unknown';
-                showMessage('GPS accuracy improved (~' + accText + ').', true);
-            } catch (error) {
-                const msg = error && error.message ? error.message : 'Unable to improve GPS accuracy right now.';
                 showMessage(msg, false);
             }
         });

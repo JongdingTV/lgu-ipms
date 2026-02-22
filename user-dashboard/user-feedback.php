@@ -730,8 +730,12 @@ $csrfToken = generate_csrf_token();
                         <div id="feedbackMapControls" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
                             <input type="text" id="mapSearchInput" placeholder="Search place or address" style="flex:1 1 320px;">
                             <button type="button" id="mapSearchBtn" class="ac-f84d9680">Search</button>
-                            <button type="button" id="gpsPinBtn" class="ac-f84d9680">Use Current Location</button>
-                            <button type="button" id="improveAccuracyBtn" class="ac-f84d9680">Improve Accuracy</button>
+                            <button type="button" id="gpsPinBtn" class="gps-icon-btn" title="Use Current Location" aria-label="Use Current Location">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M12 22s7-5.8 7-12a7 7 0 1 0-14 0c0 6.2 7 12 7 12z"></path>
+                                    <circle cx="12" cy="10" r="2.6"></circle>
+                                </svg>
+                            </button>
                         </div>
                         <div id="concernMap" style="height:320px;border:1px solid #d1d5db;border-radius:10px;"></div>
                         <small id="pinnedAddress" style="display:block;margin-top:8px;color:#334155;">No pinned address yet.</small>
@@ -797,6 +801,25 @@ $csrfToken = generate_csrf_token();
                 #photo::file-selector-button:hover {
                     filter: brightness(1.05);
                     transform: translateY(-1px);
+                }
+                .gps-icon-btn {
+                    width: 40px;
+                    height: 40px;
+                    min-width: 40px;
+                    border-radius: 999px;
+                    border: 1px solid #2d5f9a;
+                    background: linear-gradient(135deg, #1d4e89, #3f83c9);
+                    color: #fff;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+                    transition: all .2s ease;
+                }
+                .gps-icon-btn:hover {
+                    transform: translateY(-1px);
+                    filter: brightness(1.05);
                 }
                 .feedback-inbox { border:1px solid #dbe7f3;border-radius:12px;overflow:hidden;background:#fff; }
                 .feedback-inbox-head { display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;background:#f8fbff;border-bottom:1px solid #dbe7f3; }
