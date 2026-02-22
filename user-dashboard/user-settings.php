@@ -348,6 +348,48 @@ $csrfToken = generate_csrf_token();
     <link rel="stylesheet" href="/user-dashboard/user-shell.css?v=<?php echo filemtime(__DIR__ . '/user-shell.css'); ?>">
     <?php echo get_app_config_script(); ?>
     <script src="/assets/js/shared/security-no-back.js?v=<?php echo time(); ?>"></script>
+    <style>
+        #idUploadWizardModal .avatar-crop-dialog {
+            border-radius: 14px;
+            border: 1px solid #dbe7f3;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.24);
+        }
+        #idUploadWizardModal .avatar-crop-header h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        #idWizardFrontPanel,
+        #idWizardBackPanel {
+            border: 1px solid #dbe7f3;
+            border-radius: 12px;
+            background: #f8fbff;
+            padding: 14px;
+        }
+        #idWizardFrontPanel label,
+        #idWizardBackPanel label {
+            color: #1e3a8a;
+            font-weight: 700;
+            font-size: .92rem;
+        }
+        #idFrontPicked,
+        #idBackPicked {
+            min-height: 22px;
+            font-size: .86rem;
+            color: #334155;
+            background: #fff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 6px 8px;
+        }
+        #idWizardNextBtn,
+        #idWizardSubmitBtn {
+            min-width: 120px;
+        }
+        #idWizardBackBtn {
+            min-width: 90px;
+        }
+    </style>
 </head>
 <body>
     <div class="sidebar-toggle-wrapper"><button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
