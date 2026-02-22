@@ -103,3 +103,87 @@ SET @sql = IF(
     'ALTER TABLE engineers ADD COLUMN contact_number VARCHAR(30) NOT NULL AFTER address'
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='years_experience'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN years_experience INT NOT NULL DEFAULT 0 AFTER specialization'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='position_title'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN position_title VARCHAR(120) NULL AFTER years_experience'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='skills_json'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN skills_json LONGTEXT NULL AFTER position_title'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='availability_status'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN availability_status VARCHAR(30) NOT NULL DEFAULT ''Available'' AFTER skills_json'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='highest_education'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN highest_education VARCHAR(150) NULL AFTER availability_status'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='school_university'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN school_university VARCHAR(200) NULL AFTER highest_education'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='certifications_trainings'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN certifications_trainings TEXT NULL AFTER school_university'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='past_projects_count'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN past_projects_count INT NOT NULL DEFAULT 0 AFTER certifications_trainings'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='notes'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN notes TEXT NULL AFTER past_projects_count'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='emergency_contact_name'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN emergency_contact_name VARCHAR(120) NULL AFTER notes'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='emergency_contact_number'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN emergency_contact_number VARCHAR(30) NULL AFTER emergency_contact_name'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='emergency_contact_relationship'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN emergency_contact_relationship VARCHAR(60) NULL AFTER emergency_contact_number'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

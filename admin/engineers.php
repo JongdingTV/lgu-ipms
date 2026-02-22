@@ -213,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $insert->bind_param(
-                'ssssssssssssssisssssssss',
+                'ssssssssssssssissssssis',
                 $firstName, $middleName, $lastName, $suffix, $fullName,
                 $dob, $gender, $civilStatus, $address, $contactNumber, $email,
                 $prcLicense, $licenseExpiry, $specialization, $yearsExperience,
