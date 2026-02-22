@@ -104,9 +104,11 @@
                 if (activePriorityFilter.district || activePriorityFilter.barangay || activePriorityFilter.alternative) {
                     matchesPriority = (!activePriorityFilter.district || rowDistrict === activePriorityFilter.district)
                         && (!activePriorityFilter.barangay || rowBarangay === activePriorityFilter.barangay)
-                        && (!activePriorityFilter.alternative || rowAlternative === activePriorityFilter.alternative);
+                        && (!activePriorityFilter.alternative || rowAlternative === activePriorityFilter.alternative)
+                        && (!activePriorityFilter.category || rowCategory === activePriorityFilter.category);
                 } else if (activePriorityFilter.location) {
-                    matchesPriority = rowLocation === activePriorityFilter.location;
+                    matchesPriority = rowLocation === activePriorityFilter.location
+                        && (!activePriorityFilter.category || rowCategory === activePriorityFilter.category);
                 }
             }
 
@@ -127,6 +129,20 @@
     if (statusFlash) {
         if (statusFlash === 'updated') {
             showTinyToast('Success', 'Feedback status updated.', false);
+        } else if (statusFlash === 'rejected') {
+            showTinyToast('Rejected', 'Feedback entry marked as rejected.', false);
+        } else if (statusFlash === 'project_created') {
+            showTinyToast('Project added', 'Top priority was added to Project Registration.', false);
+        } else if (statusFlash === 'project_invalid') {
+            showTinyToast('No priority data', 'Unable to create a project from empty priority data.', true);
+        } else if (statusFlash === 'project_failed') {
+            showTinyToast('Project create failed', 'Unable to add top priority to project registration.', true);
+        } else if (statusFlash === 'invalid') {
+            showTinyToast('Invalid status', 'Please choose a valid status.', true);
+        } else if (statusFlash === 'reject_failed') {
+            showTinyToast('Reject failed', 'Unable to reject feedback entry.', true);
+        } else if (statusFlash === 'reject_note_required') {
+            showTinyToast('Note required', 'Please provide a rejection note for the citizen.', true);
         } else if (statusFlash === 'invalid') {
             showTinyToast('Invalid status', 'Please choose a valid status.', true);
         } else {
@@ -169,7 +185,8 @@
             district: district,
             barangay: barangay,
             alternative: alternative,
-            location: location
+            location: location,
+            category: (priorityCard.getAttribute('data-category') || '').trim().toLowerCase()
         };
         priorityCard.classList.add('is-active');
         applyFeedbackFilters();

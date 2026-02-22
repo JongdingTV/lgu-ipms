@@ -448,9 +448,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
 
 $hasFeedbackUserId = feedback_table_has_user_id($db);
 $hasFeedbackPhotoPath = feedback_table_has_column($db, 'photo_path');
-$listFields = $hasFeedbackPhotoPath
-    ? 'subject, category, location, description, status, date_submitted, photo_path'
-    : 'subject, category, location, description, status, date_submitted';
+$hasFeedbackRejectionNote = feedback_table_has_column($db, 'rejection_note');
+$listParts = ['subject', 'category', 'location', 'description', 'status', 'date_submitted'];
+if ($hasFeedbackPhotoPath) {
+    $listParts[] = 'photo_path';
+}
+if ($hasFeedbackRejectionNote) {
+    $listParts[] = 'rejection_note';
+}
+$listFields = implode(', ', $listParts);
 $listSql = $hasFeedbackUserId
     ? "SELECT {$listFields} FROM feedback WHERE user_id = ? ORDER BY date_submitted DESC LIMIT 20"
     : "SELECT {$listFields} FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 20";
@@ -741,6 +747,7 @@ $csrfToken = generate_csrf_token();
                                 data-location="<?php echo htmlspecialchars((string) $row['location'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-status="<?php echo htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8'); ?>"
                                 data-description="<?php echo htmlspecialchars((string) $row['description'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-rejection-note="<?php echo htmlspecialchars((string) ($row['rejection_note'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                 style="cursor:pointer;"
                             >
                                 <span class="feedback-mail-dot <?php echo $statusClass; ?>"></span>
@@ -791,6 +798,10 @@ $csrfToken = generate_csrf_token();
                 <div><strong>Category:</strong> <span id="fdCategory">-</span></div>
                 <div><strong>Location:</strong> <span id="fdLocation">-</span></div>
                 <div><strong>Status:</strong> <span id="fdStatus">-</span></div>
+                <div id="fdRejectionNoteRow" style="display:none;">
+                    <strong>Rejection Note:</strong>
+                    <pre id="fdRejectionNote" style="margin:8px 0 0;padding:10px;border:1px solid #fecaca;border-radius:10px;background:#fff1f2;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto;">-</pre>
+                </div>
                 <div>
                     <strong>Description:</strong>
                     <pre id="fdDescription" style="margin:8px 0 0;padding:10px;border:1px solid #dbe7f3;border-radius:10px;background:#f8fbff;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto;">-</pre>

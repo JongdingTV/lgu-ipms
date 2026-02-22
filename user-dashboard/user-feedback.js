@@ -629,6 +629,8 @@
     const fdLocation = document.getElementById('fdLocation');
     const fdStatus = document.getElementById('fdStatus');
     const fdDescription = document.getElementById('fdDescription');
+    const fdRejectionNoteRow = document.getElementById('fdRejectionNoteRow');
+    const fdRejectionNote = document.getElementById('fdRejectionNote');
     const fdPhotoRow = document.getElementById('fdPhotoRow');
     const fdViewPhotoBtn = document.getElementById('fdViewPhotoBtn');
     let currentDetailsPhotoUrl = '';
@@ -677,7 +679,26 @@
             if (fdCategory) fdCategory.textContent = row.getAttribute('data-category') || '-';
             if (fdLocation) fdLocation.textContent = row.getAttribute('data-location') || '-';
             if (fdStatus) fdStatus.textContent = row.getAttribute('data-status') || '-';
-            if (fdDescription) fdDescription.textContent = row.getAttribute('data-description') || '-';
+            const descriptionText = row.getAttribute('data-description') || '-';
+            if (fdDescription) fdDescription.textContent = descriptionText;
+            let rejectionNote = (row.getAttribute('data-rejection-note') || '').trim();
+            if (!rejectionNote) {
+                const marker = '[Rejection Note]';
+                const idx = descriptionText.indexOf(marker);
+                if (idx >= 0) {
+                    rejectionNote = descriptionText.slice(idx + marker.length).trim();
+                }
+            }
+            const statusText = (row.getAttribute('data-status') || '').toLowerCase();
+            if (fdRejectionNoteRow && fdRejectionNote) {
+                if (statusText === 'rejected' && rejectionNote) {
+                    fdRejectionNote.textContent = rejectionNote;
+                    fdRejectionNoteRow.style.display = 'block';
+                } else {
+                    fdRejectionNote.textContent = '-';
+                    fdRejectionNoteRow.style.display = 'none';
+                }
+            }
             currentDetailsPhotoUrl = row.getAttribute('data-photo-url') || '';
             if (fdPhotoRow) fdPhotoRow.style.display = currentDetailsPhotoUrl ? 'block' : 'none';
             detailsModal.hidden = false;
