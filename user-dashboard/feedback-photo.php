@@ -72,38 +72,29 @@ $targetFile = '';
 if ($feedbackId > 0) {
     $selectCols = ['id', 'description'];
     if ($hasPhotoPath) $selectCols[] = 'photo_path';
-    if ($hasUserId) $selectCols[] = 'user_id';
-    $sql = 'SELECT ' . implode(', ', $selectCols) . ' FROM feedback WHERE id = ? LIMIT 1';
+    $whereSql = '';
+    if ($hasUserId) {
+        $selectCols[] = 'user_id';
+        $whereSql = 'id = ? AND user_id = ?';
+    } else {
+        $whereSql = 'id = ? AND user_name = ?';
+    }
+    $sql = 'SELECT ' . implode(', ', $selectCols) . ' FROM feedback WHERE ' . $whereSql . ' LIMIT 1';
     $stmt = $db->prepare($sql);
     if (!$stmt) {
         $db->close();
         http_response_code(500);
         exit('Query failed');
     }
-    $stmt->bind_param('i', $feedbackId);
+    if ($hasUserId) {
+        $stmt->bind_param('ii', $feedbackId, $userId);
+    } else {
+        $stmt->bind_param('is', $feedbackId, $userName);
+    }
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     if (!$row) {
-        $db->close();
-        http_response_code(404);
-        exit('Not found');
-    }
-    $ownerOk = false;
-    if ($hasUserId && isset($row['user_id'])) {
-        $ownerOk = ((int)$row['user_id'] === $userId) || ($userName !== '' && strcasecmp((string)($row['user_name'] ?? ''), $userName) === 0);
-    }
-    if (!$ownerOk && $userName !== '') {
-        $nameStmt = $db->prepare('SELECT 1 FROM feedback WHERE id = ? AND user_name = ? LIMIT 1');
-        if ($nameStmt) {
-            $nameStmt->bind_param('is', $feedbackId, $userName);
-            $nameStmt->execute();
-            $nameRes = $nameStmt->get_result();
-            $ownerOk = $nameRes && $nameRes->num_rows > 0;
-            $nameStmt->close();
-        }
-    }
-    if (!$ownerOk) {
         $db->close();
         http_response_code(403);
         exit('Forbidden');
