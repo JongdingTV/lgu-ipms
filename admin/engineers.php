@@ -198,28 +198,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $db->begin_transaction();
 
-            $insert = $db->prepare(
-                "INSERT INTO engineers (
-                    first_name, middle_name, last_name, suffix, full_name,
-                    date_of_birth, gender, civil_status, address, contact_number, email,
-                    prc_license_number, license_expiry_date, specialization, years_experience,
-                    position_title, skills_json, availability_status,
-                    highest_education, school_university, certifications_trainings, past_projects_count, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-            );
+            $hasEngineerCode = eng_table_has_column($db, 'engineers', 'engineer_code');
+            $engineerCode = '';
+            if ($hasEngineerCode) {
+                $engineerCode = 'ENG-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            }
+
+            if ($hasEngineerCode) {
+                $insert = $db->prepare(
+                    "INSERT INTO engineers (
+                        engineer_code,
+                        first_name, middle_name, last_name, suffix, full_name,
+                        date_of_birth, gender, civil_status, address, contact_number, email,
+                        prc_license_number, license_expiry_date, specialization, years_experience,
+                        position_title, skills_json, availability_status,
+                        highest_education, school_university, certifications_trainings, past_projects_count, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                );
+            } else {
+                $insert = $db->prepare(
+                    "INSERT INTO engineers (
+                        first_name, middle_name, last_name, suffix, full_name,
+                        date_of_birth, gender, civil_status, address, contact_number, email,
+                        prc_license_number, license_expiry_date, specialization, years_experience,
+                        position_title, skills_json, availability_status,
+                        highest_education, school_university, certifications_trainings, past_projects_count, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                );
+            }
 
             if (!$insert) {
                 throw new RuntimeException('Unable to prepare engineer insert.');
             }
 
-            $insert->bind_param(
-                'ssssssssssssssissssssis',
-                $firstName, $middleName, $lastName, $suffix, $fullName,
-                $dob, $gender, $civilStatus, $address, $contactNumber, $email,
-                $prcLicense, $licenseExpiry, $specialization, $yearsExperience,
-                $positionTitle, $skillsJson, $availabilityStatus,
-                $education, $school, $certifications, $pastProjectsCount, $notes
-            );
+            if ($hasEngineerCode) {
+                $insert->bind_param(
+                    'sssssssssssssssissssssis',
+                    $engineerCode,
+                    $firstName, $middleName, $lastName, $suffix, $fullName,
+                    $dob, $gender, $civilStatus, $address, $contactNumber, $email,
+                    $prcLicense, $licenseExpiry, $specialization, $yearsExperience,
+                    $positionTitle, $skillsJson, $availabilityStatus,
+                    $education, $school, $certifications, $pastProjectsCount, $notes
+                );
+            } else {
+                $insert->bind_param(
+                    'ssssssssssssssissssssis',
+                    $firstName, $middleName, $lastName, $suffix, $fullName,
+                    $dob, $gender, $civilStatus, $address, $contactNumber, $email,
+                    $prcLicense, $licenseExpiry, $specialization, $yearsExperience,
+                    $positionTitle, $skillsJson, $availabilityStatus,
+                    $education, $school, $certifications, $pastProjectsCount, $notes
+                );
+            }
             if (!$insert->execute()) {
                 throw new RuntimeException('Unable to save engineer: ' . $insert->error);
             }
