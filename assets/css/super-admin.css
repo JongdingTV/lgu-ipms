@@ -103,6 +103,14 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme
     box-shadow: 0 14px 28px rgba(13, 41, 76, 0.1);
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .dash-header h1 {
+    letter-spacing: -0.02em;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .dash-header p {
+    color: #4f6b8b;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-kpi-grid,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .pm-stats-wrapper {
     display: grid !important;
@@ -180,6 +188,13 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme
     padding: 8px 10px;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-field input:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-field select:focus {
+    outline: none;
+    border-color: #4c7bd8;
+    box-shadow: 0 0 0 3px rgba(76, 123, 216, 0.18);
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-inline-form {
     display: grid;
     gap: 8px;
@@ -223,6 +238,12 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme
     cursor: pointer;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-create-form button.view-btn {
+    min-height: 44px;
+    padding: 0 18px;
+    box-shadow: 0 8px 18px rgba(32, 92, 170, 0.18);
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-actions-cell {
     min-width: 320px;
     vertical-align: top;
@@ -238,6 +259,11 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme
     border-radius: 12px;
     background: linear-gradient(180deg, #fbfdff, #f1f6fc);
     padding: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-action-card input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-action-card select {
+    background: #fff;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-action-title {
@@ -268,6 +294,25 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-delete-btn {
     width: 100%;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .recent-projects {
+    border-radius: 18px;
+    border: 1px solid #d9e6f7;
+    box-shadow: 0 14px 28px rgba(13, 41, 76, 0.08);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .recent-projects h3 {
+    color: #1f4f8b;
+    letter-spacing: -0.01em;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .feedback-table thead th {
+    background: linear-gradient(180deg, #1f4f8b, #173e6f);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .feedback-table tbody tr:hover {
+    background: rgba(24, 62, 110, 0.04);
 }
 
 @media (max-width: 1080px) {
