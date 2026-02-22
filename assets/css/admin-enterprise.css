@@ -2512,6 +2512,12 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #pr
     min-width: 960px;
 }
 
+/* Registered Engineers: force fluid table to avoid persistent horizontal scroll */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable {
+    min-width: 0 !important;
+    table-layout: fixed;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractors-section,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-project-bank,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .table-wrap {
@@ -2556,21 +2562,27 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #co
     flex-wrap: wrap;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable thead th,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable tbody td {
+    white-space: normal;
+    word-break: break-word;
+}
+
 /* Registered Engineers table: compact, readable action area */
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable thead th:nth-child(8),
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable tbody td:nth-child(8) {
-    min-width: 130px;
+    min-width: 0;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable thead th:nth-child(9),
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable tbody td:nth-child(9) {
-    min-width: 120px;
+    min-width: 0;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable thead th:nth-child(10),
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable tbody td:nth-child(10) {
-    min-width: 240px;
-    width: 240px;
+    min-width: 0;
+    width: auto;
     vertical-align: top;
 }
 
@@ -2605,7 +2617,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #co
 
 @media (max-width: 1280px) {
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable {
-        min-width: 780px;
+        min-width: 0 !important;
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .action-buttons {
@@ -2614,8 +2626,8 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #co
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable thead th:nth-child(10),
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable tbody td:nth-child(10) {
-        min-width: 150px;
-        width: 150px;
+        min-width: 0;
+        width: auto;
     }
 }
 
