@@ -109,56 +109,12 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
         </div>
     </div>
 
-    <div class="pm-section card">
-        <div class="dash-header">
-            <h2>Progress Decision Queue</h2>
-            <p>Review contractor progress submissions and decide.</p>
-        </div>
-        <div id="decisionFeedback" class="ac-c8be1ccb"></div>
-        <div class="table-wrap">
-            <table class="table" id="decisionTable">
-                <thead>
-                    <tr>
-                        <th>Project</th>
-                        <th>Submitted Progress</th>
-                        <th>Submitted At</th>
-                        <th>Submitted By</th>
-                        <th>Decision</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="pm-section card">
-        <div class="dash-header">
-            <h2>Status Request Review</h2>
-            <p>Contractor status requests for engineering recommendation.</p>
-        </div>
-        <div id="statusReqFeedback" class="ac-c8be1ccb"></div>
-        <div class="table-wrap">
-            <table class="table" id="statusReqTable">
-                <thead>
-                    <tr>
-                        <th>Project</th>
-                        <th>Requested Status</th>
-                        <th>Contractor Note</th>
-                        <th>Engineer Decision</th>
-                        <th>Admin Decision</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
 </section>
 
 <script>
 (function () {
     'use strict';
-    const csrfToken = <?php echo json_encode((string) ($_SESSION['csrf_token'] ?? '')); ?>;
-    const state = { projects: [], submissions: [], statusRequests: [] };
+    const state = { projects: [] };
 
     function esc(v) {
         return String(v == null ? '' : v)
@@ -170,26 +126,12 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
     }
 
     async function load() {
-        const [monitoringRes, submissionsRes, statusReqRes] = await Promise.all([
-            fetch('/engineer/api.php?action=load_monitoring', { credentials: 'same-origin' }),
-            fetch('/engineer/api.php?action=load_progress_submissions', { credentials: 'same-origin' }),
-            fetch('/engineer/api.php?action=load_status_requests', { credentials: 'same-origin' })
-        ]);
+        const monitoringRes = await fetch('/engineer/api.php?action=load_monitoring', { credentials: 'same-origin' });
         if (monitoringRes.ok) {
             const json = await monitoringRes.json();
             state.projects = Array.isArray(json.data) ? json.data : [];
         }
-        if (submissionsRes.ok) {
-            const json = await submissionsRes.json();
-            state.submissions = Array.isArray(json.data) ? json.data : [];
-        }
-        if (statusReqRes && statusReqRes.ok) {
-            const json = await statusReqRes.json();
-            state.statusRequests = Array.isArray(json.data) ? json.data : [];
-        }
         render();
-        renderDecisionQueue();
-        renderStatusRequestQueue();
     }
 
     function render() {
@@ -211,150 +153,6 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
                 '<td>' + esc(p.progress_updated_at || 'No updates yet') + '</td>'
             ].join('');
             tbody.appendChild(tr);
-        });
-    }
-
-    async function decideProgress(updateId, projectId, decisionStatus, note) {
-        const body = new URLSearchParams();
-        body.set('update_id', String(updateId));
-        body.set('project_id', String(projectId));
-        body.set('decision_status', String(decisionStatus));
-        body.set('decision_note', String(note || ''));
-        body.set('csrf_token', csrfToken);
-        const res = await fetch('/engineer/api.php?action=decide_progress', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: body.toString()
-        });
-        const json = await res.json();
-        if (!res.ok || json.success === false) {
-            throw new Error((json && json.message) ? json.message : 'Decision failed');
-        }
-    }
-
-    function showDecisionMessage(ok, text) {
-        const box = document.getElementById('decisionFeedback');
-        if (!box) return;
-        box.className = ok ? 'ac-0b2b14a3' : 'ac-aabba7cf';
-        box.textContent = text;
-    }
-
-    function renderDecisionQueue() {
-        const tbody = document.querySelector('#decisionTable tbody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-
-        state.submissions.forEach(function (s) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = [
-                '<td><strong>' + esc((s.code || '') + ' - ' + (s.name || '')) + '</strong></td>',
-                '<td>' + Number(s.progress_percent || 0).toFixed(2) + '%</td>',
-                '<td>' + esc(s.submitted_at || '') + '</td>',
-                '<td>' + esc(s.submitted_by || '') + '</td>',
-                '<td>',
-                '  <div><small>Current: ' + esc(s.decision_status || 'Pending') + '</small></div>',
-                '  <select data-type="decision" data-update="' + s.update_id + '" data-project="' + s.project_id + '">',
-                '    <option value="">Set decision</option>',
-                '    <option value="Approved">Approve</option>',
-                '    <option value="Rejected">Reject</option>',
-                '  </select>',
-                '  <input data-type="note" data-update="' + s.update_id + '" type="text" placeholder="Decision note">',
-                '  <button data-action="decide" data-update="' + s.update_id + '" data-project="' + s.project_id + '">Save</button>',
-                '</td>'
-            ].join('');
-            tbody.appendChild(tr);
-        });
-
-        tbody.querySelectorAll('button[data-action="decide"]').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-                const updateId = this.getAttribute('data-update');
-                const projectId = this.getAttribute('data-project');
-                const decisionEl = document.querySelector('select[data-type="decision"][data-update="' + updateId + '"]');
-                const noteEl = document.querySelector('input[data-type="note"][data-update="' + updateId + '"]');
-                if (!decisionEl || !decisionEl.value) {
-                    showDecisionMessage(false, 'Select a decision first.');
-                    return;
-                }
-                try {
-                    await decideProgress(updateId, projectId, decisionEl.value, noteEl ? noteEl.value : '');
-                    showDecisionMessage(true, 'Progress decision saved.');
-                    await load();
-                } catch (e) {
-                    showDecisionMessage(false, e.message);
-                }
-            });
-        });
-    }
-
-    async function decideStatusRequest(requestId, decision, note) {
-        const body = new URLSearchParams();
-        body.set('request_id', String(requestId));
-        body.set('engineer_decision', String(decision));
-        body.set('engineer_note', String(note || ''));
-        body.set('csrf_token', csrfToken);
-        const res = await fetch('/engineer/api.php?action=engineer_decide_status_request', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: body.toString()
-        });
-        const json = await res.json();
-        if (!res.ok || json.success === false) {
-            throw new Error((json && json.message) ? json.message : 'Decision failed');
-        }
-    }
-
-    function showStatusReqMessage(ok, text) {
-        const box = document.getElementById('statusReqFeedback');
-        if (!box) return;
-        box.className = ok ? 'ac-0b2b14a3' : 'ac-aabba7cf';
-        box.textContent = text;
-    }
-
-    function renderStatusRequestQueue() {
-        const tbody = document.querySelector('#statusReqTable tbody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-
-        state.statusRequests.forEach(function (r) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = [
-                '<td><strong>' + esc((r.code || '') + ' - ' + (r.name || '')) + '</strong></td>',
-                '<td>' + esc(r.requested_status || '') + '</td>',
-                '<td>' + esc(r.contractor_note || '') + '</td>',
-                '<td>',
-                '  <div><small>Current: ' + esc(r.engineer_decision || 'Pending') + '</small></div>',
-                '  <select data-type="req-decision" data-id="' + r.id + '">',
-                '    <option value="">Set decision</option>',
-                '    <option value="Approved">Approve</option>',
-                '    <option value="Rejected">Reject</option>',
-                '  </select>',
-                '  <input data-type="req-note" data-id="' + r.id + '" type="text" placeholder="Engineer note">',
-                '  <button data-action="req-decide" data-id="' + r.id + '">Save</button>',
-                '</td>',
-                '<td>' + esc(r.admin_decision || 'Pending') + '</td>'
-            ].join('');
-            tbody.appendChild(tr);
-        });
-
-        tbody.querySelectorAll('button[data-action="req-decide"]').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-                const id = this.getAttribute('data-id');
-                const decision = document.querySelector('select[data-type="req-decision"][data-id="' + id + '"]');
-                const note = document.querySelector('input[data-type="req-note"][data-id="' + id + '"]');
-                if (!decision || !decision.value) {
-                    showStatusReqMessage(false, 'Select a decision first.');
-                    return;
-                }
-                try {
-                    await decideStatusRequest(id, decision.value, note ? note.value : '');
-                    showStatusReqMessage(true, 'Engineer recommendation saved.');
-                    await load();
-                } catch (e) {
-                    showStatusReqMessage(false, e.message);
-                }
-            });
         });
     }
 
