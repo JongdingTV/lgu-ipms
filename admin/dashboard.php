@@ -189,16 +189,27 @@ $db->close();
             <img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
         </div>
-        <div class="nav-links">
-            <a href="dashboard.php" class="active" data-section="dashboard"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
+                <div class="nav-links">
+            <a href="dashboard.php" class="active"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
             <div class="nav-item-group">
-                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle" data-section="projects"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">&#9662;</span></a>
+                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">&#9662;</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
-                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>View All</span></a>
+                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">&#10133;</span><span>New Project</span></a>
+                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Projects</span></a>
                 </div>
             </div>
-            <a href="project-prioritization.php" data-section="priorities"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
-                <a href="citizen-verification.php" class="nav-main-item" data-section="user"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
+            <a href="progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
+            <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
+            <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
+            <div class="nav-item-group">
+                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">&#9662;</span></a>
+                <div class="nav-submenu" id="contractorsSubmenu">
+                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#10133;</span><span>Add Engineer</span></a>
+                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Engineers</span></a>
+                </div>
+            </div>
+            <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
+            <a href="citizen-verification.php" class="nav-main-item"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
@@ -269,7 +280,7 @@ $db->close();
                 <div class="metric-content">
                     <h3>Total Budget</h3>
                     <div class="ac-9b373689">
-                        <p class="metric-value ac-03320d86" id="budgetValue">â—â—â—â—â—â—â—â—</p>
+                        <p class="metric-value ac-03320d86" id="budgetValue">Ã¢â€”ÂÃ¢â€”ÂÃ¢â€”ÂÃ¢â€”ÂÃ¢â€”ÂÃ¢â€”ÂÃ¢â€”ÂÃ¢â€”Â</p>
                         <button type="button" id="budgetVisibilityToggle" class="ac-d278272f" title="Hold to reveal budget" aria-label="Hold to reveal total budget">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ac-8a303121">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -429,7 +440,7 @@ $db->close();
                                         <div class="progress-fill-small ac-a8a5341d"></div>
                                     </div>
                                 </td>
-                                <td>â‚±<?php echo number_format($project['budget'], 2); ?></td>
+                                <td>Ã¢â€šÂ±<?php echo number_format($project['budget'], 2); ?></td>
                             </tr>
                             <?php
                         }

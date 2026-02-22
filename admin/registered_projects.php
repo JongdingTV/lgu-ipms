@@ -199,25 +199,27 @@ $db->close();
             <img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
         </div>
-        <div class="nav-links">
+                <div class="nav-links">
             <a href="dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
-            
-            <!-- Project Registration with Submenu -->
             <div class="nav-item-group">
-                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle">
-                    <img src="../assets/images/admin/list.png" class="nav-icon">Project Registration
-                    <span class="dropdown-arrow">&#9662;</span>
-                </a>
-                <div class="nav-submenu" id="projectRegSubmenu">
-                    <a href="project_registration.php" class="nav-submenu-item">
-                        <span class="submenu-icon">&#128203;</span>
-                        <span>Registered Engineers</span>
-                    </a>
+                <a href="project_registration.php" class="nav-main-item active" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">&#9662;</span></a>
+                <div class="nav-submenu show" id="projectRegSubmenu">
+                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">&#10133;</span><span>New Project</span></a>
+                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Projects</span></a>
                 </div>
             </div>
-            
+            <a href="progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
+            <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
+            <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
+            <div class="nav-item-group">
+                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">&#9662;</span></a>
+                <div class="nav-submenu" id="contractorsSubmenu">
+                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#10133;</span><span>Add Engineer</span></a>
+                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Engineers</span></a>
+                </div>
+            </div>
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
-                <a href="citizen-verification.php" class="nav-main-item"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
+            <a href="citizen-verification.php" class="nav-main-item"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
@@ -261,7 +263,7 @@ $db->close();
                     <input 
                         type="search" 
                         id="searchProjects" 
-                        placeholder="ðŸ” Search projects by code, name or location..." 
+                        placeholder="Ã°Å¸â€Â Search projects by code, name or location..." 
                         class="ac-54b56ade"
                     >
                     <select 
@@ -275,7 +277,7 @@ $db->close();
                         <option>On-hold</option>
                         <option>Cancelled</option>
                     </select>
-                    <button id="exportCsv" class="ac-1974716d">ðŸ“¥ Export CSV</button>
+                    <button id="exportCsv" class="ac-1974716d">Ã°Å¸â€œÂ¥ Export CSV</button>
                 </div>
             </div>
 
