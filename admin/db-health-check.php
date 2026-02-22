@@ -5,18 +5,9 @@ require dirname(__DIR__) . '/database.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['admin','department_admin','super_admin']);
+rbac_require_roles(['super_admin']);
 
 header('Content-Type: application/json');
-
-if (!isset($_SESSION['employee_id'])) {
-    http_response_code(403);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Forbidden'
-    ]);
-    exit;
-}
 
 if (!($db instanceof mysqli) || $db->connect_error) {
     http_response_code(500);

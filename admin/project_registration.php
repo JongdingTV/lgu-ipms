@@ -5,12 +5,23 @@ require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
 require dirname(__DIR__) . '/config/app.php';
+require dirname(__DIR__) . '/includes/project-workflow.php';
 
 // Protect page
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_roles(['admin','department_admin','super_admin']);
+$rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
+rbac_require_action_roles(
+    $rbacAction,
+    [
+        'save_project' => ['admin', 'department_admin', 'super_admin'],
+        'delete_project' => ['admin', 'super_admin'],
+        'load_projects' => ['admin', 'department_admin', 'super_admin'],
+    ],
+    ['admin', 'department_admin', 'super_admin']
+);
 check_suspicious_activity();
 if ($db->connect_error) {
     header('Content-Type: application/json');
@@ -185,6 +196,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $duration_months = !empty($_POST['duration_months']) ? (int)$_POST['duration_months'] : null;
         $budget = !empty($_POST['budget']) ? (float)$_POST['budget'] : null;
         $status = isset($_POST['status']) ? trim($_POST['status']) : 'Draft';
+        $normalizedStatus = pw_normalize_status($status);
+        if ($normalizedStatus === null) {
+            respond_project_registration(false, 'Invalid project status value.');
+        }
+        $status = $normalizedStatus;
         
         if ($budget !== null && $budget > MAX_PROJECT_BUDGET) {
             respond_project_registration(false, 'Budget exceeds the maximum allowed amount of PHP ' . number_format((float) MAX_PROJECT_BUDGET, 2) . '.');
@@ -208,9 +224,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             respond_project_registration(false, $e->getMessage());
         }
         
+        $oldStatus = '';
         if (isset($_POST['id']) && !empty($_POST['id'])) {
             // Update existing project
             $id = (int)$_POST['id'];
+            $transition = pw_validate_transition($db, $id, $status);
+            if (!$transition['ok']) {
+                respond_project_registration(false, (string)$transition['message']);
+            }
+            $oldStatus = (string)($transition['current'] ?? '');
+            $status = (string)($transition['next'] ?? $status);
             $existingLicenseDoc = null;
             $existingCertificationDoc = null;
             $existingCredentialsDoc = null;
@@ -329,6 +352,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if ($executed) {
                 $savedId = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : (int)$db->insert_id;
                 $isUpdate = isset($_POST['id']) && !empty($_POST['id']);
+                $actorId = (int)($_SESSION['employee_id'] ?? 0);
+                if ($isUpdate && $oldStatus !== '' && $oldStatus !== $status) {
+                    pw_log_status_history($db, $savedId, $status, $actorId, "Status changed from {$oldStatus} to {$status} via Project Registration.");
+                }
+                if (!$isUpdate) {
+                    pw_log_status_history($db, $savedId, $status, $actorId, 'Project created with initial status.');
+                }
+                if (function_exists('rbac_audit')) {
+                    rbac_audit($isUpdate ? 'project.update' : 'project.create', 'project', $savedId, [
+                        'code' => $code,
+                        'name' => $name,
+                        'status' => $status,
+                        'priority' => $priority,
+                        'budget' => $budget
+                    ]);
+                }
                 $okMessage = $isUpdate ? 'Project has been updated successfully.' : 'Project has been added successfully.';
                 respond_project_registration(true, $okMessage, ['project_id' => $savedId]);
             } else {
@@ -355,6 +394,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt->bind_param('i', $id);
         
         if ($stmt->execute()) {
+            if (function_exists('rbac_audit')) {
+                rbac_audit('project.delete', 'project', $id, []);
+            }
             respond_project_registration(true, 'Project deleted successfully');
         } else {
             respond_project_registration(false, 'Failed to delete project: ' . $db->error);

@@ -9,13 +9,54 @@ function rbac_get_employee_role(): string
     return strtolower((string)($_SESSION['employee_role'] ?? ''));
 }
 
+function rbac_is_json_request(): bool
+{
+    $accept = strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? ''));
+    $xrw = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? ''));
+    $isAjax = ($xrw === 'xmlhttprequest');
+    $wantsJson = (strpos($accept, 'application/json') !== false);
+    $hasActionParam = isset($_GET['action']) || isset($_POST['action']) || isset($_REQUEST['action']);
+    return $isAjax || $wantsJson || $hasActionParam;
+}
+
+function rbac_deny(string $message = 'Access denied.'): void
+{
+    http_response_code(403);
+    if (!headers_sent() && rbac_is_json_request()) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => $message, 'error' => 'forbidden']);
+        exit;
+    }
+    die($message);
+}
+
 function rbac_require_roles(array $roles): void
 {
     $current = rbac_get_employee_role();
     $allowed = array_map('strtolower', $roles);
     if ($current === '' || !in_array($current, $allowed, true)) {
-        header('HTTP/1.0 403 Forbidden');
-        die('Access denied.');
+        rbac_deny('Access denied.');
+    }
+}
+
+/**
+ * Enforce role access for a specific action code.
+ * Falls back to $defaultRoles when action is not explicitly mapped.
+ */
+function rbac_require_action_roles(string $action, array $actionRoleMap, array $defaultRoles = []): void
+{
+    $action = strtolower(trim($action));
+    if ($action === '') {
+        return;
+    }
+
+    if (array_key_exists($action, $actionRoleMap)) {
+        rbac_require_roles((array)$actionRoleMap[$action]);
+        return;
+    }
+
+    if (!empty($defaultRoles)) {
+        rbac_require_roles($defaultRoles);
     }
 }
 
@@ -49,8 +90,7 @@ function rbac_has_permission(string $permission): bool
 function rbac_require_permission(string $permission): void
 {
     if (!rbac_has_permission($permission)) {
-        header('HTTP/1.0 403 Forbidden');
-        die('Access denied.');
+        rbac_deny('Access denied.');
     }
 }
 

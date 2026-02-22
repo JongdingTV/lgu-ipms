@@ -1,16 +1,12 @@
 ﻿<?php
-// Start session first
-session_start();
-
-// Include configuration and database files first
+require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
+require dirname(__DIR__) . '/includes/rbac.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['employee_id'])) {
-    header('Location: /admin/index.php');
-    exit;
-}
+set_no_cache_headers();
+check_auth();
+rbac_require_roles(['admin', 'department_admin', 'super_admin']);
 
 $error = '';
 $success = '';
@@ -31,15 +27,7 @@ function get_client_ip() {
 $client_ip = get_client_ip();
 $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
-// Session timeout (30 minutes)
-$session_timeout = 1800;
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $session_timeout) {
-    session_destroy();
-    header('Location: /admin/index.php?session_expired=1');
-    exit;
-} else {
-    $_SESSION['last_activity'] = time();
-}
+$_SESSION['last_activity'] = time();
 
 // Handle password change
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {

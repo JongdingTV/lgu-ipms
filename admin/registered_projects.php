@@ -4,6 +4,7 @@ require dirname(__DIR__) . '/session-auth.php';
 // Database connection
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
+require dirname(__DIR__) . '/includes/project-workflow.php';
 
 // Set no-cache headers to prevent back button access
 set_no_cache_headers();
@@ -12,6 +13,18 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_roles(['admin','department_admin','super_admin']);
+$rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
+rbac_require_action_roles(
+    $rbacAction,
+    [
+        'delete_project' => ['admin', 'super_admin'],
+        'update_project' => ['admin', 'department_admin', 'super_admin'],
+        'get_project' => ['admin', 'department_admin', 'super_admin'],
+        'load_projects' => ['admin', 'department_admin', 'super_admin'],
+        'load_project_timeline' => ['admin', 'department_admin', 'super_admin'],
+    ],
+    ['admin', 'department_admin', 'super_admin']
+);
 
 // Check for suspicious activity
 check_suspicious_activity();
@@ -98,6 +111,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     exit;
 }
 
+// Handle GET request for project status timeline
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_project_timeline') {
+    header('Content-Type: application/json');
+
+    $projectId = isset($_GET['project_id']) ? (int)$_GET['project_id'] : 0;
+    if ($projectId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid project ID']);
+        exit;
+    }
+
+    $sql = "
+        SELECT
+            h.status,
+            h.notes,
+            h.changed_at,
+            COALESCE(NULLIF(TRIM(CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, ''))), ''), e.email, 'System') AS changed_by
+        FROM project_status_history h
+        LEFT JOIN employees e ON e.id = h.changed_by
+        WHERE h.project_id = ?
+        ORDER BY h.changed_at DESC, h.id DESC
+        LIMIT 150
+    ";
+
+    $stmt = $db->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Unable to prepare timeline query']);
+        exit;
+    }
+
+    $stmt->bind_param("i", $projectId);
+    if (!$stmt->execute()) {
+        $stmt->close();
+        echo json_encode(['success' => false, 'message' => 'Unable to load timeline']);
+        exit;
+    }
+
+    $result = $stmt->get_result();
+    $history = [];
+    while ($row = $result->fetch_assoc()) {
+        $history[] = [
+            'status' => (string)($row['status'] ?? ''),
+            'notes' => (string)($row['notes'] ?? ''),
+            'changed_at' => (string)($row['changed_at'] ?? ''),
+            'changed_by' => (string)($row['changed_by'] ?? 'System'),
+        ];
+    }
+    $stmt->close();
+
+    echo json_encode(['success' => true, 'history' => $history]);
+    exit;
+}
+
 // Handle UPDATE request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_project') {
     header('Content-Type: application/json');
@@ -112,10 +177,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $description = isset($_POST['description']) ? $_POST['description'] : '';
     
     if ($id > 0 && !empty($name)) {
+        $transition = pw_validate_transition($db, $id, (string)$status);
+        if (!$transition['ok']) {
+            echo json_encode(['success' => false, 'message' => (string)$transition['message']]);
+            exit;
+        }
+        $oldStatus = (string)($transition['current'] ?? '');
+        $status = (string)($transition['next'] ?? 'Draft');
+
         $stmt = $db->prepare("UPDATE projects SET name=?, code=?, type=?, sector=?, priority=?, status=?, description=? WHERE id=?");
         $stmt->bind_param("sssssssi", $name, $code, $type, $sector, $priority, $status, $description, $id);
         
         if ($stmt->execute()) {
+            if ($oldStatus !== '' && $oldStatus !== $status) {
+                $actorId = (int)($_SESSION['employee_id'] ?? 0);
+                pw_log_status_history($db, $id, $status, $actorId, "Status changed from {$oldStatus} to {$status} via Registered Projects.");
+            }
+            if (function_exists('rbac_audit')) {
+                rbac_audit('project.update', 'project', $id, [
+                    'code' => $code,
+                    'name' => $name,
+                    'status' => $status,
+                    'priority' => $priority
+                ]);
+            }
             echo json_encode(['success' => true, 'message' => 'Project updated successfully']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to update project: ' . $db->error]);
@@ -138,6 +223,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt->bind_param("i", $id);
         
         if ($stmt->execute()) {
+            if (function_exists('rbac_audit')) {
+                rbac_audit('project.delete', 'project', $id, []);
+            }
             echo json_encode(['success' => true, 'message' => 'Project deleted successfully']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to delete project: ' . $db->error]);
@@ -329,6 +417,7 @@ $db->close();
                                         <td><?php echo !empty($p['created_at']) ? date('n/j/Y', strtotime($p['created_at'])) : 'N/A'; ?></td>
                                         <td>
                                             <div class="action-buttons">
+                                                <button class="btn-timeline" data-id="<?php echo (int)($p['id'] ?? 0); ?>" type="button">Timeline</button>
                                                 <button class="btn-edit" data-id="<?php echo (int)($p['id'] ?? 0); ?>">Edit</button>
                                                 <button class="btn-delete" data-id="<?php echo (int)($p['id'] ?? 0); ?>">Delete</button>
                                             </div>
@@ -427,6 +516,61 @@ $db->close();
             <div class="delete-confirm-footer">
                 <button type="button" id="deleteConfirmCancel" class="btn-cancel">Cancel</button>
                 <button type="button" id="deleteConfirmProceed" class="btn-delete">Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Status Timeline Modal -->
+    <div id="projectTimelineModal" class="edit-project-modal" role="dialog" aria-modal="true" aria-labelledby="projectTimelineTitle" aria-hidden="true">
+        <div class="edit-project-modal-content">
+            <div class="edit-project-modal-header">
+                <h2 id="projectTimelineTitle">Project Status Timeline</h2>
+                <button class="close-modal" type="button" id="closeTimelineModalBtn">&times;</button>
+            </div>
+            <div class="edit-project-modal-body">
+                <div id="timelineProjectName" class="timeline-project-name"></div>
+                <div class="timeline-summary" id="timelineSummary">
+                    <div class="timeline-summary-card">
+                        <span class="timeline-summary-label">Latest Status</span>
+                        <span class="timeline-summary-value" id="timelineLatestStatus">-</span>
+                    </div>
+                    <div class="timeline-summary-card">
+                        <span class="timeline-summary-label">Total Changes</span>
+                        <span class="timeline-summary-value" id="timelineTotalChanges">0</span>
+                    </div>
+                    <div class="timeline-summary-card">
+                        <span class="timeline-summary-label">Most Frequent</span>
+                        <span class="timeline-summary-value" id="timelineMostFrequent">-</span>
+                    </div>
+                    <div class="timeline-summary-card">
+                        <span class="timeline-summary-label">Reviewers</span>
+                        <span class="timeline-summary-value" id="timelineReviewers">0</span>
+                    </div>
+                </div>
+                <div class="timeline-toolbar">
+                    <label for="timelineRange">Show:</label>
+                    <select id="timelineRange" class="timeline-range">
+                        <option value="all">All history</option>
+                        <option value="30">Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                    </select>
+                    <input type="search" id="timelineSearch" class="timeline-search" placeholder="Search status, notes, or reviewer">
+                    <label class="timeline-toggle">
+                        <input type="checkbox" id="timelineShowDuplicates">
+                        Show duplicate logs
+                    </label>
+                    <button type="button" id="timelineExportCsvBtn" class="btn-save timeline-export-btn">Export CSV</button>
+                </div>
+                <div id="timelineCount" class="timeline-count"></div>
+                <div id="timelineList" class="timeline-list">
+                    <div class="timeline-empty">Loading timeline...</div>
+                </div>
+                <div class="timeline-loadmore-wrap">
+                    <button type="button" id="timelineLoadMoreBtn" class="btn-cancel timeline-loadmore-btn" style="display:none;">Load More</button>
+                </div>
+            </div>
+            <div class="edit-project-modal-footer">
+                <button type="button" class="btn-cancel" id="timelineCloseFooterBtn">Close</button>
             </div>
         </div>
     </div>
@@ -715,6 +859,213 @@ $db->close();
                 transform: translateY(0);
             }
         }
+
+        .timeline-project-name {
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border: 1px solid #d4e2f2;
+            border-radius: 10px;
+            color: #1e3a8a;
+            font-weight: 600;
+        }
+
+        .timeline-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(120px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .timeline-summary-card {
+            border: 1px solid #dbe7f4;
+            border-radius: 10px;
+            background: #f8fbff;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-height: 58px;
+        }
+
+        .timeline-summary-label {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .timeline-summary-value {
+            font-size: 14px;
+            color: #1e3a8a;
+            font-weight: 700;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        .timeline-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .timeline-toolbar label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #325071;
+        }
+
+        .timeline-range {
+            min-width: 170px;
+            padding: 8px 10px;
+            border: 1px solid #d4e2f2;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #1e3a8a;
+            background: #fff;
+        }
+
+        .timeline-search {
+            flex: 1;
+            min-width: 180px;
+            padding: 8px 10px;
+            border: 1px solid #d4e2f2;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #1e3a8a;
+            background: #fff;
+        }
+
+        .timeline-export-btn {
+            margin-left: auto;
+            padding: 8px 12px;
+            font-size: 13px;
+            line-height: 1.1;
+        }
+
+        .timeline-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #325071;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .timeline-count {
+            margin: 0 0 10px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .timeline-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .timeline-item {
+            border: 1px solid #dbe7f4;
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: #ffffff;
+        }
+
+        .timeline-item .status-badge {
+            font-size: 12px;
+            padding: 3px 8px;
+        }
+
+        .timeline-item-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .timeline-item-status {
+            font-weight: 700;
+            color: #1e3a8a;
+            font-size: 14px;
+        }
+
+        .timeline-item-date {
+            color: #64748b;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .timeline-item-meta {
+            color: #334155;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .timeline-item-transition {
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: #1d4ed8;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+        }
+
+        .timeline-item-notes {
+            color: #475569;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .timeline-empty {
+            padding: 18px 12px;
+            text-align: center;
+            color: #64748b;
+            border: 1px dashed #c9d8ee;
+            border-radius: 10px;
+            background: #f8fbff;
+        }
+
+        .timeline-loadmore-wrap {
+            padding-top: 12px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .timeline-loadmore-btn {
+            min-width: 160px;
+        }
+
+        @media (max-width: 540px) {
+            .timeline-summary {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .timeline-export-btn {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .timeline-search {
+                width: 100%;
+                min-width: 0;
+            }
+        }
     </style>
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
@@ -736,11 +1087,32 @@ $db->close();
         const deleteConfirmProjectName = document.getElementById('deleteConfirmProjectName');
         const deleteConfirmCancel = document.getElementById('deleteConfirmCancel');
         const deleteConfirmProceed = document.getElementById('deleteConfirmProceed');
+        const timelineModal = document.getElementById('projectTimelineModal');
+        const timelineList = document.getElementById('timelineList');
+        const timelineProjectName = document.getElementById('timelineProjectName');
+        const closeTimelineModalBtn = document.getElementById('closeTimelineModalBtn');
+        const timelineCloseFooterBtn = document.getElementById('timelineCloseFooterBtn');
+        const timelineRange = document.getElementById('timelineRange');
+        const timelineExportCsvBtn = document.getElementById('timelineExportCsvBtn');
+        const timelineSearch = document.getElementById('timelineSearch');
+        const timelineCount = document.getElementById('timelineCount');
+        const timelineLoadMoreBtn = document.getElementById('timelineLoadMoreBtn');
+        const timelineShowDuplicates = document.getElementById('timelineShowDuplicates');
+        const timelineLatestStatus = document.getElementById('timelineLatestStatus');
+        const timelineTotalChanges = document.getElementById('timelineTotalChanges');
+        const timelineMostFrequent = document.getElementById('timelineMostFrequent');
+        const timelineReviewers = document.getElementById('timelineReviewers');
 
         if (!table || !tbody) return;
 
         let allProjects = [];
         let pendingDeleteId = null;
+        let currentTimelineEntries = [];
+        let currentTimelineProjectId = null;
+        let currentTimelineProjectName = '';
+        let currentFilteredTimelineEntries = [];
+        let timelineVisibleCount = 30;
+        const timelinePageSize = 30;
 
         function showMsg(text, ok) {
             if (!msg) return;
@@ -810,6 +1182,7 @@ $db->close();
                     <td>${esc(createdDate)}</td>
                     <td>
                         <div class="action-buttons">
+                            <button class="btn-timeline" data-id="${esc(p.id)}" type="button">Timeline</button>
                             <button class="btn-edit" data-id="${esc(p.id)}" type="button">Edit</button>
                             <button class="btn-delete" data-id="${esc(p.id)}" type="button">Delete</button>
                         </div>
@@ -817,6 +1190,198 @@ $db->close();
                 `;
                 tbody.appendChild(row);
             });
+        }
+
+        function renderTimelineEntries(entries) {
+            if (!timelineList) return;
+            if (!entries.length) {
+                timelineList.innerHTML = '<div class="timeline-empty">No status history yet.</div>';
+                if (timelineCount) timelineCount.textContent = '0 entries';
+                if (timelineLoadMoreBtn) timelineLoadMoreBtn.style.display = 'none';
+                updateTimelineSummary(entries);
+                return;
+            }
+
+            const visible = entries.slice(0, timelineVisibleCount);
+            timelineList.innerHTML = visible.map((entry, index) => {
+                const changedAt = entry.changed_at ? new Date(entry.changed_at).toLocaleString() : 'N/A';
+                const badgeClass = toKey(entry.status || 'draft');
+                const previousEntry = entries[index + 1] || null;
+                const currentStatus = String(entry.status || 'Unknown');
+                const previousStatus = String(previousEntry ? (previousEntry.status || 'Unknown') : 'Initial');
+                const hasTransition = previousEntry && previousStatus !== currentStatus;
+                const transitionText = hasTransition
+                    ? `${previousStatus} -> ${currentStatus}`
+                    : `Set as ${currentStatus}`;
+                return `
+                    <div class="timeline-item">
+                        <div class="timeline-item-head">
+                            <span class="status-badge ${esc(badgeClass)}">${esc(entry.status || 'Unknown')}</span>
+                            <span class="timeline-item-date">${esc(changedAt)}</span>
+                        </div>
+                        <div class="timeline-item-transition">${esc(transitionText)}</div>
+                        <div class="timeline-item-meta">By: ${esc(entry.changed_by || 'System')}</div>
+                        <div class="timeline-item-notes">${esc(entry.notes || 'No notes provided.')}</div>
+                    </div>
+                `;
+            }).join('');
+
+            if (timelineCount) {
+                timelineCount.textContent = `${visible.length} of ${entries.length} entries`;
+            }
+
+            if (timelineLoadMoreBtn) {
+                timelineLoadMoreBtn.style.display = visible.length < entries.length ? 'inline-flex' : 'none';
+            }
+            updateTimelineSummary(entries);
+        }
+
+        function updateTimelineSummary(entries) {
+            const list = Array.isArray(entries) ? entries : [];
+            if (timelineTotalChanges) timelineTotalChanges.textContent = String(list.length);
+
+            if (timelineLatestStatus) {
+                timelineLatestStatus.textContent = list.length ? String(list[0].status || 'Unknown') : '-';
+            }
+
+            if (timelineReviewers) {
+                const reviewers = new Set(
+                    list
+                        .map((x) => String(x.changed_by || '').trim())
+                        .filter((x) => x.length > 0)
+                );
+                timelineReviewers.textContent = String(reviewers.size);
+            }
+
+            if (timelineMostFrequent) {
+                if (!list.length) {
+                    timelineMostFrequent.textContent = '-';
+                } else {
+                    const freq = {};
+                    list.forEach((x) => {
+                        const key = String(x.status || 'Unknown').trim() || 'Unknown';
+                        freq[key] = (freq[key] || 0) + 1;
+                    });
+                    let topStatus = '';
+                    let topCount = -1;
+                    Object.keys(freq).forEach((k) => {
+                        if (freq[k] > topCount) {
+                            topStatus = k;
+                            topCount = freq[k];
+                        }
+                    });
+                    timelineMostFrequent.textContent = topStatus ? `${topStatus} (${topCount})` : '-';
+                }
+            }
+        }
+
+        function filterTimelineEntries(entries, rangeValue) {
+            if (!Array.isArray(entries)) return [];
+            if (!rangeValue || rangeValue === 'all') return entries.slice();
+
+            const days = Number(rangeValue);
+            if (!Number.isFinite(days) || days <= 0) return entries.slice();
+
+            const now = Date.now();
+            const cutoff = now - (days * 24 * 60 * 60 * 1000);
+            return entries.filter((entry) => {
+                const dt = Date.parse(entry.changed_at || '');
+                return Number.isFinite(dt) && dt >= cutoff;
+            });
+        }
+
+        function removeConsecutiveDuplicateStatuses(entries) {
+            if (!Array.isArray(entries) || entries.length < 2) return Array.isArray(entries) ? entries.slice() : [];
+            const out = [];
+            let lastStatus = null;
+            entries.forEach((entry) => {
+                const statusKey = String(entry.status || '').trim().toLowerCase();
+                if (statusKey !== lastStatus) {
+                    out.push(entry);
+                    lastStatus = statusKey;
+                }
+            });
+            return out;
+        }
+
+        function applyTimelineFilter() {
+            const rangeValue = timelineRange ? timelineRange.value : 'all';
+            const searchTerm = (timelineSearch ? timelineSearch.value : '').trim().toLowerCase();
+            const ranged = filterTimelineEntries(currentTimelineEntries, rangeValue);
+            const searched = !searchTerm ? ranged : ranged.filter((entry) => {
+                const haystack = `${entry.status || ''} ${entry.notes || ''} ${entry.changed_by || ''}`.toLowerCase();
+                return haystack.includes(searchTerm);
+            });
+            const showDuplicates = timelineShowDuplicates ? !!timelineShowDuplicates.checked : false;
+            currentFilteredTimelineEntries = showDuplicates ? searched : removeConsecutiveDuplicateStatuses(searched);
+            renderTimelineEntries(currentFilteredTimelineEntries);
+        }
+
+        function closeTimelineModal() {
+            if (!timelineModal) return;
+            timelineModal.classList.remove('show');
+            timelineModal.setAttribute('aria-hidden', 'true');
+        }
+
+        function openTimelineModal(projectId, projectName) {
+            if (!timelineModal || !timelineList) return;
+
+            currentTimelineProjectId = Number(projectId) || null;
+            currentTimelineProjectName = projectName || '';
+            currentTimelineEntries = [];
+            currentFilteredTimelineEntries = [];
+            timelineVisibleCount = timelinePageSize;
+            if (timelineRange) timelineRange.value = 'all';
+            if (timelineSearch) timelineSearch.value = '';
+            if (timelineShowDuplicates) timelineShowDuplicates.checked = false;
+            timelineProjectName.textContent = projectName ? ('Project: ' + projectName) : 'Project timeline';
+            timelineList.innerHTML = '<div class="timeline-empty">Loading timeline...</div>';
+            timelineModal.classList.add('show');
+            timelineModal.setAttribute('aria-hidden', 'false');
+
+            const nonce = Date.now();
+            const url = '?action=load_project_timeline&project_id=' + encodeURIComponent(projectId) + '&_=' + nonce;
+            fetchJsonWithFallback(apiUrls(url), { credentials: 'same-origin' })
+                .then((data) => {
+                    if (!data || data.success === false) {
+                        throw new Error((data && data.message) ? data.message : 'Failed timeline request');
+                    }
+                    currentTimelineEntries = Array.isArray(data.history) ? data.history : [];
+                    applyTimelineFilter();
+                })
+                .catch(() => {
+                    timelineList.innerHTML = '<div class="timeline-empty">Unable to load status timeline.</div>';
+                });
+        }
+
+        function exportCurrentTimelineCsv() {
+            if (!currentTimelineEntries.length) {
+                showMsg('No timeline data to export.', false);
+                return;
+            }
+            const rowsData = currentFilteredTimelineEntries.length ? currentFilteredTimelineEntries : [];
+            if (!rowsData.length) {
+                showMsg('No timeline entries for selected range.', false);
+                return;
+            }
+
+            const headers = ['Project ID', 'Project Name', 'Status', 'Changed At', 'Changed By', 'Notes'];
+            const rows = rowsData.map((item) => ([
+                currentTimelineProjectId || '',
+                currentTimelineProjectName || '',
+                item.status || '',
+                item.changed_at || '',
+                item.changed_by || '',
+                item.notes || ''
+            ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')));
+
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const dateTag = new Date().toISOString().slice(0, 10);
+            link.href = URL.createObjectURL(blob);
+            link.download = `project_timeline_${currentTimelineProjectId || 'unknown'}_${dateTag}.csv`;
+            link.click();
         }
 
         function fillEditModal(project) {
@@ -951,6 +1516,16 @@ $db->close();
         }
 
         table.addEventListener('click', function (event) {
+            const timelineBtn = event.target.closest('.btn-timeline');
+            if (timelineBtn) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                const row = timelineBtn.closest('tr');
+                const projectName = row ? (row.querySelector('td:nth-child(2)')?.textContent || '').trim() : '';
+                openTimelineModal(timelineBtn.dataset.id, projectName);
+                return;
+            }
+
             const editBtn = event.target.closest('.btn-edit');
             if (editBtn) {
                 event.preventDefault();
@@ -1010,6 +1585,9 @@ $db->close();
             if (event.key === 'Escape' && deleteConfirmModal && deleteConfirmModal.classList.contains('show')) {
                 closeDeleteConfirmModal();
             }
+            if (event.key === 'Escape' && timelineModal && timelineModal.classList.contains('show')) {
+                closeTimelineModal();
+            }
         });
 
         if (deleteConfirmCancel) {
@@ -1029,6 +1607,47 @@ $db->close();
             deleteConfirmModal.addEventListener('click', function (event) {
                 if (event.target === deleteConfirmModal) {
                     closeDeleteConfirmModal();
+                }
+            });
+        }
+
+        if (closeTimelineModalBtn) {
+            closeTimelineModalBtn.addEventListener('click', closeTimelineModal);
+        }
+        if (timelineCloseFooterBtn) {
+            timelineCloseFooterBtn.addEventListener('click', closeTimelineModal);
+        }
+        if (timelineRange) {
+            timelineRange.addEventListener('change', function () {
+                timelineVisibleCount = timelinePageSize;
+                applyTimelineFilter();
+            });
+        }
+        if (timelineSearch) {
+            timelineSearch.addEventListener('input', function () {
+                timelineVisibleCount = timelinePageSize;
+                applyTimelineFilter();
+            });
+        }
+        if (timelineShowDuplicates) {
+            timelineShowDuplicates.addEventListener('change', function () {
+                timelineVisibleCount = timelinePageSize;
+                applyTimelineFilter();
+            });
+        }
+        if (timelineExportCsvBtn) {
+            timelineExportCsvBtn.addEventListener('click', exportCurrentTimelineCsv);
+        }
+        if (timelineLoadMoreBtn) {
+            timelineLoadMoreBtn.addEventListener('click', function () {
+                timelineVisibleCount += timelinePageSize;
+                renderTimelineEntries(currentFilteredTimelineEntries);
+            });
+        }
+        if (timelineModal) {
+            timelineModal.addEventListener('click', function (event) {
+                if (event.target === timelineModal) {
+                    closeTimelineModal();
                 }
             });
         }

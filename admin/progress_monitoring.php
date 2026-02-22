@@ -4,6 +4,7 @@ require dirname(__DIR__) . '/session-auth.php';
 // Database connection
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
+require dirname(__DIR__) . '/includes/project-workflow.php';
 
 // Set no-cache headers to prevent back button access
 set_no_cache_headers();
@@ -12,6 +13,16 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_roles(['admin','department_admin','super_admin']);
+$rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
+rbac_require_action_roles(
+    $rbacAction,
+    [
+        'load_status_requests' => ['admin', 'department_admin', 'super_admin'],
+        'admin_decide_status_request' => ['admin', 'department_admin', 'super_admin'],
+        'load_projects' => ['admin', 'department_admin', 'super_admin'],
+    ],
+    ['admin', 'department_admin', 'super_admin']
+);
 
 // Check for suspicious activity
 check_suspicious_activity();
@@ -185,6 +196,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     $stmt->bind_param('ssii', $decision, $note, $adminId, $id);
     $stmt->execute();
     $stmt->close();
+    if (function_exists('rbac_audit')) {
+        rbac_audit('project_status_request.admin_decision', 'project_status_request', $id, [
+            'decision' => $decision,
+            'note' => $note
+        ]);
+    }
 
     if ($decision === 'Approved') {
         $s = $db->prepare("SELECT project_id, requested_status FROM project_status_requests WHERE id = ? LIMIT 1");
@@ -195,13 +212,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
             $row = $r ? $r->fetch_assoc() : null;
             $s->close();
             if ($row) {
-                $u = $db->prepare("UPDATE projects SET status = ? WHERE id = ?");
-                if ($u) {
-                    $status = (string) ($row['requested_status'] ?? 'Draft');
-                    $pid = (int) ($row['project_id'] ?? 0);
-                    $u->bind_param('si', $status, $pid);
-                    $u->execute();
-                    $u->close();
+                $pid = (int) ($row['project_id'] ?? 0);
+                $requestedStatus = (string) ($row['requested_status'] ?? 'Draft');
+                $transition = pw_validate_transition($db, $pid, $requestedStatus);
+                if ($transition['ok']) {
+                    $newStatus = (string)($transition['next'] ?? 'Draft');
+                    $u = $db->prepare("UPDATE projects SET status = ? WHERE id = ?");
+                    if ($u) {
+                        $u->bind_param('si', $newStatus, $pid);
+                        $u->execute();
+                        $u->close();
+                        $actorId = (int)($_SESSION['employee_id'] ?? 0);
+                        $fromStatus = (string)($transition['current'] ?? '');
+                        pw_log_status_history(
+                            $db,
+                            $pid,
+                            $newStatus,
+                            $actorId,
+                            "Status request approved in Progress Monitoring. {$fromStatus} -> {$newStatus}"
+                        );
+                        if (function_exists('rbac_audit')) {
+                            rbac_audit('project.status_update_approved', 'project', $pid, [
+                                'from' => $fromStatus,
+                                'to' => $newStatus,
+                                'request_id' => $id
+                            ]);
+                        }
+                    }
+                } else {
+                    // If transition is invalid, automatically mark decision as rejected with reason.
+                    $invalidReason = (string)($transition['message'] ?? 'Invalid transition');
+                    $fixStmt = $db->prepare("UPDATE project_status_requests
+                                             SET admin_decision = 'Rejected',
+                                                 admin_note = CONCAT(COALESCE(admin_note,''), CASE WHEN COALESCE(admin_note,'') = '' THEN '' ELSE '\n' END, ?)
+                                             WHERE id = ?");
+                    if ($fixStmt) {
+                        $fixStmt->bind_param('si', $invalidReason, $id);
+                        $fixStmt->execute();
+                        $fixStmt->close();
+                    }
                 }
             }
         }

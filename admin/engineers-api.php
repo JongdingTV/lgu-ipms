@@ -18,6 +18,31 @@ if ($db->connect_error) {
     exit;
 }
 
+$method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+$postedAction = strtolower(trim((string)($_POST['action'] ?? '')));
+$rbacAction = '';
+if ($method === 'GET') {
+    $rbacAction = 'list_engineers';
+} elseif ($method === 'POST') {
+    $rbacAction = $postedAction !== '' ? $postedAction : 'create_engineer';
+} elseif ($method === 'PUT') {
+    $rbacAction = 'update_engineer';
+} elseif ($method === 'DELETE') {
+    $rbacAction = 'delete_engineer';
+}
+
+rbac_require_action_roles(
+    $rbacAction,
+    [
+        'list_engineers' => ['admin', 'department_admin', 'super_admin'],
+        'create_with_docs' => ['admin', 'department_admin', 'super_admin'],
+        'create_engineer' => ['admin', 'department_admin', 'super_admin'],
+        'update_engineer' => ['admin', 'department_admin', 'super_admin'],
+        'delete_engineer' => ['admin', 'super_admin'],
+    ],
+    ['admin', 'department_admin', 'super_admin']
+);
+
 function capi_table_exists(mysqli $db, string $table): bool
 {
     $stmt = $db->prepare("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1");
@@ -102,8 +127,6 @@ function capi_store_uploaded_doc(array $file, int $contractorId, string $docType
         'file_size' => (int)($file['size'] ?? 0),
     ];
 }
-
-$method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
     $result = $db->query("SELECT * FROM contractors ORDER BY created_at DESC");
@@ -256,6 +279,13 @@ if ($method === 'POST') {
         }
 
         echo json_encode(['success' => true, 'id' => $contractorId]);
+        if (function_exists('rbac_audit')) {
+            rbac_audit('engineer.create', 'engineer', $contractorId, [
+                'full_name' => $fullName,
+                'license' => $license,
+                'status' => $status
+            ]);
+        }
         $db->close();
         exit;
     }
@@ -286,6 +316,14 @@ if ($method === 'POST') {
     $notes = (string)($data['notes'] ?? '');
     $stmt->bind_param('sssssssidss', $company, $owner, $license, $email, $phone, $address, $specialization, $experience, $rating, $status, $notes);
     if ($stmt->execute()) {
+        if (function_exists('rbac_audit')) {
+            $createdId = (int)$db->insert_id;
+            rbac_audit('engineer.create_legacy', 'engineer', $createdId, [
+                'company' => $company,
+                'license' => $license,
+                'status' => $status
+            ]);
+        }
         echo json_encode(['success' => true, 'id' => $db->insert_id]);
     } else {
         echo json_encode(['error' => 'Execute failed: ' . $stmt->error]);
@@ -317,6 +355,13 @@ if ($method === 'PUT') {
     $notes = (string)($data['notes'] ?? '');
     $stmt->bind_param('sssssssisdsi', $company, $owner, $license, $email, $phone, $address, $specialization, $experience, $rating, $status, $notes, $id);
     if ($stmt->execute()) {
+        if (function_exists('rbac_audit')) {
+            rbac_audit('engineer.update', 'engineer', $id, [
+                'company' => $company,
+                'license' => $license,
+                'status' => $status
+            ]);
+        }
         echo json_encode(['success' => true]);
     } else {
         echo json_encode(['error' => $stmt->error]);
@@ -337,6 +382,9 @@ if ($method === 'DELETE') {
     }
     $stmt->bind_param('i', $id);
     if ($stmt->execute()) {
+        if (function_exists('rbac_audit')) {
+            rbac_audit('engineer.delete', 'engineer', $id, []);
+        }
         echo json_encode(['success' => true]);
     } else {
         echo json_encode(['error' => $stmt->error]);

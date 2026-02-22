@@ -11,6 +11,30 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_roles(['admin','department_admin','super_admin']);
+$rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
+rbac_require_action_roles(
+    $rbacAction,
+    [
+        // High-risk/destructive actions
+        'delete_contractor' => ['admin', 'super_admin'],
+        // Approval/verification workflow
+        'verify_contractor_document' => ['admin', 'department_admin', 'super_admin'],
+        'update_contractor_approval' => ['admin', 'department_admin', 'super_admin'],
+        // Assignment operations
+        'assign_contractor' => ['admin', 'department_admin', 'super_admin'],
+        'unassign_contractor' => ['admin', 'department_admin', 'super_admin'],
+        // Evaluation and reads
+        'evaluate_contractor' => ['admin', 'department_admin', 'super_admin'],
+        'load_contractors' => ['admin', 'department_admin', 'super_admin'],
+        'load_projects' => ['admin', 'department_admin', 'super_admin'],
+        'load_contractor_documents' => ['admin', 'department_admin', 'super_admin'],
+        'load_approval_history' => ['admin', 'department_admin', 'super_admin'],
+        'load_evaluation_overview' => ['admin', 'department_admin', 'super_admin'],
+        'recommended_engineers' => ['admin', 'department_admin', 'super_admin'],
+        'get_assigned_projects' => ['admin', 'department_admin', 'super_admin'],
+    ],
+    ['admin', 'department_admin', 'super_admin']
+);
 check_suspicious_activity();
 
 if ($db->connect_error) {
@@ -92,6 +116,18 @@ function registered_pick_column(mysqli $db, string $table, array $candidates): ?
         }
     }
     return null;
+}
+
+function registered_bind_dynamic(mysqli_stmt $stmt, string $types, array $params): bool
+{
+    if ($types === '' || empty($params)) {
+        return true;
+    }
+    $bind = [$types];
+    foreach ($params as $idx => $value) {
+        $bind[] = &$params[$idx];
+    }
+    return (bool)call_user_func_array([$stmt, 'bind_param'], $bind);
 }
 
 function registered_get_profile_verification_status(mysqli $db, int $entityId, bool $isEngineer): string
@@ -240,6 +276,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $verifiedAtCol = registered_pick_column($db, $entityTable, ['verified_at']);
     $approvedAtCol = registered_pick_column($db, $entityTable, ['approved_at']);
     $rejectedAtCol = registered_pick_column($db, $entityTable, ['rejected_at']);
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $perPage = (int)($_GET['per_page'] ?? 25);
+    if ($perPage <= 0) {
+        $perPage = 25;
+    }
+    $perPage = min($perPage, 100);
+    $offset = ($page - 1) * $perPage;
+    $q = trim((string)($_GET['q'] ?? ''));
+    $statusFilter = trim((string)($_GET['status'] ?? ''));
+    $approvalFilter = strtolower(trim((string)($_GET['approval'] ?? '')));
 
     $selectParts = ['id'];
     $selectParts[] = $companyCol ? "{$companyCol} AS company" : "'' AS company";
@@ -261,6 +307,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $selectParts[] = $verifiedAtCol ? "{$verifiedAtCol} AS verified_at" : "NULL AS verified_at";
     $selectParts[] = $approvedAtCol ? "{$approvedAtCol} AS approved_at" : "NULL AS approved_at";
     $selectParts[] = $rejectedAtCol ? "{$rejectedAtCol} AS rejected_at" : "NULL AS rejected_at";
+
+    $where = [];
+    $whereTypes = '';
+    $whereParams = [];
+    if ($q !== '') {
+        $searchCols = array_values(array_unique(array_filter([$companyCol, $fullNameCol, $licenseCol, $emailCol, $phoneCol])));
+        if (!empty($searchCols)) {
+            $parts = [];
+            foreach ($searchCols as $col) {
+                $parts[] = "{$col} LIKE ?";
+                $whereTypes .= 's';
+                $whereParams[] = '%' . $q . '%';
+            }
+            $where[] = '(' . implode(' OR ', $parts) . ')';
+        }
+    }
+    if ($statusFilter !== '' && $statusCol) {
+        $where[] = "{$statusCol} = ?";
+        $whereTypes .= 's';
+        $whereParams[] = $statusFilter;
+    }
+    if ($approvalFilter !== '' && $approvalCol) {
+        $where[] = "LOWER(COALESCE({$approvalCol}, 'pending')) = ?";
+        $whereTypes .= 's';
+        $whereParams[] = $approvalFilter;
+    }
+    $whereSql = !empty($where) ? (' WHERE ' . implode(' AND ', $where)) : '';
 
     $Engineers = [];
     $documentsTable = $isEngineerTable && registered_table_exists($db, 'engineer_documents')
@@ -295,7 +368,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     }
 
     try {
-        $result = $db->query("SELECT " . implode(', ', $selectParts) . " FROM {$entityTable} ORDER BY id DESC LIMIT 100");
+        $total = 0;
+        $countStmt = $db->prepare("SELECT COUNT(*) AS total FROM {$entityTable}{$whereSql}");
+        if ($countStmt) {
+            registered_bind_dynamic($countStmt, $whereTypes, $whereParams);
+            $countStmt->execute();
+            $countRes = $countStmt->get_result();
+            if ($countRes && ($countRow = $countRes->fetch_assoc())) {
+                $total = (int)($countRow['total'] ?? 0);
+            }
+            if ($countRes) {
+                $countRes->free();
+            }
+            $countStmt->close();
+        }
+
+        $stats = [
+            'total' => $total,
+            'active' => 0,
+            'suspended' => 0,
+            'blacklisted' => 0,
+            'avg_rating' => 0.0,
+            'approval_counts' => [
+                'all' => $total,
+                'pending' => 0,
+                'verified' => 0,
+                'approved' => 0,
+                'rejected' => 0,
+                'suspended' => 0,
+            ],
+        ];
+        $statusExpr = $statusCol ? "LOWER(COALESCE({$statusCol}, ''))" : "''";
+        $approvalExpr = $approvalCol ? "LOWER(COALESCE({$approvalCol}, 'pending'))" : "'pending'";
+        $ratingExpr = $ratingCol ? "COALESCE({$ratingCol}, 0)" : "0";
+        $statsSql = "SELECT
+                        SUM(CASE WHEN {$statusExpr} = 'active' THEN 1 ELSE 0 END) AS active_count,
+                        SUM(CASE WHEN {$statusExpr} = 'suspended' THEN 1 ELSE 0 END) AS suspended_count,
+                        SUM(CASE WHEN {$statusExpr} = 'blacklisted' THEN 1 ELSE 0 END) AS blacklisted_count,
+                        AVG(CASE WHEN {$ratingExpr} > 0 THEN {$ratingExpr} ELSE NULL END) AS avg_rating,
+                        SUM(CASE WHEN {$approvalExpr} = 'pending' THEN 1 ELSE 0 END) AS approval_pending,
+                        SUM(CASE WHEN {$approvalExpr} = 'verified' THEN 1 ELSE 0 END) AS approval_verified,
+                        SUM(CASE WHEN {$approvalExpr} = 'approved' THEN 1 ELSE 0 END) AS approval_approved,
+                        SUM(CASE WHEN {$approvalExpr} = 'rejected' THEN 1 ELSE 0 END) AS approval_rejected,
+                        SUM(CASE WHEN {$approvalExpr} = 'suspended' THEN 1 ELSE 0 END) AS approval_suspended
+                     FROM {$entityTable}{$whereSql}";
+        $statsStmt = $db->prepare($statsSql);
+        if ($statsStmt) {
+            registered_bind_dynamic($statsStmt, $whereTypes, $whereParams);
+            $statsStmt->execute();
+            $statsRes = $statsStmt->get_result();
+            if ($statsRes && ($statsRow = $statsRes->fetch_assoc())) {
+                $stats['active'] = (int)($statsRow['active_count'] ?? 0);
+                $stats['suspended'] = (int)($statsRow['suspended_count'] ?? 0);
+                $stats['blacklisted'] = (int)($statsRow['blacklisted_count'] ?? 0);
+                $stats['avg_rating'] = (float)($statsRow['avg_rating'] ?? 0);
+                $stats['approval_counts']['pending'] = (int)($statsRow['approval_pending'] ?? 0);
+                $stats['approval_counts']['verified'] = (int)($statsRow['approval_verified'] ?? 0);
+                $stats['approval_counts']['approved'] = (int)($statsRow['approval_approved'] ?? 0);
+                $stats['approval_counts']['rejected'] = (int)($statsRow['approval_rejected'] ?? 0);
+                $stats['approval_counts']['suspended'] = (int)($statsRow['approval_suspended'] ?? 0);
+            }
+            if ($statsRes) {
+                $statsRes->free();
+            }
+            $statsStmt->close();
+        }
+
+        $sql = "SELECT " . implode(', ', $selectParts) . " FROM {$entityTable}{$whereSql} ORDER BY id DESC LIMIT ? OFFSET ?";
+        $result = null;
+        $stmt = $db->prepare($sql);
+        if ($stmt) {
+            $types = $whereTypes . 'ii';
+            $params = array_merge($whereParams, [$perPage, $offset]);
+            registered_bind_dynamic($stmt, $types, $params);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        }
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $row['display_name'] = trim((string)($row['full_name'] ?? '')) !== ''
@@ -362,6 +510,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             }
             $result->free();
         }
+        if ($stmt) {
+            $stmt->close();
+        }
         if ($docsStmt) {
             $docsStmt->close();
         }
@@ -370,11 +521,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         if ($docsStmt) {
             $docsStmt->close();
         }
-        echo json_encode([]);
+        echo json_encode(['success' => false, 'message' => 'Failed to load Engineers data', 'data' => []]);
         exit;
     }
-    
-    echo json_encode($Engineers);
+
+    $totalPages = $perPage > 0 ? (int)ceil(((int)($stats['total'] ?? 0)) / $perPage) : 1;
+    echo json_encode([
+        'success' => true,
+        'data' => $Engineers,
+        'meta' => [
+            'page' => $page,
+            'per_page' => $perPage,
+            'total' => (int)($stats['total'] ?? 0),
+            'total_pages' => max(1, $totalPages),
+            'has_next' => $page < $totalPages,
+            'has_prev' => $page > 1,
+        ],
+        'stats' => $stats,
+    ]);
     exit;
 }
 
@@ -434,6 +598,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         $res->free();
     }
     $stmt->close();
+    echo json_encode($rows);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_approval_history') {
+    header('Content-Type: application/json');
+    $contractorId = isset($_GET['contractor_id']) ? (int) $_GET['contractor_id'] : 0;
+    if ($contractorId <= 0 || !registered_table_exists($db, 'approvals')) {
+        echo json_encode([]);
+        exit;
+    }
+
+    $rows = [];
+    $hasEmployees = registered_table_exists($db, 'employees');
+    $empFirstCol = $hasEmployees ? registered_pick_column($db, 'employees', ['first_name']) : null;
+    $empLastCol = $hasEmployees ? registered_pick_column($db, 'employees', ['last_name']) : null;
+    $empEmailCol = $hasEmployees ? registered_pick_column($db, 'employees', ['email']) : null;
+
+    $reviewerNameExpr = "CONCAT('Employee #', a.reviewer_id)";
+    if ($hasEmployees && $empFirstCol && $empLastCol && $empEmailCol) {
+        $reviewerNameExpr = "COALESCE(NULLIF(CONCAT(COALESCE(e.{$empFirstCol},''), ' ', COALESCE(e.{$empLastCol},'')), ' '), e.{$empEmailCol}, CONCAT('Employee #', a.reviewer_id))";
+    } elseif ($hasEmployees && $empEmailCol) {
+        $reviewerNameExpr = "COALESCE(e.{$empEmailCol}, CONCAT('Employee #', a.reviewer_id))";
+    }
+
+    try {
+        if ($hasEmployees && ($empFirstCol || $empEmailCol)) {
+            $stmt = $db->prepare(
+                "SELECT
+                    a.id,
+                    a.status,
+                    a.reviewer_id,
+                    a.reviewer_role,
+                    a.notes,
+                    COALESCE(a.reviewed_at, a.created_at) AS changed_at,
+                    {$reviewerNameExpr} AS reviewer_name
+                 FROM approvals a
+                 LEFT JOIN employees e ON e.id = a.reviewer_id
+                 WHERE a.entity_type IN ('engineer','contractor')
+                   AND a.entity_id = ?
+                 ORDER BY COALESCE(a.reviewed_at, a.created_at) DESC, a.id DESC
+                 LIMIT 50"
+            );
+        } else {
+            $stmt = $db->prepare(
+                "SELECT
+                    a.id,
+                    a.status,
+                    a.reviewer_id,
+                    a.reviewer_role,
+                    a.notes,
+                    COALESCE(a.reviewed_at, a.created_at) AS changed_at,
+                    CONCAT('Employee #', COALESCE(a.reviewer_id, 0)) AS reviewer_name
+                 FROM approvals a
+                 WHERE a.entity_type IN ('engineer','contractor')
+                   AND a.entity_id = ?
+                 ORDER BY COALESCE(a.reviewed_at, a.created_at) DESC, a.id DESC
+                 LIMIT 50"
+            );
+        }
+        if (!$stmt) {
+            echo json_encode([]);
+            exit;
+        }
+        $stmt->bind_param('i', $contractorId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($res && ($row = $res->fetch_assoc())) {
+            $rows[] = $row;
+        }
+        if ($res) {
+            $res->free();
+        }
+        $stmt->close();
+    } catch (Throwable $e) {
+        error_log('registered_engineers load_approval_history error: ' . $e->getMessage());
+        echo json_encode([]);
+        exit;
+    }
+
     echo json_encode($rows);
     exit;
 }
@@ -536,6 +780,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt->bind_param('iiii', $isVerified, $employeeId, $isVerified, $documentId);
     $ok = $stmt->execute();
     $stmt->close();
+    if ($ok && function_exists('rbac_audit')) {
+        rbac_audit('engineer.document_verify', 'engineer_document', $documentId, [
+            'is_verified' => $isVerified
+        ]);
+    }
 
     echo json_encode([
         'success' => $ok,
@@ -548,6 +797,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     header('Content-Type: application/json');
     $contractorId = isset($_POST['contractor_id']) ? (int) $_POST['contractor_id'] : 0;
     $status = strtolower(trim((string) ($_POST['status'] ?? '')));
+    $note = trim((string)($_POST['note'] ?? ''));
     $allowed = ['pending', 'verified', 'approved', 'rejected', 'suspended', 'blacklisted', 'inactive'];
     if ($contractorId <= 0 || !in_array($status, $allowed, true)) {
         echo json_encode(['success' => false, 'message' => 'Invalid approval request.']);
@@ -616,13 +866,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if ($ok && registered_table_exists($db, 'approvals')) {
         $employeeId = (int)($_SESSION['employee_id'] ?? 0);
         $role = strtolower((string)($_SESSION['employee_role'] ?? ''));
-        $note = 'Updated approval status to ' . $status;
+        $auditNote = $note !== '' ? $note : ('Updated approval status to ' . $status);
         $aStmt = $db->prepare(
             "INSERT INTO approvals (entity_type, entity_id, status, reviewer_id, reviewer_role, notes, reviewed_at)
              VALUES ('engineer', ?, ?, ?, ?, ?, NOW())"
         );
         if ($aStmt) {
-            $aStmt->bind_param('isiss', $contractorId, $status, $employeeId, $role, $note);
+            $aStmt->bind_param('isiss', $contractorId, $status, $employeeId, $role, $auditNote);
             $aStmt->execute();
             $aStmt->close();
         }
@@ -655,6 +905,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $hasCredDoc = registered_projects_has_column($db, 'engineer_credentials_doc');
     $hasTaskTable = registered_table_exists($db, 'project_tasks');
     $hasMilestoneTable = registered_table_exists($db, 'project_milestones');
+    $projectsLimit = (int)($_GET['limit'] ?? 200);
+    if ($projectsLimit <= 0) {
+        $projectsLimit = 200;
+    }
+    $projectsLimit = min($projectsLimit, 500);
     $orderBy = $hasCreatedAt ? 'created_at DESC' : 'id DESC';
     $prioritySelect = $hasPriorityPercent ? 'priority_percent' : '0 AS priority_percent';
     $projectSelect = [
@@ -678,7 +933,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         $hasCredDoc ? 'engineer_credentials_doc' : "'' AS engineer_credentials_doc"
     ];
     try {
-        $result = $db->query("SELECT " . implode(', ', $projectSelect) . " FROM projects ORDER BY {$orderBy}");
+        $result = $db->query("SELECT " . implode(', ', $projectSelect) . " FROM projects ORDER BY {$orderBy} LIMIT {$projectsLimit}");
     } catch (Throwable $e) {
         error_log('registered_contractors load_projects query error: ' . $e->getMessage());
         echo json_encode([]);
@@ -750,6 +1005,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt->bind_param("ii", $contractor_id, $project_id);
         
         if ($stmt->execute()) {
+            if (function_exists('rbac_audit')) {
+                rbac_audit('engineer.assign_project', 'engineer', $contractor_id, [
+                    'project_id' => $project_id
+                ]);
+            }
             echo json_encode(['success' => true, 'message' => 'Engineer assigned to project successfully']);
         } else {
             if (strpos($stmt->error, 'Duplicate') !== false) {
@@ -781,6 +1041,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt->bind_param("ii", $contractor_id, $project_id);
         
         if ($stmt->execute()) {
+            if (function_exists('rbac_audit')) {
+                rbac_audit('engineer.unassign_project', 'engineer', $contractor_id, [
+                    'project_id' => $project_id
+                ]);
+            }
             echo json_encode(['success' => true, 'message' => 'Engineer unassigned from project']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to unassign Engineer']);
@@ -805,6 +1070,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt->bind_param("i", $contractor_id);
 
     if ($stmt->execute()) {
+        if (function_exists('rbac_audit')) {
+            rbac_audit('engineer.delete', 'engineer', $contractor_id, []);
+        }
         echo json_encode(['success' => true, 'message' => 'Engineer deleted successfully']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to delete Engineer']);
@@ -828,6 +1096,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         ee_persist_evaluation($db, $contractorId, $metrics, $scores);
     } catch (Throwable $e) {
         error_log('evaluate_contractor persist error: ' . $e->getMessage());
+    }
+    if (function_exists('rbac_audit')) {
+        rbac_audit('engineer.evaluate', 'engineer', $contractorId, [
+            'performance_score' => (float)($scores['performance_score'] ?? 0),
+            'reliability_score' => (float)($scores['reliability_score'] ?? 0),
+            'risk_level' => (string)($scores['risk_level'] ?? 'unknown')
+        ]);
     }
 
     echo json_encode([
@@ -1243,10 +1518,28 @@ $db->close();
                     <option value="rejected">Rejected</option>
                     <option value="suspended">Suspended</option>
                 </select>
+                <label class="contractor-field-label" for="statusNote">Note (optional)</label>
+                <textarea id="statusNote" class="contractor-field-textarea" rows="3" placeholder="Add reason or remarks for this status change"></textarea>
             </div>
             <div class="contractor-modal-actions">
                 <button type="button" id="statusCancelBtn" class="btn-contractor-secondary">Cancel</button>
                 <button type="button" id="statusSaveBtn" class="btn-contractor-primary">Save Status</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="approvalHistoryModal" class="contractor-modal" role="dialog" aria-modal="true" aria-labelledby="approvalHistoryTitle">
+        <div class="contractor-modal-panel contractor-history-panel">
+            <h2 id="approvalHistoryTitle">Approval Timeline</h2>
+            <div class="approval-history-filters" id="approvalHistoryFilters">
+                <button type="button" class="approval-history-filter active" data-history-window="all">All</button>
+                <button type="button" class="approval-history-filter" data-history-window="7">Last 7 days</button>
+                <button type="button" class="approval-history-filter" data-history-window="30">Last 30 days</button>
+                <button type="button" class="btn-contractor-secondary approval-history-export" id="approvalHistoryExportBtn">Export CSV</button>
+            </div>
+            <div id="approvalHistoryList" class="contractor-modal-list"></div>
+            <div class="contractor-modal-actions">
+                <button type="button" id="approvalHistoryCloseBtn" class="btn-contractor-primary">Close</button>
             </div>
         </div>
     </div>

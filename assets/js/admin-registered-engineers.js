@@ -44,8 +44,15 @@
         const contractorStatusTitle = document.getElementById('contractorStatusTitle');
         const statusContractorId = document.getElementById('statusContractorId');
         const statusSelect = document.getElementById('statusSelect');
+        const statusNote = document.getElementById('statusNote');
         const statusCancelBtn = document.getElementById('statusCancelBtn');
         const statusSaveBtn = document.getElementById('statusSaveBtn');
+        const approvalHistoryModal = document.getElementById('approvalHistoryModal');
+        const approvalHistoryTitle = document.getElementById('approvalHistoryTitle');
+        const approvalHistoryFilters = document.getElementById('approvalHistoryFilters');
+        const approvalHistoryList = document.getElementById('approvalHistoryList');
+        const approvalHistoryCloseBtn = document.getElementById('approvalHistoryCloseBtn');
+        const approvalHistoryExportBtn = document.getElementById('approvalHistoryExportBtn');
         const assignContractorId = document.getElementById('assignContractorId');
         const saveAssignmentsBtn = document.getElementById('saveAssignments');
         const assignCancelBtn = document.getElementById('assignCancelBtn');
@@ -55,6 +62,7 @@
         const contractorDeleteName = document.getElementById('contractorDeleteName');
         const contractorDeleteCancel = document.getElementById('contractorDeleteCancel');
         const contractorDeleteConfirm = document.getElementById('contractorDeleteConfirm');
+        const contractorsSection = document.querySelector('.contractors-section');
 
         let contractorsCache = [];
         let projectsCache = [];
@@ -62,6 +70,13 @@
         let currentAssignedIds = [];
         let currentDocsContractorId = null;
         let currentDocsContractorName = 'Engineer';
+        let approvalHistoryCache = [];
+        let approvalHistoryCurrentWindow = 'all';
+        let contractorsMeta = { page: 1, per_page: 25, total: 0, total_pages: 1, has_next: false, has_prev: false };
+        let contractorsStats = null;
+        let contractorsQueryTimer = null;
+        const contractorsPerPage = 25;
+        let contractorsPaginationEl = null;
 
         function esc(v) {
             return String(v ?? '')
@@ -190,13 +205,48 @@
             throw new Error('Unable to save data to API');
         }
 
+        function ensureContractorsPagination() {
+            if (contractorsPaginationEl || !contractorsSection) return;
+            contractorsPaginationEl = document.createElement('div');
+            contractorsPaginationEl.id = 'contractorsPagination';
+            contractorsPaginationEl.className = 'engineers-pagination';
+            const tableWrap = contractorsSection.querySelector('.table-wrap');
+            if (tableWrap && tableWrap.parentNode) {
+                tableWrap.parentNode.insertBefore(contractorsPaginationEl, tableWrap.nextSibling);
+            } else {
+                contractorsSection.appendChild(contractorsPaginationEl);
+            }
+        }
+
+        function renderContractorsPagination(meta) {
+            ensureContractorsPagination();
+            if (!contractorsPaginationEl) return;
+            const page = Number(meta?.page || 1);
+            const totalPages = Number(meta?.total_pages || 1);
+            const total = Number(meta?.total || 0);
+            const hasPrev = !!meta?.has_prev;
+            const hasNext = !!meta?.has_next;
+            const start = total === 0 ? 0 : (((page - 1) * contractorsPerPage) + 1);
+            const end = Math.min(total, page * contractorsPerPage);
+
+            contractorsPaginationEl.innerHTML = `
+                <div class="engineers-pagination-meta">Showing ${start}-${end} of ${total} Engineers</div>
+                <div class="engineers-pagination-actions">
+                    <button type="button" class="btn-contractor-secondary" data-page-nav="prev" ${hasPrev ? '' : 'disabled'}>Prev</button>
+                    <span class="engineers-pagination-page">Page ${page} / ${Math.max(1, totalPages)}</span>
+                    <button type="button" class="btn-contractor-secondary" data-page-nav="next" ${hasNext ? '' : 'disabled'}>Next</button>
+                </div>
+            `;
+        }
+
         function renderContractors(rows) {
             if (!contractorsTbody) return;
             contractorsTbody.innerHTML = '';
             const list = Array.isArray(rows) ? rows : [];
             visibleContractors = list;
 
-            if (countEl) countEl.textContent = `${list.length} Engineer${list.length === 1 ? '' : 's'}`;
+            const totalCount = Number(contractorsMeta?.total ?? list.length);
+            if (countEl) countEl.textContent = `${totalCount} Engineer${totalCount === 1 ? '' : 's'}`;
 
             if (!list.length) {
                 contractorsTbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:18px; color:#6b7280;">No Engineers found.</td></tr>';
@@ -221,6 +271,7 @@
                     <td>
                         <div class="action-buttons">
                             <button class="btn-contractor-secondary btn-status-edit" data-id="${esc(c.id)}" data-status="${esc(approvalKey || 'pending')}" data-name="${esc(c.display_name || c.company || 'Engineer')}">Edit Status</button>
+                            <button class="btn-contractor-secondary btn-history" data-id="${esc(c.id)}" data-name="${esc(c.display_name || c.company || 'Engineer')}">History</button>
                             <button class="btn-assign" data-id="${esc(c.id)}">Assign Projects</button>
                             <button class="btn-delete" data-id="${esc(c.id)}">Delete</button>
                         </div>
@@ -230,7 +281,8 @@
             }
         }
 
-        function updateStats(rows) {
+        function updateStats(rows, statsPayload) {
+            const stats = statsPayload && typeof statsPayload === 'object' ? statsPayload : null;
             const list = Array.isArray(rows) ? rows : [];
             let active = 0;
             let suspended = 0;
@@ -250,24 +302,40 @@
                 }
             }
 
-            if (statTotalEl) statTotalEl.textContent = String(list.length);
-            if (statActiveEl) statActiveEl.textContent = String(active);
-            if (statSuspendedEl) statSuspendedEl.textContent = String(suspended);
-            if (statBlacklistedEl) statBlacklistedEl.textContent = String(blacklisted);
-            if (statAvgRatingEl) statAvgRatingEl.textContent = ratingCount ? (ratingSum / ratingCount).toFixed(1) : '0.0';
+            const totalCount = Number(stats?.total ?? list.length);
+            const activeCount = Number(stats?.active ?? active);
+            const suspendedCount = Number(stats?.suspended ?? suspended);
+            const blacklistedCount = Number(stats?.blacklisted ?? blacklisted);
+            const avgRating = stats?.avg_rating !== undefined
+                ? Number(stats.avg_rating || 0).toFixed(1)
+                : (ratingCount ? (ratingSum / ratingCount).toFixed(1) : '0.0');
+
+            if (statTotalEl) statTotalEl.textContent = String(totalCount);
+            if (statActiveEl) statActiveEl.textContent = String(activeCount);
+            if (statSuspendedEl) statSuspendedEl.textContent = String(suspendedCount);
+            if (statBlacklistedEl) statBlacklistedEl.textContent = String(blacklistedCount);
+            if (statAvgRatingEl) statAvgRatingEl.textContent = avgRating;
 
             const approvalCounts = {
-                all: list.length,
+                all: totalCount,
                 pending: 0,
                 verified: 0,
                 approved: 0,
                 rejected: 0,
                 suspended: 0
             };
-            for (const c of list) {
-                const key = String(c.approval_status || 'pending').toLowerCase();
-                if (Object.prototype.hasOwnProperty.call(approvalCounts, key)) {
-                    approvalCounts[key] += 1;
+            if (stats?.approval_counts) {
+                approvalCounts.pending = Number(stats.approval_counts.pending || 0);
+                approvalCounts.verified = Number(stats.approval_counts.verified || 0);
+                approvalCounts.approved = Number(stats.approval_counts.approved || 0);
+                approvalCounts.rejected = Number(stats.approval_counts.rejected || 0);
+                approvalCounts.suspended = Number(stats.approval_counts.suspended || 0);
+            } else {
+                for (const c of list) {
+                    const key = String(c.approval_status || 'pending').toLowerCase();
+                    if (Object.prototype.hasOwnProperty.call(approvalCounts, key)) {
+                        approvalCounts[key] += 1;
+                    }
                 }
             }
             if (approvalQueueAll) approvalQueueAll.textContent = String(approvalCounts.all);
@@ -441,6 +509,7 @@
             if (!contractorStatusModal || !statusContractorId || !statusSelect) return;
             statusContractorId.value = String(contractorId || '');
             statusSelect.value = String(currentStatus || 'pending').toLowerCase();
+            if (statusNote) statusNote.value = '';
             if (contractorStatusTitle) {
                 contractorStatusTitle.textContent = `Update Status - ${contractorName || 'Engineer'}`;
             }
@@ -449,6 +518,103 @@
 
         function closeStatusModal() {
             if (contractorStatusModal) contractorStatusModal.style.display = 'none';
+        }
+
+        function historyStatusClass(status) {
+            const key = String(status || '').toLowerCase();
+            if (key === 'approved') return 'is-complete';
+            if (key === 'verified') return 'is-warning';
+            if (key === 'rejected') return 'is-expired';
+            if (key === 'suspended') return 'is-incomplete';
+            return 'is-incomplete';
+        }
+
+        async function openApprovalHistoryModal(contractorId, contractorName) {
+            if (!approvalHistoryModal || !approvalHistoryList) return;
+            if (approvalHistoryTitle) {
+                approvalHistoryTitle.textContent = `Approval Timeline - ${contractorName || 'Engineer'}`;
+            }
+            approvalHistoryCache = [];
+            approvalHistoryCurrentWindow = 'all';
+            approvalHistoryFilters?.querySelectorAll('.approval-history-filter').forEach((btn) => {
+                btn.classList.toggle('active', btn.getAttribute('data-history-window') === 'all');
+            });
+            approvalHistoryList.innerHTML = '<p class="engineer-modal-message">Loading timeline...</p>';
+            approvalHistoryModal.style.display = 'flex';
+            try {
+                const rows = await fetchJsonWithFallback(`action=load_approval_history&contractor_id=${encodeURIComponent(contractorId)}&_=${Date.now()}`);
+                approvalHistoryCache = Array.isArray(rows) ? rows : [];
+                renderApprovalHistory('all');
+            } catch (_) {
+                approvalHistoryList.innerHTML = '<p class="engineer-modal-message error">Unable to load approval history.</p>';
+            }
+        }
+
+        function getFilteredApprovalHistory(windowKey) {
+            const source = Array.isArray(approvalHistoryCache) ? approvalHistoryCache : [];
+            const days = Number(windowKey);
+            if (!(Number.isFinite(days) && days > 0)) {
+                return source;
+            }
+            const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+            return source.filter((r) => {
+                const ts = Date.parse(String(r.changed_at || ''));
+                return Number.isFinite(ts) && ts >= cutoff;
+            });
+        }
+
+        function renderApprovalHistory(windowKey) {
+            if (!approvalHistoryList) return;
+            approvalHistoryCurrentWindow = windowKey || 'all';
+            const list = getFilteredApprovalHistory(approvalHistoryCurrentWindow);
+            if (!list.length) {
+                approvalHistoryList.innerHTML = '<p class="engineer-modal-message">No approval history for selected range.</p>';
+                return;
+            }
+            approvalHistoryList.innerHTML = list.map((r) => `
+                <article class="approval-history-item">
+                    <div class="approval-history-head">
+                        <span class="verification-badge ${historyStatusClass(r.status)}">${esc(approvalLabel(r.status || 'pending'))}</span>
+                        <time>${esc(r.changed_at || '-')}</time>
+                    </div>
+                    <p class="approval-history-meta">By: <strong>${esc(r.reviewer_name || 'System')}</strong> (${esc(r.reviewer_role || 'n/a')})</p>
+                    <p class="approval-history-note">${esc(r.notes || 'No note provided.')}</p>
+                </article>
+            `).join('');
+        }
+
+        function closeApprovalHistoryModal() {
+            if (approvalHistoryModal) approvalHistoryModal.style.display = 'none';
+        }
+
+        function exportApprovalHistoryCsv() {
+            const list = getFilteredApprovalHistory(approvalHistoryCurrentWindow);
+            if (!list.length) {
+                setMessage('No approval history to export.', true);
+                return;
+            }
+            const escCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const rows = [
+                ['Status', 'Reviewer', 'Role', 'Changed At', 'Note'],
+                ...list.map((r) => [
+                    approvalLabel(r.status || 'pending'),
+                    r.reviewer_name || 'System',
+                    r.reviewer_role || 'n/a',
+                    r.changed_at || '',
+                    r.notes || ''
+                ])
+            ];
+            const csv = rows.map((r) => r.map(escCsv).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const rangeLabel = approvalHistoryCurrentWindow === 'all' ? 'all' : `${approvalHistoryCurrentWindow}d`;
+            a.href = url;
+            a.download = `approval-timeline-${rangeLabel}-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
         }
 
         async function openDocsModal(contractorId, contractorName) {
@@ -579,8 +745,8 @@
             }
         }
 
-        function applyFilters() {
-            const q = (searchInput?.value || '').trim().toLowerCase();
+        async function loadContractorsData(page = 1) {
+            const q = (searchInput?.value || '').trim();
             const s = (statusFilter?.value || '').trim();
             const a = (approvalFilter?.value || '').trim().toLowerCase();
             if (approvalQueue) {
@@ -589,13 +755,29 @@
                     item.classList.toggle('active', itemFilter === a);
                 });
             }
-            const filtered = contractorsCache.filter((c) => {
-                const hitSearch = !q || `${c.company || ''} ${c.license || ''} ${c.email || ''} ${c.phone || ''}`.toLowerCase().includes(q);
-                const hitStatus = !s || String(c.status || '') === s;
-                const hitApproval = !a || String(c.approval_status || 'pending').toLowerCase() === a;
-                return hitSearch && hitStatus && hitApproval;
-            });
-            renderContractors(filtered);
+            const query = `action=load_contractors&page=${encodeURIComponent(page)}&per_page=${contractorsPerPage}&q=${encodeURIComponent(q)}&status=${encodeURIComponent(s)}&approval=${encodeURIComponent(a)}&_=${Date.now()}`;
+            const payload = await fetchJsonWithFallback(query);
+            if (payload && !Array.isArray(payload) && payload.success === false) {
+                throw new Error(payload.message || 'Failed to load Engineers data.');
+            }
+            const rows = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
+            contractorsCache = rows;
+            contractorsStats = payload?.stats || null;
+            contractorsMeta = payload?.meta || { page: 1, per_page: contractorsPerPage, total: rows.length, total_pages: 1, has_next: false, has_prev: false };
+            renderContractors(contractorsCache);
+            updateStats(contractorsCache, contractorsStats);
+            renderContractorsPagination(contractorsMeta);
+        }
+
+        function applyFilters() {
+            if (contractorsQueryTimer) {
+                clearTimeout(contractorsQueryTimer);
+            }
+            contractorsQueryTimer = setTimeout(() => {
+                loadContractorsData(1).catch((err) => {
+                    setMessage(err.message || 'Failed to load Engineers data.', true);
+                });
+            }, 220);
         }
 
         let booted = false;
@@ -605,15 +787,12 @@
                 refreshBtn.textContent = 'Refreshing...';
             }
             try {
-                const [Engineers, projects] = await Promise.all([
-                    fetchJsonWithFallback('action=load_contractors&_=' + Date.now()),
-                    fetchJsonWithFallback('action=load_projects&_=' + Date.now())
+                const [projects] = await Promise.all([
+                    fetchJsonWithFallback('action=load_projects&limit=200&_=' + Date.now())
                 ]);
-                contractorsCache = Array.isArray(Engineers) ? Engineers : [];
+                await loadContractorsData(1);
                 projectsCache = Array.isArray(projects) ? projects : [];
-                updateStats(contractorsCache);
                 updateLastSync();
-                renderContractors(contractorsCache);
                 renderProjects(projectsCache);
                 await loadEvaluationOverview();
             } catch (err) {
@@ -664,6 +843,11 @@
                 openStatusModal(contractorId, buttonName, currentStatus);
                 return;
             }
+            if (btn.classList.contains('btn-history')) {
+                const buttonName = btn.getAttribute('data-name') || contractorName || 'Engineer';
+                openApprovalHistoryModal(contractorId, buttonName);
+                return;
+            }
 
             if (btn.classList.contains('btn-view-projects')) {
                 openProjectsModal(contractorId, contractorName || 'Engineer');
@@ -684,9 +868,7 @@
                 try {
                     const result = await postJsonWithFallback(`action=delete_contractor&id=${encodeURIComponent(contractorId)}`);
                     if (!result || result.success === false) throw new Error((result && result.message) || 'Delete failed');
-                    contractorsCache = contractorsCache.filter((c) => String(c.id) !== String(contractorId));
-                    updateStats(contractorsCache);
-                    applyFilters();
+                    await loadContractorsData(1);
                     setMessage('Engineer deleted successfully.', false);
                 } catch (err) {
                     setMessage(err.message || 'Failed to delete Engineer.', true);
@@ -723,19 +905,31 @@
         contractorStatusModal?.addEventListener('click', (e) => {
             if (e.target === contractorStatusModal) closeStatusModal();
         });
+        approvalHistoryCloseBtn?.addEventListener('click', closeApprovalHistoryModal);
+        approvalHistoryModal?.addEventListener('click', (e) => {
+            if (e.target === approvalHistoryModal) closeApprovalHistoryModal();
+        });
+        approvalHistoryFilters?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.approval-history-filter');
+            if (!btn) return;
+            const windowKey = btn.getAttribute('data-history-window') || 'all';
+            approvalHistoryFilters.querySelectorAll('.approval-history-filter').forEach((item) => item.classList.remove('active'));
+            btn.classList.add('active');
+            renderApprovalHistory(windowKey);
+        });
+        approvalHistoryExportBtn?.addEventListener('click', exportApprovalHistoryCsv);
         statusSaveBtn?.addEventListener('click', async () => {
             const contractorId = statusContractorId?.value || '';
             const nextStatus = statusSelect?.value || '';
+            const note = statusNote?.value?.trim() || '';
             if (!contractorId || !nextStatus) return;
             statusSaveBtn.disabled = true;
             const oldText = statusSaveBtn.textContent;
             statusSaveBtn.textContent = 'Saving...';
             try {
-                const result = await postJsonWithFallback(`action=update_contractor_approval&contractor_id=${encodeURIComponent(contractorId)}&status=${encodeURIComponent(nextStatus)}`);
+                const result = await postJsonWithFallback(`action=update_contractor_approval&contractor_id=${encodeURIComponent(contractorId)}&status=${encodeURIComponent(nextStatus)}&note=${encodeURIComponent(note)}`);
                 if (!result || result.success === false) throw new Error((result && result.message) || 'Approval update failed');
-                const target = contractorsCache.find((c) => String(c.id) === String(contractorId));
-                if (target) target.approval_status = nextStatus;
-                applyFilters();
+                await loadContractorsData(Number(contractorsMeta.page || 1));
                 closeStatusModal();
                 setMessage(`Engineer status updated to ${nextStatus}.`, false);
             } catch (err) {
@@ -756,6 +950,17 @@
         window.closeAssignModal = closeAssignModal;
         window.closeProjectsModal = closeProjectsModal;
         window.saveAssignmentsHandler = saveAssignmentsHandler;
+        contractorsSection?.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-page-nav]');
+            if (!btn) return;
+            const nav = btn.getAttribute('data-page-nav');
+            const currentPage = Number(contractorsMeta.page || 1);
+            if (nav === 'prev' && contractorsMeta.has_prev) {
+                loadContractorsData(currentPage - 1).catch((err) => setMessage(err.message || 'Failed to load page.', true));
+            } else if (nav === 'next' && contractorsMeta.has_next) {
+                loadContractorsData(currentPage + 1).catch((err) => setMessage(err.message || 'Failed to load page.', true));
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', boot);
         if (document.readyState !== 'loading') boot();

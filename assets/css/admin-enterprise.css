@@ -2760,6 +2760,90 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-statu
     font-size: 0.92rem;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-status-panel .contractor-field-textarea {
+    width: 100%;
+    border: 1px solid #c7d9ec;
+    border-radius: 10px;
+    background: #fbfdff;
+    color: #1e3652;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    resize: vertical;
+    min-height: 72px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-history-panel .contractor-modal-list {
+    display: grid;
+    gap: 10px;
+    max-height: 58vh;
+    overflow-y: auto;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .approval-history-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .approval-history-filter {
+    border: 1px solid #c7d9ec;
+    border-radius: 999px;
+    background: #f5f9ff;
+    color: #284a72;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .approval-history-filter.active {
+    border-color: #2a61bf;
+    background: linear-gradient(135deg, #1f56bd, #2f6fdd);
+    color: #ffffff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .approval-history-export {
+    margin-left: auto;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px !important;
+    font-size: 0.78rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .approval-history-item {
+    border: 1px solid #d9e6f4;
+    border-radius: 10px;
+    background: #f8fbff;
+    padding: 10px 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .approval-history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .approval-history-head time {
+    font-size: 0.78rem;
+    color: #5b7394;
+    font-weight: 600;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .approval-history-meta {
+    margin: 0 0 4px;
+    font-size: 0.83rem;
+    color: #365779;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .approval-history-note {
+    margin: 0;
+    font-size: 0.86rem;
+    color: #1f3f63;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge {
     display: inline-flex;
     align-items: center;
@@ -3985,6 +4069,41 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .verif
     background: rgba(180, 83, 9, 0.28);
     color: #fed7aa;
     border-color: rgba(251, 146, 60, 0.45);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineers-pagination {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineers-pagination-meta {
+    font-size: 0.85rem;
+    color: #325071;
+    font-weight: 600;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineers-pagination-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .engineers-pagination-page {
+    font-size: 0.85rem;
+    color: #1e3a8a;
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engineers-pagination-meta {
+    color: #b9d2ef;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engineers-pagination-page {
+    color: #dbeafe;
 }
 
 @media (max-width: 760px) {

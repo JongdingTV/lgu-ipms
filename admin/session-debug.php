@@ -4,7 +4,12 @@
  * Check what session variables are set
  */
 
-session_start();
+require dirname(__DIR__) . '/session-auth.php';
+require dirname(__DIR__) . '/includes/rbac.php';
+
+set_no_cache_headers();
+check_auth();
+rbac_require_roles(['super_admin']);
 
 ?>
 <!DOCTYPE html>
