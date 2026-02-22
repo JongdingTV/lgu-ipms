@@ -389,6 +389,65 @@ $csrfToken = generate_csrf_token();
         #idWizardBackBtn {
             min-width: 90px;
         }
+        #idUploadWizardModal button.profile-action-btn,
+        #idUploadWizardModal #pickIdFrontBtn,
+        #idUploadWizardModal #pickIdBackBtn,
+        #idUploadWizardModal #idWizardNextBtn,
+        #idUploadWizardModal #idWizardBackBtn,
+        #idUploadWizardModal #idWizardSubmitBtn {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            border-radius: 10px !important;
+            border: 1px solid #cbd5e1 !important;
+            min-height: 40px !important;
+            padding: 8px 14px !important;
+            font-size: .9rem !important;
+            font-weight: 600 !important;
+            line-height: 1.2 !important;
+            cursor: pointer !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+            transition: all .2s ease !important;
+        }
+        #idUploadWizardModal #pickIdFrontBtn,
+        #idUploadWizardModal #pickIdBackBtn,
+        #idUploadWizardModal #idWizardNextBtn,
+        #idUploadWizardModal #idWizardSubmitBtn {
+            background: linear-gradient(135deg, #1d4e89, #3f83c9) !important;
+            color: #fff !important;
+            border-color: #2d5f9a !important;
+        }
+        #idUploadWizardModal #idWizardBackBtn {
+            background: #fff !important;
+            color: #0f172a !important;
+            border-color: #94a3b8 !important;
+        }
+        #idUploadWizardModal #pickIdFrontBtn:hover,
+        #idUploadWizardModal #pickIdBackBtn:hover,
+        #idUploadWizardModal #idWizardNextBtn:hover,
+        #idUploadWizardModal #idWizardSubmitBtn:hover {
+            filter: brightness(1.04) !important;
+            transform: translateY(-1px);
+        }
+        #idUploadWizardModal #idWizardBackBtn:hover {
+            background: #f8fafc !important;
+            border-color: #64748b !important;
+        }
+        #idUploadWizardModal .id-wizard-actions {
+            margin-top: 12px;
+            display: flex;
+            width: 100%;
+            align-items: center;
+            gap: 10px;
+        }
+        #idUploadWizardModal .front-actions {
+            justify-content: flex-end;
+        }
+        #idUploadWizardModal .back-actions {
+            justify-content: space-between;
+        }
+        #idUploadWizardModal .back-actions #idWizardSubmitBtn {
+            margin-left: auto;
+        }
     </style>
 </head>
 <body>
@@ -651,7 +710,7 @@ $csrfToken = generate_csrf_token();
                     <label for="idFrontInput" style="display:block;font-weight:600;margin-bottom:6px;">Choose front side of ID</label>
                     <button type="button" id="pickIdFrontBtn" class="profile-action-btn profile-action-btn-primary">Choose Front Photo</button>
                     <div id="idFrontPicked" style="margin-top:8px;color:#64748b;">No file selected.</div>
-                    <div style="margin-top:10px;">
+                    <div class="id-wizard-actions front-actions">
                         <button type="button" id="idWizardNextBtn" class="profile-action-btn profile-action-btn-primary" style="display:none;">Next</button>
                     </div>
                 </div>
@@ -659,7 +718,7 @@ $csrfToken = generate_csrf_token();
                     <label for="idBackInput" style="display:block;font-weight:600;margin-bottom:6px;">Choose back side of ID</label>
                     <button type="button" id="pickIdBackBtn" class="profile-action-btn profile-action-btn-primary">Choose Back Photo</button>
                     <div id="idBackPicked" style="margin-top:8px;color:#64748b;">No file selected.</div>
-                    <div style="margin-top:10px;display:flex;gap:8px;">
+                    <div class="id-wizard-actions back-actions">
                         <button type="button" id="idWizardBackBtn" class="profile-action-btn profile-action-btn-ghost">Back</button>
                         <button type="button" id="idWizardSubmitBtn" class="profile-action-btn profile-action-btn-primary" style="display:none;">Upload ID</button>
                     </div>
