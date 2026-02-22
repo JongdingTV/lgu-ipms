@@ -39,33 +39,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     $feedback_id = intval($_POST['feedback_id']);
     $new_status = $_POST['new_status'];
-    $rejectionNote = trim((string)($_POST['rejection_note'] ?? ''));
     
     // Validate status value
-    $allowed_statuses = ['Pending', 'Reviewed', 'Addressed', 'Rejected'];
+    $allowed_statuses = ['Pending', 'Reviewed', 'Addressed'];
     if (!in_array($new_status, $allowed_statuses)) {
         header('Location: project-prioritization.php?status=invalid');
         exit;
     }
     
-    if ($new_status === 'Rejected' && $rejectionNote === '') {
-        header('Location: project-prioritization.php?status=reject_note_required');
-        exit;
-    }
-
-    $hasRejectionNote = feedback_has_column($db, 'rejection_note');
-    if ($hasRejectionNote) {
-        $stmt = $db->prepare("UPDATE feedback SET status = ?, rejection_note = ? WHERE id = ?");
-    } else {
-        $stmt = $db->prepare("UPDATE feedback SET status = ? WHERE id = ?");
-    }
+    $stmt = $db->prepare("UPDATE feedback SET status = ? WHERE id = ?");
     if ($stmt) {
-        if ($hasRejectionNote) {
-            $noteToSave = ($new_status === 'Rejected') ? $rejectionNote : '';
-            $stmt->bind_param('ssi', $new_status, $noteToSave, $feedback_id);
-        } else {
-            $stmt->bind_param('si', $new_status, $feedback_id);
-        }
+        $stmt->bind_param('si', $new_status, $feedback_id);
         $ok = $stmt->execute();
         $stmt->close();
         if ($ok) {
@@ -76,39 +60,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
         exit;
     }
     header('Location: project-prioritization.php?status=failed');
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reject_feedback'])) {
-    $feedback_id = intval($_POST['feedback_id'] ?? 0);
-    $rejectNote = trim((string)($_POST['reject_note'] ?? ''));
-    if ($feedback_id < 1) {
-        header('Location: project-prioritization.php?status=reject_failed');
-        exit;
-    }
-    if ($rejectNote === '') {
-        header('Location: project-prioritization.php?status=reject_note_required');
-        exit;
-    }
-    $newStatus = 'Rejected';
-    $hasRejectionNote = feedback_has_column($db, 'rejection_note');
-    if ($hasRejectionNote) {
-        $stmt = $db->prepare("UPDATE feedback SET status = ?, rejection_note = ? WHERE id = ? LIMIT 1");
-    } else {
-        $stmt = $db->prepare("UPDATE feedback SET status = ?, description = CONCAT(COALESCE(description, ''), '\n\n[Rejection Note] ', ?) WHERE id = ? LIMIT 1");
-    }
-    if (!$stmt) {
-        header('Location: project-prioritization.php?status=reject_failed');
-        exit;
-    }
-    if ($hasRejectionNote) {
-        $stmt->bind_param('ssi', $newStatus, $rejectNote, $feedback_id);
-    } else {
-        $stmt->bind_param('ssi', $newStatus, $rejectNote, $feedback_id);
-    }
-    $ok = $stmt->execute();
-    $stmt->close();
-    header('Location: project-prioritization.php?status=' . ($ok ? 'rejected' : 'reject_failed'));
     exit;
 }
 
@@ -198,7 +149,6 @@ $hasPhotoPath = feedback_has_column($db, 'photo_path');
 $hasMapLat = feedback_has_column($db, 'map_lat');
 $hasMapLng = feedback_has_column($db, 'map_lng');
 $hasMapLink = feedback_has_column($db, 'map_link');
-$hasRejectionNote = feedback_has_column($db, 'rejection_note');
 
 $selectFields = [
     'id',
@@ -218,7 +168,6 @@ if ($hasPhotoPath) $selectFields[] = 'photo_path';
 if ($hasMapLat) $selectFields[] = 'map_lat';
 if ($hasMapLng) $selectFields[] = 'map_lng';
 if ($hasMapLink) $selectFields[] = 'map_link';
-if ($hasRejectionNote) $selectFields[] = 'rejection_note';
 
 $stmt = $db->prepare("SELECT " . implode(', ', $selectFields) . " FROM feedback ORDER BY date_submitted DESC LIMIT ? OFFSET ?");
 if ($stmt) {
@@ -267,63 +216,113 @@ foreach ($feedbacks as $fb) {
 }
 
 $priorityRows = [];
-$districtExpr = $hasDistrict ? "COALESCE(NULLIF(TRIM(district),''), 'N/A')" : "'N/A'";
-$barangayExpr = $hasBarangay ? "COALESCE(NULLIF(TRIM(barangay),''), 'N/A')" : "'N/A'";
-$altExpr = $hasAlternativeName ? "COALESCE(NULLIF(TRIM(alternative_name),''), 'N/A')" : "'N/A'";
-$locationExpr = "COALESCE(NULLIF(TRIM(location),''), 'No location')";
-$addressExpr = $hasExactAddress
-    ? "COALESCE(NULLIF(TRIM(exact_address),''), CONCAT({$districtExpr}, ' / ', {$barangayExpr}, ' / ', {$altExpr}), {$locationExpr})"
-    : "CONCAT({$districtExpr}, ' / ', {$barangayExpr}, ' / ', {$altExpr})";
-$categoryExpr = "COALESCE(NULLIF(TRIM(category),''), NULLIF(TRIM(subject),''), 'Uncategorized')";
+if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
+    $districtExpr = $hasDistrict ? "COALESCE(NULLIF(TRIM(district),''), 'N/A')" : "'N/A'";
+    $barangayExpr = $hasBarangay ? "COALESCE(NULLIF(TRIM(barangay),''), 'N/A')" : "'N/A'";
+    $altExpr = $hasAlternativeName ? "COALESCE(NULLIF(TRIM(alternative_name),''), 'N/A')" : "'N/A'";
+    $categoryExpr = "COALESCE(NULLIF(TRIM(category),''), NULLIF(TRIM(subject),''), 'Uncategorized')";
 
-// Strict priority rule: same category + same address.
-$topSql = "SELECT
-            {$districtExpr} AS district_name,
-            {$barangayExpr} AS barangay_name,
-            {$altExpr} AS alternative_name,
-            {$locationExpr} AS location_name,
-            {$addressExpr} AS address_name,
-            MAX({$categoryExpr}) AS category_name,
-            COUNT(*) AS report_total
-          FROM feedback
-          GROUP BY LOWER({$addressExpr}), LOWER({$categoryExpr})
-          HAVING COUNT(*) >= 2
-          ORDER BY report_total DESC, address_name ASC, category_name ASC
-          LIMIT 1";
-$topRes = $db->query($topSql);
-$top = null;
-if ($topRes) {
-    $top = $topRes->fetch_assoc();
-    $topRes->free();
-}
+    // 1) Top area first (not split by category)
+    $areaSql = "SELECT {$districtExpr} AS district_name, {$barangayExpr} AS barangay_name, {$altExpr} AS alternative_name, COUNT(*) AS area_total
+                FROM feedback
+                GROUP BY {$districtExpr}, {$barangayExpr}, {$altExpr}
+                ORDER BY area_total DESC, district_name ASC, barangay_name ASC, alternative_name ASC
+                LIMIT 1";
+    $areaRes = $db->query($areaSql);
+    $topArea = null;
+    if ($areaRes) {
+        $topArea = $areaRes->fetch_assoc();
+        $areaRes->free();
+    }
 
-// Fallback: if no repeated category+address yet, use highest single category+address.
-if (empty($top)) {
-    $fallbackSql = "SELECT
-                    {$districtExpr} AS district_name,
-                    {$barangayExpr} AS barangay_name,
-                    {$altExpr} AS alternative_name,
-                    {$locationExpr} AS location_name,
-                    {$addressExpr} AS address_name,
-                    MAX({$categoryExpr}) AS category_name,
-                    COUNT(*) AS report_total
+    if (!empty($topArea)) {
+        $districtVal = (string)($topArea['district_name'] ?? 'N/A');
+        $barangayVal = (string)($topArea['barangay_name'] ?? 'N/A');
+        $altVal = (string)($topArea['alternative_name'] ?? 'N/A');
+        $topTotal = (int)($topArea['area_total'] ?? 0);
+
+        $whereParts = [];
+        if ($hasDistrict) {
+            $whereParts[] = $districtExpr . " = '" . $db->real_escape_string($districtVal) . "'";
+        }
+        if ($hasBarangay) {
+            $whereParts[] = $barangayExpr . " = '" . $db->real_escape_string($barangayVal) . "'";
+        }
+        if ($hasAlternativeName) {
+            $whereParts[] = $altExpr . " = '" . $db->real_escape_string($altVal) . "'";
+        }
+        $whereSql = !empty($whereParts) ? implode(' AND ', $whereParts) : '1=1';
+
+        // 2) Top category/subject inside the top area
+        $catSql = "SELECT MAX({$categoryExpr}) AS category_name, COUNT(*) AS category_total
                    FROM feedback
-                   GROUP BY LOWER({$addressExpr}), LOWER({$categoryExpr})
-                   ORDER BY report_total DESC, address_name ASC, category_name ASC
+                   WHERE {$whereSql}
+                   GROUP BY LOWER({$categoryExpr})
+                   ORDER BY category_total DESC, category_name ASC
                    LIMIT 1";
-    $fallbackRes = $db->query($fallbackSql);
-    if ($fallbackRes) {
-        $top = $fallbackRes->fetch_assoc();
-        $fallbackRes->free();
+        $catRes = $db->query($catSql);
+        $topCategory = null;
+        if ($catRes) {
+            $topCategory = $catRes->fetch_assoc();
+            $catRes->free();
+        }
+
+        $priorityRows[] = [
+            'district_name' => $districtVal,
+            'barangay_name' => $barangayVal,
+            'alternative_name' => $altVal,
+            'category_name' => (string)($topCategory['category_name'] ?? 'Uncategorized'),
+            'report_total' => $topTotal
+        ];
+    }
+} else {
+    // Legacy fallback (no district/barangay/alternative columns)
+    $categoryExpr = "COALESCE(NULLIF(TRIM(category),''), NULLIF(TRIM(subject),''), 'Uncategorized')";
+    $locationExpr = "COALESCE(NULLIF(TRIM(location),''), 'No location')";
+    $areaSql = "SELECT {$locationExpr} AS location_name, COUNT(*) AS area_total
+                FROM feedback
+                GROUP BY {$locationExpr}
+                ORDER BY area_total DESC, location_name ASC
+                LIMIT 1";
+    $areaRes = $db->query($areaSql);
+    $topArea = null;
+    if ($areaRes) {
+        $topArea = $areaRes->fetch_assoc();
+        $areaRes->free();
+    }
+    if (!empty($topArea)) {
+        $locationVal = (string)($topArea['location_name'] ?? 'No location');
+        $topTotal = (int)($topArea['area_total'] ?? 0);
+        $catSql = "SELECT MAX({$categoryExpr}) AS category_name, COUNT(*) AS category_total
+                   FROM feedback
+                   WHERE {$locationExpr} = '" . $db->real_escape_string($locationVal) . "'
+                   GROUP BY LOWER({$categoryExpr})
+                   ORDER BY category_total DESC, category_name ASC
+                   LIMIT 1";
+        $catRes = $db->query($catSql);
+        $topCategory = null;
+        if ($catRes) {
+            $topCategory = $catRes->fetch_assoc();
+            $catRes->free();
+        }
+        $priorityRows[] = [
+            'location_name' => $locationVal,
+            'category_name' => (string)($topCategory['category_name'] ?? 'Uncategorized'),
+            'report_total' => $topTotal
+        ];
     }
 }
-
-if (!empty($top)) {
-    $topPriority['district'] = trim((string) ($top['district_name'] ?? ''));
-    $topPriority['barangay'] = trim((string) ($top['barangay_name'] ?? ''));
-    $topPriority['alternative_name'] = trim((string) ($top['alternative_name'] ?? ''));
-    $topPriority['location'] = trim((string) ($top['location_name'] ?? ''));
-    $topPriority['location_group'] = trim((string) ($top['address_name'] ?? 'No data'));
+if (!empty($priorityRows)) {
+    $top = $priorityRows[0];
+    if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
+        $topPriority['district'] = trim((string) ($top['district_name'] ?? ''));
+        $topPriority['barangay'] = trim((string) ($top['barangay_name'] ?? ''));
+        $topPriority['alternative_name'] = trim((string) ($top['alternative_name'] ?? ''));
+        $topPriority['location_group'] = trim(($topPriority['district'] !== '' ? $topPriority['district'] : 'N/A') . ' / ' . ($topPriority['barangay'] !== '' ? $topPriority['barangay'] : 'N/A') . ' / ' . ($topPriority['alternative_name'] !== '' ? $topPriority['alternative_name'] : 'N/A'));
+    } else {
+        $topPriority['location'] = trim((string) ($top['location_name'] ?? ''));
+        $topPriority['location_group'] = $topPriority['location'] !== '' ? $topPriority['location'] : 'No data';
+    }
     $topPriority['category'] = trim((string)($top['category_name'] ?? 'Uncategorized'));
     $topPriority['total'] = (int) ($top['report_total'] ?? 0);
 }
@@ -350,19 +349,6 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
-    <style>
-        .inline-action-form { display: inline-block; margin-left: 6px; }
-        .btn-delete {
-            border: 1px solid #dc2626;
-            background: #fee2e2;
-            color: #991b1b;
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-        .btn-delete:hover { background: #fecaca; }
-    </style>
     </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -457,7 +443,6 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                         <option value="pending">Pending</option>
                         <option value="reviewed">Reviewed</option>
                         <option value="addressed">Addressed</option>
-                        <option value="rejected">Rejected</option>
                     </select>
                 </div>
                 <div class="search-group">
@@ -516,7 +501,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                     <strong><?= htmlspecialchars($topPriority['total'] . ' report' . ($topPriority['total'] === 1 ? '' : 's')) ?></strong>
                     <small><?= htmlspecialchars($topPriority['location_group']) ?></small>
                     <small><?= htmlspecialchars($topPriority['category']) ?></small>
-                    <small>Priority = same category + same address</small>
+                    <small>Click to view matching reports</small>
                 </article>
             </div>
 
@@ -611,11 +596,6 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                         <button type="button" class="copy-btn" data-copy-control="<?= htmlspecialchars($controlNumber) ?>">Copy #</button>
                                         <button type="button" class="edit-btn" data-edit-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Edit</button>
                                         <button type="button" class="view-btn" data-view-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Details</button>
-                                        <form method="post" class="inline-action-form" onsubmit="return (function(f){var n=prompt('Enter rejection note for citizen:','');if(n===null){return false;}n=String(n).trim();if(!n){alert('Rejection note is required.');return false;}f.querySelector('input[name=&quot;reject_note&quot;]').value=n;return confirm('Reject this feedback entry?');})(this);">
-                                            <input type="hidden" name="feedback_id" value="<?= isset($fb_lc['id']) ? (int)$fb_lc['id'] : 0 ?>">
-                                            <input type="hidden" name="reject_note" value="">
-                                            <button type="submit" name="reject_feedback" class="btn-delete">Reject</button>
-                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -663,12 +643,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                                 <option value="Pending" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ?'selected':'' ?>>Pending</option>
                                                 <option value="Reviewed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Reviewed') ?'selected':'' ?>>Reviewed</option>
                                                 <option value="Addressed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Addressed') ?'selected':'' ?>>Addressed</option>
-                                                <option value="Rejected" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Rejected') ?'selected':'' ?>>Rejected</option>
                                             </select>
-                                        </div>
-                                        <div class="modal-field">
-                                            <label for="reject-note-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal-label">Rejection Note (required if Rejected):</label>
-                                            <textarea id="reject-note-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" name="rejection_note" rows="2" class="status-dropdown"><?= isset($fb_lc['rejection_note']) ? htmlspecialchars((string)$fb_lc['rejection_note']) : '' ?></textarea>
                                         </div>
                                     </div>
                                     <div class="modal-footer">

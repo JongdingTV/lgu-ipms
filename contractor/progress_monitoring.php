@@ -64,7 +64,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
                     <label for="progressInput">Progress %</label>
                     <input id="progressInput" type="number" min="0" max="100" step="1" placeholder="0-100">
                 </div>
-                <button id="saveProgress" class="contractor-btn btn-success" type="button">Submit Progress</button>
+                <button id="saveProgress" class="contractor-btn btn-success" type="button">Validate & Save Progress</button>
             </div>
         </div>
         <div id="feedback" class="ac-c8be1ccb"></div>
@@ -153,6 +153,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     loadProjects();
 })();
 </script>
+<script src="contractor.js?v=<?php echo filemtime(__DIR__ . '/contractor.js'); ?>"></script>
 <script src="contractor-enterprise.js?v=<?php echo filemtime(__DIR__ . '/contractor-enterprise.js'); ?>"></script>
 </body>
 </html>

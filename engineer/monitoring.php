@@ -56,9 +56,6 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
         <h1>Engineer Monitoring</h1>
         <p>Welcome, <?php echo htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8'); ?>. Live view of project status and progress updates.</p>
     </div>
-    <div class="contractor-help">
-        <strong>Simple flow:</strong> Review contractor submissions, set Engineer decision once, then Admin issues final approval.
-    </div>
 
     <div class="pm-section card">
         <div class="pm-controls-wrapper">
@@ -239,7 +236,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
                 '    <option value="Rejected">Reject</option>',
                 '  </select>',
                 '  <input data-type="note" data-update="' + s.update_id + '" type="text" placeholder="Decision note">',
-                '  <button data-action="decide" data-update="' + s.update_id + '" data-project="' + s.project_id + '">Submit Decision</button>',
+                '  <button data-action="decide" data-update="' + s.update_id + '" data-project="' + s.project_id + '">Save</button>',
                 '</td>'
             ].join('');
             tbody.appendChild(tr);
@@ -310,7 +307,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
                 '    <option value="Rejected">Reject</option>',
                 '  </select>',
                 '  <input data-type="req-note" data-id="' + r.id + '" type="text" placeholder="Engineer note">',
-                '  <button data-action="req-decide" data-id="' + r.id + '">Submit Decision</button>',
+                '  <button data-action="req-decide" data-id="' + r.id + '">Save</button>',
                 '</td>',
                 '<td>' + esc(r.admin_decision || 'Pending') + '</td>'
             ].join('');
@@ -341,6 +338,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
     load();
 })();
 </script>
+<script src="engineer.js?v=<?php echo filemtime(__DIR__ . '/engineer.js'); ?>"></script>
 <script src="engineer-enterprise.js?v=<?php echo filemtime(__DIR__ . '/engineer-enterprise.js'); ?>"></script>
 </body>
 </html>
