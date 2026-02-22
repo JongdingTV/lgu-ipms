@@ -78,7 +78,6 @@ if (isset($db) && !$db->connect_error) {
         <div class="nav-links">
             <a href="/super-admin/dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon">Dashboard Overview</a>
             <a href="/super-admin/progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
-            <a href="/super-admin/registered_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon">Registered Projects</a>
             <a href="employee_accounts.php"><img src="../assets/images/admin/person.png" class="nav-icon">Employee Accounts</a>
             <a href="dashboard.php" class="active"><img src="../assets/images/admin/check.png" class="nav-icon">Control Center</a>
             <a href="/admin/db-health-check.php"><img src="../assets/images/admin/check.png" class="nav-icon">System Health</a>
