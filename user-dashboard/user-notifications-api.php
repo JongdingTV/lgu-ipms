@@ -21,6 +21,12 @@ $items = [];
 $latestId = 0;
 $seenId = 0;
 
+if ($userId <= 0) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    $db->close();
+    exit;
+}
+
 $db->query("CREATE TABLE IF NOT EXISTS user_notification_state (
     user_id INT PRIMARY KEY,
     last_seen_id BIGINT NOT NULL DEFAULT 0,
@@ -63,38 +69,7 @@ if ($seenStmt) {
     $seenStmt->close();
 }
 
-// Project-related updates (new/active/completed projects)
-$projectQuery = $db->query("SELECT id, name, location, status, created_at FROM projects ORDER BY id DESC LIMIT 15");
-if ($projectQuery) {
-    while ($row = $projectQuery->fetch_assoc()) {
-        $pid = (int) ($row['id'] ?? 0);
-        $nid = $pid + 1000;
-        $status = strtolower((string) ($row['status'] ?? ''));
-        $level = 'info';
-        if ($status === 'completed') {
-            $level = 'success';
-        } elseif ($status === 'on-hold' || $status === 'cancelled') {
-            $level = 'warning';
-        }
-
-        $projectName = trim((string) ($row['name'] ?? 'Project'));
-        $location = trim((string) ($row['location'] ?? ''));
-        $statusText = trim((string) ($row['status'] ?? 'Updated'));
-
-        $items[] = [
-            'id' => $nid,
-            'level' => $level,
-            'title' => 'Project Update: ' . $projectName,
-            'message' => $location !== '' ? ($statusText . ' | ' . $location) : $statusText,
-            'created_at' => $row['created_at'] ?? null,
-            'created_at_ts' => !empty($row['created_at']) ? strtotime((string) $row['created_at']) : null
-        ];
-        if ($nid > $latestId) {
-            $latestId = $nid;
-        }
-    }
-    $projectQuery->free();
-}
+// Privacy scope: user notifications should only include user-owned account/feedback updates.
 
 // User verification status updates
 if (user_table_has_column($db, 'users', 'verification_status')) {

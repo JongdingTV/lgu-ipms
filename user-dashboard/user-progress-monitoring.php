@@ -88,7 +88,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'load_pr
     $selectProgress = $hasProgress ? ', COALESCE(progress, 0) AS progress' : ', 0 AS progress';
     $orderBy = $hasCreatedAt ? 'created_at DESC' : 'id DESC';
 
-    $result = $db->query("SELECT id, code, name, description, location, province, sector, budget, status, start_date, end_date, duration_months{$selectCreatedAt}{$selectProgress} FROM projects ORDER BY {$orderBy} LIMIT 500");
+    $result = $db->query(
+        "SELECT id, code, name, description, location, province, sector,
+            CASE
+                WHEN LOWER(COALESCE(status, '')) = 'completed' THEN 'Completed'
+                WHEN LOWER(COALESCE(status, '')) = 'cancelled' THEN 'Closed'
+                ELSE 'Ongoing'
+            END AS public_status,
+            start_date, end_date, duration_months{$selectCreatedAt}{$selectProgress}
+         FROM projects
+         ORDER BY {$orderBy}
+         LIMIT 500"
+    );
 
     $projects = [];
     if ($result) {
@@ -227,7 +238,7 @@ $db->close();
                     <div class="pm-right">
                         <div class="filter-group">
                             <label for="pmStatusFilter">Status</label>
-                            <select id="pmStatusFilter"><option value="">All Status</option><option>Draft</option><option>For Approval</option><option>Approved</option><option>On-hold</option><option>Cancelled</option><option>Completed</option></select>
+                            <select id="pmStatusFilter"><option value="">All Status</option><option>Ongoing</option><option>Completed</option><option>Closed</option></select>
                         </div>
                         <div class="filter-group">
                             <label for="pmSectorFilter">Sector</label>
@@ -246,10 +257,9 @@ $db->close();
                     <div class="pm-bottom-row">
                         <div id="pmQuickFilters" class="pm-quick-filters" aria-label="Quick status filters">
                             <button type="button" data-status="" class="active">All</button>
-                            <button type="button" data-status="For Approval">For Approval</button>
-                            <button type="button" data-status="Approved">Approved</button>
-                            <button type="button" data-status="On-hold">On-hold</button>
+                            <button type="button" data-status="Ongoing">Ongoing</button>
                             <button type="button" data-status="Completed">Completed</button>
+                            <button type="button" data-status="Closed">Closed</button>
                         </div>
                         <div class="pm-utility-row">
                             <span id="pmResultSummary" class="pm-result-summary">Showing 0 of 0 projects</span>

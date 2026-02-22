@@ -55,12 +55,12 @@ function user_dashboard_projects_has_created_at(mysqli $db): bool
 }
 
 $totalProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'] ?? 0);
-$inProgressProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'] ?? 0);
+$inProgressProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status NOT IN ('Completed', 'Cancelled')")->fetch_assoc()['count'] ?? 0);
 $completedProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed'")->fetch_assoc()['count'] ?? 0);
-$forApprovalProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'For Approval'")->fetch_assoc()['count'] ?? 0);
+$closedProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Cancelled'")->fetch_assoc()['count'] ?? 0);
 
 $recentOrder = user_dashboard_projects_has_created_at($db) ? 'created_at DESC' : 'id DESC';
-$recentProjects = $db->query("SELECT id, name, location, status, budget FROM projects ORDER BY {$recentOrder} LIMIT 5");
+$recentProjects = $db->query("SELECT id, name, location, status FROM projects ORDER BY {$recentOrder} LIMIT 5");
 $dashboardUpdatedAt = date('M d, Y h:i A');
 
 $feedbackStmt = null;
@@ -222,11 +222,11 @@ $db->close();
                 </div>
             </div>
             <div class="metric-card card">
-                <img src="/assets/images/admin/list.png" alt="For Approval" class="metric-icon">
+                <img src="/assets/images/admin/list.png" alt="Closed" class="metric-icon">
                 <div class="metric-content">
-                    <h3>For Approval</h3>
-                    <p class="metric-value"><?php echo $forApprovalProjects; ?></p>
-                    <span class="metric-status">Awaiting final confirmation</span>
+                    <h3>Closed</h3>
+                    <p class="metric-value"><?php echo $closedProjects; ?></p>
+                    <span class="metric-status">Archived or cancelled</span>
                 </div>
             </div>
         </div>
@@ -264,30 +264,32 @@ $db->close();
                             <th>Location</th>
                             <th>Status</th>
                             <th>Progress</th>
-                            <th>Budget</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if ($recentProjects && $recentProjects->num_rows > 0): ?>
                             <?php while ($project = $recentProjects->fetch_assoc()): ?>
                                 <?php
-                                $statusColor = 'pending';
-                                if ($project['status'] === 'Completed') $statusColor = 'completed';
-                                elseif ($project['status'] === 'Approved') $statusColor = 'approved';
-                                elseif ($project['status'] === 'For Approval') $statusColor = 'pending';
-                                elseif ($project['status'] === 'On-hold') $statusColor = 'onhold';
-                                elseif ($project['status'] === 'Cancelled') $statusColor = 'cancelled';
+                                $rawStatus = strtolower(trim((string) ($project['status'] ?? '')));
+                                $publicStatus = 'Ongoing';
+                                $statusColor = 'approved';
+                                if ($rawStatus === 'completed') {
+                                    $publicStatus = 'Completed';
+                                    $statusColor = 'completed';
+                                } elseif ($rawStatus === 'cancelled') {
+                                    $publicStatus = 'Closed';
+                                    $statusColor = 'cancelled';
+                                }
                                 ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($project['name']); ?></td>
                                     <td><?php echo htmlspecialchars($project['location']); ?></td>
-                                    <td><span class="status-badge <?php echo $statusColor; ?>"><?php echo htmlspecialchars($project['status']); ?></span></td>
+                                    <td><span class="status-badge <?php echo $statusColor; ?>"><?php echo htmlspecialchars($publicStatus); ?></span></td>
                                     <td><div class="progress-small"><div class="progress-fill-small" style="width:0%;"></div></div></td>
-                                    <td>PHP <?php echo number_format((float) $project['budget'], 2); ?></td>
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>
-                            <tr><td colspan="5" class="ac-a004b216">No projects registered yet</td></tr>
+                            <tr><td colspan="4" class="ac-a004b216">No projects registered yet</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>

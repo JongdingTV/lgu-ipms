@@ -11,10 +11,6 @@
         return Number.isFinite(n) ? n : 0;
     }
 
-    function formatCurrency(value) {
-        return 'PHP ' + toNumber(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
     function formatShortDate(value) {
         if (!value) return '-';
         const dt = new Date(value);
@@ -23,9 +19,8 @@
     }
 
     function riskClassFromProject(project, progress) {
-        const status = normalizeStatus(project.status);
-        if (status === 'cancelled') return 'risk-low';
-        if (status === 'on-hold') return 'risk-high';
+        const status = normalizeStatus(project.public_status || project.status);
+        if (status === 'closed') return 'risk-low';
         if (status === 'completed' || progress >= 100) return 'risk-low';
         if (!project.end_date) return 'risk-medium';
 
@@ -42,11 +37,9 @@
         const direct = toNumber(project.progress);
         if (direct >= 0 && direct <= 100) return direct;
 
-        const status = normalizeStatus(project.status);
+        const status = normalizeStatus(project.public_status || project.status);
         if (status === 'completed') return 100;
-        if (status === 'approved') return 70;
-        if (status === 'for approval') return 40;
-        if (status === 'on-hold') return 20;
+        if (status === 'ongoing') return 55;
         return 0;
     }
 
@@ -71,8 +64,9 @@
         const sort = document.getElementById('pmSort')?.value || 'createdAt_desc';
 
         let filtered = projects.filter(project => {
-            if (status && project.status !== status) return false;
-            if (activeQuickStatus && project.status !== activeQuickStatus) return false;
+            const publicStatus = String(project.public_status || project.status || '');
+            if (status && publicStatus !== status) return false;
+            if (activeQuickStatus && publicStatus !== activeQuickStatus) return false;
             if (sector && project.sector !== sector) return false;
 
             if (progressRange) {
@@ -104,9 +98,9 @@
 
     function updateStats(projects) {
         const total = projects.length;
-        const approved = projects.filter(p => normalizeStatus(p.status) === 'approved').length;
-        const inProgress = projects.filter(p => ['approved', 'for approval', 'on-hold'].includes(normalizeStatus(p.status))).length;
-        const completed = projects.filter(p => normalizeStatus(p.status) === 'completed').length;
+        const approved = projects.filter(p => normalizeStatus(p.public_status || p.status) === 'ongoing').length;
+        const inProgress = projects.filter(p => normalizeStatus(p.public_status || p.status) === 'ongoing').length;
+        const completed = projects.filter(p => normalizeStatus(p.public_status || p.status) === 'completed').length;
 
         const totalEl = document.getElementById('statTotal');
         const approvedEl = document.getElementById('statApproved');
@@ -133,24 +127,24 @@
             empty.style.display = 'none';
             list.innerHTML = projects.map(project => {
                 const progress = getProgress(project);
-                const statusClass = normalizeStatus(project.status).replace(/\s+/g, '-');
+                const publicStatus = project.public_status || project.status || 'Ongoing';
+                const statusClass = normalizeStatus(publicStatus).replace(/\s+/g, '-');
                 const riskClass = riskClassFromProject(project, progress);
                 const updateDate = project.created_at || project.createdAt || project.start_date || '';
-                const processUpdate = `${project.status || 'Draft'} update (${formatShortDate(updateDate)})`;
+                const processUpdate = `${publicStatus} update (${formatShortDate(updateDate)})`;
 
                 return `
                     <article class="project-card ${riskClass}">
                         <div class="project-header">
                             <div class="project-title-section">
-                                <h4>${project.code || 'N/A'} - ${project.name || 'Unnamed Project'}</h4>
-                                <span class="project-status ${statusClass}">${project.status || 'Draft'}</span>
+                                <h4>${project.name || 'Unnamed Project'}</h4>
+                                <span class="project-status ${statusClass}">${publicStatus}</span>
                             </div>
                         </div>
 
                         <div class="project-meta">
                             <div class="project-meta-item"><span class="project-meta-label">Location:</span><span class="project-meta-value">${project.location || '-'}</span></div>
                             <div class="project-meta-item"><span class="project-meta-label">Sector:</span><span class="project-meta-value">${project.sector || '-'}</span></div>
-                            <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value">${formatCurrency(project.budget)}</span></div>
                             <div class="project-meta-item"><span class="project-meta-label">Duration:</span><span class="project-meta-value">${project.duration_months || '-'} months</span></div>
                             <div class="project-meta-item"><span class="project-meta-label">Process Update:</span><span class="project-meta-value">${processUpdate}</span></div>
                         </div>

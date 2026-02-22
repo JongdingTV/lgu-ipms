@@ -676,7 +676,10 @@
     function closePhotoModal() {
         if (!photoModal) return;
         photoModal.hidden = true;
-        if (photoPreview) photoPreview.src = '';
+        if (photoPreview) {
+            photoPreview.dataset.ignoreNextError = '1';
+            photoPreview.removeAttribute('src');
+        }
         document.body.style.overflow = '';
     }
 
@@ -694,6 +697,11 @@
 
     if (photoPreview) {
         photoPreview.addEventListener('error', function () {
+            var currentSrc = photoPreview.getAttribute('src') || '';
+            if (photoPreview.dataset.ignoreNextError === '1' || currentSrc.trim() === '') {
+                photoPreview.dataset.ignoreNextError = '0';
+                return;
+            }
             showMessage('Unable to load submitted photo. Please re-open the entry or contact support.', false);
             closePhotoModal();
         });
