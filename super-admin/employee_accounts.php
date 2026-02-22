@@ -200,8 +200,9 @@ if ($result) {
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/super-admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/super-admin.css'); ?>">
 </head>
-<body>
+<body class="super-admin-theme">
     <header class="sidebar">
         <div class="nav-logo">
             <img src="../assets/images/icons/ipms-icon.png" alt="IPMS Logo" class="logo-img">
@@ -347,4 +348,3 @@ if ($result) {
     </section>
 </body>
 </html>
-
