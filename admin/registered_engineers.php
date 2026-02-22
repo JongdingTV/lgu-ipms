@@ -94,6 +94,91 @@ function registered_pick_column(mysqli $db, string $table, array $candidates): ?
     return null;
 }
 
+function registered_get_profile_verification_status(mysqli $db, int $entityId, bool $isEngineer): string
+{
+    if ($entityId <= 0) {
+        return 'Incomplete';
+    }
+
+    $entityTable = $isEngineer ? 'engineers' : 'contractors';
+    $licenseExpiryCol = $isEngineer
+        ? registered_pick_column($db, $entityTable, ['license_expiry_date', 'license_expiration_date'])
+        : registered_pick_column($db, $entityTable, ['license_expiration_date', 'license_expiry_date']);
+
+    $licenseExpiry = '';
+    if ($licenseExpiryCol) {
+        $stmt = $db->prepare("SELECT {$licenseExpiryCol} AS license_expiry FROM {$entityTable} WHERE id = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param('i', $entityId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && ($row = $res->fetch_assoc())) {
+                $licenseExpiry = trim((string)($row['license_expiry'] ?? ''));
+            }
+            if ($res) {
+                $res->free();
+            }
+            $stmt->close();
+        }
+    }
+
+    $todayDate = date('Y-m-d');
+    if ($licenseExpiry !== '' && strtotime($licenseExpiry) !== false && $licenseExpiry < $todayDate) {
+        return 'Expired License';
+    }
+
+    $docsTable = $isEngineer ? 'engineer_documents' : 'contractor_documents';
+    if (!registered_table_exists($db, $docsTable)) {
+        return 'Incomplete';
+    }
+
+    $fkCol = $isEngineer ? 'engineer_id' : 'contractor_id';
+    $docTypeCol = registered_pick_column($db, $docsTable, ['document_type', 'doc_type', 'type']);
+    $verifiedCol = registered_pick_column($db, $docsTable, ['is_verified']);
+    if (!$docTypeCol || !$verifiedCol || !registered_table_has_column($db, $docsTable, $fkCol)) {
+        return 'Incomplete';
+    }
+
+    $licenseDocExpr = $isEngineer
+        ? "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},''))='prc_license' THEN 1 ELSE 0 END)"
+        : "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},''))='license' THEN 1 ELSE 0 END)";
+    $resumeDocExpr = $isEngineer
+        ? "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},''))='resume_cv' THEN 1 ELSE 0 END)"
+        : "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},''))='resume' THEN 1 ELSE 0 END)";
+    $certificateDocExpr = "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},''))='certificate' THEN 1 ELSE 0 END)";
+    $verifiedExpr = "SUM(CASE WHEN {$verifiedCol} = 1 THEN 1 ELSE 0 END)";
+
+    $stmt = $db->prepare(
+        "SELECT
+            {$licenseDocExpr} AS license_docs,
+            {$resumeDocExpr} AS resume_docs,
+            {$certificateDocExpr} AS certificate_docs,
+            {$verifiedExpr} AS verified_docs
+         FROM {$docsTable}
+         WHERE {$fkCol} = ?"
+    );
+    if (!$stmt) {
+        return 'Incomplete';
+    }
+
+    $stmt->bind_param('i', $entityId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $docsRow = $res ? $res->fetch_assoc() : null;
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+
+    $hasAllRequiredDocs =
+        (int)($docsRow['license_docs'] ?? 0) > 0 &&
+        (int)($docsRow['resume_docs'] ?? 0) > 0 &&
+        (int)($docsRow['certificate_docs'] ?? 0) > 0;
+    $allVerified = (int)($docsRow['verified_docs'] ?? 0) >= 3;
+
+    return ($hasAllRequiredDocs && $allVerified) ? 'Complete' : 'Incomplete';
+}
+
 function ensure_assignment_table(mysqli $db): bool
 {
     if (registered_table_exists($db, 'contractor_project_assignments')) {
@@ -470,9 +555,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     $entityTable = registered_table_exists($db, 'engineers') ? 'engineers' : 'contractors';
+    $isEngineerTable = $entityTable === 'engineers';
     if (!registered_table_has_column($db, $entityTable, 'approval_status')) {
         echo json_encode(['success' => false, 'message' => 'Approval fields not available. Run migration.']);
         exit;
+    }
+
+    $currentStatus = 'pending';
+    $statusStmt = $db->prepare("SELECT approval_status FROM {$entityTable} WHERE id = ? LIMIT 1");
+    if ($statusStmt) {
+        $statusStmt->bind_param('i', $contractorId);
+        $statusStmt->execute();
+        $statusRes = $statusStmt->get_result();
+        if ($statusRes && ($statusRow = $statusRes->fetch_assoc())) {
+            $currentStatus = strtolower((string)($statusRow['approval_status'] ?? 'pending'));
+        }
+        if ($statusRes) {
+            $statusRes->free();
+        }
+        $statusStmt->close();
+    }
+
+    if ($status === 'approved') {
+        if (!in_array($currentStatus, ['verified', 'approved'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Please verify this engineer first before approving.']);
+            exit;
+        }
+    }
+
+    if (in_array($status, ['verified', 'approved'], true)) {
+        $verificationStatus = registered_get_profile_verification_status($db, $contractorId, $isEngineerTable);
+        if ($verificationStatus !== 'Complete') {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Cannot set status to ' . $status . '. Requirements are incomplete (' . $verificationStatus . ').'
+            ]);
+            exit;
+        }
     }
 
     $verifiedAt = "CASE WHEN ? = 'verified' THEN NOW() ELSE verified_at END";
