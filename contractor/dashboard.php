@@ -31,6 +31,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
     <link rel="stylesheet" href="../assets/css/design-system.css">
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="contractor.css?v=<?php echo filemtime(__DIR__ . '/contractor.css'); ?>">
+    <link rel="stylesheet" href="contractor-dashboard.css?v=<?php echo filemtime(__DIR__ . '/contractor-dashboard.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
@@ -42,9 +43,9 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
         <span class="logo-text">IPMS Contractor</span>
     </div>
     <div class="nav-links">
-        <a href="#"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation</a>
-        <a href="#"><img src="../assets/images/admin/budget.png" class="nav-icon" alt="">Expense Updates</a>
-        <a href="#"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Progress Updates</a>
+        <a href="dashboard.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation & Budget</a>
+        <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Progress Monitoring</a>
+        <a href="task_milestone.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
     </div>
     <div class="nav-divider"></div>
     <div class="nav-action-footer">
@@ -55,7 +56,26 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
 <section class="main-content">
     <div class="dash-header">
         <h1>Contractor Dashboard</h1>
-        <p>Welcome, <?php echo htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8'); ?>. Validate projects and update spending/progress.</p>
+        <p>Welcome, <?php echo htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8'); ?>. Manage project validation, expenses, and progress updates.</p>
+    </div>
+
+    <div class="contractor-stats">
+        <div class="contractor-stat-card">
+            <div class="label">Total Projects</div>
+            <div class="value" id="statTotal">0</div>
+        </div>
+        <div class="contractor-stat-card">
+            <div class="label">Approved</div>
+            <div class="value" id="statApproved">0</div>
+        </div>
+        <div class="contractor-stat-card">
+            <div class="label">Total Budget</div>
+            <div class="value" id="statBudget">PHP 0</div>
+        </div>
+        <div class="contractor-stat-card">
+            <div class="label">Total Spent</div>
+            <div class="value" id="statSpent">PHP 0</div>
+        </div>
     </div>
 
     <div class="pm-section card">
@@ -66,8 +86,23 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                         <label for="searchInput">Search Projects</label>
                         <input id="searchInput" type="search" placeholder="Search by code, name, status, location...">
                     </div>
+                    <div class="pm-right">
+                        <div class="filter-group">
+                            <label for="statusFilter">Status</label>
+                            <select id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="For Approval">For Approval</option>
+                                <option value="Approved">Approved</option>
+                                <option value="On-hold">On-hold</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+        <div class="contractor-help">
+            <strong>How to use:</strong> Update budget first when needed, then validate status, log expenses, and submit progress percent.
         </div>
         <div id="feedback" class="ac-c8be1ccb"></div>
         <div class="table-wrap">
@@ -93,7 +128,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
 (function () {
     'use strict';
     const csrfToken = <?php echo json_encode((string) ($_SESSION['csrf_token'] ?? '')); ?>;
-    const state = { projects: [], milestones: [] };
+    const state = { projects: [], milestones: [], totalSpent: 0 };
 
     function esc(v) {
         return String(v == null ? '' : v)
@@ -141,15 +176,28 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
         return m ? m.id : 0;
     }
 
+    function renderStats() {
+        var projects = state.projects || [];
+        var total = projects.length;
+        var approved = projects.filter(function (p) { return String(p.status || '').toLowerCase() === 'approved'; }).length;
+        var totalBudget = projects.reduce(function (sum, p) { return sum + Number(p.budget || 0); }, 0);
+        document.getElementById('statTotal').textContent = String(total);
+        document.getElementById('statApproved').textContent = String(approved);
+        document.getElementById('statBudget').textContent = 'PHP ' + totalBudget.toLocaleString();
+        document.getElementById('statSpent').textContent = 'PHP ' + Number(state.totalSpent || 0).toLocaleString();
+    }
+
     function renderTable() {
         const tbody = document.querySelector('#projectsTable tbody');
         if (!tbody) return;
         const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+        const statusFilter = (document.getElementById('statusFilter').value || '').trim().toLowerCase();
         tbody.innerHTML = '';
 
         state.projects.forEach(function (p) {
             const hay = [p.code, p.name, p.status, p.location].join(' ').toLowerCase();
             if (q && hay.indexOf(q) === -1) return;
+            if (statusFilter && String(p.status || '').toLowerCase() !== statusFilter) return;
 
             const tr = document.createElement('tr');
             tr.innerHTML = [
@@ -157,12 +205,15 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 '<td><strong>' + esc(p.name) + '</strong><br><small>' + esc(p.location || 'N/A') + '</small></td>',
                 '<td>' + esc(p.status || 'Draft') + '</td>',
                 '<td>',
+                '  <div class="section-title">Current</div>',
                 '  <div><strong>PHP ' + Number(p.budget || 0).toLocaleString() + '</strong></div>',
-                '  <input data-type="budget" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="New budget">',
-                '  <button type="button" data-action="budget" data-id="' + p.id + '">Update</button>',
+                '  <div class="section-title">Update</div>',
+                '  <input class="contractor-input" data-type="budget" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="New budget">',
+                '  <button class="contractor-btn" type="button" data-action="budget" data-id="' + p.id + '">Save Budget</button>',
                 '</td>',
                 '<td>',
-                '  <select data-type="validate" data-id="' + p.id + '">',
+                '  <div class="section-title">Set Project Status</div>',
+                '  <select class="contractor-select" data-type="validate" data-id="' + p.id + '">',
                 '    <option value="">Set status</option>',
                 '    <option value="For Approval">For Approval</option>',
                 '    <option value="Approved">Approved</option>',
@@ -171,15 +222,18 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 '  </select>',
                 '</td>',
                 '<td>',
-                '  <input data-type="amount" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="Amount">',
-                '  <input data-type="desc" data-id="' + p.id + '" type="text" placeholder="Description">',
-                '  <button type="button" data-action="expense" data-id="' + p.id + '">Save</button>',
+                '  <div class="section-title">Log Expense</div>',
+                '  <input class="contractor-input" data-type="amount" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="Amount">',
+                '  <input class="contractor-input" data-type="desc" data-id="' + p.id + '" type="text" placeholder="Description">',
+                '  <button class="contractor-btn" type="button" data-action="expense" data-id="' + p.id + '">Save Expense</button>',
                 '</td>',
                 '<td>',
+                '  <div class="section-title">Current</div>',
                 '  <div>Current: ' + Number(p.progress_percent || 0).toFixed(2) + '%</div>',
                 '  <small>' + esc(p.progress_updated_at || 'No updates yet') + '</small><br>',
-                '  <input data-type="progress" data-id="' + p.id + '" type="number" min="0" max="100" step="1" placeholder="%">',
-                '  <button type="button" data-action="progress" data-id="' + p.id + '">Save</button>',
+                '  <div class="section-title">Validate Progress %</div>',
+                '  <input class="contractor-input" data-type="progress" data-id="' + p.id + '" type="number" min="0" max="100" step="1" placeholder="%">',
+                '  <button class="contractor-btn" type="button" data-action="progress" data-id="' + p.id + '">Save Progress</button>',
                 '</td>'
             ].join('');
             tbody.appendChild(tr);
@@ -262,10 +316,13 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
         ]);
         state.projects = Array.isArray(projectsJson.data) ? projectsJson.data : [];
         state.milestones = Array.isArray((budgetJson.data || {}).milestones) ? budgetJson.data.milestones : [];
+        state.totalSpent = Number((budgetJson.data || {}).total_spent || 0);
+        renderStats();
         renderTable();
     }
 
     document.getElementById('searchInput').addEventListener('input', renderTable);
+    document.getElementById('statusFilter').addEventListener('change', renderTable);
     load().catch(function () {
         showMessage('err', 'Failed to load contractor data.');
     });

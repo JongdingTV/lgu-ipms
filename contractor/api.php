@@ -39,6 +39,36 @@ function ensure_progress_table(mysqli $db): void {
     )");
 }
 
+function ensure_task_milestone_tables(mysqli $db): void {
+    $db->query("CREATE TABLE IF NOT EXISTS project_tasks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        planned_start DATE NULL,
+        planned_end DATE NULL,
+        actual_start DATE NULL,
+        actual_end DATE NULL,
+        notes TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_project_status (project_id, status),
+        CONSTRAINT fk_project_tasks_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )");
+
+    $db->query("CREATE TABLE IF NOT EXISTS project_milestones (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        planned_date DATE NULL,
+        actual_date DATE NULL,
+        notes TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_project_status (project_id, status),
+        CONSTRAINT fk_project_milestones_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )");
+}
+
 function contractor_sync_projects_to_milestones(mysqli $db): void {
     $projects = [];
     $res = $db->query("SELECT name, COALESCE(budget, 0) AS budget FROM projects ORDER BY id DESC");
@@ -143,7 +173,11 @@ if ($action === 'load_budget_state') {
         }
         $msRes->free();
     }
-    json_out(['success' => true, 'data' => ['milestones' => $milestones]]);
+    $totalSpent = 0.0;
+    foreach ($milestones as $m) {
+        $totalSpent += (float) ($m['spent'] ?? 0);
+    }
+    json_out(['success' => true, 'data' => ['milestones' => $milestones, 'total_spent' => $totalSpent]]);
 }
 
 if ($action === 'validate_project') {
@@ -242,6 +276,149 @@ if ($action === 'update_progress') {
         json_out(['success' => false, 'message' => 'Database error.'], 500);
     }
     $stmt->bind_param('idi', $projectId, $progress, $employeeId);
+    $stmt->execute();
+    $stmt->close();
+    json_out(['success' => true]);
+}
+
+if ($action === 'load_progress_history') {
+    ensure_progress_table($db);
+    $projectId = (int) ($_GET['project_id'] ?? 0);
+    if ($projectId <= 0) {
+        json_out(['success' => false, 'message' => 'Invalid project.'], 422);
+    }
+    $rows = [];
+    $stmt = $db->prepare("SELECT ppu.id, ppu.progress_percent, ppu.created_at, CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS updated_by
+                          FROM project_progress_updates ppu
+                          LEFT JOIN employees e ON e.id = ppu.updated_by
+                          WHERE ppu.project_id = ?
+                          ORDER BY ppu.created_at DESC
+                          LIMIT 200");
+    if ($stmt) {
+        $stmt->bind_param('i', $projectId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($res && ($row = $res->fetch_assoc())) {
+            $rows[] = $row;
+        }
+        $stmt->close();
+    }
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_task_milestone') {
+    ensure_task_milestone_tables($db);
+    $projectId = (int) ($_GET['project_id'] ?? 0);
+    if ($projectId <= 0) {
+        json_out(['success' => false, 'message' => 'Invalid project.'], 422);
+    }
+
+    $tasks = [];
+    $t = $db->prepare("SELECT id, title, status, planned_start, planned_end, actual_start, actual_end, notes, created_at
+                       FROM project_tasks WHERE project_id = ? ORDER BY id DESC");
+    if ($t) {
+        $t->bind_param('i', $projectId);
+        $t->execute();
+        $r = $t->get_result();
+        while ($r && ($row = $r->fetch_assoc())) {
+            $tasks[] = $row;
+        }
+        $t->close();
+    }
+
+    $milestones = [];
+    $m = $db->prepare("SELECT id, title, status, planned_date, actual_date, notes, created_at
+                       FROM project_milestones WHERE project_id = ? ORDER BY id DESC");
+    if ($m) {
+        $m->bind_param('i', $projectId);
+        $m->execute();
+        $r = $m->get_result();
+        while ($r && ($row = $r->fetch_assoc())) {
+            $milestones[] = $row;
+        }
+        $m->close();
+    }
+
+    json_out(['success' => true, 'data' => ['tasks' => $tasks, 'milestones' => $milestones]]);
+}
+
+if ($action === 'add_task') {
+    ensure_task_milestone_tables($db);
+    $projectId = (int) ($_POST['project_id'] ?? 0);
+    $title = trim((string) ($_POST['title'] ?? ''));
+    $plannedStart = trim((string) ($_POST['planned_start'] ?? ''));
+    $plannedEnd = trim((string) ($_POST['planned_end'] ?? ''));
+    $notes = trim((string) ($_POST['notes'] ?? ''));
+    if ($projectId <= 0 || $title === '') {
+        json_out(['success' => false, 'message' => 'Project and title are required.'], 422);
+    }
+    $stmt = $db->prepare("INSERT INTO project_tasks (project_id, title, status, planned_start, planned_end, notes) VALUES (?, ?, 'Pending', NULLIF(?,''), NULLIF(?,''), ?)");
+    if (!$stmt) {
+        json_out(['success' => false, 'message' => 'Database error.'], 500);
+    }
+    $stmt->bind_param('issss', $projectId, $title, $plannedStart, $plannedEnd, $notes);
+    $stmt->execute();
+    $stmt->close();
+    json_out(['success' => true]);
+}
+
+if ($action === 'update_task_status') {
+    ensure_task_milestone_tables($db);
+    $taskId = (int) ($_POST['task_id'] ?? 0);
+    $status = trim((string) ($_POST['status'] ?? ''));
+    $allowed = ['Pending', 'In Progress', 'Completed', 'On-hold'];
+    if ($taskId <= 0 || !in_array($status, $allowed, true)) {
+        json_out(['success' => false, 'message' => 'Invalid task update.'], 422);
+    }
+    $stmt = $db->prepare("UPDATE project_tasks
+                          SET status = ?,
+                              actual_start = CASE WHEN ? = 'In Progress' AND actual_start IS NULL THEN CURDATE() ELSE actual_start END,
+                              actual_end = CASE WHEN ? = 'Completed' THEN CURDATE() ELSE actual_end END
+                          WHERE id = ?");
+    if (!$stmt) {
+        json_out(['success' => false, 'message' => 'Database error.'], 500);
+    }
+    $stmt->bind_param('sssi', $status, $status, $status, $taskId);
+    $stmt->execute();
+    $stmt->close();
+    json_out(['success' => true]);
+}
+
+if ($action === 'add_milestone') {
+    ensure_task_milestone_tables($db);
+    $projectId = (int) ($_POST['project_id'] ?? 0);
+    $title = trim((string) ($_POST['title'] ?? ''));
+    $plannedDate = trim((string) ($_POST['planned_date'] ?? ''));
+    $notes = trim((string) ($_POST['notes'] ?? ''));
+    if ($projectId <= 0 || $title === '') {
+        json_out(['success' => false, 'message' => 'Project and title are required.'], 422);
+    }
+    $stmt = $db->prepare("INSERT INTO project_milestones (project_id, title, status, planned_date, notes) VALUES (?, ?, 'Pending', NULLIF(?,''), ?)");
+    if (!$stmt) {
+        json_out(['success' => false, 'message' => 'Database error.'], 500);
+    }
+    $stmt->bind_param('isss', $projectId, $title, $plannedDate, $notes);
+    $stmt->execute();
+    $stmt->close();
+    json_out(['success' => true]);
+}
+
+if ($action === 'update_milestone_status') {
+    ensure_task_milestone_tables($db);
+    $milestoneId = (int) ($_POST['milestone_id'] ?? 0);
+    $status = trim((string) ($_POST['status'] ?? ''));
+    $allowed = ['Pending', 'In Progress', 'Completed', 'On-hold'];
+    if ($milestoneId <= 0 || !in_array($status, $allowed, true)) {
+        json_out(['success' => false, 'message' => 'Invalid milestone update.'], 422);
+    }
+    $stmt = $db->prepare("UPDATE project_milestones
+                          SET status = ?,
+                              actual_date = CASE WHEN ? = 'Completed' THEN CURDATE() ELSE actual_date END
+                          WHERE id = ?");
+    if (!$stmt) {
+        json_out(['success' => false, 'message' => 'Database error.'], 500);
+    }
+    $stmt->bind_param('ssi', $status, $status, $milestoneId);
     $stmt->execute();
     $stmt->close();
     json_out(['success' => true]);
