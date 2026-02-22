@@ -2581,6 +2581,10 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #co
     align-items: stretch;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .btn-status-edit {
+    grid-column: 1 / -1;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .btn-contractor-secondary,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .btn-view-projects,
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .btn-assign,
@@ -2598,6 +2602,25 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #co
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .action-buttons {
         grid-template-columns: minmax(0, 1fr);
     }
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-status-panel .contractor-field-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #27496f;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .contractor-status-panel .contractor-field-select {
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid #c7d9ec;
+    border-radius: 10px;
+    background: #fbfdff;
+    color: #1e3652;
+    padding: 8px 10px;
+    font-size: 0.92rem;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge {

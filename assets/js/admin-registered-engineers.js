@@ -33,6 +33,12 @@
         const contractorDocsTitle = document.getElementById('contractorDocsTitle');
         const contractorDocsList = document.getElementById('contractorDocsList');
         const contractorDocsCloseBtn = document.getElementById('contractorDocsCloseBtn');
+        const contractorStatusModal = document.getElementById('contractorStatusModal');
+        const contractorStatusTitle = document.getElementById('contractorStatusTitle');
+        const statusContractorId = document.getElementById('statusContractorId');
+        const statusSelect = document.getElementById('statusSelect');
+        const statusCancelBtn = document.getElementById('statusCancelBtn');
+        const statusSaveBtn = document.getElementById('statusSaveBtn');
         const assignContractorId = document.getElementById('assignContractorId');
         const saveAssignmentsBtn = document.getElementById('saveAssignments');
         const assignCancelBtn = document.getElementById('assignCancelBtn');
@@ -194,10 +200,6 @@
                 const approvalStatus = approvalLabel(c.approval_status || 'pending');
                 const approvalClass = approvalBadgeClass(c.approval_status || 'pending');
                 const approvalKey = String(c.approval_status || '').toLowerCase();
-                const canVerify = approvalKey === 'pending';
-                const canApprove = approvalKey === 'pending' || approvalKey === 'verified';
-                const canReject = approvalKey !== 'approved';
-                const canSuspend = approvalKey === 'approved' || approvalKey === 'verified';
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${esc(c.display_name || c.company || 'N/A')}</strong></td>
@@ -211,10 +213,7 @@
                     <td><button class="btn-contractor-secondary btn-docs" data-id="${esc(c.id)}">Documents</button></td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn-contractor-secondary btn-approve" data-id="${esc(c.id)}" data-status="verified" ${canVerify ? '' : 'disabled'}>Verify</button>
-                            <button class="btn-contractor-secondary btn-approve" data-id="${esc(c.id)}" data-status="approved" ${canApprove ? '' : 'disabled'}>Approve</button>
-                            <button class="btn-contractor-secondary btn-approve" data-id="${esc(c.id)}" data-status="rejected" ${canReject ? '' : 'disabled'}>Reject</button>
-                            <button class="btn-contractor-secondary btn-approve" data-id="${esc(c.id)}" data-status="suspended" ${canSuspend ? '' : 'disabled'}>Suspend</button>
+                            <button class="btn-contractor-secondary btn-status-edit" data-id="${esc(c.id)}" data-status="${esc(approvalKey || 'pending')}" data-name="${esc(c.display_name || c.company || 'Engineer')}">Edit Status</button>
                             <button class="btn-assign" data-id="${esc(c.id)}">Assign Projects</button>
                             <button class="btn-delete" data-id="${esc(c.id)}">Delete</button>
                         </div>
@@ -410,6 +409,20 @@
             currentDocsContractorId = null;
         }
 
+        function openStatusModal(contractorId, contractorName, currentStatus) {
+            if (!contractorStatusModal || !statusContractorId || !statusSelect) return;
+            statusContractorId.value = String(contractorId || '');
+            statusSelect.value = String(currentStatus || 'pending').toLowerCase();
+            if (contractorStatusTitle) {
+                contractorStatusTitle.textContent = `Update Status - ${contractorName || 'Engineer'}`;
+            }
+            contractorStatusModal.style.display = 'flex';
+        }
+
+        function closeStatusModal() {
+            if (contractorStatusModal) contractorStatusModal.style.display = 'none';
+        }
+
         async function openDocsModal(contractorId, contractorName) {
             if (!contractorDocsModal || !contractorDocsList || !contractorDocsTitle) return;
             currentDocsContractorId = String(contractorId);
@@ -602,19 +615,10 @@
             const contractorName = row ? row.querySelector('td:first-child')?.textContent.trim() : 'Engineer';
             if (!contractorId) return;
 
-            if (btn.classList.contains('btn-approve')) {
-                const nextStatus = btn.getAttribute('data-status');
-                if (!nextStatus) return;
-                try {
-                    const result = await postJsonWithFallback(`action=update_contractor_approval&contractor_id=${encodeURIComponent(contractorId)}&status=${encodeURIComponent(nextStatus)}`);
-                    if (!result || result.success === false) throw new Error((result && result.message) || 'Approval update failed');
-                    const target = contractorsCache.find((c) => String(c.id) === String(contractorId));
-                    if (target) target.approval_status = nextStatus;
-                    applyFilters();
-                    setMessage(`Engineer ${nextStatus} successfully.`, false);
-                } catch (err) {
-                    setMessage(err.message || 'Failed to update approval status.', true);
-                }
+            if (btn.classList.contains('btn-status-edit')) {
+                const currentStatus = btn.getAttribute('data-status') || 'pending';
+                const buttonName = btn.getAttribute('data-name') || contractorName || 'Engineer';
+                openStatusModal(contractorId, buttonName, currentStatus);
                 return;
             }
 
@@ -669,6 +673,33 @@
                 await openDocsModal(currentDocsContractorId, currentDocsContractorName);
             } catch (err) {
                 setMessage(err.message || 'Failed to update document verification.', true);
+            }
+        });
+
+        statusCancelBtn?.addEventListener('click', closeStatusModal);
+        contractorStatusModal?.addEventListener('click', (e) => {
+            if (e.target === contractorStatusModal) closeStatusModal();
+        });
+        statusSaveBtn?.addEventListener('click', async () => {
+            const contractorId = statusContractorId?.value || '';
+            const nextStatus = statusSelect?.value || '';
+            if (!contractorId || !nextStatus) return;
+            statusSaveBtn.disabled = true;
+            const oldText = statusSaveBtn.textContent;
+            statusSaveBtn.textContent = 'Saving...';
+            try {
+                const result = await postJsonWithFallback(`action=update_contractor_approval&contractor_id=${encodeURIComponent(contractorId)}&status=${encodeURIComponent(nextStatus)}`);
+                if (!result || result.success === false) throw new Error((result && result.message) || 'Approval update failed');
+                const target = contractorsCache.find((c) => String(c.id) === String(contractorId));
+                if (target) target.approval_status = nextStatus;
+                applyFilters();
+                closeStatusModal();
+                setMessage(`Engineer status updated to ${nextStatus}.`, false);
+            } catch (err) {
+                setMessage(err.message || 'Failed to update approval status.', true);
+            } finally {
+                statusSaveBtn.disabled = false;
+                statusSaveBtn.textContent = oldText;
             }
         });
         document.addEventListener('keydown', (e) => {

@@ -1078,6 +1078,27 @@ $db->close();
         </div>
     </div>
 
+    <div id="contractorStatusModal" class="contractor-modal" role="dialog" aria-modal="true" aria-labelledby="contractorStatusTitle">
+        <div class="contractor-modal-panel contractor-status-panel">
+            <input type="hidden" id="statusContractorId" value="">
+            <h2 id="contractorStatusTitle">Update Engineer Status</h2>
+            <div class="contractor-modal-list">
+                <label class="contractor-field-label" for="statusSelect">Approval Status</label>
+                <select id="statusSelect" class="contractor-field-select">
+                    <option value="pending">Pending</option>
+                    <option value="verified">Verified</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="suspended">Suspended</option>
+                </select>
+            </div>
+            <div class="contractor-modal-actions">
+                <button type="button" id="statusCancelBtn" class="btn-contractor-secondary">Cancel</button>
+                <button type="button" id="statusSaveBtn" class="btn-contractor-primary">Save Status</button>
+            </div>
+        </div>
+    </div>
+
     <div id="contractorDeleteModal" class="contractor-modal" role="dialog" aria-modal="true" aria-labelledby="contractorDeleteTitle">
         <div class="contractor-modal-panel contractor-delete-panel">
             <div class="contractor-delete-head">
