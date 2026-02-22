@@ -22,6 +22,63 @@ $allowedStatuses = ['active', 'inactive', 'suspended'];
 
 $searchQuery = trim((string)($_GET['q'] ?? ''));
 
+function sa_table_exists(mysqli $db, string $table): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) return false;
+    $stmt->bind_param('s', $table);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $exists;
+}
+
+function sa_table_has_column(mysqli $db, string $table, string $column): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) return false;
+    $stmt->bind_param('ss', $table, $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $exists;
+}
+
+$hasEngineersTable = isset($db) && !$db->connect_error && sa_table_exists($db, 'engineers');
+$hasEngineerLink = $hasEngineersTable && sa_table_has_column($db, 'engineers', 'employee_id');
+$engineerOptions = [];
+$engineerByEmployee = [];
+if ($hasEngineersTable) {
+    $sql = "SELECT id, full_name, first_name, last_name, prc_license_number, employee_id FROM engineers ORDER BY id DESC";
+    $res = $db->query($sql);
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $engineerOptions[] = $row;
+            if (!empty($row['employee_id'])) {
+                $engineerByEmployee[(int)$row['employee_id']] = (int)$row['id'];
+            }
+        }
+        $res->free();
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrf = (string)($_POST['csrf_token'] ?? '');
     if (!hash_equals($csrfToken, $csrf)) {
@@ -35,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $password = (string)($_POST['password'] ?? '');
             $role = strtolower(trim((string)($_POST['role'] ?? 'employee')));
             $status = strtolower(trim((string)($_POST['account_status'] ?? 'active')));
+            $linkEngineerId = (int)($_POST['engineer_id'] ?? 0);
 
             if ($firstName === '' || $lastName === '' || $email === '' || $password === '') {
                 $error = 'First name, last name, email and password are required.';
@@ -45,6 +103,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 if (!in_array($role, $allowedRoles, true)) $role = 'employee';
                 if (!in_array($status, $allowedStatuses, true)) $status = 'active';
+                if (!$hasEngineerLink || $role !== 'engineer') {
+                    $linkEngineerId = 0;
+                }
 
                 $check = $db->prepare("SELECT id FROM employees WHERE email = ? LIMIT 1");
                 if ($check) {
@@ -58,7 +119,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
+                if ($error === '' && $linkEngineerId > 0) {
+                    $checkEng = $db->prepare("SELECT employee_id FROM engineers WHERE id = ? LIMIT 1");
+                    if ($checkEng) {
+                        $checkEng->bind_param('i', $linkEngineerId);
+                        $checkEng->execute();
+                        $engRes = $checkEng->get_result();
+                        $engRow = $engRes ? $engRes->fetch_assoc() : null;
+                        $checkEng->close();
+                        $linkedEmployee = (int)($engRow['employee_id'] ?? 0);
+                        if (!$engRow) {
+                            $error = 'Selected engineer record not found.';
+                        } elseif ($linkedEmployee > 0) {
+                            $error = 'Selected engineer is already linked to another account.';
+                        }
+                    }
+                }
+
                 if ($error === '') {
+                    $needsLink = $linkEngineerId > 0;
+                    if ($needsLink) {
+                        $db->begin_transaction();
+                    }
+                    $createdOk = false;
                     $hash = password_hash($password, PASSWORD_BCRYPT);
                     if ($hasRole && $hasStatus) {
                         $stmt = $db->prepare("INSERT INTO employees (first_name, last_name, email, password, role, account_status) VALUES (?, ?, ?, ?, ?, ?)");
@@ -66,6 +149,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt->bind_param('ssssss', $firstName, $lastName, $email, $hash, $role, $status);
                             $ok = $stmt->execute();
                             $stmt->close();
+                            $createdOk = (bool)$ok;
+                            if ($ok && function_exists('rbac_audit')) {
+                                rbac_audit('employee.create', 'employee', (int) $db->insert_id, [
+                                    'email' => $email,
+                                    'role' => $role,
+                                    'status' => $status
+                                ]);
+                            }
                             $message = $ok ? 'Employee account created successfully.' : 'Unable to create employee account.';
                         }
                     } elseif ($hasRole) {
@@ -74,6 +165,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt->bind_param('sssss', $firstName, $lastName, $email, $hash, $role);
                             $ok = $stmt->execute();
                             $stmt->close();
+                            $createdOk = (bool)$ok;
+                            if ($ok && function_exists('rbac_audit')) {
+                                rbac_audit('employee.create', 'employee', (int) $db->insert_id, [
+                                    'email' => $email,
+                                    'role' => $role,
+                                    'status' => $status
+                                ]);
+                            }
                             $message = $ok ? 'Employee account created successfully.' : 'Unable to create employee account.';
                         }
                     } else {
@@ -82,8 +181,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt->bind_param('ssss', $firstName, $lastName, $email, $hash);
                             $ok = $stmt->execute();
                             $stmt->close();
+                            $createdOk = (bool)$ok;
+                            if ($ok && function_exists('rbac_audit')) {
+                                rbac_audit('employee.create', 'employee', (int) $db->insert_id, [
+                                    'email' => $email,
+                                    'role' => $role,
+                                    'status' => $status
+                                ]);
+                            }
                             $message = $ok ? 'Employee account created successfully.' : 'Unable to create employee account.';
                         }
+                    }
+                    if ($needsLink && $createdOk && $error === '') {
+                        $newEmployeeId = (int)$db->insert_id;
+                        $linkStmt = $db->prepare("UPDATE engineers SET employee_id = ? WHERE id = ? AND (employee_id IS NULL OR employee_id = 0)");
+                        if ($linkStmt) {
+                            $linkStmt->bind_param('ii', $newEmployeeId, $linkEngineerId);
+                            $okLink = $linkStmt->execute();
+                            $linkStmt->close();
+                            if (!$okLink || $db->affected_rows === 0) {
+                                $db->rollback();
+                                $error = 'Unable to link engineer to the new account.';
+                                $message = '';
+                            } else {
+                                $db->commit();
+                            }
+                        } else {
+                            $db->rollback();
+                            $error = 'Unable to link engineer to the new account.';
+                            $message = '';
+                        }
+                    } elseif ($needsLink && !$createdOk) {
+                        $db->rollback();
                     }
                 }
             }
@@ -94,6 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $email = trim((string)($_POST['email'] ?? ''));
             $role = strtolower(trim((string)($_POST['role'] ?? 'employee')));
             $status = strtolower(trim((string)($_POST['account_status'] ?? 'active')));
+            $linkEngineerId = (int)($_POST['engineer_id'] ?? 0);
 
             if ($employeeId <= 0 || $firstName === '' || $lastName === '' || $email === '') {
                 $error = 'Invalid update payload.';
@@ -102,17 +232,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 if (!in_array($role, $allowedRoles, true)) $role = 'employee';
                 if (!in_array($status, $allowedStatuses, true)) $status = 'active';
+                if (!$hasEngineerLink || $role !== 'engineer') {
+                    $linkEngineerId = 0;
+                }
                 $selfId = (int)$_SESSION['employee_id'];
                 if ($employeeId === $selfId && $status !== 'active') {
                     $error = 'You cannot deactivate your own account.';
                 }
                 if ($error === '') {
+                    $employeeUpdated = false;
                     if ($hasRole && $hasStatus) {
                         $stmt = $db->prepare("UPDATE employees SET first_name = ?, last_name = ?, email = ?, role = ?, account_status = ? WHERE id = ?");
                         if ($stmt) {
                             $stmt->bind_param('sssssi', $firstName, $lastName, $email, $role, $status, $employeeId);
                             $ok = $stmt->execute();
                             $stmt->close();
+                            $employeeUpdated = $ok;
+                            if ($ok && function_exists('rbac_audit')) {
+                                rbac_audit('employee.update', 'employee', $employeeId, [
+                                    'email' => $email,
+                                    'role' => $role,
+                                    'status' => $status
+                                ]);
+                            }
                             $message = $ok ? 'Employee account updated.' : 'Update failed.';
                         }
                     } elseif ($hasRole) {
@@ -121,6 +263,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt->bind_param('ssssi', $firstName, $lastName, $email, $role, $employeeId);
                             $ok = $stmt->execute();
                             $stmt->close();
+                            $employeeUpdated = $ok;
+                            if ($ok && function_exists('rbac_audit')) {
+                                rbac_audit('employee.update', 'employee', $employeeId, [
+                                    'email' => $email,
+                                    'role' => $role,
+                                    'status' => $status
+                                ]);
+                            }
                             $message = $ok ? 'Employee account updated.' : 'Update failed.';
                         }
                     } else {
@@ -129,7 +279,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt->bind_param('sssi', $firstName, $lastName, $email, $employeeId);
                             $ok = $stmt->execute();
                             $stmt->close();
+                            $employeeUpdated = $ok;
+                            if ($ok && function_exists('rbac_audit')) {
+                                rbac_audit('employee.update', 'employee', $employeeId, [
+                                    'email' => $email
+                                ]);
+                            }
                             $message = $ok ? 'Employee account updated.' : 'Update failed.';
+                        }
+                    }
+                    if ($employeeUpdated && $hasEngineerLink) {
+                        if ($role !== 'engineer') {
+                            $unlinkStmt = $db->prepare("UPDATE engineers SET employee_id = NULL WHERE employee_id = ?");
+                            if ($unlinkStmt) {
+                                $unlinkStmt->bind_param('i', $employeeId);
+                                $unlinkStmt->execute();
+                                $unlinkStmt->close();
+                            }
+                        } elseif ($linkEngineerId > 0) {
+                            $checkEng = $db->prepare("SELECT employee_id FROM engineers WHERE id = ? LIMIT 1");
+                            if ($checkEng) {
+                                $checkEng->bind_param('i', $linkEngineerId);
+                                $checkEng->execute();
+                                $engRes = $checkEng->get_result();
+                                $engRow = $engRes ? $engRes->fetch_assoc() : null;
+                                $checkEng->close();
+                                $linkedEmployee = (int)($engRow['employee_id'] ?? 0);
+                                if (!$engRow) {
+                                    $error = 'Selected engineer record not found.';
+                                    $message = '';
+                                } elseif ($linkedEmployee > 0 && $linkedEmployee !== $employeeId) {
+                                    $error = 'Selected engineer is already linked to another account.';
+                                    $message = '';
+                                }
+                            }
+                            if ($error === '') {
+                                $db->begin_transaction();
+                                $unlinkStmt = $db->prepare("UPDATE engineers SET employee_id = NULL WHERE employee_id = ? AND id <> ?");
+                                if ($unlinkStmt) {
+                                    $unlinkStmt->bind_param('ii', $employeeId, $linkEngineerId);
+                                    $unlinkStmt->execute();
+                                    $unlinkStmt->close();
+                                }
+                                $linkStmt = $db->prepare("UPDATE engineers SET employee_id = ? WHERE id = ?");
+                                if ($linkStmt) {
+                                    $linkStmt->bind_param('ii', $employeeId, $linkEngineerId);
+                                    $okLink = $linkStmt->execute();
+                                    $linkStmt->close();
+                                    if (!$okLink) {
+                                        $db->rollback();
+                                        $error = 'Unable to link engineer to this account.';
+                                        $message = '';
+                                    } else {
+                                        $db->commit();
+                                    }
+                                } else {
+                                    $db->rollback();
+                                    $error = 'Unable to link engineer to this account.';
+                                    $message = '';
+                                }
+                            }
+                        } else {
+                            $unlinkStmt = $db->prepare("UPDATE engineers SET employee_id = NULL WHERE employee_id = ?");
+                            if ($unlinkStmt) {
+                                $unlinkStmt->bind_param('i', $employeeId);
+                                $unlinkStmt->execute();
+                                $unlinkStmt->close();
+                            }
                         }
                     }
                 }
@@ -154,6 +370,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $sessionStmt->execute();
                             $sessionStmt->close();
                         }
+                        if (function_exists('rbac_audit')) {
+                            rbac_audit('employee.password_reset', 'employee', $employeeId);
+                        }
                         $message = 'Password reset successfully.';
                     } else {
                         $error = 'Unable to reset password.';
@@ -173,7 +392,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->bind_param('i', $employeeId);
                     $ok = $stmt->execute();
                     $stmt->close();
-                    $message = $ok ? 'Employee account deleted.' : 'Unable to delete account.';
+                if ($ok && function_exists('rbac_audit')) {
+                    rbac_audit('employee.delete', 'employee', $employeeId);
+                }
+                $message = $ok ? 'Employee account deleted.' : 'Unable to delete account.';
                 }
             }
         }
@@ -313,6 +535,32 @@ if ($searchQuery !== '' && $db) {
                         </select>
                     </div>
                     <?php endif; ?>
+                    <?php if ($hasEngineerLink): ?>
+                    <div class="sa-field">
+                        <label>Linked Engineer</label>
+                        <select name="engineer_id">
+                            <option value="">No link</option>
+                            <?php foreach ($engineerOptions as $eng): ?>
+                                <?php
+                                    $engId = (int)$eng['id'];
+                                    $engName = trim((string)($eng['full_name'] ?? ''));
+                                    if ($engName === '') {
+                                        $engName = trim((string)($eng['first_name'] ?? '') . ' ' . (string)($eng['last_name'] ?? ''));
+                                    }
+                                    $engLabel = $engName !== '' ? $engName : ('Engineer #' . $engId);
+                                    $license = trim((string)($eng['prc_license_number'] ?? ''));
+                                    $linkedEmployeeId = (int)($eng['employee_id'] ?? 0);
+                                    $disabled = $linkedEmployeeId > 0 ? 'disabled' : '';
+                                    $suffix = $linkedEmployeeId > 0 ? ' (linked)' : '';
+                                ?>
+                                <option value="<?php echo $engId; ?>" <?php echo $disabled; ?>>
+                                    <?php echo sa_escape($engLabel . ($license !== '' ? " | PRC {$license}" : '') . $suffix); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small>Linking works only when role is Engineer.</small>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div class="sa-form-actions">
                     <button type="submit" class="view-btn">Create Account</button>
@@ -369,26 +617,51 @@ if ($searchQuery !== '' && $db) {
                                             <div class="sa-action-grid">
                                                 <input type="text" name="first_name" value="<?php echo sa_escape((string)$row['first_name']); ?>" required>
                                                 <input type="text" name="last_name" value="<?php echo sa_escape((string)$row['last_name']); ?>" required>
-                                                <input type="email" name="email" value="<?php echo sa_escape((string)$row['email']); ?>" required class="sa-span-2">
-                                                <?php if ($hasRole): ?>
-                                                <select name="role">
-                                                    <?php foreach ($allowedRoles as $roleName): ?>
-                                                        <option value="<?php echo sa_escape($roleName); ?>" <?php echo strtolower((string)($row['role'] ?? '')) === $roleName ? 'selected' : ''; ?>>
-                                                            <?php echo sa_escape($roleName); ?>
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                                <?php endif; ?>
-                                                <?php if ($hasStatus): ?>
-                                                <select name="account_status">
-                                                    <?php foreach ($allowedStatuses as $statusName): ?>
-                                                        <option value="<?php echo sa_escape($statusName); ?>" <?php echo strtolower((string)($row['account_status'] ?? 'active')) === $statusName ? 'selected' : ''; ?>>
-                                                            <?php echo sa_escape($statusName); ?>
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                                <?php endif; ?>
-                                            </div>
+                                        <input type="email" name="email" value="<?php echo sa_escape((string)$row['email']); ?>" required class="sa-span-2">
+                                        <?php if ($hasRole): ?>
+                                        <select name="role">
+                                            <?php foreach ($allowedRoles as $roleName): ?>
+                                                <option value="<?php echo sa_escape($roleName); ?>" <?php echo strtolower((string)($row['role'] ?? '')) === $roleName ? 'selected' : ''; ?>>
+                                                    <?php echo sa_escape($roleName); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <?php endif; ?>
+                                        <?php if ($hasStatus): ?>
+                                        <select name="account_status">
+                                            <?php foreach ($allowedStatuses as $statusName): ?>
+                                                <option value="<?php echo sa_escape($statusName); ?>" <?php echo strtolower((string)($row['account_status'] ?? 'active')) === $statusName ? 'selected' : ''; ?>>
+                                                    <?php echo sa_escape($statusName); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <?php endif; ?>
+                                        <?php if ($hasEngineerLink): ?>
+                                            <?php $currentEngineerId = (int)($engineerByEmployee[(int)$row['id']] ?? 0); ?>
+                                            <select name="engineer_id" class="sa-span-2" aria-label="Linked Engineer">
+                                                <option value="">No link</option>
+                                                <?php foreach ($engineerOptions as $eng): ?>
+                                                    <?php
+                                                        $engId = (int)$eng['id'];
+                                                        $engName = trim((string)($eng['full_name'] ?? ''));
+                                                        if ($engName === '') {
+                                                            $engName = trim((string)($eng['first_name'] ?? '') . ' ' . (string)($eng['last_name'] ?? ''));
+                                                        }
+                                                        $engLabel = $engName !== '' ? $engName : ('Engineer #' . $engId);
+                                                        $license = trim((string)($eng['prc_license_number'] ?? ''));
+                                                        $linkedEmployeeId = (int)($eng['employee_id'] ?? 0);
+                                                        $isLinkedToOther = $linkedEmployeeId > 0 && $linkedEmployeeId !== (int)$row['id'];
+                                                        $disabled = $isLinkedToOther ? 'disabled' : '';
+                                                        $suffix = $isLinkedToOther ? ' (linked)' : '';
+                                                        $selected = $currentEngineerId === $engId ? 'selected' : '';
+                                                    ?>
+                                                    <option value="<?php echo $engId; ?>" <?php echo $selected . ' ' . $disabled; ?>>
+                                                        <?php echo sa_escape($engLabel . ($license !== '' ? " | PRC {$license}" : '') . $suffix); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        <?php endif; ?>
+                                    </div>
                                             <button type="submit" class="view-btn sa-mini-btn">Save Changes</button>
                                         </form>
                                         <form method="post" class="sa-inline-form sa-action-card sa-action-inline">

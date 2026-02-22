@@ -5,6 +5,8 @@ require dirname(__DIR__) . '/config-path.php';
 
 set_no_cache_headers();
 check_auth();
+require dirname(__DIR__) . '/includes/rbac.php';
+rbac_require_roles(['admin','department_admin','super_admin']);
 check_suspicious_activity();
 
 $errors = [];
@@ -223,7 +225,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $docStmt->close();
 
+            if (eng_table_exists($db, 'approvals')) {
+                $approveStmt = $db->prepare(
+                    "INSERT INTO approvals (entity_type, entity_id, status, reviewer_id, reviewer_role, notes)
+                     VALUES ('engineer', ?, 'pending', NULL, NULL, 'Auto-created on registration')"
+                );
+                if ($approveStmt) {
+                    $approveStmt->bind_param('i', $engineerId);
+                    $approveStmt->execute();
+                    $approveStmt->close();
+                }
+            }
+
             $db->commit();
+            if (function_exists('rbac_audit')) {
+                rbac_audit('engineer.create', 'engineer', $engineerId, [
+                    'email' => $email,
+                    'prc_license' => $prcLicense
+                ]);
+            }
             $success = 'Engineer registered successfully.';
             $_POST = [];
             $_SESSION['engineer_form_token'] = bin2hex(random_bytes(32));

@@ -177,6 +177,13 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme
     color: #3a5f88;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-field small {
+    display: block;
+    margin-top: 4px;
+    color: #6a86a7;
+    font-size: 0.76rem;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-field input,
 body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-field select {
     width: 100%;

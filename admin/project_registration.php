@@ -9,6 +9,8 @@ require dirname(__DIR__) . '/config/app.php';
 // Protect page
 set_no_cache_headers();
 check_auth();
+require dirname(__DIR__) . '/includes/rbac.php';
+rbac_require_roles(['admin','department_admin','super_admin']);
 check_suspicious_activity();
 if ($db->connect_error) {
     header('Content-Type: application/json');

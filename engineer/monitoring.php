@@ -4,6 +4,8 @@ require dirname(__DIR__) . '/session-auth.php';
 
 set_no_cache_headers();
 check_auth();
+require dirname(__DIR__) . '/includes/rbac.php';
+rbac_require_roles(['engineer','admin','super_admin']);
 check_suspicious_activity();
 
 if (!isset($_SESSION['employee_id'])) {

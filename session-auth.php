@@ -221,6 +221,11 @@ function check_auth() {
         }
     }
     $_SESSION['last_activity'] = time();
+
+    // Hydrate employee role/status if available.
+    if (isset($_SESSION['employee_id'])) {
+        hydrate_employee_role_status();
+    }
 }
 
 /**
@@ -280,6 +285,72 @@ function destroy_session() {
     
     // Destroy the session
     session_destroy();
+}
+
+function db_has_employee_columns(mysqli $db, string $column): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'employees'
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) return false;
+    $stmt->bind_param('s', $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $exists;
+}
+
+function hydrate_employee_role_status(): void
+{
+    global $db;
+    if (!isset($db) || !($db instanceof mysqli) || $db->connect_error) {
+        return;
+    }
+    $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+    if ($employeeId <= 0) {
+        return;
+    }
+
+    $hasRole = db_has_employee_columns($db, 'role');
+    $hasStatus = db_has_employee_columns($db, 'account_status');
+    if (!$hasRole && !$hasStatus) {
+        return;
+    }
+
+    $fields = [];
+    if ($hasRole) $fields[] = 'role';
+    if ($hasStatus) $fields[] = 'account_status';
+    $sql = 'SELECT ' . implode(', ', $fields) . ' FROM employees WHERE id = ? LIMIT 1';
+    $stmt = $db->prepare($sql);
+    if (!$stmt) {
+        return;
+    }
+    $stmt->bind_param('i', $employeeId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    $stmt->close();
+    if (!$row) {
+        return;
+    }
+    if ($hasRole) {
+        $_SESSION['employee_role'] = strtolower(trim((string)($row['role'] ?? '')));
+    }
+    if ($hasStatus) {
+        $_SESSION['employee_status'] = strtolower(trim((string)($row['account_status'] ?? 'active')));
+        if ($_SESSION['employee_status'] !== 'active') {
+            destroy_session();
+            header('Location: /admin/index.php?error=inactive');
+            exit();
+        }
+    }
 }
 
 /**
