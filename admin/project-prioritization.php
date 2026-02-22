@@ -38,18 +38,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 // Handle feedback status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     $feedback_id = intval($_POST['feedback_id']);
-    $new_status = $_POST['new_status'];
+    $new_status = trim((string)($_POST['new_status'] ?? ''));
+    $rejection_note = trim((string)($_POST['rejection_note'] ?? ''));
     
     // Validate status value
-    $allowed_statuses = ['Pending', 'Reviewed', 'Addressed'];
+    $allowed_statuses = ['Pending', 'Reviewed', 'Addressed', 'Rejected'];
     if (!in_array($new_status, $allowed_statuses)) {
         header('Location: project-prioritization.php?status=invalid');
         exit;
     }
+
+    if ($new_status === 'Rejected' && $rejection_note === '') {
+        header('Location: project-prioritization.php?status=reject_note_required');
+        exit;
+    }
     
-    $stmt = $db->prepare("UPDATE feedback SET status = ? WHERE id = ?");
+    $hasRejectionNoteCol = feedback_has_column($db, 'rejection_note');
+    if ($hasRejectionNoteCol) {
+        $stmt = $db->prepare("UPDATE feedback SET status = ?, rejection_note = ? WHERE id = ?");
+    } else {
+        $stmt = $db->prepare("UPDATE feedback SET status = ?, description = CASE WHEN ? = 'Rejected' THEN CONCAT(COALESCE(description,''), '\n\n[Rejection Reason] ', ?) ELSE description END WHERE id = ?");
+    }
     if ($stmt) {
-        $stmt->bind_param('si', $new_status, $feedback_id);
+        if ($hasRejectionNoteCol) {
+            $noteValue = $new_status === 'Rejected' ? $rejection_note : '';
+            $stmt->bind_param('ssi', $new_status, $noteValue, $feedback_id);
+        } else {
+            $stmt->bind_param('sssi', $new_status, $new_status, $rejection_note, $feedback_id);
+        }
         $ok = $stmt->execute();
         $stmt->close();
         if ($ok) {
@@ -149,6 +165,7 @@ $hasPhotoPath = feedback_has_column($db, 'photo_path');
 $hasMapLat = feedback_has_column($db, 'map_lat');
 $hasMapLng = feedback_has_column($db, 'map_lng');
 $hasMapLink = feedback_has_column($db, 'map_link');
+$hasRejectionNote = feedback_has_column($db, 'rejection_note');
 
 $selectFields = [
     'id',
@@ -168,6 +185,7 @@ if ($hasPhotoPath) $selectFields[] = 'photo_path';
 if ($hasMapLat) $selectFields[] = 'map_lat';
 if ($hasMapLng) $selectFields[] = 'map_lng';
 if ($hasMapLink) $selectFields[] = 'map_link';
+if ($hasRejectionNote) $selectFields[] = 'rejection_note';
 
 $stmt = $db->prepare("SELECT " . implode(', ', $selectFields) . " FROM feedback ORDER BY date_submitted DESC LIMIT ? OFFSET ?");
 if ($stmt) {
@@ -190,6 +208,7 @@ $highInputs = 0;
 $pendingInputs = 0;
 $reviewedInputs = 0;
 $addressedInputs = 0;
+$rejectedInputs = 0;
 $oldestPendingDays = 0;
 $topPriority = [
     'location_group' => 'No data',
@@ -206,6 +225,7 @@ foreach ($feedbacks as $fb) {
     if (isset($fb['status']) && strtolower($fb['status']) === 'pending') $pendingInputs++;
     if (isset($fb['status']) && strtolower($fb['status']) === 'reviewed') $reviewedInputs++;
     if (isset($fb['status']) && strtolower($fb['status']) === 'addressed') $addressedInputs++;
+    if (isset($fb['status']) && strtolower($fb['status']) === 'rejected') $rejectedInputs++;
     if (isset($fb['status']) && strtolower($fb['status']) === 'pending' && !empty($fb['date_submitted'])) {
         $ts = strtotime($fb['date_submitted']);
         if ($ts) {
@@ -213,6 +233,39 @@ foreach ($feedbacks as $fb) {
             if ($age > $oldestPendingDays) $oldestPendingDays = $age;
         }
     }
+}
+
+// Sort all feedback by status section then by location text.
+$statusSort = ['pending' => 1, 'reviewed' => 2, 'addressed' => 3, 'rejected' => 4];
+usort($feedbacks, static function (array $a, array $b) use ($statusSort): int {
+    $aStatus = strtolower(trim((string)($a['status'] ?? 'pending')));
+    $bStatus = strtolower(trim((string)($b['status'] ?? 'pending')));
+    $aRank = $statusSort[$aStatus] ?? 99;
+    $bRank = $statusSort[$bStatus] ?? 99;
+    if ($aRank !== $bRank) return $aRank <=> $bRank;
+
+    $aLocation = trim((string)($a['exact_address'] ?? ''));
+    if ($aLocation === '') $aLocation = trim((string)($a['location'] ?? ''));
+    $bLocation = trim((string)($b['exact_address'] ?? ''));
+    if ($bLocation === '') $bLocation = trim((string)($b['location'] ?? ''));
+    $locCmp = strcasecmp($aLocation, $bLocation);
+    if ($locCmp !== 0) return $locCmp;
+
+    $aDate = strtotime((string)($a['date_submitted'] ?? '')) ?: 0;
+    $bDate = strtotime((string)($b['date_submitted'] ?? '')) ?: 0;
+    return $bDate <=> $aDate;
+});
+
+$statusSections = [
+    'pending' => ['title' => 'Pending', 'rows' => []],
+    'reviewed' => ['title' => 'Reviewed', 'rows' => []],
+    'addressed' => ['title' => 'Addressed', 'rows' => []],
+    'rejected' => ['title' => 'Rejected', 'rows' => []]
+];
+foreach ($feedbacks as $row) {
+    $key = strtolower(trim((string)($row['status'] ?? 'pending')));
+    if (!isset($statusSections[$key])) $key = 'pending';
+    $statusSections[$key]['rows'][] = $row;
 }
 
 $priorityRows = [];
@@ -443,6 +496,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                         <option value="pending">Pending</option>
                         <option value="reviewed">Reviewed</option>
                         <option value="addressed">Addressed</option>
+                        <option value="rejected">Rejected</option>
                     </select>
                 </div>
                 <div class="search-group">
@@ -481,6 +535,10 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                 <article class="priority-kpi addressed">
                     <span>Addressed</span>
                     <strong><?= (int)$addressedInputs ?></strong>
+                </article>
+                <article class="priority-kpi">
+                    <span>Rejected</span>
+                    <strong><?= (int)$rejectedInputs ?></strong>
                 </article>
                 <article class="priority-kpi aging">
                     <span>Oldest Pending</span>
@@ -535,69 +593,74 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($feedbacks as $fb): ?>
-                                <?php
-                                $fb_lc = array_change_key_case($fb, CASE_LOWER);
-                                $feedbackId = (int) ($fb_lc['id'] ?? 0);
-                                $controlNumber = $feedbackId > 0
-                                    ? 'CTL-' . str_pad((string) $feedbackId, 5, '0', STR_PAD_LEFT)
-                                    : 'CTL-NA';
-                                $cleanDescription = clean_feedback_description((string) ($fb_lc['description'] ?? ''));
-                                $mapEmbedUrl = feedback_map_embed_url($fb_lc);
-                                $rowStatus = strtolower(trim((string)($fb_lc['status'] ?? '')));
-                                $rowCategory = strtolower(trim((string)($fb_lc['category'] ?? '')));
-                                $rowDistrict = strtolower(trim((string)($fb_lc['district'] ?? '')));
-                                $rowBarangay = strtolower(trim((string)($fb_lc['barangay'] ?? '')));
-                                $rowAlternativeName = strtolower(trim((string)($fb_lc['alternative_name'] ?? '')));
-                                $rowLocation = strtolower(trim((string)($fb_lc['location'] ?? '')));
-                                $rowDays = null;
-                                if (!empty($fb_lc['date_submitted'])) {
-                                    $rowTs = strtotime((string)$fb_lc['date_submitted']);
-                                    if ($rowTs) {
-                                        $rowDays = max(0, (int) floor((time() - $rowTs) / 86400));
-                                    }
-                                }
-                                $ageClass = 'fresh';
-                                if ($rowDays !== null && $rowDays >= 14) {
-                                    $ageClass = 'critical';
-                                } elseif ($rowDays !== null && $rowDays >= 7) {
-                                    $ageClass = 'warning';
-                                }
-                                ?>
-                                <tr class="<?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ? 'pending-row' : '' ?>"
-                                    data-status="<?= htmlspecialchars($rowStatus) ?>"
-                                    data-category="<?= htmlspecialchars($rowCategory) ?>"
-                                    data-district="<?= htmlspecialchars($rowDistrict) ?>"
-                                    data-barangay="<?= htmlspecialchars($rowBarangay) ?>"
-                                    data-alternative-name="<?= htmlspecialchars($rowAlternativeName) ?>"
-                                    data-location="<?= htmlspecialchars($rowLocation) ?>">
-                                    <td><strong><?= htmlspecialchars($controlNumber) ?></strong></td>
-                                    <td><?= isset($fb_lc['date_submitted']) ? htmlspecialchars($fb_lc['date_submitted']) : '-' ?></td>
-                                    <td><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></td>
-                                    <td><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></td>
-                                    <td><?= isset($fb_lc['category']) ? htmlspecialchars($fb_lc['category']) : '-' ?></td>
-                                    <td>
-                                        <div><?= isset($fb_lc['exact_address']) && trim((string)$fb_lc['exact_address']) !== '' ? htmlspecialchars($fb_lc['exact_address']) : (isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-') ?></div>
-                                        <button type="button" class="view-btn" data-address-modal="address-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Full Address</button>
-                                    </td>
-                                    <td>
-                                        <span class="badge <?= (isset($fb_lc['status']) ? strtolower($fb_lc['status']) : '') ?>">
-                                            <?= isset($fb_lc['status']) ? htmlspecialchars($fb_lc['status']) : '-' ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php if ($rowDays !== null): ?>
-                                            <span class="age-badge <?= $ageClass ?>"><?= (int)$rowDays ?> day<?= ((int)$rowDays === 1 ? '' : 's') ?></span>
-                                        <?php else: ?>
-                                            <span class="age-badge fresh">Today</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="copy-btn" data-copy-control="<?= htmlspecialchars($controlNumber) ?>">Copy #</button>
-                                        <button type="button" class="edit-btn" data-edit-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Edit</button>
-                                        <button type="button" class="view-btn" data-view-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Details</button>
-                                    </td>
+                            <?php foreach ($statusSections as $sectionKey => $section): ?>
+                                <tr class="status-section-row" data-section-header="<?= htmlspecialchars($sectionKey) ?>">
+                                    <td colspan="9"><strong><?= htmlspecialchars($section['title']) ?></strong> (<?= count($section['rows']) ?>)</td>
                                 </tr>
+                                <?php if (empty($section['rows'])): ?>
+                                    <tr class="section-empty-row" data-section-empty="<?= htmlspecialchars($sectionKey) ?>">
+                                        <td colspan="9">No records in this section.</td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($section['rows'] as $fb): ?>
+                                        <?php
+                                        $fb_lc = array_change_key_case($fb, CASE_LOWER);
+                                        $feedbackId = (int) ($fb_lc['id'] ?? 0);
+                                        $controlNumber = $feedbackId > 0
+                                            ? 'CTL-' . str_pad((string) $feedbackId, 5, '0', STR_PAD_LEFT)
+                                            : 'CTL-NA';
+                                        $rowStatus = strtolower(trim((string)($fb_lc['status'] ?? '')));
+                                        $rowCategory = strtolower(trim((string)($fb_lc['category'] ?? '')));
+                                        $rowDistrict = strtolower(trim((string)($fb_lc['district'] ?? '')));
+                                        $rowBarangay = strtolower(trim((string)($fb_lc['barangay'] ?? '')));
+                                        $rowAlternativeName = strtolower(trim((string)($fb_lc['alternative_name'] ?? '')));
+                                        $rowLocation = strtolower(trim((string)($fb_lc['location'] ?? '')));
+                                        $rowDays = null;
+                                        if (!empty($fb_lc['date_submitted'])) {
+                                            $rowTs = strtotime((string)$fb_lc['date_submitted']);
+                                            if ($rowTs) $rowDays = max(0, (int) floor((time() - $rowTs) / 86400));
+                                        }
+                                        $ageClass = 'fresh';
+                                        if ($rowDays !== null && $rowDays >= 14) $ageClass = 'critical';
+                                        elseif ($rowDays !== null && $rowDays >= 7) $ageClass = 'warning';
+                                        ?>
+                                        <tr class="<?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ? 'pending-row' : '' ?>"
+                                            data-section="<?= htmlspecialchars($sectionKey) ?>"
+                                            data-status="<?= htmlspecialchars($rowStatus) ?>"
+                                            data-category="<?= htmlspecialchars($rowCategory) ?>"
+                                            data-district="<?= htmlspecialchars($rowDistrict) ?>"
+                                            data-barangay="<?= htmlspecialchars($rowBarangay) ?>"
+                                            data-alternative-name="<?= htmlspecialchars($rowAlternativeName) ?>"
+                                            data-location="<?= htmlspecialchars($rowLocation) ?>">
+                                            <td><strong><?= htmlspecialchars($controlNumber) ?></strong></td>
+                                            <td><?= isset($fb_lc['date_submitted']) ? htmlspecialchars($fb_lc['date_submitted']) : '-' ?></td>
+                                            <td><?= isset($fb_lc['user_name']) ? htmlspecialchars($fb_lc['user_name']) : '-' ?></td>
+                                            <td><?= isset($fb_lc['subject']) ? htmlspecialchars($fb_lc['subject']) : '-' ?></td>
+                                            <td><?= isset($fb_lc['category']) ? htmlspecialchars($fb_lc['category']) : '-' ?></td>
+                                            <td>
+                                                <div><?= isset($fb_lc['exact_address']) && trim((string)$fb_lc['exact_address']) !== '' ? htmlspecialchars($fb_lc['exact_address']) : (isset($fb_lc['location']) ? htmlspecialchars($fb_lc['location']) : '-') ?></div>
+                                                <button type="button" class="view-btn" data-address-modal="address-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Full Address</button>
+                                            </td>
+                                            <td>
+                                                <span class="badge <?= (isset($fb_lc['status']) ? strtolower($fb_lc['status']) : '') ?>">
+                                                    <?= isset($fb_lc['status']) ? htmlspecialchars($fb_lc['status']) : '-' ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <?php if ($rowDays !== null): ?>
+                                                    <span class="age-badge <?= $ageClass ?>"><?= (int)$rowDays ?> day<?= ((int)$rowDays === 1 ? '' : 's') ?></span>
+                                                <?php else: ?>
+                                                    <span class="age-badge fresh">Today</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="copy-btn" data-copy-control="<?= htmlspecialchars($controlNumber) ?>">Copy #</button>
+                                                <button type="button" class="edit-btn" data-edit-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Edit</button>
+                                                <button type="button" class="view-btn" data-view-modal="modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">View Details</button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                         </tbody>
@@ -643,7 +706,12 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                                 <option value="Pending" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Pending') ?'selected':'' ?>>Pending</option>
                                                 <option value="Reviewed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Reviewed') ?'selected':'' ?>>Reviewed</option>
                                                 <option value="Addressed" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Addressed') ?'selected':'' ?>>Addressed</option>
+                                                <option value="Rejected" <?= (isset($fb_lc['status']) && $fb_lc['status']==='Rejected') ?'selected':'' ?>>Rejected</option>
                                             </select>
+                                        </div>
+                                        <div class="modal-field rejection-note-wrap" id="reject-note-wrap-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" style="<?= (isset($fb_lc['status']) && $fb_lc['status']==='Rejected') ? '' : 'display:none;' ?>">
+                                            <label for="rejection-note-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal-label">Reason for Rejection (visible to citizen):</label>
+                                            <textarea id="rejection-note-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" name="rejection_note" rows="3" placeholder="Explain why this concern is rejected..."><?= isset($fb_lc['rejection_note']) ? htmlspecialchars((string)$fb_lc['rejection_note']) : '' ?></textarea>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
