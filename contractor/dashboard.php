@@ -57,9 +57,6 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
         <h1>Contractor Dashboard</h1>
         <p>Welcome, <?php echo htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8'); ?>. Manage project validation, budgets, and expenses.</p>
     </div>
-    <div class="contractor-help">
-        <strong>Simple flow:</strong> 1) Update Budget/Expense/Progress, 2) Send Status Request to Engineer, 3) Wait for Engineer + Admin decision.
-    </div>
 
     <div class="contractor-stats">
         <div class="contractor-stat-card">
@@ -103,6 +100,9 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 </div>
             </div>
         </div>
+        <div class="contractor-help">
+            <strong>How to use:</strong> Update budget and expenses, then submit status requests. Engineer reviews technically, admin performs final approval.
+        </div>
         <div id="feedback" class="ac-c8be1ccb"></div>
         <div class="table-wrap">
             <table class="table" id="projectsTable">
@@ -111,10 +111,10 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                         <th>Code</th>
                         <th>Project</th>
                         <th>Status</th>
-                        <th>Budget</th>
-                        <th>Status Validation</th>
-                        <th>Expense</th>
-                        <th>Progress</th>
+                        <th>Budget Management</th>
+                        <th>Status Request</th>
+                        <th>Expense Update</th>
+                        <th>Progress Module</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -219,30 +219,31 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 '  <div><strong>PHP ' + Number(p.budget || 0).toLocaleString() + '</strong></div>',
                 '  <div class="section-title">Update</div>',
                 '  <input class="contractor-input" data-type="budget" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="New budget">',
-                '  <button class="contractor-btn btn-warning" type="button" data-action="budget" data-id="' + p.id + '">Update Budget</button>',
+                '  <button class="contractor-btn btn-warning" type="button" data-action="budget" data-id="' + p.id + '">Save Budget</button>',
                 '</td>',
                 '<td>',
-                '  <div class="section-title">Send To Engineer</div>',
+                '  <div class="section-title">Request Status Change</div>',
                 '  <select class="contractor-select" data-type="validate" data-id="' + p.id + '">',
                 '    <option value="">Select target status</option>',
                 '    <option value="For Approval">For Approval</option>',
+                '    <option value="Approved">Approved</option>',
                 '    <option value="On-hold">On-hold</option>',
                 '    <option value="Completed">Completed</option>',
                 '  </select>',
                 '  <input class="contractor-input" data-type="status-note" data-id="' + p.id + '" type="text" placeholder="Reason / note for engineer/admin">',
-                '  <button class="contractor-btn btn-warning" type="button" data-action="status-request" data-id="' + p.id + '">Send Request</button>',
+                '  <button class="contractor-btn btn-warning" type="button" data-action="status-request" data-id="' + p.id + '">Submit Request</button>',
                 '</td>',
                 '<td>',
                 '  <div class="section-title">Log Expense</div>',
                 '  <input class="contractor-input" data-type="amount" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="Amount">',
                 '  <input class="contractor-input" data-type="desc" data-id="' + p.id + '" type="text" placeholder="Description">',
-                '  <button class="contractor-btn btn-neutral" type="button" data-action="expense" data-id="' + p.id + '">Log Expense</button>',
+                '  <button class="contractor-btn btn-neutral" type="button" data-action="expense" data-id="' + p.id + '">Save Expense</button>',
                 '</td>',
                 '<td>',
                 '  <div class="section-title">Current</div>',
                 '  <div>Current: ' + Number(p.progress_percent || 0).toFixed(2) + '%</div>',
                 '  <small>' + esc(p.progress_updated_at || 'No updates yet') + '</small><br>',
-                '  <a class="contractor-link-btn" href="progress_monitoring.php?project_id=' + encodeURIComponent(String(p.id)) + '">Update Progress</a>',
+                '  <a class="contractor-link-btn" href="progress_monitoring.php?project_id=' + encodeURIComponent(String(p.id)) + '">Open Progress Monitoring</a>',
                 '</td>'
             ].join('');
             tbody.appendChild(tr);
@@ -334,6 +335,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
     });
 })();
 </script>
+<script src="contractor.js?v=<?php echo filemtime(__DIR__ . '/contractor.js'); ?>"></script>
 <script src="contractor-enterprise.js?v=<?php echo filemtime(__DIR__ . '/contractor-enterprise.js'); ?>"></script>
 </body>
 </html>

@@ -228,6 +228,8 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
     loadProjects();
 })();
 </script>
+<script src="engineer.js?v=<?php echo filemtime(__DIR__ . '/engineer.js'); ?>"></script>
 <script src="engineer-enterprise.js?v=<?php echo filemtime(__DIR__ . '/engineer-enterprise.js'); ?>"></script>
 </body>
 </html>
+
