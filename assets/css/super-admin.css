@@ -92,9 +92,154 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme
     border-color: #305885;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .main-content {
+    padding: 18px 22px 28px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .dash-header {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.97), rgba(244, 249, 255, 0.96));
+    border: 1px solid #d7e5f6;
+    border-radius: 18px;
+    box-shadow: 0 14px 28px rgba(13, 41, 76, 0.1);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-kpi-grid,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .pm-stats-wrapper {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+    margin-bottom: 16px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-kpi-card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .stat-box {
+    border: 1px solid #d7e6f7 !important;
+    border-radius: 14px !important;
+    background: linear-gradient(160deg, #ffffff, #f3f8ff) !important;
+    padding: 16px 14px !important;
+    text-align: left !important;
+    box-shadow: 0 10px 22px rgba(15, 37, 68, 0.1);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-kpi-value,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .stat-number {
+    margin: 0 0 4px 0 !important;
+    font-size: 1.9rem !important;
+    line-height: 1.1;
+    font-weight: 800 !important;
+    color: #183f73 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-kpi-label,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .stat-label {
+    margin: 0 !important;
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
+    color: #5b7390 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-actions .view-btn {
+    text-decoration: none;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-form-grid .sa-field {
+    display: grid;
+    gap: 6px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-field label {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #3a5f88;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-field input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-field select {
+    width: 100%;
+    min-height: 42px;
+    border-radius: 10px;
+    border: 1px solid #c6d8ee;
+    background: #fafdff;
+    color: #1f4168;
+    padding: 8px 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-inline-form {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-inline-form input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-inline-form select {
+    width: 100%;
+    min-height: 36px;
+    border-radius: 9px;
+    border: 1px solid #c7d8ec;
+    background: #fff;
+    padding: 6px 9px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-mini-btn {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 0.78rem !important;
+    border-radius: 8px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-audit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-audit-item {
+    border: 1px solid #d4e3f4;
+    border-left: 4px solid #245fbb;
+    background: linear-gradient(160deg, #ffffff, #f4f8ff);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-audit-item h4 {
+    margin: 0;
+    color: #375b85;
+    font-size: 0.84rem;
+    text-transform: uppercase;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-audit-item p {
+    margin: 6px 0 0;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #143f74;
+}
+
 @media (max-width: 640px) {
     .super-admin-card {
         width: min(96vw, 460px);
         padding: 22px 18px;
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .sa-form-grid {
+        grid-template-columns: 1fr;
     }
 }

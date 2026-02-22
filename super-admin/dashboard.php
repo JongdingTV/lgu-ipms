@@ -82,7 +82,7 @@ if (isset($db) && !$db->connect_error) {
             <a href="employee_accounts.php"><img src="../assets/images/admin/person.png" class="nav-icon">Employee Accounts</a>
             <a href="dashboard.php" class="active"><img src="../assets/images/admin/check.png" class="nav-icon">Control Center</a>
             <a href="/admin/db-health-check.php"><img src="../assets/images/admin/check.png" class="nav-icon">System Health</a>
-            <a href="/admin/audit-logs.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Security Audit Logs</a>
+            <a href="/super-admin/security_audit_logs.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Security Audit Logs</a>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
@@ -111,31 +111,31 @@ if (isset($db) && !$db->connect_error) {
             <p>Same admin workspace with advanced security governance and account control.</p>
         </div>
 
-        <div class="pm-stats-wrapper">
-            <div class="stat-box stat-total">
-                <div class="stat-number"><?php echo (int)$stats['employees']; ?></div>
-                <div class="stat-label">Total Employees</div>
-            </div>
-            <div class="stat-box stat-approved">
-                <div class="stat-number"><?php echo (int)$stats['super_admins']; ?></div>
-                <div class="stat-label">Super Admins</div>
-            </div>
-            <div class="stat-box stat-progress">
-                <div class="stat-number"><?php echo (int)$stats['admins']; ?></div>
-                <div class="stat-label">Admins</div>
-            </div>
-            <div class="stat-box stat-completed">
-                <div class="stat-number"><?php echo (int)$stats['inactive']; ?></div>
-                <div class="stat-label">Inactive/Suspended</div>
-            </div>
+        <div class="sa-kpi-grid">
+            <article class="sa-kpi-card">
+                <p class="sa-kpi-value"><?php echo (int)$stats['employees']; ?></p>
+                <p class="sa-kpi-label">Total Employees</p>
+            </article>
+            <article class="sa-kpi-card">
+                <p class="sa-kpi-value"><?php echo (int)$stats['super_admins']; ?></p>
+                <p class="sa-kpi-label">Super Admins</p>
+            </article>
+            <article class="sa-kpi-card">
+                <p class="sa-kpi-value"><?php echo (int)$stats['admins']; ?></p>
+                <p class="sa-kpi-label">Admins</p>
+            </article>
+            <article class="sa-kpi-card">
+                <p class="sa-kpi-value"><?php echo (int)$stats['inactive']; ?></p>
+                <p class="sa-kpi-label">Inactive / Suspended</p>
+            </article>
         </div>
 
         <div class="recent-projects" style="margin-top:16px;">
             <h3>Super Admin Actions</h3>
             <p style="margin-bottom:14px;color:#456286;">Manage employee accounts, reset credentials, set roles, and oversee system security.</p>
-            <div class="feedback-actions">
+            <div class="sa-actions">
                 <a href="employee_accounts.php" class="view-btn">Open Employee Account Manager</a>
-                <a href="/admin/audit-logs.php" class="view-btn">Open Audit Logs</a>
+                <a href="/super-admin/security_audit_logs.php" class="view-btn">Open Audit Logs</a>
                 <a href="/admin/db-health-check.php" class="view-btn">Run DB Health Check</a>
             </div>
         </div>

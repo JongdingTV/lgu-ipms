@@ -230,7 +230,7 @@ if ($result) {
             <a href="/super-admin/registered_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon">Registered Projects</a>
             <a href="/super-admin/employee_accounts.php" class="active"><img src="../assets/images/admin/person.png" class="nav-icon">Employee Accounts</a>
             <a href="/super-admin/dashboard.php"><img src="../assets/images/admin/check.png" class="nav-icon">Control Center</a>
-            <a href="/admin/audit-logs.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Security Audit Logs</a>
+            <a href="/super-admin/security_audit_logs.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Security Audit Logs</a>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
@@ -271,15 +271,13 @@ if ($result) {
             <form method="post" class="contractor-form">
                 <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
                 <input type="hidden" name="action" value="create">
-                <div class="form-row">
-                    <div><label>First Name</label><input type="text" name="first_name" required></div>
-                    <div><label>Last Name</label><input type="text" name="last_name" required></div>
-                    <div><label>Email</label><input type="email" name="email" required></div>
-                </div>
-                <div class="form-row">
-                    <div><label>Password</label><input type="password" name="password" minlength="8" required></div>
+                <div class="sa-form-grid">
+                    <div class="sa-field"><label>First Name</label><input type="text" name="first_name" required></div>
+                    <div class="sa-field"><label>Last Name</label><input type="text" name="last_name" required></div>
+                    <div class="sa-field"><label>Email</label><input type="email" name="email" required></div>
+                    <div class="sa-field"><label>Password</label><input type="password" name="password" minlength="8" required></div>
                     <?php if ($hasRole): ?>
-                    <div>
+                    <div class="sa-field">
                         <label>Role</label>
                         <select name="role">
                             <option value="employee">Employee</option>
@@ -289,7 +287,7 @@ if ($result) {
                     </div>
                     <?php endif; ?>
                     <?php if ($hasStatus): ?>
-                    <div>
+                    <div class="sa-field">
                         <label>Status</label>
                         <select name="account_status">
                             <option value="active">Active</option>
@@ -299,7 +297,7 @@ if ($result) {
                     </div>
                     <?php endif; ?>
                 </div>
-                <button type="submit" class="btn">Create Account</button>
+                <button type="submit" class="view-btn">Create Account</button>
             </form>
         </div>
 
@@ -331,7 +329,7 @@ if ($result) {
                                 <td><?php echo sa_escape((string)($row['account_status'] ?? 'active')); ?></td>
                                 <td><?php echo sa_escape((string)($row['created_at'] ?? '-')); ?></td>
                                 <td>
-                                    <form method="post" style="display:grid; gap:8px;">
+                                    <form method="post" class="sa-inline-form">
                                         <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
                                         <input type="hidden" name="action" value="update">
                                         <input type="hidden" name="employee_id" value="<?php echo (int)$row['id']; ?>">
@@ -356,20 +354,20 @@ if ($result) {
                                             <?php endforeach; ?>
                                         </select>
                                         <?php endif; ?>
-                                        <button type="submit" class="btn">Save</button>
+                                        <button type="submit" class="view-btn sa-mini-btn">Save</button>
                                     </form>
-                                    <form method="post" style="margin-top:6px;">
+                                    <form method="post" class="sa-inline-form">
                                         <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
                                         <input type="hidden" name="action" value="reset_password">
                                         <input type="hidden" name="employee_id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="password" name="new_password" minlength="8" placeholder="New password" required>
-                                        <button type="submit" class="view-btn">Reset Password</button>
+                                        <button type="submit" class="view-btn sa-mini-btn">Reset Password</button>
                                     </form>
-                                    <form method="post" style="margin-top:6px;">
+                                    <form method="post" class="sa-inline-form">
                                         <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="employee_id" value="<?php echo (int)$row['id']; ?>">
-                                        <button type="submit" class="edit-btn" onclick="return confirm('Delete this account?')">Delete</button>
+                                        <button type="submit" class="edit-btn sa-mini-btn" onclick="return confirm('Delete this account?')">Delete</button>
                                     </form>
                                 </td>
                             </tr>
