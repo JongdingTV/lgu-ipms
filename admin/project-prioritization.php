@@ -63,154 +63,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_project_from_priority'])) {
-    $locationGroup = trim((string)($_POST['location_group'] ?? ''));
-    $category = trim((string)($_POST['category'] ?? ''));
-    $district = trim((string)($_POST['district'] ?? ''));
-    $barangay = trim((string)($_POST['barangay'] ?? ''));
-    $alternativeName = trim((string)($_POST['alternative_name'] ?? ''));
-    $legacyLocation = trim((string)($_POST['location'] ?? ''));
-    $priorityScore = (float)($_POST['priority_score'] ?? 0);
-    $reportTotal = (int)($_POST['report_total'] ?? 0);
-
-    if ($reportTotal < 1 || $locationGroup === '') {
-        header('Location: project-prioritization.php?status=project_invalid');
-        exit;
-    }
-
-    $projectCode = build_priority_project_code($db);
-    $projectPriority = priority_label_from_score($priorityScore);
-    $projectName = 'Priority ' . ($category !== '' ? $category : 'Infrastructure') . ' - ' . $locationGroup;
-    if (mb_strlen($projectName) > 255) {
-        $projectName = mb_substr($projectName, 0, 255);
-    }
-    $projectType = 'New';
-    $projectSector = $category !== '' ? ucwords($category) : 'Infrastructure';
-    $projectDescription = "Auto-generated from citizen feedback prioritization.\n"
-        . "Location Cluster: " . $locationGroup . "\n"
-        . "Category: " . ($category !== '' ? $category : 'Uncategorized') . "\n"
-        . "Priority Score: " . number_format($priorityScore, 2) . "\n"
-        . "Feedback Volume: " . $reportTotal . " report(s).";
-    $projectProvince = $district !== '' ? $district : null;
-    $projectBarangay = $barangay !== '' ? $barangay : null;
-    $projectLocation = $alternativeName !== '' ? $alternativeName : ($legacyLocation !== '' ? $legacyLocation : $locationGroup);
-    $projectStatus = 'Draft';
-
-    $projectsHasPriorityPercent = project_has_column($db, 'priority_percent');
-    $projectsHasCreatedAt = project_has_column($db, 'created_at');
-    $priorityPercent = min(100.0, max(0.0, $priorityScore));
-
-    $columns = ['code', 'name', 'type', 'sector', 'description', 'priority'];
-    $types = 'ssssss';
-    $params = [$projectCode, $projectName, $projectType, $projectSector, $projectDescription, $projectPriority];
-    if ($projectsHasPriorityPercent) {
-        $columns[] = 'priority_percent';
-        $types .= 'd';
-        $params[] = $priorityPercent;
-    }
-    $columns = array_merge($columns, ['province', 'barangay', 'location', 'start_date', 'end_date', 'duration_months', 'budget', 'status']);
-    $types .= 'sssssids';
-    $params = array_merge($params, [$projectProvince, $projectBarangay, $projectLocation, null, null, null, null, $projectStatus]);
-
-    if ($projectsHasCreatedAt) {
-        $sql = "INSERT INTO projects (" . implode(', ', $columns) . ", created_at) VALUES ("
-            . implode(', ', array_fill(0, count($columns), '?')) . ", NOW())";
-    } else {
-        $sql = "INSERT INTO projects (" . implode(', ', $columns) . ") VALUES ("
-            . implode(', ', array_fill(0, count($columns), '?')) . ")";
-    }
-
-    $stmt = $db->prepare($sql);
-    if (!$stmt) {
-        header('Location: project-prioritization.php?status=project_failed');
-        exit;
-    }
-    $bindParams = [$types];
-    foreach ($params as $idx => &$value) {
-        $bindParams[] = &$value;
-    }
-    call_user_func_array([$stmt, 'bind_param'], $bindParams);
-    $ok = $stmt->execute();
-    $stmt->close();
-
-    if (!$ok) {
-        header('Location: project-prioritization.php?status=project_failed');
-        exit;
-    }
-    header('Location: project-prioritization.php?status=project_created');
-    exit;
-}
-
-function table_has_column(mysqli $db, string $table, string $column): bool
+function feedback_has_column(mysqli $db, string $column): bool
 {
     $stmt = $db->prepare(
         "SELECT 1
          FROM information_schema.COLUMNS
          WHERE TABLE_SCHEMA = DATABASE()
-           AND TABLE_NAME = ?
+           AND TABLE_NAME = 'feedback'
            AND COLUMN_NAME = ?
          LIMIT 1"
     );
     if (!$stmt) {
         return false;
     }
-    $stmt->bind_param('ss', $table, $column);
+    $stmt->bind_param('s', $column);
     $stmt->execute();
     $res = $stmt->get_result();
     $exists = $res && $res->num_rows > 0;
     if ($res) $res->free();
     $stmt->close();
     return $exists;
-}
-
-function feedback_has_column(mysqli $db, string $column): bool
-{
-    return table_has_column($db, 'feedback', $column);
-}
-
-function project_has_column(mysqli $db, string $column): bool
-{
-    return table_has_column($db, 'projects', $column);
-}
-
-function normalize_priority(string $category): float
-{
-    $key = strtolower(trim($category));
-    if ($key === 'critical' || $key === 'crucial') return 1.0;
-    if ($key === 'high') return 0.8;
-    if ($key === 'medium') return 0.55;
-    if ($key === 'low') return 0.3;
-    return 0.45;
-}
-
-function priority_label_from_score(float $score): string
-{
-    if ($score >= 80) return 'Crucial';
-    if ($score >= 65) return 'High';
-    if ($score >= 45) return 'Medium';
-    return 'Low';
-}
-
-function build_priority_project_code(mysqli $db): string
-{
-    $prefix = 'PRIO-' . date('Ymd') . '-';
-    for ($i = 1; $i <= 9999; $i++) {
-        $candidate = $prefix . str_pad((string)$i, 4, '0', STR_PAD_LEFT);
-        $stmt = $db->prepare('SELECT id FROM projects WHERE code = ? LIMIT 1');
-        if (!$stmt) {
-            continue;
-        }
-        $stmt->bind_param('s', $candidate);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $exists = $res && $res->num_rows > 0;
-        if ($res) $res->free();
-        $stmt->close();
-        if (!$exists) {
-            return $candidate;
-        }
-    }
-    return $prefix . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
 }
 
 function clean_feedback_description(string $description): string
@@ -311,22 +183,8 @@ if ($stmt) {
     $feedbacks = [];
 }
 
-// Feedback summary stats + weighted priority scoring across all feedback rows.
-$analyticsFields = ['id', 'subject', 'category', 'location', 'status', 'date_submitted'];
-if ($hasDistrict) $analyticsFields[] = 'district';
-if ($hasBarangay) $analyticsFields[] = 'barangay';
-if ($hasAlternativeName) $analyticsFields[] = 'alternative_name';
-$analyticsRows = [];
-$analyticsSql = "SELECT " . implode(', ', $analyticsFields) . " FROM feedback";
-$analyticsResult = $db->query($analyticsSql);
-if ($analyticsResult) {
-    while ($row = $analyticsResult->fetch_assoc()) {
-        $analyticsRows[] = $row;
-    }
-    $analyticsResult->free();
-}
-
-$totalInputs = count($analyticsRows);
+// Feedback summary stats
+$totalInputs = count($feedbacks);
 $criticalInputs = 0;
 $highInputs = 0;
 $pendingInputs = 0;
@@ -340,98 +198,133 @@ $topPriority = [
     'district' => '',
     'barangay' => '',
     'alternative_name' => '',
-    'location' => '',
-    'score' => 0
+    'location' => ''
 ];
-
-$clusterStats = [];
-$nowTs = time();
-foreach ($analyticsRows as $fb) {
-    $categoryRaw = trim((string)($fb['category'] ?? ''));
-    $subjectRaw = trim((string)($fb['subject'] ?? ''));
-    $statusRaw = strtolower(trim((string)($fb['status'] ?? '')));
-    $category = $categoryRaw !== '' ? $categoryRaw : ($subjectRaw !== '' ? $subjectRaw : 'Uncategorized');
-
-    if (strtolower($categoryRaw) === 'critical') $criticalInputs++;
-    if (strtolower($categoryRaw) === 'high') $highInputs++;
-    if ($statusRaw === 'pending') $pendingInputs++;
-    if ($statusRaw === 'reviewed') $reviewedInputs++;
-    if ($statusRaw === 'addressed') $addressedInputs++;
-
-    $ageDays = 0;
-    $ts = strtotime((string)($fb['date_submitted'] ?? ''));
-    if ($ts) {
-        $ageDays = max(0, (int)floor(($nowTs - $ts) / 86400));
-        if ($statusRaw === 'pending' && $ageDays > $oldestPendingDays) {
-            $oldestPendingDays = $ageDays;
+foreach ($feedbacks as $fb) {
+    if (isset($fb['category']) && strtolower($fb['category']) === 'critical') $criticalInputs++;
+    if (isset($fb['category']) && strtolower($fb['category']) === 'high') $highInputs++;
+    if (isset($fb['status']) && strtolower($fb['status']) === 'pending') $pendingInputs++;
+    if (isset($fb['status']) && strtolower($fb['status']) === 'reviewed') $reviewedInputs++;
+    if (isset($fb['status']) && strtolower($fb['status']) === 'addressed') $addressedInputs++;
+    if (isset($fb['status']) && strtolower($fb['status']) === 'pending' && !empty($fb['date_submitted'])) {
+        $ts = strtotime($fb['date_submitted']);
+        if ($ts) {
+            $age = (int) floor((time() - $ts) / 86400);
+            if ($age > $oldestPendingDays) $oldestPendingDays = $age;
         }
     }
+}
 
-    $district = trim((string)($fb['district'] ?? ''));
-    $barangay = trim((string)($fb['barangay'] ?? ''));
-    $alternative = trim((string)($fb['alternative_name'] ?? ''));
-    $location = trim((string)($fb['location'] ?? ''));
-    $clusterKey = strtolower(($district !== '' ? $district : 'N/A') . '|' . ($barangay !== '' ? $barangay : 'N/A') . '|' . ($alternative !== '' ? $alternative : 'N/A') . '|' . ($location !== '' ? $location : 'No location') . '|' . strtolower($category));
-    if (!isset($clusterStats[$clusterKey])) {
-        $clusterStats[$clusterKey] = [
-            'district' => $district,
-            'barangay' => $barangay,
-            'alternative_name' => $alternative,
-            'location' => $location,
-            'category' => $category,
-            'total' => 0,
-            'severity_total' => 0.0,
-            'recency_total' => 0.0,
-            'pending_total' => 0
+$priorityRows = [];
+if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
+    $districtExpr = $hasDistrict ? "COALESCE(NULLIF(TRIM(district),''), 'N/A')" : "'N/A'";
+    $barangayExpr = $hasBarangay ? "COALESCE(NULLIF(TRIM(barangay),''), 'N/A')" : "'N/A'";
+    $altExpr = $hasAlternativeName ? "COALESCE(NULLIF(TRIM(alternative_name),''), 'N/A')" : "'N/A'";
+    $categoryExpr = "COALESCE(NULLIF(TRIM(category),''), NULLIF(TRIM(subject),''), 'Uncategorized')";
+
+    // 1) Top area first (not split by category)
+    $areaSql = "SELECT {$districtExpr} AS district_name, {$barangayExpr} AS barangay_name, {$altExpr} AS alternative_name, COUNT(*) AS area_total
+                FROM feedback
+                GROUP BY {$districtExpr}, {$barangayExpr}, {$altExpr}
+                ORDER BY area_total DESC, district_name ASC, barangay_name ASC, alternative_name ASC
+                LIMIT 1";
+    $areaRes = $db->query($areaSql);
+    $topArea = null;
+    if ($areaRes) {
+        $topArea = $areaRes->fetch_assoc();
+        $areaRes->free();
+    }
+
+    if (!empty($topArea)) {
+        $districtVal = (string)($topArea['district_name'] ?? 'N/A');
+        $barangayVal = (string)($topArea['barangay_name'] ?? 'N/A');
+        $altVal = (string)($topArea['alternative_name'] ?? 'N/A');
+        $topTotal = (int)($topArea['area_total'] ?? 0);
+
+        $whereParts = [];
+        if ($hasDistrict) {
+            $whereParts[] = $districtExpr . " = '" . $db->real_escape_string($districtVal) . "'";
+        }
+        if ($hasBarangay) {
+            $whereParts[] = $barangayExpr . " = '" . $db->real_escape_string($barangayVal) . "'";
+        }
+        if ($hasAlternativeName) {
+            $whereParts[] = $altExpr . " = '" . $db->real_escape_string($altVal) . "'";
+        }
+        $whereSql = !empty($whereParts) ? implode(' AND ', $whereParts) : '1=1';
+
+        // 2) Top category/subject inside the top area
+        $catSql = "SELECT MAX({$categoryExpr}) AS category_name, COUNT(*) AS category_total
+                   FROM feedback
+                   WHERE {$whereSql}
+                   GROUP BY LOWER({$categoryExpr})
+                   ORDER BY category_total DESC, category_name ASC
+                   LIMIT 1";
+        $catRes = $db->query($catSql);
+        $topCategory = null;
+        if ($catRes) {
+            $topCategory = $catRes->fetch_assoc();
+            $catRes->free();
+        }
+
+        $priorityRows[] = [
+            'district_name' => $districtVal,
+            'barangay_name' => $barangayVal,
+            'alternative_name' => $altVal,
+            'category_name' => (string)($topCategory['category_name'] ?? 'Uncategorized'),
+            'report_total' => $topTotal
         ];
     }
-
-    $clusterStats[$clusterKey]['total']++;
-    $clusterStats[$clusterKey]['severity_total'] += normalize_priority($categoryRaw !== '' ? $categoryRaw : $subjectRaw);
-    $clusterStats[$clusterKey]['recency_total'] += max(0.0, 1.0 - min($ageDays, 180) / 180.0);
-    if ($statusRaw === 'pending') {
-        $clusterStats[$clusterKey]['pending_total']++;
+} else {
+    // Legacy fallback (no district/barangay/alternative columns)
+    $categoryExpr = "COALESCE(NULLIF(TRIM(category),''), NULLIF(TRIM(subject),''), 'Uncategorized')";
+    $locationExpr = "COALESCE(NULLIF(TRIM(location),''), 'No location')";
+    $areaSql = "SELECT {$locationExpr} AS location_name, COUNT(*) AS area_total
+                FROM feedback
+                GROUP BY {$locationExpr}
+                ORDER BY area_total DESC, location_name ASC
+                LIMIT 1";
+    $areaRes = $db->query($areaSql);
+    $topArea = null;
+    if ($areaRes) {
+        $topArea = $areaRes->fetch_assoc();
+        $areaRes->free();
+    }
+    if (!empty($topArea)) {
+        $locationVal = (string)($topArea['location_name'] ?? 'No location');
+        $topTotal = (int)($topArea['area_total'] ?? 0);
+        $catSql = "SELECT MAX({$categoryExpr}) AS category_name, COUNT(*) AS category_total
+                   FROM feedback
+                   WHERE {$locationExpr} = '" . $db->real_escape_string($locationVal) . "'
+                   GROUP BY LOWER({$categoryExpr})
+                   ORDER BY category_total DESC, category_name ASC
+                   LIMIT 1";
+        $catRes = $db->query($catSql);
+        $topCategory = null;
+        if ($catRes) {
+            $topCategory = $catRes->fetch_assoc();
+            $catRes->free();
+        }
+        $priorityRows[] = [
+            'location_name' => $locationVal,
+            'category_name' => (string)($topCategory['category_name'] ?? 'Uncategorized'),
+            'report_total' => $topTotal
+        ];
     }
 }
-
-$maxVolume = 1;
-foreach ($clusterStats as $cluster) {
-    if ((int)$cluster['total'] > $maxVolume) {
-        $maxVolume = (int)$cluster['total'];
-    }
-}
-
-$bestCluster = null;
-$bestScore = -1.0;
-foreach ($clusterStats as $cluster) {
-    $volumeNorm = min(1.0, (float)$cluster['total'] / (float)$maxVolume);
-    $severityNorm = $cluster['total'] > 0 ? (float)$cluster['severity_total'] / (float)$cluster['total'] : 0.0;
-    $recencyNorm = $cluster['total'] > 0 ? (float)$cluster['recency_total'] / (float)$cluster['total'] : 0.0;
-    $pendingNorm = $cluster['total'] > 0 ? (float)$cluster['pending_total'] / (float)$cluster['total'] : 0.0;
-    $score = (0.45 * $volumeNorm + 0.25 * $severityNorm + 0.20 * $recencyNorm + 0.10 * $pendingNorm) * 100.0;
-    if ($score > $bestScore) {
-        $bestScore = $score;
-        $bestCluster = $cluster;
-    }
-}
-
-if ($bestCluster !== null) {
-    $topPriority['district'] = $bestCluster['district'];
-    $topPriority['barangay'] = $bestCluster['barangay'];
-    $topPriority['alternative_name'] = $bestCluster['alternative_name'];
-    $topPriority['location'] = $bestCluster['location'];
-    $topPriority['category'] = $bestCluster['category'];
-    $topPriority['total'] = (int)$bestCluster['total'];
-    $topPriority['score'] = round($bestScore, 2);
+if (!empty($priorityRows)) {
+    $top = $priorityRows[0];
     if ($hasDistrict || $hasBarangay || $hasAlternativeName) {
-        $topPriority['location_group'] = trim(
-            ($topPriority['district'] !== '' ? $topPriority['district'] : 'N/A') . ' / '
-            . ($topPriority['barangay'] !== '' ? $topPriority['barangay'] : 'N/A') . ' / '
-            . ($topPriority['alternative_name'] !== '' ? $topPriority['alternative_name'] : 'N/A')
-        );
+        $topPriority['district'] = trim((string) ($top['district_name'] ?? ''));
+        $topPriority['barangay'] = trim((string) ($top['barangay_name'] ?? ''));
+        $topPriority['alternative_name'] = trim((string) ($top['alternative_name'] ?? ''));
+        $topPriority['location_group'] = trim(($topPriority['district'] !== '' ? $topPriority['district'] : 'N/A') . ' / ' . ($topPriority['barangay'] !== '' ? $topPriority['barangay'] : 'N/A') . ' / ' . ($topPriority['alternative_name'] !== '' ? $topPriority['alternative_name'] : 'N/A'));
     } else {
+        $topPriority['location'] = trim((string) ($top['location_name'] ?? ''));
         $topPriority['location_group'] = $topPriority['location'] !== '' ? $topPriority['location'] : 'No data';
     }
+    $topPriority['category'] = trim((string)($top['category_name'] ?? 'Uncategorized'));
+    $topPriority['total'] = (int) ($top['report_total'] ?? 0);
 }
 
 $db->close();
@@ -608,25 +501,8 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                     <strong><?= htmlspecialchars($topPriority['total'] . ' report' . ($topPriority['total'] === 1 ? '' : 's')) ?></strong>
                     <small><?= htmlspecialchars($topPriority['location_group']) ?></small>
                     <small><?= htmlspecialchars($topPriority['category']) ?></small>
-                    <small>Weighted Score: <?= htmlspecialchars(number_format((float)$topPriority['score'], 2)) ?></small>
                     <small>Click to view matching reports</small>
                 </article>
-            </div>
-            <div class="feedback-actions">
-                <form method="post">
-                    <input type="hidden" name="create_project_from_priority" value="1">
-                    <input type="hidden" name="location_group" value="<?= htmlspecialchars($topPriority['location_group']) ?>">
-                    <input type="hidden" name="category" value="<?= htmlspecialchars($topPriority['category']) ?>">
-                    <input type="hidden" name="district" value="<?= htmlspecialchars($topPriority['district']) ?>">
-                    <input type="hidden" name="barangay" value="<?= htmlspecialchars($topPriority['barangay']) ?>">
-                    <input type="hidden" name="alternative_name" value="<?= htmlspecialchars($topPriority['alternative_name']) ?>">
-                    <input type="hidden" name="location" value="<?= htmlspecialchars($topPriority['location']) ?>">
-                    <input type="hidden" name="priority_score" value="<?= htmlspecialchars((string)$topPriority['score']) ?>">
-                    <input type="hidden" name="report_total" value="<?= htmlspecialchars((string)$topPriority['total']) ?>">
-                    <button type="submit" class="secondary" <?= ((int)$topPriority['total'] < 1 ? 'disabled' : '') ?>>
-                        Add Top Priority To Project Registration
-                    </button>
-                </form>
             </div>
 
             <!-- Feedback Table -->
