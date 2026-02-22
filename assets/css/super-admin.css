@@ -1,0 +1,90 @@
+body.super-admin-login-page {
+    background:
+        radial-gradient(circle at 18% 20%, rgba(56, 114, 198, 0.32), transparent 42%),
+        radial-gradient(circle at 82% 18%, rgba(242, 166, 58, 0.24), transparent 45%),
+        linear-gradient(145deg, #132f53, #1f4f85);
+}
+
+body.super-admin-login-page .nav {
+    background: rgba(10, 26, 49, 0.62);
+    border-bottom: 1px solid rgba(151, 187, 238, 0.35);
+}
+
+body.super-admin-login-page .nav-logo {
+    color: #e9f2ff;
+    opacity: 1;
+    font-weight: 700;
+}
+
+body.super-admin-login-page .home-btn {
+    text-decoration: none;
+    color: #e7f0ff;
+    border: 1px solid rgba(183, 212, 253, 0.42);
+    background: rgba(30, 72, 128, 0.48);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-weight: 600;
+}
+
+body.super-admin-login-page .wrapper {
+    padding: 24px 14px;
+}
+
+.super-admin-card {
+    width: min(94vw, 460px);
+    border: 1px solid rgba(177, 203, 242, 0.52);
+    box-shadow: 0 18px 38px rgba(6, 21, 43, 0.4);
+    text-align: left;
+}
+
+.super-admin-card .icon-top {
+    width: 70px;
+    margin: 0 auto 10px;
+    display: block;
+}
+
+.super-admin-card .title {
+    text-align: center;
+    color: #102c4d;
+    font-size: 1.55rem;
+    margin-bottom: 4px;
+}
+
+.super-admin-card .subtitle {
+    text-align: center;
+    color: #36557b;
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.sa-credential-note {
+    margin: 14px 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #bfd4f3;
+    background: #eef5ff;
+    color: #1a4578;
+    font-size: 0.9rem;
+}
+
+.sa-error {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #f7b2b2;
+    background: #feeaea;
+    color: #9f1f1f;
+    font-size: 0.9rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme .dash-header {
+    border-color: #305885;
+}
+
+@media (max-width: 640px) {
+    .super-admin-card {
+        width: min(96vw, 460px);
+        padding: 22px 18px;
+    }
+}
+

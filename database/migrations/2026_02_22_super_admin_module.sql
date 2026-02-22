@@ -47,3 +47,9 @@ UPDATE employees
 SET role = 'super_admin'
 WHERE LOWER(email) = 'admin@lgu.gov.ph';
 
+-- Ensure dedicated built-in super admin account exists
+INSERT INTO employees (first_name, last_name, email, password, role, account_status)
+SELECT 'Super', 'Admin', 'superadmin@lgu.gov.ph', '$2y$10$b5vxlGH/ubpf5uyEoWrsrOoo1H7bP.VCBf6SCeouOU.wiaLEayNoS', 'super_admin', 'active'
+WHERE NOT EXISTS (
+    SELECT 1 FROM employees WHERE LOWER(email) = 'superadmin@lgu.gov.ph'
+);
