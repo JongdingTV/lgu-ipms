@@ -104,12 +104,16 @@ if ($feedbackId > 0) {
         exit('Forbidden');
     }
     $photos = feedback_extract_photo_files_endpoint((string)($row['description'] ?? ''), (string)($row['photo_path'] ?? ''));
-    if (empty($photos) || !isset($photos[$photoIndex])) {
+    if (!empty($photos) && isset($photos[$photoIndex])) {
+        $targetFile = (string)$photos[$photoIndex];
+    } elseif ($file !== '' && preg_match('/^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i', $file)) {
+        // Fallback: trust explicit file name only after ownership already passed.
+        $targetFile = $file;
+    } else {
         $db->close();
         http_response_code(404);
         exit('Not found');
     }
-    $targetFile = (string)$photos[$photoIndex];
 } else {
     $targetFile = $file;
 }

@@ -783,7 +783,7 @@ $csrfToken = generate_csrf_token();
                             $photoPathCol = trim((string) ($row['photo_path'] ?? ''));
                             $photoFiles = feedback_extract_photo_files($desc, $photoPathCol);
                             if (!empty($photoFiles)) {
-                                $photoPath = '/user-dashboard/feedback-photo.php?feedback_id=' . (int)($row['id'] ?? 0) . '&photo_index=0';
+                                $photoPath = '/user-dashboard/feedback-photo.php?feedback_id=' . (int)($row['id'] ?? 0) . '&photo_index=0&file=' . rawurlencode((string)$photoFiles[0]);
                             }
                             ?>
                             <div
