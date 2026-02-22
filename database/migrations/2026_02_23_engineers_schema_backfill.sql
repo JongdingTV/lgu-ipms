@@ -70,9 +70,36 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Optional fields used by the form
 SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='date_of_birth'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN date_of_birth DATE NULL AFTER full_name'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='gender'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN gender ENUM(''male'',''female'',''other'',''prefer_not'') NULL AFTER date_of_birth'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='civil_status'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN civil_status ENUM(''single'',''married'',''widowed'',''separated'') NULL AFTER gender'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='address'),
+    'SELECT 1',
+    'ALTER TABLE engineers ADD COLUMN address TEXT NULL AFTER civil_status'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='contact_number'),
     'SELECT 1',
     'ALTER TABLE engineers ADD COLUMN contact_number VARCHAR(30) NOT NULL AFTER address'
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
