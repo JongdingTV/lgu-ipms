@@ -2556,6 +2556,50 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #co
     flex-wrap: wrap;
 }
 
+/* Registered Engineers table: compact, readable action area */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable thead th:nth-child(8),
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable tbody td:nth-child(8) {
+    min-width: 130px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable thead th:nth-child(9),
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable tbody td:nth-child(9) {
+    min-width: 120px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable thead th:nth-child(10),
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable tbody td:nth-child(10) {
+    min-width: 220px;
+    width: 220px;
+    vertical-align: top;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    align-items: stretch;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .btn-contractor-secondary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .btn-view-projects,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .btn-assign,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .btn-delete {
+    min-height: 30px;
+    height: 30px;
+    padding: 0 8px;
+    border-radius: 8px !important;
+    font-size: 0.78rem;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+@media (max-width: 1280px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #contractorsTable .action-buttons {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .status-badge {
     display: inline-flex;
     align-items: center;
