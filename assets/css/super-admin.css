@@ -11,9 +11,20 @@ body.super-admin-login-page .nav {
 }
 
 body.super-admin-login-page .nav-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     color: #e9f2ff;
     opacity: 1;
     font-weight: 700;
+}
+
+body.super-admin-login-page .nav-logo img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    display: block;
+    flex: 0 0 42px;
 }
 
 body.super-admin-login-page .home-btn {
@@ -87,4 +98,3 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).super-admin-theme
         padding: 22px 18px;
     }
 }
-
