@@ -79,9 +79,9 @@
     var categoryFilter = document.getElementById('fbCategoryFilter');
     var visibleCount = document.getElementById('fbVisibleCount');
     var priorityCard = document.getElementById('priorityTopCard');
-    var rows = Array.from(document.querySelectorAll('#inputsTable tbody tr')).filter(function (row) {
-        return !row.querySelector('.no-results');
-    });
+    var rows = Array.from(document.querySelectorAll('#inputsTable tbody tr[data-status]'));
+    var sectionHeaders = Array.from(document.querySelectorAll('#inputsTable tbody tr[data-section-header]'));
+    var sectionEmptyRows = Array.from(document.querySelectorAll('#inputsTable tbody tr[data-section-empty]'));
     var activePriorityFilter = null;
 
     function applyFeedbackFilters() {
@@ -118,6 +118,24 @@
             if (visible) shown += 1;
         });
 
+        var visibleBySection = {};
+        rows.forEach(function (row) {
+            var section = (row.getAttribute('data-section') || '').toLowerCase();
+            if (!section) return;
+            if (!visibleBySection[section]) visibleBySection[section] = 0;
+            if (row.style.display !== 'none') visibleBySection[section] += 1;
+        });
+        sectionHeaders.forEach(function (headerRow) {
+            var section = (headerRow.getAttribute('data-section-header') || '').toLowerCase();
+            var count = visibleBySection[section] || 0;
+            headerRow.style.display = (shown === 0 && !query && !status && !category && !activePriorityFilter) || count > 0 ? '' : 'none';
+        });
+        sectionEmptyRows.forEach(function (emptyRow) {
+            var section = (emptyRow.getAttribute('data-section-empty') || '').toLowerCase();
+            var count = visibleBySection[section] || 0;
+            emptyRow.style.display = count > 0 ? 'none' : '';
+        });
+
         if (visibleCount) {
             visibleCount.textContent = 'Showing ' + shown + ' of ' + rows.length + (activePriorityFilter ? ' | Priority filter active' : '');
         }
@@ -127,6 +145,8 @@
     if (statusFlash) {
         if (statusFlash === 'updated') {
             showTinyToast('Success', 'Feedback status updated.', false);
+        } else if (statusFlash === 'reject_note_required') {
+            showTinyToast('Reason required', 'Please provide rejection reason before saving.', true);
         } else if (statusFlash === 'invalid') {
             showTinyToast('Invalid status', 'Please choose a valid status.', true);
         } else {
@@ -188,6 +208,21 @@
             }
         });
     }
+
+    document.querySelectorAll('select.status-dropdown').forEach(function (selectEl) {
+        function toggleRejectNote() {
+            var id = (selectEl.id || '').replace('status-', '');
+            if (!id) return;
+            var wrap = document.getElementById('reject-note-wrap-' + id);
+            if (!wrap) return;
+            var isRejected = (selectEl.value || '').toLowerCase() === 'rejected';
+            wrap.style.display = isRejected ? '' : 'none';
+            var textarea = wrap.querySelector('textarea[name="rejection_note"]');
+            if (textarea) textarea.required = isRejected;
+        }
+        selectEl.addEventListener('change', toggleRejectNote);
+        toggleRejectNote();
+    });
 
     applyFeedbackFilters();
 })();
