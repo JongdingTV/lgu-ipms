@@ -9,6 +9,7 @@
 
     var NAV_BREAKPOINT = '(max-width: 992px)';
     var SIDEBAR_PREF_KEY = 'user_sidebar_hidden';
+    var THEME_PREF_KEY = 'user_theme_dark';
     var mq = window.matchMedia(NAV_BREAKPOINT);
     var body = document.body;
     var nav = document.getElementById('navbar') || document.querySelector('.nav');
@@ -279,11 +280,16 @@
         var themeLabel = document.getElementById('userThemeLabel');
         var topMenuBtn = document.getElementById('userTopMenuBtn');
         var isDarkTheme = body.classList.contains('theme-dark');
+        var serverClockOffsetMs = 0;
         if (themeLabel) {
             themeLabel.textContent = isDarkTheme ? 'Light' : 'Dark';
         }
 
-        var today = new Date();
+        function nowWithServerOffset() {
+            return new Date(Date.now() + serverClockOffsetMs);
+        }
+
+        var today = nowWithServerOffset();
         var calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);
 
         function renderCalendar() {
@@ -316,7 +322,7 @@
         }
 
         function clockTick() {
-            var now = new Date();
+            var now = nowWithServerOffset();
             if (timeEl) {
                 timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             }
@@ -404,6 +410,11 @@
                 .then(function (res) { return res.json(); })
                 .then(function (data) {
                     if (!data || data.success !== true) return;
+                    var serverNowTs = Number(data.server_now_ts || 0);
+                    if (serverNowTs > 0) {
+                        serverClockOffsetMs = (serverNowTs * 1000) - Date.now();
+                        clockTick();
+                    }
                     userNotifications = Array.isArray(data.items) ? data.items : [];
                     latestUserNotificationId = Number(data.latest_id || 0) || 0;
                     serverSeenNotifId = Number(data.seen_id || 0) || serverSeenNotifId;
@@ -422,7 +433,21 @@
         }
 
         fetchUserNotifications();
-        window.setInterval(fetchUserNotifications, 30000);
+        window.setInterval(function () {
+            if (document.visibilityState === 'visible') {
+                fetchUserNotifications();
+            }
+        }, 10000);
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') {
+                fetchUserNotifications();
+                clockTick();
+            }
+        });
+        window.addEventListener('focus', function () {
+            fetchUserNotifications();
+            clockTick();
+        });
 
         if (calendarBtn && calendarPanel) {
             calendarBtn.addEventListener('click', function (e) {
@@ -480,7 +505,8 @@
 
         if (calToday) {
             calToday.addEventListener('click', function () {
-                calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);
+                var now = nowWithServerOffset();
+                calendarCursor = new Date(now.getFullYear(), now.getMonth(), 1);
                 renderCalendar();
             });
         }
@@ -497,6 +523,7 @@
             themeBtn.addEventListener('click', function () {
                 var isDark = !body.classList.contains('theme-dark');
                 body.classList.toggle('theme-dark', isDark);
+                window.localStorage.setItem(THEME_PREF_KEY, isDark ? '1' : '0');
                 if (themeLabel) {
                     themeLabel.textContent = isDark ? 'Light' : 'Dark';
                 }
@@ -518,6 +545,8 @@
     }
 
     applyResponsiveSidebarMode();
+    var savedThemePref = window.localStorage.getItem(THEME_PREF_KEY);
+    body.classList.toggle('theme-dark', savedThemePref === '1');
     window.addEventListener('resize', applyResponsiveSidebarMode);
     bindSidebarToggles();
     initLogoutConfirmation();
