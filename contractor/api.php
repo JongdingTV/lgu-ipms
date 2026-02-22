@@ -69,6 +69,28 @@ function ensure_task_milestone_tables(mysqli $db): void {
     )");
 }
 
+function ensure_status_request_table(mysqli $db): void {
+    $db->query("CREATE TABLE IF NOT EXISTS project_status_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        requested_status VARCHAR(50) NOT NULL,
+        contractor_note TEXT NULL,
+        requested_by INT NOT NULL,
+        requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        engineer_decision VARCHAR(20) DEFAULT 'Pending',
+        engineer_note TEXT NULL,
+        engineer_decided_by INT NULL,
+        engineer_decided_at DATETIME NULL,
+        admin_decision VARCHAR(20) DEFAULT 'Pending',
+        admin_note TEXT NULL,
+        admin_decided_by INT NULL,
+        admin_decided_at DATETIME NULL,
+        INDEX idx_project_time (project_id, requested_at),
+        CONSTRAINT fk_status_req_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        CONSTRAINT fk_status_req_requested_by FOREIGN KEY (requested_by) REFERENCES employees(id) ON DELETE CASCADE
+    )");
+}
+
 function contractor_sync_projects_to_milestones(mysqli $db): void {
     $projects = [];
     $res = $db->query("SELECT name, COALESCE(budget, 0) AS budget FROM projects ORDER BY id DESC");
@@ -120,6 +142,17 @@ function contractor_sync_projects_to_milestones(mysqli $db): void {
 }
 
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
+
+$engineerOwnedActions = [
+    'load_task_milestone',
+    'add_task',
+    'update_task_status',
+    'add_milestone',
+    'update_milestone_status'
+];
+if (in_array($action, $engineerOwnedActions, true)) {
+    json_out(['success' => false, 'message' => 'Task and Milestone are managed by Engineer module.'], 403);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
     json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
@@ -180,21 +213,44 @@ if ($action === 'load_budget_state') {
     json_out(['success' => true, 'data' => ['milestones' => $milestones, 'total_spent' => $totalSpent]]);
 }
 
-if ($action === 'validate_project') {
+if ($action === 'submit_status_request') {
+    ensure_status_request_table($db);
     $projectId = (int) ($_POST['project_id'] ?? 0);
-    $status = trim((string) ($_POST['status'] ?? ''));
+    $status = trim((string) ($_POST['requested_status'] ?? ''));
+    $note = trim((string) ($_POST['note'] ?? ''));
     $allowed = ['For Approval', 'Approved', 'On-hold', 'Completed'];
     if ($projectId <= 0 || !in_array($status, $allowed, true)) {
-        json_out(['success' => false, 'message' => 'Invalid validation request.'], 422);
+        json_out(['success' => false, 'message' => 'Invalid status request.'], 422);
     }
-    $stmt = $db->prepare("UPDATE projects SET status = ? WHERE id = ?");
+    $requestedBy = (int) $_SESSION['employee_id'];
+    $stmt = $db->prepare("INSERT INTO project_status_requests (project_id, requested_status, contractor_note, requested_by) VALUES (?, ?, ?, ?)");
     if (!$stmt) {
         json_out(['success' => false, 'message' => 'Database error.'], 500);
     }
-    $stmt->bind_param('si', $status, $projectId);
+    $stmt->bind_param('issi', $projectId, $status, $note, $requestedBy);
     $stmt->execute();
     $stmt->close();
     json_out(['success' => true]);
+}
+
+if ($action === 'load_status_requests') {
+    ensure_status_request_table($db);
+    $projectId = (int) ($_GET['project_id'] ?? 0);
+    $rows = [];
+    $sql = "SELECT id, project_id, requested_status, contractor_note, requested_at, engineer_decision, engineer_note, admin_decision, admin_note
+            FROM project_status_requests";
+    if ($projectId > 0) {
+        $sql .= " WHERE project_id = " . $projectId;
+    }
+    $sql .= " ORDER BY requested_at DESC LIMIT 200";
+    $res = $db->query($sql);
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $rows[] = $row;
+        }
+        $res->free();
+    }
+    json_out(['success' => true, 'data' => $rows]);
 }
 
 if ($action === 'update_budget') {

@@ -114,7 +114,100 @@ function progress_table_exists(mysqli $db, string $tableName): bool
     return $exists;
 }
 
+function progress_ensure_status_request_table(mysqli $db): void
+{
+    $db->query("CREATE TABLE IF NOT EXISTS project_status_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        requested_status VARCHAR(50) NOT NULL,
+        contractor_note TEXT NULL,
+        requested_by INT NOT NULL,
+        requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        engineer_decision VARCHAR(20) DEFAULT 'Pending',
+        engineer_note TEXT NULL,
+        engineer_decided_by INT NULL,
+        engineer_decided_at DATETIME NULL,
+        admin_decision VARCHAR(20) DEFAULT 'Pending',
+        admin_note TEXT NULL,
+        admin_decided_by INT NULL,
+        admin_decided_at DATETIME NULL,
+        INDEX idx_project_time (project_id, requested_at)
+    )");
+}
+
 // Handle API requests first (before rendering HTML)
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_status_requests') {
+    header('Content-Type: application/json');
+    progress_ensure_status_request_table($db);
+    $rows = [];
+    $sql = "SELECT sr.id, sr.project_id, p.code, p.name, sr.requested_status, sr.contractor_note, sr.requested_at,
+                   sr.engineer_decision, sr.engineer_note, sr.admin_decision, sr.admin_note
+            FROM project_status_requests sr
+            INNER JOIN projects p ON p.id = sr.project_id
+            ORDER BY sr.requested_at DESC
+            LIMIT 250";
+    $res = $db->query($sql);
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $rows[] = $row;
+        }
+        $res->free();
+    }
+    echo json_encode(['success' => true, 'data' => $rows]);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['action'] === 'admin_decide_status_request') {
+    header('Content-Type: application/json');
+    if (!verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
+        echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+        exit;
+    }
+    progress_ensure_status_request_table($db);
+    $id = (int) ($_POST['request_id'] ?? 0);
+    $decision = trim((string) ($_POST['admin_decision'] ?? ''));
+    $note = trim((string) ($_POST['admin_note'] ?? ''));
+    $allowed = ['Approved', 'Rejected'];
+    if ($id <= 0 || !in_array($decision, $allowed, true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid decision']);
+        exit;
+    }
+    $adminId = (int) ($_SESSION['employee_id'] ?? 0);
+    $stmt = $db->prepare("UPDATE project_status_requests
+                          SET admin_decision = ?, admin_note = ?, admin_decided_by = ?, admin_decided_at = NOW()
+                          WHERE id = ?");
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error']);
+        exit;
+    }
+    $stmt->bind_param('ssii', $decision, $note, $adminId, $id);
+    $stmt->execute();
+    $stmt->close();
+
+    if ($decision === 'Approved') {
+        $s = $db->prepare("SELECT project_id, requested_status FROM project_status_requests WHERE id = ? LIMIT 1");
+        if ($s) {
+            $s->bind_param('i', $id);
+            $s->execute();
+            $r = $s->get_result();
+            $row = $r ? $r->fetch_assoc() : null;
+            $s->close();
+            if ($row) {
+                $u = $db->prepare("UPDATE projects SET status = ? WHERE id = ?");
+                if ($u) {
+                    $status = (string) ($row['requested_status'] ?? 'Draft');
+                    $pid = (int) ($row['project_id'] ?? 0);
+                    $u->bind_param('si', $status, $pid);
+                    $u->execute();
+                    $u->close();
+                }
+            }
+        }
+    }
+    echo json_encode(['success' => true]);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
 
