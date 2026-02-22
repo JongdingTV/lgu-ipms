@@ -127,6 +127,18 @@ function progress_table_exists(mysqli $db, string $tableName): bool
     return $exists;
 }
 
+function progress_bind_dynamic(mysqli_stmt $stmt, string $types, array &$params): bool
+{
+    if ($types === '' || empty($params)) {
+        return true;
+    }
+    $bindArgs = [$types];
+    foreach ($params as $key => $value) {
+        $bindArgs[] = &$params[$key];
+    }
+    return call_user_func_array([$stmt, 'bind_param'], $bindArgs);
+}
+
 function progress_ensure_status_request_table(mysqli $db): void
 {
     $db->query("CREATE TABLE IF NOT EXISTS project_status_requests (
@@ -274,6 +286,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $hasProgressUpdatesTable = progress_table_exists($db, 'project_progress_updates');
     $contractorCompanyCol = progress_table_has_column($db, 'contractors', 'company') ? 'company' : (progress_table_has_column($db, 'contractors', 'company_name') ? 'company_name' : (progress_table_has_column($db, 'contractors', 'name') ? 'name' : null));
     $contractorRatingCol = progress_table_has_column($db, 'contractors', 'rating') ? 'rating' : null;
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $perPage = (int) ($_GET['per_page'] ?? 12);
+    if ($perPage < 1) {
+        $perPage = 12;
+    }
+    if ($perPage > 50) {
+        $perPage = 50;
+    }
+    $query = strtolower(trim((string) ($_GET['q'] ?? '')));
+    $statusFilter = trim((string) ($_GET['status'] ?? ''));
+    $sectorFilter = trim((string) ($_GET['sector'] ?? ''));
+    $progressBand = trim((string) ($_GET['progress_band'] ?? ''));
+    $contractorMode = trim((string) ($_GET['contractor_mode'] ?? ''));
+    $sort = trim((string) ($_GET['sort'] ?? 'createdAt_desc'));
 
     $selectFields = [
         'id',
@@ -403,7 +429,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         exit;
     }
 
-    echo json_encode($projects);
+    $filteredProjects = array_values(array_filter($projects, static function (array $project) use ($query, $statusFilter, $sectorFilter, $progressBand, $contractorMode): bool {
+        $statusValue = trim((string) ($project['status'] ?? ''));
+        $sectorValue = trim((string) ($project['sector'] ?? ''));
+        $progressValue = (float) ($project['progress'] ?? 0);
+        $assignedCount = is_array($project['assigned_contractors'] ?? null) ? count($project['assigned_contractors']) : 0;
+
+        if ($statusFilter !== '' && strcasecmp($statusValue, $statusFilter) !== 0) {
+            return false;
+        }
+        if ($sectorFilter !== '' && strcasecmp($sectorValue, $sectorFilter) !== 0) {
+            return false;
+        }
+        if ($progressBand !== '') {
+            $parts = explode('-', $progressBand);
+            if (count($parts) === 2) {
+                $min = (float) $parts[0];
+                $max = (float) $parts[1];
+                if ($progressValue < $min || $progressValue > $max) {
+                    return false;
+                }
+            }
+        }
+        if ($contractorMode === 'assigned' && $assignedCount === 0) {
+            return false;
+        }
+        if ($contractorMode === 'unassigned' && $assignedCount > 0) {
+            return false;
+        }
+        if ($query !== '') {
+            $haystack = strtolower(trim(
+                (string) ($project['code'] ?? '') . ' ' .
+                (string) ($project['name'] ?? '') . ' ' .
+                (string) ($project['location'] ?? '')
+            ));
+            if (strpos($haystack, $query) === false) {
+                return false;
+            }
+        }
+        return true;
+    }));
+
+    usort($filteredProjects, static function (array $a, array $b) use ($sort): int {
+        $aProgress = (float) ($a['progress'] ?? 0);
+        $bProgress = (float) ($b['progress'] ?? 0);
+        $aTime = strtotime((string) ($a['created_at'] ?? $a['start_date'] ?? '')) ?: 0;
+        $bTime = strtotime((string) ($b['created_at'] ?? $b['start_date'] ?? '')) ?: 0;
+        if ($sort === 'progress_desc') {
+            return $bProgress <=> $aProgress;
+        }
+        if ($sort === 'progress_asc') {
+            return $aProgress <=> $bProgress;
+        }
+        if ($sort === 'createdAt_asc') {
+            return $aTime <=> $bTime;
+        }
+        return $bTime <=> $aTime;
+    });
+
+    $totalFiltered = count($filteredProjects);
+    $totalPages = max(1, (int) ceil($totalFiltered / $perPage));
+    if ($page > $totalPages) {
+        $page = $totalPages;
+    }
+    $offset = ($page - 1) * $perPage;
+    $pagedProjects = array_slice($filteredProjects, $offset, $perPage);
+
+    $stats = [
+        'total' => $totalFiltered,
+        'approved' => 0,
+        'in_progress' => 0,
+        'completed' => 0,
+        'assigned_engineers' => 0
+    ];
+    foreach ($filteredProjects as $project) {
+        $status = (string) ($project['status'] ?? '');
+        $progressValue = (float) ($project['progress'] ?? 0);
+        $assignedCount = is_array($project['assigned_contractors'] ?? null) ? count($project['assigned_contractors']) : 0;
+        if (strcasecmp($status, 'Approved') === 0) {
+            $stats['approved']++;
+        }
+        if ($progressValue > 0 && $progressValue < 100) {
+            $stats['in_progress']++;
+        }
+        if ($progressValue >= 100 || strcasecmp($status, 'Completed') === 0) {
+            $stats['completed']++;
+        }
+        if ($assignedCount > 0) {
+            $stats['assigned_engineers']++;
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'data' => $pagedProjects,
+        'meta' => [
+            'page' => $page,
+            'per_page' => $perPage,
+            'total' => $totalFiltered,
+            'total_pages' => $totalPages,
+            'has_prev' => $page > 1,
+            'has_next' => $page < $totalPages
+        ],
+        'stats' => $stats
+    ]);
     exit;
 }
 

@@ -103,6 +103,18 @@ function feedback_has_column(mysqli $db, string $column): bool
     return $exists;
 }
 
+function feedback_bind_dynamic(mysqli_stmt $stmt, string $types, array $params): bool
+{
+    if ($types === '' || empty($params)) {
+        return true;
+    }
+    $bind = [$types];
+    foreach ($params as $i => $value) {
+        $bind[] = &$params[$i];
+    }
+    return (bool) call_user_func_array([$stmt, 'bind_param'], $bind);
+}
+
 function clean_feedback_description(string $description): string
 {
     $cleaned = preg_replace('/^\[(Photo Attachment Private|Google Maps Pin|Pinned Address|Complete Address)\].*$/mi', '', $description);
@@ -152,11 +164,18 @@ function feedback_map_embed_url(array $feedback): ?string
         . '&layer=mapnik&marker=' . rawurlencode((string) $lat . ',' . (string) $lng);
 }
 
-// Fetch feedback for display with pagination
-$offset = 0;
-$limit = 50;
-if (isset($_GET['page']) && is_numeric($_GET['page'])) {
-    $offset = (intval($_GET['page']) - 1) * $limit;
+// Fetch feedback for display with pagination + server filters
+$page = max(1, (int)($_GET['page'] ?? 1));
+$limit = (int)($_GET['per_page'] ?? 25);
+if ($limit <= 0) $limit = 25;
+if ($limit > 100) $limit = 100;
+$offset = ($page - 1) * $limit;
+$filterQuery = trim((string)($_GET['q'] ?? ''));
+$filterStatus = strtolower(trim((string)($_GET['status_filter'] ?? '')));
+$filterCategory = strtolower(trim((string)($_GET['category_filter'] ?? '')));
+$allowedStatusFilters = ['pending', 'reviewed', 'addressed', 'rejected'];
+if (!in_array($filterStatus, $allowedStatusFilters, true)) {
+    $filterStatus = '';
 }
 
 $hasDistrict = feedback_has_column($db, 'district');
@@ -189,18 +208,61 @@ if ($hasMapLng) $selectFields[] = 'map_lng';
 if ($hasMapLink) $selectFields[] = 'map_link';
 if ($hasRejectionNote) $selectFields[] = 'rejection_note';
 
-$stmt = $db->prepare("SELECT " . implode(', ', $selectFields) . " FROM feedback ORDER BY date_submitted DESC LIMIT ? OFFSET ?");
+$where = [];
+$whereTypes = '';
+$whereParams = [];
+if ($filterQuery !== '') {
+    $where[] = "(CAST(id AS CHAR) LIKE ? OR COALESCE(user_name,'') LIKE ? OR COALESCE(subject,'') LIKE ?)";
+    $needle = '%' . $filterQuery . '%';
+    $whereTypes .= 'sss';
+    $whereParams[] = $needle;
+    $whereParams[] = $needle;
+    $whereParams[] = $needle;
+}
+if ($filterStatus !== '') {
+    $where[] = "LOWER(COALESCE(status,'')) = ?";
+    $whereTypes .= 's';
+    $whereParams[] = $filterStatus;
+}
+if ($filterCategory !== '') {
+    $where[] = "LOWER(COALESCE(category,'')) = ?";
+    $whereTypes .= 's';
+    $whereParams[] = $filterCategory;
+}
+$whereSql = !empty($where) ? (' WHERE ' . implode(' AND ', $where)) : '';
+
+$totalRows = 0;
+$countStmt = $db->prepare("SELECT COUNT(*) AS total FROM feedback{$whereSql}");
+if ($countStmt) {
+    feedback_bind_dynamic($countStmt, $whereTypes, $whereParams);
+    $countStmt->execute();
+    $countRes = $countStmt->get_result();
+    if ($countRes && ($countRow = $countRes->fetch_assoc())) {
+        $totalRows = (int)($countRow['total'] ?? 0);
+    }
+    if ($countRes) $countRes->free();
+    $countStmt->close();
+}
+
+$totalPages = max(1, (int)ceil(($totalRows > 0 ? $totalRows : 0) / $limit));
+if ($page > $totalPages) {
+    $page = $totalPages;
+    $offset = ($page - 1) * $limit;
+}
+
+$stmt = $db->prepare("SELECT " . implode(', ', $selectFields) . " FROM feedback{$whereSql} ORDER BY date_submitted DESC LIMIT ? OFFSET ?");
+$feedbacks = [];
 if ($stmt) {
-    $stmt->bind_param('ii', $limit, $offset);
+    $types = $whereTypes . 'ii';
+    $params = array_merge($whereParams, [$limit, $offset]);
+    feedback_bind_dynamic($stmt, $types, $params);
     $stmt->execute();
     $feedback_result = $stmt->get_result();
-    $feedbacks = [];
-    while ($row = $feedback_result->fetch_assoc()) {
+    while ($feedback_result && ($row = $feedback_result->fetch_assoc())) {
         $feedbacks[] = $row;
     }
+    if ($feedback_result) $feedback_result->free();
     $stmt->close();
-} else {
-    $feedbacks = [];
 }
 
 // Feedback summary stats
@@ -540,16 +602,16 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
             <div class="feedback-controls">
                 <div class="search-group">
                     <label for="fbSearch">Search by Control Number or Name</label>
-                    <input id="fbSearch" type="search" placeholder="e.g., CTL-00015 or John Doe">
+                    <input id="fbSearch" type="search" placeholder="e.g., CTL-00015 or John Doe" value="<?= htmlspecialchars($filterQuery) ?>">
                 </div>
                 <div class="search-group">
                     <label for="fbStatusFilter">Status</label>
                     <select id="fbStatusFilter">
                         <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="reviewed">Reviewed</option>
-                        <option value="addressed">Addressed</option>
-                        <option value="rejected">Rejected</option>
+                        <option value="pending" <?= $filterStatus === 'pending' ? 'selected' : '' ?>>Pending</option>
+                        <option value="reviewed" <?= $filterStatus === 'reviewed' ? 'selected' : '' ?>>Reviewed</option>
+                        <option value="addressed" <?= $filterStatus === 'addressed' ? 'selected' : '' ?>>Addressed</option>
+                        <option value="rejected" <?= $filterStatus === 'rejected' ? 'selected' : '' ?>>Rejected</option>
                     </select>
                 </div>
                 <div class="search-group">
@@ -564,15 +626,16 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                             $key = strtolower($category);
                             if (isset($catSeen[$key])) continue;
                             $catSeen[$key] = true;
-                            echo '<option value="' . htmlspecialchars($key) . '">' . htmlspecialchars($category) . '</option>';
+                            echo '<option value="' . htmlspecialchars($key) . '" ' . ($filterCategory === $key ? 'selected' : '') . '>' . htmlspecialchars($category) . '</option>';
                         }
                         ?>
                     </select>
                 </div>
                 <div class="feedback-actions">
+                    <button id="applyServerFilters" class="secondary">Apply</button>
                     <button id="clearSearch" class="secondary">Clear</button>
                     <button id="exportData">Export CSV</button>
-                    <span id="fbVisibleCount" class="feedback-visible-count">Showing 0 of 0</span>
+                    <span id="fbVisibleCount" class="feedback-visible-count">Showing 0 of <?= (int)$totalRows ?></span>
                 </div>
             </div>
 
@@ -718,6 +781,33 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                         <?php endif; ?>
                         </tbody>
                     </table>
+                </div>
+                <div class="engineers-pagination">
+                    <div class="engineers-pagination-meta">
+                        Page <?= (int)$page ?> of <?= (int)$totalPages ?> | Total <?= (int)$totalRows ?> records
+                    </div>
+                    <div class="engineers-pagination-actions">
+                        <?php
+                        $baseParams = [
+                            'q' => $filterQuery,
+                            'status_filter' => $filterStatus,
+                            'category_filter' => $filterCategory,
+                            'per_page' => $limit
+                        ];
+                        ?>
+                        <?php if ($page > 1): ?>
+                            <?php $prevParams = $baseParams; $prevParams['page'] = $page - 1; ?>
+                            <a class="btn-contractor-secondary" href="?<?= htmlspecialchars(http_build_query($prevParams)) ?>">Prev</a>
+                        <?php else: ?>
+                            <button type="button" class="btn-contractor-secondary" disabled>Prev</button>
+                        <?php endif; ?>
+                        <?php if ($page < $totalPages): ?>
+                            <?php $nextParams = $baseParams; $nextParams['page'] = $page + 1; ?>
+                            <a class="btn-contractor-secondary" href="?<?= htmlspecialchars(http_build_query($nextParams)) ?>">Next</a>
+                        <?php else: ?>
+                            <button type="button" class="btn-contractor-secondary" disabled>Next</button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 

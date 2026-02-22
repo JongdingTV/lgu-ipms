@@ -602,7 +602,7 @@
     if (empty) empty.style.display = 'none';
 
     const html = projects.map((p) => {
-      const progress = 0;
+      const progress = Math.max(0, Math.min(100, Number(p.progress || 0)));
       const Engineers = Array.isArray(p.assigned_contractors) ? p.assigned_contractors : [];
       const riskClass = riskClassFromProject(p, progress);
       const updateDate = p.created_at || p.createdAt || p.start_date || '';
@@ -618,7 +618,7 @@
           <div class="project-meta">
             <div class="project-meta-item"><span class="project-meta-label">Location:</span><span class="project-meta-value">${p.location || '-'}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Sector:</span><span class="project-meta-value">${p.sector || '-'}</span></div>
-            <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value">₱${Number(p.budget || 0).toLocaleString()}</span></div>
+            <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value">PHP ${Number(p.budget || 0).toLocaleString()}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Engineers:</span><span class="project-meta-value">${Engineers.length}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Process Update:</span><span class="project-meta-value">${processUpdate}</span></div>
           </div>
@@ -689,11 +689,20 @@
   }
 
   function updateProgressStats(all) {
-    const total = all.length;
-    const approved = all.filter((p) => p.status === 'Approved').length;
-    const inProgress = all.filter((p) => Number(p.progress || 0) > 0 && Number(p.progress || 0) < 100).length;
-    const completed = all.filter((p) => Number(p.progress || 0) >= 100 || p.status === 'Completed').length;
-    const Engineers = all.reduce((sum, p) => sum + ((p.assigned_contractors || []).length), 0);
+    if (all && !Array.isArray(all) && typeof all === 'object') {
+      if ($('#statTotal')) $('#statTotal').textContent = String(Number(all.total || 0));
+      if ($('#statApproved')) $('#statApproved').textContent = String(Number(all.approved || 0));
+      if ($('#statInProgress')) $('#statInProgress').textContent = String(Number(all.in_progress || 0));
+      if ($('#statCompleted')) $('#statCompleted').textContent = String(Number(all.completed || 0));
+      if ($('#statContractors')) $('#statContractors').textContent = String(Number(all.assigned_engineers || 0));
+      return;
+    }
+    const rows = Array.isArray(all) ? all : [];
+    const total = rows.length;
+    const approved = rows.filter((p) => p.status === 'Approved').length;
+    const inProgress = rows.filter((p) => Number(p.progress || 0) > 0 && Number(p.progress || 0) < 100).length;
+    const completed = rows.filter((p) => Number(p.progress || 0) >= 100 || p.status === 'Completed').length;
+    const Engineers = rows.reduce((sum, p) => sum + ((p.assigned_contractors || []).length), 0);
     if ($('#statTotal')) $('#statTotal').textContent = String(total);
     if ($('#statApproved')) $('#statApproved').textContent = String(approved);
     if ($('#statInProgress')) $('#statInProgress').textContent = String(inProgress);
@@ -706,43 +715,129 @@
     const list = $('#projectsList');
     if (!list) return;
 
-    let all = [];
-    const rerender = () => {
-      const visible = applyProgressFilters(all);
-      renderProgressCards(visible);
-      updateProgressSummary(visible.length, all.length);
-      const statusValue = ($('#pmStatusFilter')?.value || '').trim();
-      const quick = document.getElementById('pmQuickFilters');
-      if (quick) {
-        $$('button[data-status]', quick).forEach((btn) => {
-          const isActive = statusValue === String(btn.dataset.status || '');
-          btn.classList.toggle('active', isActive);
-        });
+    const state = {
+      page: 1,
+      perPage: 12,
+      rows: [],
+      meta: { page: 1, total: 0, total_pages: 1, has_prev: false, has_next: false },
+      filters: {
+        q: '',
+        status: '',
+        sector: '',
+        progress_band: '',
+        contractor_mode: '',
+        sort: 'createdAt_desc'
       }
     };
+
+    const ensurePager = () => {
+      let pager = document.getElementById('pmPaginationControls');
+      if (pager) return pager;
+      const utilityRow = document.querySelector('.pm-utility-row');
+      pager = document.createElement('div');
+      pager.id = 'pmPaginationControls';
+      pager.className = 'pm-pagination-controls';
+      if (utilityRow && utilityRow.parentNode) {
+        utilityRow.parentNode.appendChild(pager);
+      } else {
+        list.insertAdjacentElement('afterend', pager);
+      }
+      return pager;
+    };
+
+    const renderPager = () => {
+      const pager = ensurePager();
+      const meta = state.meta || {};
+      const page = Number(meta.page || 1);
+      const totalPages = Number(meta.total_pages || 1);
+      pager.innerHTML = `
+        <button type="button" class="btn-clear-filters" data-page-dir="prev" ${meta.has_prev ? '' : 'disabled'}>Previous</button>
+        <span class="pm-result-summary">Page ${page} of ${totalPages}</span>
+        <button type="button" class="btn-clear-filters" data-page-dir="next" ${meta.has_next ? '' : 'disabled'}>Next</button>
+      `;
+    };
+
+    const syncQuickFilterState = () => {
+      const statusValue = (state.filters.status || '').trim();
+      const quick = document.getElementById('pmQuickFilters');
+      if (!quick) return;
+      $$('button[data-status]', quick).forEach((btn) => {
+        const isActive = statusValue === String(btn.dataset.status || '');
+        btn.classList.toggle('active', isActive);
+      });
+    };
+
+    const renderAll = (payload) => {
+      const data = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
+      state.rows = data;
+      state.meta = payload?.meta || {
+        page: 1,
+        total: data.length,
+        total_pages: 1,
+        has_prev: false,
+        has_next: false
+      };
+      renderProgressCards(data);
+      updateProgressSummary(data.length, Number(state.meta.total || data.length));
+      updateProgressStats(payload?.stats || data);
+      renderPager();
+      syncQuickFilterState();
+    };
+
+    const buildUrl = () => {
+      const params = new URLSearchParams({
+        action: 'load_projects',
+        page: String(state.page),
+        per_page: String(state.perPage),
+        sort: state.filters.sort || 'createdAt_desc',
+        _: String(Date.now())
+      });
+      if (state.filters.q) params.set('q', state.filters.q);
+      if (state.filters.status) params.set('status', state.filters.status);
+      if (state.filters.sector) params.set('sector', state.filters.sector);
+      if (state.filters.progress_band) params.set('progress_band', state.filters.progress_band);
+      if (state.filters.contractor_mode) params.set('contractor_mode', state.filters.contractor_mode);
+      return `progress_monitoring.php?${params.toString()}`;
+    };
+
     const load = () => {
       list.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading projects...</p></div>';
-      const url = `progress_monitoring.php?action=load_projects&_=${Date.now()}`;
-      fetch(url, { credentials: 'same-origin' })
+      fetch(buildUrl(), { credentials: 'same-origin' })
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
         })
-        .then((data) => {
-          all = Array.isArray(data) ? data : [];
-          updateProgressStats(all);
-          rerender();
-        })
+        .then((payload) => renderAll(payload))
         .catch((err) => {
           list.innerHTML = `<div class="admin-empty-state"><span class="title">Unable to load projects</span><span>${String(err.message || 'Unknown error')}</span></div>`;
         });
     };
 
-    ['pmSearch', 'pmStatusFilter', 'pmSectorFilter', 'pmProgressFilter', 'pmContractorFilter', 'pmSort'].forEach((id) => {
+    let searchTimer = null;
+    const bindControl = (id, key, isSearch) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', rerender);
-    });
+      const handler = () => {
+        state.page = 1;
+        state.filters[key] = String(el.value || '').trim();
+        load();
+      };
+      if (isSearch) {
+        el.addEventListener('input', () => {
+          if (searchTimer) clearTimeout(searchTimer);
+          searchTimer = setTimeout(handler, 250);
+        });
+      } else {
+        el.addEventListener('change', handler);
+      }
+    };
+
+    bindControl('pmSearch', 'q', true);
+    bindControl('pmStatusFilter', 'status', false);
+    bindControl('pmSectorFilter', 'sector', false);
+    bindControl('pmProgressFilter', 'progress_band', false);
+    bindControl('pmContractorFilter', 'contractor_mode', false);
+    bindControl('pmSort', 'sort', false);
 
     const quick = document.getElementById('pmQuickFilters');
     if (quick) {
@@ -750,33 +845,55 @@
         const btn = e.target.closest('button[data-status]');
         if (!btn) return;
         const statusFilter = document.getElementById('pmStatusFilter');
-        if (!statusFilter) return;
-        statusFilter.value = btn.dataset.status || '';
-        rerender();
+        if (statusFilter) statusFilter.value = btn.dataset.status || '';
+        state.page = 1;
+        state.filters.status = String(btn.dataset.status || '');
+        load();
       });
     }
 
     const clearBtn = document.getElementById('pmClearFilters');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
-        ['pmSearch', 'pmStatusFilter', 'pmSectorFilter', 'pmProgressFilter', 'pmContractorFilter', 'pmSort'].forEach((id) => {
+        state.page = 1;
+        state.filters = {
+          q: '',
+          status: '',
+          sector: '',
+          progress_band: '',
+          contractor_mode: '',
+          sort: 'createdAt_desc'
+        };
+        const ids = ['pmSearch', 'pmStatusFilter', 'pmSectorFilter', 'pmProgressFilter', 'pmContractorFilter', 'pmSort'];
+        ids.forEach((id) => {
           const el = document.getElementById(id);
           if (!el) return;
-          if (el.tagName === 'INPUT') el.value = '';
-          if (el.tagName === 'SELECT' && id !== 'pmSort') el.value = '';
+          el.value = id === 'pmSort' ? 'createdAt_desc' : '';
         });
-        const sortEl = document.getElementById('pmSort');
-        if (sortEl) sortEl.value = 'createdAt_desc';
-        rerender();
+        load();
       });
     }
+
+    ensurePager().addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-page-dir]');
+      if (!btn) return;
+      if (btn.disabled) return;
+      if (btn.dataset.pageDir === 'prev' && state.meta.has_prev) {
+        state.page = Math.max(1, state.page - 1);
+        load();
+      }
+      if (btn.dataset.pageDir === 'next' && state.meta.has_next) {
+        state.page = state.page + 1;
+        load();
+      }
+    });
 
     const exportBtn = document.getElementById('exportCsv');
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
-        const rows = applyProgressFilters(all);
+        const rows = Array.isArray(state.rows) ? state.rows : [];
         if (!rows.length) {
-          if (isFn(window.showToast)) window.showToast('No Data', 'No projects to export with current filters.', 'warning');
+          if (isFn(window.showToast)) window.showToast('No Data', 'No projects to export on this page.', 'warning');
           return;
         }
         const escapeCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -800,7 +917,7 @@
         const href = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = href;
-        a.download = `progress-monitoring-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.download = `progress-monitoring-${new Date().toISOString().slice(0, 10)}-p${state.page}.csv`;
         document.body.appendChild(a);
         a.click();
         a.remove();

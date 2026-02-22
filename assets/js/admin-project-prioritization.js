@@ -170,14 +170,42 @@
     if (categoryFilter) categoryFilter.addEventListener('change', applyFeedbackFilters);
 
     var clearBtn = document.getElementById('clearSearch');
+    var applyBtn = document.getElementById('applyServerFilters');
+
+    function applyServerFilters() {
+        var url = new URL(window.location.href);
+        var qVal = (searchInput && searchInput.value ? searchInput.value : '').trim();
+        var sVal = (statusFilter && statusFilter.value ? statusFilter.value : '').trim().toLowerCase();
+        var cVal = (categoryFilter && categoryFilter.value ? categoryFilter.value : '').trim().toLowerCase();
+
+        if (qVal) url.searchParams.set('q', qVal); else url.searchParams.delete('q');
+        if (sVal) url.searchParams.set('status_filter', sVal); else url.searchParams.delete('status_filter');
+        if (cVal) url.searchParams.set('category_filter', cVal); else url.searchParams.delete('category_filter');
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    }
+
+    if (applyBtn) {
+        applyBtn.addEventListener('click', applyServerFilters);
+    }
+
+    [searchInput, statusFilter, categoryFilter].forEach(function (el) {
+        if (!el) return;
+        el.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Enter') {
+                ev.preventDefault();
+                applyServerFilters();
+            }
+        });
+    });
     if (clearBtn) {
         clearBtn.addEventListener('click', function () {
-            if (searchInput) searchInput.value = '';
-            if (statusFilter) statusFilter.value = '';
-            if (categoryFilter) categoryFilter.value = '';
-            activePriorityFilter = null;
-            if (priorityCard) priorityCard.classList.remove('is-active');
-            applyFeedbackFilters();
+            var url = new URL(window.location.href);
+            url.searchParams.delete('q');
+            url.searchParams.delete('status_filter');
+            url.searchParams.delete('category_filter');
+            url.searchParams.delete('page');
+            window.location.href = url.toString();
         });
     }
 
