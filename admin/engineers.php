@@ -35,6 +35,19 @@ function eng_table_exists(mysqli $db, string $table): bool
     return $exists;
 }
 
+function eng_table_has_column(mysqli $db, string $table, string $column): bool
+{
+    $stmt = $db->prepare("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1");
+    if (!$stmt) return false;
+    $stmt->bind_param('ss', $table, $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $exists;
+}
+
 function eng_store_uploaded_file(array $file, string $docType): array
 {
     $allowedMimeToExt = [
@@ -137,8 +150,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Resume/CV is required.';
     }
 
-    if (!$errors && (!eng_table_exists($db, 'engineers') || !eng_table_exists($db, 'engineer_documents'))) {
-        $errors[] = 'Engineers schema is missing. Run migration: database/migrations/2026_02_21_engineers_registration.sql';
+    if (!$errors) {
+        if (!eng_table_exists($db, 'engineers') || !eng_table_exists($db, 'engineer_documents')) {
+            $errors[] = 'Engineers schema is missing. Run migration: database/migrations/2026_02_21_engineers_registration.sql';
+        } else {
+            $requiredCols = ['first_name', 'last_name', 'email', 'prc_license_number', 'license_expiry_date', 'specialization'];
+            $missingCols = [];
+            foreach ($requiredCols as $col) {
+                if (!eng_table_has_column($db, 'engineers', $col)) {
+                    $missingCols[] = $col;
+                }
+            }
+            if ($missingCols) {
+                $errors[] = 'Engineers table is missing columns: ' . implode(', ', $missingCols) . '. Run migration: database/migrations/2026_02_23_engineers_schema_backfill.sql';
+            }
+        }
     }
 
     if (!$errors) {
