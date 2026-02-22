@@ -382,6 +382,15 @@
             return days + 'd ago';
         }
 
+        function escHtml(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function renderUserNotifications() {
             if (!notifList || !notifCount) return;
             var seenId = getSeenNotifId();
@@ -389,16 +398,26 @@
 
             notifList.innerHTML = userNotifications.map(function (item) {
                 var unread = Number(item.id) > seenId;
+                var link = item.link || '';
+                var category = item.category || 'Update';
                 return '' +
-                    '<li class="admin-notif-item is-' + (item.level || 'info') + (unread ? ' unread' : '') + '">' +
+                    '<li class="admin-notif-item is-' + escHtml(item.level || 'info') + (unread ? ' unread' : '') + '" data-notif-link="' + escHtml(link) + '">' +
                     '  <span class="dot"></span>' +
                     '  <span>' +
-                    '    <strong>' + (item.title || 'Update') + '</strong>' +
-                    '    <small>' + (item.message || '') + '</small>' +
+                    '    <strong><span style="display:inline-flex;align-items:center;gap:6px;"><span style="font-size:.68rem;padding:2px 8px;border-radius:999px;border:1px solid #c7d2fe;background:#eef2ff;color:#1e40af;">' + escHtml(category) + '</span>' + escHtml(item.title || 'Update') + '</span></strong>' +
+                    '    <small>' + escHtml(item.message || '') + '</small>' +
                     '    <em>' + relativeTime(item.created_at, item.created_at_ts) + '</em>' +
                     '  </span>' +
                     '</li>';
             }).join('');
+
+            notifList.querySelectorAll('.admin-notif-item[data-notif-link]').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    var target = (el.getAttribute('data-notif-link') || '').trim();
+                    if (!target) return;
+                    window.location.href = target;
+                });
+            });
 
             notifCount.textContent = String(unreadCount);
             notifCount.style.display = unreadCount ? 'inline-flex' : 'none';

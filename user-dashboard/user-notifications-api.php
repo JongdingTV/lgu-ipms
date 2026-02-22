@@ -132,6 +132,8 @@ if ($projectRes) {
         $items[] = [
             'id' => $nid,
             'level' => $level,
+            'category' => 'Project',
+            'link' => '/user-dashboard/user-progress-monitoring.php',
             'title' => $title,
             'message' => $message,
             'created_at' => $eventAt !== '' ? $eventAt : null,
@@ -169,6 +171,8 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
             $items[] = [
                 'id' => $nid,
                 'level' => $status === 'verified' ? 'success' : 'danger',
+                'category' => 'Verification',
+                'link' => '/user-dashboard/user-settings.php',
                 'title' => $status === 'verified' ? 'ID Verification Approved' : 'ID Verification Rejected',
                 'message' => $status === 'verified'
                     ? 'Your account is now fully unlocked.'
@@ -184,6 +188,8 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
             $items[] = [
                 'id' => $nid,
                 'level' => 'warning',
+                'category' => 'Verification',
+                'link' => '/user-dashboard/user-settings.php',
                 'title' => 'ID Verification Pending',
                 'message' => 'Your account is in limited mode until verification is approved.',
                 'created_at' => $verificationTime !== '' ? $verificationTime : null,
@@ -271,6 +277,8 @@ if ($userId > 0 || $userName !== '') {
             $items[] = [
                 'id' => $nid,
                 'level' => $level,
+                'category' => 'Feedback',
+                'link' => '/user-dashboard/user-feedback.php',
                 'title' => 'Feedback Update: ' . $subject,
                 'message' => 'Current status: ' . ($statusText !== '' ? $statusText : 'Pending'),
                 'created_at' => $fbRow['date_submitted'] ?? null,

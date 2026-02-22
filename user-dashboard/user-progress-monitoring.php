@@ -29,6 +29,39 @@ $avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
 $profileImageWebPath = user_profile_photo_web_path($userId);
 $progressUpdatedAt = date('M d, Y h:i A');
 
+function user_extract_location_terms(string $address): array
+{
+    $address = strtolower(trim($address));
+    if ($address === '') {
+        return [];
+    }
+    $normalized = preg_replace('/[^a-z0-9,\-\s]/', ' ', $address) ?? '';
+    $parts = preg_split('/[\s,]+/', $normalized) ?: [];
+    $stop = [
+        'quezon', 'city', 'metro', 'manila', 'philippines', 'barangay', 'brgy',
+        'district', 'street', 'st', 'road', 'rd', 'avenue', 'ave', 'block', 'lot',
+        'phase', 'unit', 'house', 'number', 'no', 'near', 'zone'
+    ];
+    $terms = [];
+    foreach ($parts as $part) {
+        $part = trim($part);
+        if ($part === '' || strlen($part) < 4) {
+            continue;
+        }
+        if (in_array($part, $stop, true)) {
+            continue;
+        }
+        if (ctype_digit($part)) {
+            continue;
+        }
+        $terms[$part] = true;
+        if (count($terms) >= 8) {
+            break;
+        }
+    }
+    return array_keys($terms);
+}
+
 function user_progress_has_created_at(mysqli $db): bool
 {
     $stmt = $db->prepare(
@@ -88,6 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'load_pr
     $selectProgress = $hasProgress ? ', COALESCE(progress, 0) AS progress' : ', 0 AS progress';
     $orderBy = $hasCreatedAt ? 'created_at DESC' : 'id DESC';
 
+    $hasBarangay = user_table_has_column($db, 'projects', 'barangay');
+    $selectBarangay = $hasBarangay ? ', barangay' : ", '' AS barangay";
     $result = $db->query(
         "SELECT id, code, name, description, location, province, sector,
             CASE
@@ -95,24 +130,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'load_pr
                 WHEN LOWER(COALESCE(status, '')) = 'cancelled' THEN 'Closed'
                 ELSE 'Ongoing'
             END AS public_status,
-            start_date, end_date, duration_months{$selectCreatedAt}{$selectProgress}
+            start_date, end_date, duration_months{$selectCreatedAt}{$selectProgress}{$selectBarangay}
          FROM projects
          ORDER BY {$orderBy}
          LIMIT 500"
     );
 
     $projects = [];
+    $scopedProjects = [];
+    $locationTerms = user_extract_location_terms((string) ($user['address'] ?? ''));
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             if (!isset($row['progress'])) {
                 $row['progress'] = 0;
             }
             $projects[] = $row;
+            if (!empty($locationTerms)) {
+                $hay = strtolower(trim(
+                    (string) ($row['location'] ?? '') . ' ' .
+                    (string) ($row['province'] ?? '') . ' ' .
+                    (string) ($row['barangay'] ?? '')
+                ));
+                foreach ($locationTerms as $term) {
+                    if ($term !== '' && strpos($hay, $term) !== false) {
+                        $scopedProjects[] = $row;
+                        break;
+                    }
+                }
+            }
         }
         $result->free();
     }
 
-    echo json_encode($projects);
+    // Use scoped list when we have location terms and actual matches.
+    $output = (!empty($locationTerms) && !empty($scopedProjects)) ? $scopedProjects : $projects;
+    echo json_encode($output);
     $db->close();
     exit;
 }
