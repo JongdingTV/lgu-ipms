@@ -40,6 +40,29 @@ function get_employee_id_by_email($db, $email) {
     return $row ? (int) $row['id'] : null;
 }
 
+function employees_has_column(mysqli $db, string $column): bool {
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'employees'
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+    return $exists;
+}
+
 function safe_log_login($db, $email, $ip, $agent, $status, $reason = null, $employeeId = null) {
     if (!isset($db) || $db->connect_error || $email === '') {
         return;
@@ -148,7 +171,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         // Account not locked, proceed with login
                         $lock_stmt->close();
                         
-                        $stmt = $db->prepare("SELECT id, password, first_name, last_name FROM employees WHERE email = ?");
+                        $hasRoleColumn = employees_has_column($db, 'role');
+                        $hasStatusColumn = employees_has_column($db, 'account_status');
+                        $selectFields = "id, password, first_name, last_name";
+                        if ($hasRoleColumn) {
+                            $selectFields .= ", role";
+                        }
+                        if ($hasStatusColumn) {
+                            $selectFields .= ", account_status";
+                        }
+                        $stmt = $db->prepare("SELECT {$selectFields} FROM employees WHERE email = ?");
                         if ($stmt) {
                             $stmt->bind_param('s', $email);
                             $stmt->execute();
@@ -156,6 +188,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             
                             if ($result->num_rows > 0) {
                                 $employee = $result->fetch_assoc();
+                                $accountStatus = strtolower((string)($employee['account_status'] ?? 'active'));
+                                if ($hasStatusColumn && $accountStatus !== 'active') {
+                                    $error = 'Your account is currently ' . htmlspecialchars($accountStatus) . '. Please contact the Super Admin.';
+                                    safe_log_login($db, $email, $client_ip, $user_agent, 'failed', 'Account not active', (int) $employee['id']);
+                                    $stmt->close();
+                                    goto login_done;
+                                }
                                 $isAdmin = ($email === 'admin@lgu.gov.ph');
                                 $valid = false;
                                 
@@ -190,6 +229,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     unset($_SESSION['admin_gate_passed'], $_SESSION['admin_gate_verified_id']);
                                     $_SESSION['employee_id'] = $employee['id'];
                                     $_SESSION['employee_name'] = $isAdmin ? 'Admin' : ($employee['first_name'] . ' ' . $employee['last_name']);
+                                    $role = strtolower(trim((string)($employee['role'] ?? '')));
+                                    if ($role === '') {
+                                        $role = $isAdmin ? 'super_admin' : 'employee';
+                                    }
+                                    $_SESSION['employee_role'] = $role;
+                                    $_SESSION['is_super_admin'] = ($role === 'super_admin');
                                     $_SESSION['user_type'] = 'employee';
                                     $_SESSION['last_activity'] = time();
                                     $_SESSION['login_time'] = time();
@@ -256,6 +301,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
     }
 }
+
+login_done:
 
 $show_gate_wall = false;
 ?>
