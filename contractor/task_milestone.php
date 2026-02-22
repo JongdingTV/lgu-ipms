@@ -26,8 +26,13 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/design-system.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="contractor.css?v=<?php echo filemtime(__DIR__ . '/contractor.css'); ?>">
     <link rel="stylesheet" href="contractor-dashboard.css?v=<?php echo filemtime(__DIR__ . '/contractor-dashboard.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
+    <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
 </head>
 <body>
 <header class="nav" id="navbar">
@@ -38,7 +43,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     <div class="nav-links">
         <a href="dashboard.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation & Budget</a>
         <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Progress Monitoring</a>
-        <a href="task_milestone.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
+        <a href="task_milestone.php" class="active"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
     </div>
     <div class="nav-divider"></div>
     <div class="nav-action-footer"><a href="/contractor/logout.php" class="btn-logout nav-logout"><span>Logout</span></a></div>
@@ -60,14 +65,15 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
         </div>
         <div id="feedback" class="ac-c8be1ccb"></div>
 
-        <div class="table-wrap">
-            <h3>Tasks</h3>
+        <div class="table-wrap module-grid">
+            <h3 class="contractor-table-title">Tasks</h3>
+            <p class="contractor-subtle">Create and validate project tasks with planned/actual dates.</p>
             <div class="pm-controls">
                 <input id="taskTitle" class="contractor-input" type="text" placeholder="Task title">
                 <input id="taskStart" class="contractor-input" type="date">
                 <input id="taskEnd" class="contractor-input" type="date">
                 <input id="taskNotes" class="contractor-input" type="text" placeholder="Notes (optional)">
-                <button id="addTaskBtn" class="contractor-btn" type="button">Add Task</button>
+                <button id="addTaskBtn" class="contractor-btn btn-success" type="button">Add Task</button>
             </div>
             <table class="table">
                 <thead><tr><th>Title</th><th>Status</th><th>Planned</th><th>Actual</th><th>Action</th></tr></thead>
@@ -75,13 +81,14 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
             </table>
         </div>
 
-        <div class="table-wrap">
-            <h3>Milestones</h3>
+        <div class="table-wrap module-grid">
+            <h3 class="contractor-table-title">Milestones</h3>
+            <p class="contractor-subtle">Define milestone targets and validate completion status.</p>
             <div class="pm-controls">
                 <input id="mileTitle" class="contractor-input" type="text" placeholder="Milestone title">
                 <input id="mileDate" class="contractor-input" type="date">
                 <input id="mileNotes" class="contractor-input" type="text" placeholder="Notes (optional)">
-                <button id="addMileBtn" class="contractor-btn" type="button">Add Milestone</button>
+                <button id="addMileBtn" class="contractor-btn btn-success" type="button">Add Milestone</button>
             </div>
             <table class="table">
                 <thead><tr><th>Title</th><th>Status</th><th>Planned</th><th>Actual</th><th>Action</th></tr></thead>
@@ -95,6 +102,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
 (function () {
     'use strict';
     var csrf = <?php echo json_encode((string) ($_SESSION['csrf_token'] ?? '')); ?>;
+    var preselectProjectId = <?php echo json_encode((string) ($_GET['project_id'] ?? '')); ?>;
 
     function apiGet(action, extra) {
         var q = '/contractor/api.php?action=' + encodeURIComponent(action) + (extra || '');
@@ -134,6 +142,11 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
                 o.textContent = p.code + ' - ' + p.name;
                 s.appendChild(o);
             });
+            if (preselectProjectId) {
+                s.value = preselectProjectId;
+                preselectProjectId = '';
+                loadData();
+            }
         });
     }
     function bindStatusActions() {
@@ -224,6 +237,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     loadProjects();
 })();
 </script>
+<script src="contractor.js?v=<?php echo filemtime(__DIR__ . '/contractor.js'); ?>"></script>
+<script src="contractor-enterprise.js?v=<?php echo filemtime(__DIR__ . '/contractor-enterprise.js'); ?>"></script>
 </body>
 </html>
-

@@ -26,8 +26,13 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/design-system.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="contractor.css?v=<?php echo filemtime(__DIR__ . '/contractor.css'); ?>">
     <link rel="stylesheet" href="contractor-dashboard.css?v=<?php echo filemtime(__DIR__ . '/contractor-dashboard.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
+    <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
 </head>
 <body>
 <header class="nav" id="navbar">
@@ -37,7 +42,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     </div>
     <div class="nav-links">
         <a href="dashboard.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation & Budget</a>
-        <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Progress Monitoring</a>
+        <a href="progress_monitoring.php" class="active"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Progress Monitoring</a>
         <a href="task_milestone.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
     </div>
     <div class="nav-divider"></div>
@@ -60,11 +65,13 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
                     <label for="progressInput">Progress %</label>
                     <input id="progressInput" type="number" min="0" max="100" step="1" placeholder="0-100">
                 </div>
-                <button id="saveProgress" class="contractor-btn" type="button">Save Progress</button>
+                <button id="saveProgress" class="contractor-btn btn-success" type="button">Validate & Save Progress</button>
             </div>
         </div>
         <div id="feedback" class="ac-c8be1ccb"></div>
-        <div class="table-wrap">
+        <div class="table-wrap module-grid">
+            <h3 class="contractor-table-title">Progress History</h3>
+            <p class="contractor-subtle">Track all validated progress updates per project.</p>
             <table class="table">
                 <thead><tr><th>Date</th><th>Progress</th><th>Updated By</th></tr></thead>
                 <tbody id="historyBody"></tbody>
@@ -77,6 +84,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
 (function () {
     'use strict';
     var csrf = <?php echo json_encode((string) ($_SESSION['csrf_token'] ?? '')); ?>;
+    var preselectProjectId = <?php echo json_encode((string) ($_GET['project_id'] ?? '')); ?>;
     var projects = [];
 
     function apiGet(action, extra) {
@@ -110,6 +118,11 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
                 o.textContent = p.code + ' - ' + p.name;
                 s.appendChild(o);
             });
+            if (preselectProjectId) {
+                s.value = preselectProjectId;
+                preselectProjectId = '';
+                loadHistory();
+            }
         });
     }
     function loadHistory() {
@@ -141,6 +154,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     loadProjects();
 })();
 </script>
+<script src="contractor.js?v=<?php echo filemtime(__DIR__ . '/contractor.js'); ?>"></script>
+<script src="contractor-enterprise.js?v=<?php echo filemtime(__DIR__ . '/contractor-enterprise.js'); ?>"></script>
 </body>
 </html>
-

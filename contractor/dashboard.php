@@ -43,7 +43,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
         <span class="logo-text">IPMS Contractor</span>
     </div>
     <div class="nav-links">
-        <a href="dashboard.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation & Budget</a>
+        <a href="dashboard.php" class="active"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation & Budget</a>
         <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Progress Monitoring</a>
         <a href="task_milestone.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
     </div>
@@ -56,7 +56,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
 <section class="main-content">
     <div class="dash-header">
         <h1>Contractor Dashboard</h1>
-        <p>Welcome, <?php echo htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8'); ?>. Manage project validation, expenses, and progress updates.</p>
+        <p>Welcome, <?php echo htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8'); ?>. Manage project validation, budgets, and expenses.</p>
     </div>
 
     <div class="contractor-stats">
@@ -102,7 +102,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
             </div>
         </div>
         <div class="contractor-help">
-            <strong>How to use:</strong> Update budget first when needed, then validate status, log expenses, and submit progress percent.
+            <strong>How to use:</strong> Update budget first when needed, validate status, and log expenses here. Use the dedicated Progress Monitoring page for progress validation.
         </div>
         <div id="feedback" class="ac-c8be1ccb"></div>
         <div class="table-wrap">
@@ -115,7 +115,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                         <th>Budget Management</th>
                         <th>Validate</th>
                         <th>Expense Update</th>
-                        <th>Progress Validation</th>
+                        <th>Progress Module</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -194,6 +194,17 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
         const statusFilter = (document.getElementById('statusFilter').value || '').trim().toLowerCase();
         tbody.innerHTML = '';
 
+        function statusChip(status) {
+            var raw = String(status || 'Draft');
+            var key = raw.toLowerCase();
+            var cls = 'default';
+            if (key === 'approved') cls = 'approved';
+            else if (key === 'for approval') cls = 'for-approval';
+            else if (key === 'on-hold') cls = 'on-hold';
+            else if (key === 'completed') cls = 'completed';
+            return '<span class="status-chip ' + cls + '">' + esc(raw) + '</span>';
+        }
+
         state.projects.forEach(function (p) {
             const hay = [p.code, p.name, p.status, p.location].join(' ').toLowerCase();
             if (q && hay.indexOf(q) === -1) return;
@@ -203,13 +214,13 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
             tr.innerHTML = [
                 '<td>' + esc(p.code) + '</td>',
                 '<td><strong>' + esc(p.name) + '</strong><br><small>' + esc(p.location || 'N/A') + '</small></td>',
-                '<td>' + esc(p.status || 'Draft') + '</td>',
+                '<td>' + statusChip(p.status || 'Draft') + '</td>',
                 '<td>',
                 '  <div class="section-title">Current</div>',
                 '  <div><strong>PHP ' + Number(p.budget || 0).toLocaleString() + '</strong></div>',
                 '  <div class="section-title">Update</div>',
                 '  <input class="contractor-input" data-type="budget" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="New budget">',
-                '  <button class="contractor-btn" type="button" data-action="budget" data-id="' + p.id + '">Save Budget</button>',
+                '  <button class="contractor-btn btn-warning" type="button" data-action="budget" data-id="' + p.id + '">Save Budget</button>',
                 '</td>',
                 '<td>',
                 '  <div class="section-title">Set Project Status</div>',
@@ -225,15 +236,13 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 '  <div class="section-title">Log Expense</div>',
                 '  <input class="contractor-input" data-type="amount" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="Amount">',
                 '  <input class="contractor-input" data-type="desc" data-id="' + p.id + '" type="text" placeholder="Description">',
-                '  <button class="contractor-btn" type="button" data-action="expense" data-id="' + p.id + '">Save Expense</button>',
+                '  <button class="contractor-btn btn-neutral" type="button" data-action="expense" data-id="' + p.id + '">Save Expense</button>',
                 '</td>',
                 '<td>',
                 '  <div class="section-title">Current</div>',
                 '  <div>Current: ' + Number(p.progress_percent || 0).toFixed(2) + '%</div>',
                 '  <small>' + esc(p.progress_updated_at || 'No updates yet') + '</small><br>',
-                '  <div class="section-title">Validate Progress %</div>',
-                '  <input class="contractor-input" data-type="progress" data-id="' + p.id + '" type="number" min="0" max="100" step="1" placeholder="%">',
-                '  <button class="contractor-btn" type="button" data-action="progress" data-id="' + p.id + '">Save Progress</button>',
+                '  <a class="contractor-link-btn" href="progress_monitoring.php?project_id=' + encodeURIComponent(String(p.id)) + '">Open Progress Monitoring</a>',
                 '</td>'
             ].join('');
             tbody.appendChild(tr);
@@ -293,20 +302,6 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
             });
         });
 
-        tbody.querySelectorAll('button[data-action="progress"]').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-                const id = this.getAttribute('data-id');
-                const progress = document.querySelector('input[data-type="progress"][data-id="' + id + '"]');
-                try {
-                    await apiPost('update_progress', { project_id: id, progress: Number(progress.value || 0) });
-                    progress.value = '';
-                    showMessage('ok', 'Progress updated successfully.');
-                    await load();
-                } catch (e) {
-                    showMessage('err', e.message);
-                }
-            });
-        });
     }
 
     async function load() {

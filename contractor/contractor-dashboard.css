@@ -5,6 +5,37 @@
     margin-bottom: 14px;
 }
 
+.main-content {
+    padding-bottom: 28px;
+}
+
+.pm-section.card {
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(2, 6, 23, 0.08);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.pm-controls {
+    display: flex;
+    gap: 10px;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    min-width: 180px;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
 .contractor-stat-card {
     background: #ffffff;
     border: 1px solid rgba(15, 23, 42, 0.1);
@@ -72,8 +103,78 @@
     filter: brightness(1.05);
 }
 
+.contractor-btn.btn-success {
+    background: linear-gradient(135deg, #15803d, #22c55e);
+}
+
+.contractor-btn.btn-warning {
+    background: linear-gradient(135deg, #92400e, #f59e0b);
+}
+
+.contractor-btn.btn-neutral {
+    background: linear-gradient(135deg, #334155, #64748b);
+}
+
+.contractor-link-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: #e0ecff;
+    color: #1e3a8a;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.contractor-link-btn:hover {
+    background: #cfe2ff;
+}
+
 #projectsTable td {
     vertical-align: top;
+}
+
+.contractor-table-title {
+    margin: 6px 0 10px;
+    font-size: 16px;
+    color: #0f2a4a;
+}
+
+.contractor-subtle {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.table-wrap {
+    margin-top: 12px;
+}
+
+#projectsTable td,
+.table td {
+    padding: 10px 10px;
+}
+
+.status-chip {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .2px;
+    border: 1px solid transparent;
+}
+
+.status-chip.approved { background: #dcfce7; color: #166534; border-color: #86efac; }
+.status-chip.for-approval { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+.status-chip.on-hold { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.status-chip.completed { background: #dbeafe; color: #1e3a8a; border-color: #93c5fd; }
+.status-chip.default { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+
+.module-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
 }
 
 @media (max-width: 1100px) {
