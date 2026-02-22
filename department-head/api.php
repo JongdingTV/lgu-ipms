@@ -1,0 +1,141 @@
+<?php
+require dirname(__DIR__) . '/database.php';
+require dirname(__DIR__) . '/session-auth.php';
+
+set_no_cache_headers();
+check_auth();
+require dirname(__DIR__) . '/includes/rbac.php';
+rbac_require_roles(['department_head', 'department_admin', 'admin', 'super_admin']);
+check_suspicious_activity();
+
+header('Content-Type: application/json');
+
+if (!isset($_SESSION['employee_id'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Forbidden']);
+    exit;
+}
+
+$role = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
+if (!in_array($role, ['department_head', 'department_admin', 'admin', 'super_admin'], true)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Forbidden']);
+    exit;
+}
+
+function out(array $payload, int $status = 200): void
+{
+    http_response_code($status);
+    echo json_encode($payload);
+    exit;
+}
+
+function ensure_department_head_table(mysqli $db): void
+{
+    $db->query("CREATE TABLE IF NOT EXISTS project_department_head_reviews (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL UNIQUE,
+        decision_status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+        decision_note TEXT NULL,
+        decided_by INT NULL,
+        decided_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_decision_status (decision_status),
+        CONSTRAINT fk_dept_review_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        CONSTRAINT fk_dept_review_employee FOREIGN KEY (decided_by) REFERENCES employees(id) ON DELETE SET NULL
+    )");
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
+    out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
+}
+
+$action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
+ensure_department_head_table($db);
+
+if ($action === 'load_projects') {
+    $mode = strtolower(trim((string) ($_GET['mode'] ?? 'pending')));
+    $rows = [];
+
+    $sqlPending = "SELECT
+            p.*,
+            COALESCE(r.decision_status, 'Pending') AS decision_status,
+            COALESCE(r.decision_note, '') AS decision_note,
+            COALESCE(CONCAT(e.first_name, ' ', e.last_name), '') AS decided_by_name,
+            r.decided_at
+        FROM projects p
+        LEFT JOIN project_department_head_reviews r ON r.project_id = p.id
+        LEFT JOIN employees e ON e.id = r.decided_by
+        WHERE (r.project_id IS NULL OR r.decision_status = 'Pending')
+          AND LOWER(COALESCE(p.status, '')) IN ('for approval', 'pending', 'draft')
+        ORDER BY p.id DESC
+        LIMIT 500";
+
+    $sqlReviewed = "SELECT
+            p.*,
+            COALESCE(r.decision_status, 'Pending') AS decision_status,
+            COALESCE(r.decision_note, '') AS decision_note,
+            COALESCE(CONCAT(e.first_name, ' ', e.last_name), '') AS decided_by_name,
+            r.decided_at
+        FROM projects p
+        JOIN project_department_head_reviews r ON r.project_id = p.id
+        LEFT JOIN employees e ON e.id = r.decided_by
+        WHERE r.decision_status IN ('Approved', 'Rejected')
+        ORDER BY r.decided_at DESC, p.id DESC
+        LIMIT 500";
+
+    $res = $db->query($mode === 'reviewed' ? $sqlReviewed : $sqlPending);
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $rows[] = $row;
+        }
+        $res->free();
+    }
+
+    out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'decide_project') {
+    $projectId = (int) ($_POST['project_id'] ?? 0);
+    $decision = trim((string) ($_POST['decision_status'] ?? ''));
+    $note = trim((string) ($_POST['decision_note'] ?? ''));
+    $allowed = ['Approved', 'Rejected'];
+
+    if ($projectId <= 0 || !in_array($decision, $allowed, true)) {
+        out(['success' => false, 'message' => 'Invalid decision request.'], 422);
+    }
+
+    $employeeId = (int) $_SESSION['employee_id'];
+    $stmt = $db->prepare(
+        "INSERT INTO project_department_head_reviews (project_id, decision_status, decision_note, decided_by, decided_at)
+         VALUES (?, ?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE
+            decision_status = VALUES(decision_status),
+            decision_note = VALUES(decision_note),
+            decided_by = VALUES(decided_by),
+            decided_at = VALUES(decided_at)"
+    );
+    if (!$stmt) {
+        out(['success' => false, 'message' => 'Database error.'], 500);
+    }
+    $stmt->bind_param('issi', $projectId, $decision, $note, $employeeId);
+    $ok = $stmt->execute();
+    $stmt->close();
+    if (!$ok) {
+        out(['success' => false, 'message' => 'Unable to save decision.'], 500);
+    }
+
+    // Workflow: after department head approval, project is marked Approved for admin assignment.
+    $newProjectStatus = $decision === 'Approved' ? 'Approved' : 'Rejected';
+    $up = $db->prepare('UPDATE projects SET status = ? WHERE id = ?');
+    if ($up) {
+        $up->bind_param('si', $newProjectStatus, $projectId);
+        $up->execute();
+        $up->close();
+    }
+
+    out(['success' => true]);
+}
+
+out(['success' => false, 'message' => 'Unknown action.'], 400);

@@ -41,7 +41,7 @@ html {
 
 body {
     min-height: 100vh;
-    background: url("../../cityhall.jpeg") center/cover no-repeat fixed;
+    background: url("../cityhall.jpeg") center/cover no-repeat fixed;
     background-attachment: fixed;
     position: relative;
     margin: 0;
@@ -3338,7 +3338,7 @@ body.login-page::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background: url("../../cityhall.jpeg") center/cover no-repeat fixed;
+    background: url("../cityhall.jpeg") center/cover no-repeat fixed;
     z-index: -1;
     opacity: 0.3;
 }
@@ -3839,7 +3839,7 @@ body.signup-page::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background: url("../../cityhall.jpeg") center/cover no-repeat fixed;
+    background: url("../cityhall.jpeg") center/cover no-repeat fixed;
     z-index: -1;
     opacity: 0.3;
 }
@@ -5798,7 +5798,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) {
         linear-gradient(120deg, rgba(13, 33, 56, 0.68), rgba(23, 74, 120, 0.55)),
         radial-gradient(1200px 500px at 20% -10%, rgba(59, 130, 246, 0.2), transparent 60%),
         radial-gradient(900px 420px at 100% 0%, rgba(14, 116, 144, 0.14), transparent 55%),
-        url("../../cityhall.jpeg") center/cover no-repeat fixed !important;
+        url("../cityhall.jpeg") center/cover no-repeat fixed !important;
     background-attachment: fixed !important;
     color: #12253f;
 }
@@ -6049,7 +6049,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) {
         linear-gradient(130deg, rgba(7, 23, 43, 0.5), rgba(15, 53, 92, 0.34)),
         radial-gradient(1200px 640px at -10% -20%, rgba(14, 116, 144, 0.2), transparent 60%),
         radial-gradient(1000px 560px at 120% -10%, rgba(15, 92, 197, 0.22), transparent 60%),
-        url("../../cityhall.jpeg") center/cover no-repeat fixed !important;
+        url("../cityhall.jpeg") center/cover no-repeat fixed !important;
     color: var(--ui-text);
 }
 
