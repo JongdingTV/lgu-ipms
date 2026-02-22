@@ -244,6 +244,8 @@ if ($result) {
                                     <option value="Manager">Manager</option>
                                     <option value="Admin">Admin</option>
                                     <option value="Supervisor">Supervisor</option>
+                                    <option value="Contractor">Contractor</option>
+                                    <option value="Engineer">Engineer</option>
                                 </select>
                             </div>
                         </div>
