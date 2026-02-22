@@ -66,7 +66,13 @@ $hasEngineerLink = $hasEngineersTable && sa_table_has_column($db, 'engineers', '
 $engineerOptions = [];
 $engineerByEmployee = [];
 if ($hasEngineersTable) {
-    $sql = "SELECT id, full_name, first_name, last_name, prc_license_number, employee_id FROM engineers ORDER BY id DESC";
+    $engSelect = ['id'];
+    $engSelect[] = sa_table_has_column($db, 'engineers', 'full_name') ? 'full_name' : "'' AS full_name";
+    $engSelect[] = sa_table_has_column($db, 'engineers', 'first_name') ? 'first_name' : "'' AS first_name";
+    $engSelect[] = sa_table_has_column($db, 'engineers', 'last_name') ? 'last_name' : "'' AS last_name";
+    $engSelect[] = sa_table_has_column($db, 'engineers', 'prc_license_number') ? 'prc_license_number' : "'' AS prc_license_number";
+    $engSelect[] = $hasEngineerLink ? 'employee_id' : "NULL AS employee_id";
+    $sql = "SELECT " . implode(', ', $engSelect) . " FROM engineers ORDER BY id DESC";
     $res = $db->query($sql);
     if ($res) {
         while ($row = $res->fetch_assoc()) {
