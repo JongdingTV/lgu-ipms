@@ -118,26 +118,43 @@ function ensure_assignment_table(mysqli $db): bool
 // Handle GET request for loading Engineers
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_contractors') {
     header('Content-Type: application/json');
-    
-    $companyCol = registered_pick_column($db, 'contractors', ['company', 'company_name', 'name']);
-    $fullNameCol = registered_pick_column($db, 'contractors', ['full_name']);
-    $licenseCol = registered_pick_column($db, 'contractors', ['license', 'license_number', 'prc_license_no']);
-    $licenseExpiryCol = registered_pick_column($db, 'contractors', ['license_expiration_date']);
-    $emailCol = registered_pick_column($db, 'contractors', ['email', 'contact_email']);
-    $phoneCol = registered_pick_column($db, 'contractors', ['phone', 'contact_number', 'mobile']);
-    $statusCol = registered_pick_column($db, 'contractors', ['status']);
-    $ratingCol = registered_pick_column($db, 'contractors', ['rating']);
-    $specializationCol = registered_pick_column($db, 'contractors', ['specialization']);
-    $experienceCol = registered_pick_column($db, 'contractors', ['experience']);
-    $complianceCol = registered_pick_column($db, 'contractors', ['compliance_status']);
-    $riskLevelCol = registered_pick_column($db, 'contractors', ['risk_level']);
-    $riskScoreCol = registered_pick_column($db, 'contractors', ['risk_score']);
-    $performanceCol = registered_pick_column($db, 'contractors', ['performance_rating']);
-    $reliabilityCol = registered_pick_column($db, 'contractors', ['reliability_score']);
-    $approvalCol = registered_pick_column($db, 'contractors', ['approval_status']);
-    $verifiedAtCol = registered_pick_column($db, 'contractors', ['verified_at']);
-    $approvedAtCol = registered_pick_column($db, 'contractors', ['approved_at']);
-    $rejectedAtCol = registered_pick_column($db, 'contractors', ['rejected_at']);
+
+    $entityTable = registered_table_exists($db, 'engineers') ? 'engineers' : 'contractors';
+    $isEngineerTable = $entityTable === 'engineers';
+
+    $companyCol = $isEngineerTable
+        ? registered_pick_column($db, 'engineers', ['full_name'])
+        : registered_pick_column($db, 'contractors', ['company', 'company_name', 'name']);
+    $fullNameCol = $isEngineerTable
+        ? registered_pick_column($db, 'engineers', ['full_name'])
+        : registered_pick_column($db, 'contractors', ['full_name']);
+    $licenseCol = $isEngineerTable
+        ? registered_pick_column($db, 'engineers', ['prc_license_number', 'license', 'license_number'])
+        : registered_pick_column($db, 'contractors', ['license', 'license_number', 'prc_license_no']);
+    $licenseExpiryCol = $isEngineerTable
+        ? registered_pick_column($db, 'engineers', ['license_expiry_date', 'license_expiration_date'])
+        : registered_pick_column($db, 'contractors', ['license_expiration_date']);
+    $emailCol = registered_pick_column($db, $entityTable, ['email', 'contact_email']);
+    $phoneCol = $isEngineerTable
+        ? registered_pick_column($db, 'engineers', ['contact_number', 'phone', 'mobile'])
+        : registered_pick_column($db, 'contractors', ['phone', 'contact_number', 'mobile']);
+    $statusCol = $isEngineerTable
+        ? registered_pick_column($db, 'engineers', ['account_status', 'availability_status', 'status'])
+        : registered_pick_column($db, 'contractors', ['status']);
+    $ratingCol = registered_pick_column($db, $entityTable, ['rating']);
+    $specializationCol = registered_pick_column($db, $entityTable, ['specialization']);
+    $experienceCol = $isEngineerTable
+        ? registered_pick_column($db, 'engineers', ['years_experience', 'experience'])
+        : registered_pick_column($db, 'contractors', ['experience']);
+    $complianceCol = registered_pick_column($db, $entityTable, ['compliance_status']);
+    $riskLevelCol = registered_pick_column($db, $entityTable, ['risk_level']);
+    $riskScoreCol = registered_pick_column($db, $entityTable, ['risk_score']);
+    $performanceCol = registered_pick_column($db, $entityTable, ['performance_rating']);
+    $reliabilityCol = registered_pick_column($db, $entityTable, ['reliability_score']);
+    $approvalCol = registered_pick_column($db, $entityTable, ['approval_status']);
+    $verifiedAtCol = registered_pick_column($db, $entityTable, ['verified_at']);
+    $approvedAtCol = registered_pick_column($db, $entityTable, ['approved_at']);
+    $rejectedAtCol = registered_pick_column($db, $entityTable, ['rejected_at']);
 
     $selectParts = ['id'];
     $selectParts[] = $companyCol ? "{$companyCol} AS company" : "'' AS company";
@@ -161,48 +178,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $selectParts[] = $rejectedAtCol ? "{$rejectedAtCol} AS rejected_at" : "NULL AS rejected_at";
 
     $Engineers = [];
-    $hasDocumentsTable = registered_table_exists($db, 'contractor_documents');
+    $documentsTable = $isEngineerTable && registered_table_exists($db, 'engineer_documents')
+        ? 'engineer_documents'
+        : 'contractor_documents';
+    $hasDocumentsTable = registered_table_exists($db, $documentsTable);
     $todayDate = date('Y-m-d');
     $docsStmt = null;
     if ($hasDocumentsTable) {
+        $fkCol = $isEngineerTable ? 'engineer_id' : 'contractor_id';
+        $licenseDocExpr = $isEngineerTable
+            ? "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='prc_license' THEN 1 ELSE 0 END)"
+            : "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='license' THEN 1 ELSE 0 END)";
+        $resumeDocExpr = $isEngineerTable
+            ? "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='resume_cv' THEN 1 ELSE 0 END)"
+            : "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='resume' THEN 1 ELSE 0 END)";
         $docsStmt = $db->prepare(
             "SELECT
                 COUNT(*) AS total_docs,
-                SUM(CASE WHEN LOWER(COALESCE(document_type,''))='license' THEN 1 ELSE 0 END) AS license_docs,
-                SUM(CASE WHEN LOWER(COALESCE(document_type,''))='resume' THEN 1 ELSE 0 END) AS resume_docs,
+                {$licenseDocExpr} AS license_docs,
+                {$resumeDocExpr} AS resume_docs,
                 SUM(CASE WHEN LOWER(COALESCE(document_type,''))='certificate' THEN 1 ELSE 0 END) AS certificate_docs,
                 SUM(CASE WHEN is_verified = 1 THEN 1 ELSE 0 END) AS verified_docs
-             FROM contractor_documents
-             WHERE contractor_id = ?"
+             FROM {$documentsTable}
+             WHERE {$fkCol} = ?"
         );
     }
 
     try {
-        $result = $db->query("SELECT " . implode(', ', $selectParts) . " FROM contractors ORDER BY id DESC LIMIT 100");
+        $result = $db->query("SELECT " . implode(', ', $selectParts) . " FROM {$entityTable} ORDER BY id DESC LIMIT 100");
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $row['display_name'] = trim((string)($row['full_name'] ?? '')) !== ''
                     ? (string) $row['full_name']
                     : ((trim((string)($row['company'] ?? '')) !== '') ? (string) $row['company'] : ('Engineer #' . (int)($row['id'] ?? 0)));
 
-                $metrics = ee_fetch_metrics($db, (int) ($row['id'] ?? 0));
-                $scores = ee_evaluate_scores($metrics);
-                try {
-                    ee_persist_evaluation($db, (int) ($row['id'] ?? 0), $metrics, $scores);
-                } catch (Throwable $e) {
-                    error_log('contractor evaluation persist failed: ' . $e->getMessage());
-                }
+                if ($isEngineerTable) {
+                    $row['past_project_count'] = 0;
+                    $row['delayed_project_count'] = 0;
+                    $row['avg_rating'] = (float) ($row['rating'] ?? 0);
+                    $row['completion_rate'] = 0.0;
+                    $row['delay_rate'] = 0.0;
+                    $row['performance_score'] = (float) ($row['performance_rating'] ?? $row['rating'] ?? 0);
+                    $row['reliability_score'] = (float) ($row['reliability_score'] ?? 0);
+                    $row['risk_score'] = (float) ($row['risk_score'] ?? 0);
+                    $row['risk_level'] = (string) ($row['risk_level'] ?? 'Medium');
+                    $row['compliance_status'] = (string) ($row['compliance_status'] ?? 'Compliant');
+                } else {
+                    $metrics = ee_fetch_metrics($db, (int) ($row['id'] ?? 0));
+                    $scores = ee_evaluate_scores($metrics);
+                    try {
+                        ee_persist_evaluation($db, (int) ($row['id'] ?? 0), $metrics, $scores);
+                    } catch (Throwable $e) {
+                        error_log('contractor evaluation persist failed: ' . $e->getMessage());
+                    }
 
-                $row['past_project_count'] = (int) ($metrics['total_projects'] ?? 0);
-                $row['delayed_project_count'] = (int) ($metrics['delayed_projects'] ?? 0);
-                $row['avg_rating'] = (float) ($scores['avg_rating'] ?? 0);
-                $row['completion_rate'] = (float) ($scores['completion_rate'] ?? 0);
-                $row['delay_rate'] = (float) ($scores['delay_rate'] ?? 0);
-                $row['performance_score'] = (float) ($scores['performance_score'] ?? 0);
-                $row['reliability_score'] = (float) ($scores['reliability_score'] ?? 0);
-                $row['risk_score'] = (float) ($scores['risk_score'] ?? 0);
-                $row['risk_level'] = (string) ($scores['risk_level'] ?? 'Medium');
-                $row['compliance_status'] = (string) ($scores['compliance_status'] ?? ($row['compliance_status'] ?? 'Compliant'));
+                    $row['past_project_count'] = (int) ($metrics['total_projects'] ?? 0);
+                    $row['delayed_project_count'] = (int) ($metrics['delayed_projects'] ?? 0);
+                    $row['avg_rating'] = (float) ($scores['avg_rating'] ?? 0);
+                    $row['completion_rate'] = (float) ($scores['completion_rate'] ?? 0);
+                    $row['delay_rate'] = (float) ($scores['delay_rate'] ?? 0);
+                    $row['performance_score'] = (float) ($scores['performance_score'] ?? 0);
+                    $row['reliability_score'] = (float) ($scores['reliability_score'] ?? 0);
+                    $row['risk_score'] = (float) ($scores['risk_score'] ?? 0);
+                    $row['risk_level'] = (string) ($scores['risk_level'] ?? 'Medium');
+                    $row['compliance_status'] = (string) ($scores['compliance_status'] ?? ($row['compliance_status'] ?? 'Compliant'));
+                }
 
                 $licenseExpiry = trim((string) ($row['license_expiration_date'] ?? ''));
                 $isExpiredLicense = $licenseExpiry !== '' && strtotime($licenseExpiry) !== false && $licenseExpiry < $todayDate;
@@ -257,16 +297,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_contractor_documents') {
     header('Content-Type: application/json');
     $contractorId = isset($_GET['contractor_id']) ? (int) $_GET['contractor_id'] : 0;
-    if ($contractorId <= 0 || !registered_table_exists($db, 'contractor_documents')) {
+    $useEngineerDocs = registered_table_exists($db, 'engineer_documents');
+    $docsTable = $useEngineerDocs ? 'engineer_documents' : 'contractor_documents';
+    $fkCol = $useEngineerDocs ? 'engineer_id' : 'contractor_id';
+
+    if ($contractorId <= 0 || !registered_table_exists($db, $docsTable)) {
         echo json_encode([]);
         exit;
     }
 
+    $hasExpiresOn = registered_table_has_column($db, $docsTable, 'expires_on');
+    $hasVerifiedAt = registered_table_has_column($db, $docsTable, 'verified_at');
+    $hasUploadedAt = registered_table_has_column($db, $docsTable, 'uploaded_at');
+    $expiresSelect = $hasExpiresOn ? 'expires_on' : 'NULL AS expires_on';
+    $verifiedAtSelect = $hasVerifiedAt ? 'verified_at' : 'NULL AS verified_at';
+    $uploadedAtSelect = $hasUploadedAt ? 'uploaded_at' : 'NOW() AS uploaded_at';
+
     $stmt = $db->prepare(
-        "SELECT id, contractor_id, document_type, file_path, original_name, mime_type, file_size, expires_on, is_verified, verified_at, uploaded_at
-         FROM contractor_documents
-         WHERE contractor_id = ?
-         ORDER BY uploaded_at DESC, id DESC"
+        "SELECT id, {$fkCol} AS contractor_id, document_type, file_path, original_name, mime_type, file_size, {$expiresSelect}, is_verified, {$verifiedAtSelect}, {$uploadedAtSelect}
+         FROM {$docsTable}
+         WHERE {$fkCol} = ?
+         ORDER BY id DESC"
     );
     if (!$stmt) {
         echo json_encode([]);
@@ -394,7 +445,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         exit;
     }
 
-    if (!registered_table_has_column($db, 'contractors', 'approval_status')) {
+    $entityTable = registered_table_exists($db, 'engineers') ? 'engineers' : 'contractors';
+    if (!registered_table_has_column($db, $entityTable, 'approval_status')) {
         echo json_encode(['success' => false, 'message' => 'Approval fields not available. Run migration.']);
         exit;
     }
@@ -403,7 +455,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $approvedAt = "CASE WHEN ? = 'approved' THEN NOW() ELSE approved_at END";
     $rejectedAt = "CASE WHEN ? = 'rejected' THEN NOW() ELSE rejected_at END";
     $stmt = $db->prepare(
-        "UPDATE contractors
+        "UPDATE {$entityTable}
          SET approval_status = ?, 
              verified_at = {$verifiedAt},
              approved_at = {$approvedAt},
@@ -424,7 +476,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $note = 'Updated approval status to ' . $status;
         $aStmt = $db->prepare(
             "INSERT INTO approvals (entity_type, entity_id, status, reviewer_id, reviewer_role, notes, reviewed_at)
-             VALUES ('contractor', ?, ?, ?, ?, ?, NOW())"
+             VALUES ('engineer', ?, ?, ?, ?, ?, NOW())"
         );
         if ($aStmt) {
             $aStmt->bind_param('isiss', $contractorId, $status, $employeeId, $role, $note);
@@ -434,7 +486,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     if ($ok && function_exists('rbac_audit')) {
-        rbac_audit('contractor.approval_update', 'contractor', $contractorId, ['status' => $status]);
+        rbac_audit('engineer.approval_update', 'engineer', $contractorId, ['status' => $status]);
     }
 
     echo json_encode(['success' => (bool) $ok]);
@@ -597,7 +649,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         exit;
     }
 
-    $stmt = $db->prepare("DELETE FROM contractors WHERE id = ?");
+    $entityTable = registered_table_exists($db, 'engineers') ? 'engineers' : 'contractors';
+    $stmt = $db->prepare("DELETE FROM {$entityTable} WHERE id = ?");
     $stmt->bind_param("i", $contractor_id);
 
     if ($stmt->execute()) {
