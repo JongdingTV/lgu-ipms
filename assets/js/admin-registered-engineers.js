@@ -16,6 +16,13 @@
         const statSuspendedEl = document.getElementById('contractorStatSuspended');
         const statBlacklistedEl = document.getElementById('contractorStatBlacklisted');
         const statAvgRatingEl = document.getElementById('contractorStatAvgRating');
+        const approvalQueue = document.getElementById('approvalQueue');
+        const approvalQueueAll = document.getElementById('approvalQueueAll');
+        const approvalQueuePending = document.getElementById('approvalQueuePending');
+        const approvalQueueVerified = document.getElementById('approvalQueueVerified');
+        const approvalQueueApproved = document.getElementById('approvalQueueApproved');
+        const approvalQueueRejected = document.getElementById('approvalQueueRejected');
+        const approvalQueueSuspended = document.getElementById('approvalQueueSuspended');
         const topPerformingList = document.getElementById('topPerformingList');
         const highRiskList = document.getElementById('highRiskList');
         const mostDelayedList = document.getElementById('mostDelayedList');
@@ -248,6 +255,27 @@
             if (statSuspendedEl) statSuspendedEl.textContent = String(suspended);
             if (statBlacklistedEl) statBlacklistedEl.textContent = String(blacklisted);
             if (statAvgRatingEl) statAvgRatingEl.textContent = ratingCount ? (ratingSum / ratingCount).toFixed(1) : '0.0';
+
+            const approvalCounts = {
+                all: list.length,
+                pending: 0,
+                verified: 0,
+                approved: 0,
+                rejected: 0,
+                suspended: 0
+            };
+            for (const c of list) {
+                const key = String(c.approval_status || 'pending').toLowerCase();
+                if (Object.prototype.hasOwnProperty.call(approvalCounts, key)) {
+                    approvalCounts[key] += 1;
+                }
+            }
+            if (approvalQueueAll) approvalQueueAll.textContent = String(approvalCounts.all);
+            if (approvalQueuePending) approvalQueuePending.textContent = String(approvalCounts.pending);
+            if (approvalQueueVerified) approvalQueueVerified.textContent = String(approvalCounts.verified);
+            if (approvalQueueApproved) approvalQueueApproved.textContent = String(approvalCounts.approved);
+            if (approvalQueueRejected) approvalQueueRejected.textContent = String(approvalCounts.rejected);
+            if (approvalQueueSuspended) approvalQueueSuspended.textContent = String(approvalCounts.suspended);
         }
 
         function updateLastSync() {
@@ -555,6 +583,12 @@
             const q = (searchInput?.value || '').trim().toLowerCase();
             const s = (statusFilter?.value || '').trim();
             const a = (approvalFilter?.value || '').trim().toLowerCase();
+            if (approvalQueue) {
+                approvalQueue.querySelectorAll('.approval-queue-item').forEach((item) => {
+                    const itemFilter = String(item.getAttribute('data-approval-filter') || '').toLowerCase();
+                    item.classList.toggle('active', itemFilter === a);
+                });
+            }
             const filtered = contractorsCache.filter((c) => {
                 const hitSearch = !q || `${c.company || ''} ${c.license || ''} ${c.email || ''} ${c.phone || ''}`.toLowerCase().includes(q);
                 const hitStatus = !s || String(c.status || '') === s;
@@ -607,6 +641,15 @@
         searchInput?.addEventListener('input', applyFilters);
         statusFilter?.addEventListener('change', applyFilters);
         approvalFilter?.addEventListener('change', applyFilters);
+        approvalQueue?.addEventListener('click', (e) => {
+            const button = e.target.closest('[data-approval-filter]');
+            if (!button || !approvalFilter) return;
+            const nextFilter = button.getAttribute('data-approval-filter') || '';
+            approvalFilter.value = nextFilter;
+            approvalQueue.querySelectorAll('.approval-queue-item').forEach((item) => item.classList.remove('active'));
+            button.classList.add('active');
+            applyFilters();
+        });
         contractorsTbody?.addEventListener('click', async (e) => {
             const btn = e.target.closest('button');
             if (!btn) return;

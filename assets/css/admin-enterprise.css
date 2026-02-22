@@ -2458,6 +2458,82 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .co
     grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue {
+    margin: 12px 0;
+    padding: 12px;
+    border: 1px solid #d7e4f2;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-head h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: #173a67;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-head small {
+    color: #6a819f;
+    font-size: 0.78rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-item {
+    border: 1px solid #c9d8ea;
+    border-radius: 10px;
+    background: #f3f8ff;
+    color: #1e3f66;
+    padding: 9px 10px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-item span {
+    display: block;
+    font-size: 0.73rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-item strong {
+    display: block;
+    margin-top: 3px;
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(23, 58, 103, 0.12);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-item.active {
+    border-color: #2a61bf;
+    background: linear-gradient(135deg, #1f56bd, #2f6fdd);
+    color: #ffffff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-item.pending { border-color: #f7c28b; }
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-item.verified { border-color: #f6d48e; }
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-item.approved { border-color: #9ee0bf; }
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-item.rejected { border-color: #f4a3a3; }
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-item.suspended { border-color: #d5bfdc; }
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-stat-card {
     border-radius: 12px;
     border: 1px solid #d7e3f2;
@@ -2898,6 +2974,10 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content #co
     }
 
     body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approval-queue-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 

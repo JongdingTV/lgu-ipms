@@ -1061,6 +1061,39 @@ $db->close();
                 <div id="contractorsCount" class="contractor-count-pill">0 Engineers</div>
             </div>
 
+            <div class="approval-queue" id="approvalQueue">
+                <div class="approval-queue-head">
+                    <h4>Approval Queue</h4>
+                    <small>Quickly review and filter engineers by workflow status.</small>
+                </div>
+                <div class="approval-queue-grid">
+                    <button type="button" class="approval-queue-item active" data-approval-filter="">
+                        <span>All</span>
+                        <strong id="approvalQueueAll">0</strong>
+                    </button>
+                    <button type="button" class="approval-queue-item pending" data-approval-filter="pending">
+                        <span>Pending</span>
+                        <strong id="approvalQueuePending">0</strong>
+                    </button>
+                    <button type="button" class="approval-queue-item verified" data-approval-filter="verified">
+                        <span>Verified</span>
+                        <strong id="approvalQueueVerified">0</strong>
+                    </button>
+                    <button type="button" class="approval-queue-item approved" data-approval-filter="approved">
+                        <span>Approved</span>
+                        <strong id="approvalQueueApproved">0</strong>
+                    </button>
+                    <button type="button" class="approval-queue-item rejected" data-approval-filter="rejected">
+                        <span>Rejected</span>
+                        <strong id="approvalQueueRejected">0</strong>
+                    </button>
+                    <button type="button" class="approval-queue-item suspended" data-approval-filter="suspended">
+                        <span>Suspended</span>
+                        <strong id="approvalQueueSuspended">0</strong>
+                    </button>
+                </div>
+            </div>
+
             <div class="contractor-stats-grid">
                 <article class="contractor-stat-card">
                     <span>Total Engineers</span>
