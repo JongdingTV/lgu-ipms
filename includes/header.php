@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Header Component
  * 
@@ -19,10 +19,10 @@
 <meta name="robots" content="noindex, nofollow">
 
 <!-- Favicon -->
-<link rel="icon" type="image/png" href="<?php echo image('logo.png'); ?>">
+<link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
 
 <!-- Apple Touch Icon -->
-<link rel="apple-touch-icon" href="<?php echo image('logo.png'); ?>">
+<link rel="apple-touch-icon" href="/assets/images/icons/ipms-icon2.png">
 
 <!-- Stylesheets -->
 <link rel="stylesheet" href="<?php echo asset('css/main.css'); ?>">
@@ -36,3 +36,4 @@
 <!-- Security Headers -->
 <meta http-equiv="X-UA-Compatible" content="ie=edge">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;">
+

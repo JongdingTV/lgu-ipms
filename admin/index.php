@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Start session first
 session_start();
 
@@ -265,7 +265,7 @@ $show_gate_wall = false;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LGU | Employee Login</title>
-<link rel="icon" type="image/png" href="../logocityhall.png">
+<link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -710,14 +710,14 @@ $show_gate_wall = false;
 <body class="admin-login-page">
 
 <header class="nav">
-    <div class="nav-logo"><img src="../logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
+    <div class="nav-logo"><img src="../assets/images/icons/ipms-icon.png" alt="LGU Logo"> Local Government Unit Portal</div>
     <a href="../public/index.php" class="home-btn" aria-label="Go to Home">Home</a>
 </header>
 
 <div class="wrapper">
     <div class="card">
 
-        <img src="../logocityhall.png" class="icon-top">
+        <img src="../assets/images/icons/ipms-icon.png" class="icon-top">
 
         <h2 class="title">Employee Login</h2>
         <p class="subtitle">Secure access for LGU employees.</p>
@@ -759,5 +759,7 @@ $show_gate_wall = false;
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
+
+
 
 

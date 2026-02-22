@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Start session first
 session_start();
 
@@ -132,7 +132,7 @@ if (isset($db)) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Change Password - LGU Employee Portal</title>
-<link rel="icon" type="image/png" href="../logocityhall.png">
+<link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -146,13 +146,13 @@ if (isset($db)) {
 <body>
 
 <header class="nav">
-    <div class="nav-logo"><img src="../logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
+    <div class="nav-logo"><img src="../assets/images/icons/ipms-icon.png" alt="LGU Logo"> Local Government Unit Portal</div>
 </header>
 
 <div class="wrapper">
     <div class="card">
 
-        <img src="../logocityhall.png" class="icon-top">
+        <img src="../assets/images/icons/ipms-icon.png" class="icon-top">
 
         <h2 class="title">Change Password</h2>
         <p class="subtitle">Update your account password securely</p>
@@ -165,27 +165,27 @@ if (isset($db)) {
 
         <?php if (!empty($success)): ?>
         <div class="ac-eee71138">
-            ✅ <?php echo htmlspecialchars($success); ?>
+            âœ… <?php echo htmlspecialchars($success); ?>
         </div>
         <?php endif; ?>
 
         <form method="post">
             <div class="input-box">
                 <label>Current Password</label>
-                <input type="password" name="current_password" placeholder="••••••••" required autocomplete="current-password">
-                <span class="icon">🔒</span>
+                <input type="password" name="current_password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required autocomplete="current-password">
+                <span class="icon">ðŸ”’</span>
             </div>
 
             <div class="input-box">
                 <label>New Password</label>
-                <input type="password" name="new_password" placeholder="••••••••" required autocomplete="new-password">
-                <span class="icon">🔒</span>
+                <input type="password" name="new_password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required autocomplete="new-password">
+                <span class="icon">ðŸ”’</span>
             </div>
 
             <div class="input-box">
                 <label>Confirm New Password</label>
-                <input type="password" name="confirm_password" placeholder="••••••••" required autocomplete="new-password">
-                <span class="icon">🔒</span>
+                <input type="password" name="confirm_password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required autocomplete="new-password">
+                <span class="icon">ðŸ”’</span>
             </div>
 
             <div class="ac-97825712">
@@ -211,6 +211,8 @@ if (isset($db)) {
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 

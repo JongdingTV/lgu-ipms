@@ -83,7 +83,7 @@ $db->close();
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Citizen Verification - LGU IPMS</title>
-    <link rel="icon" type="image/png" href="../logocityhall.png">
+    <link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -132,7 +132,7 @@ $db->close();
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
     </button>
     <div class="nav-logo">
-        <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+        <img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img">
         <span class="logo-text">IPMS</span>
     </div>
     <div class="nav-links">
@@ -366,3 +366,5 @@ $db->close();
 </script>
 </body>
 </html>
+
+

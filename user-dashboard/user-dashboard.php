@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -103,7 +103,7 @@ $db->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard - LGU IPMS</title>
-    <link rel="icon" type="image/png" href="/logocityhall.png">
+    <link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -137,7 +137,7 @@ $db->close();
         </button>
 
         <div class="nav-logo">
-            <img src="/logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <img src="/assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-user-profile">
@@ -381,4 +381,6 @@ $db->close();
     <?php endif; ?>
 </body>
 </html>
+
+
 

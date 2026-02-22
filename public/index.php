@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once dirname(__DIR__) . '/config/app.php';
 require_once INCLUDES_PATH . '/helpers.php';
 
@@ -226,7 +226,7 @@ $csrfToken = landing_generate_csrf_token();
     <title>LGU Infrastructure & Project Management System</title>
     <meta name="description" content="A modern and user-friendly portal for LGU project registration, monitoring, and transparency.">
     <meta name="theme-color" content="#0f2f57">
-    <link rel="icon" type="image/png" href="<?php echo ASSETS_URL; ?>/images/logo.png">
+    <link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -854,7 +854,7 @@ $csrfToken = landing_generate_csrf_token();
     <nav class="top-nav">
         <div class="nav-wrap">
             <a class="brand" href="/">
-                <img src="/logocityhall.png" alt="LGU Logo">
+                <img src="/assets/images/icons/ipms-icon2.png" alt="LGU Logo">
                 <span>LGU IPMS</span>
             </a>
             <div class="nav-links">
@@ -1056,3 +1056,5 @@ $csrfToken = landing_generate_csrf_token();
     </script>
 </body>
 </html>
+
+

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Import security functions
 require dirname(__DIR__) . '/session-auth.php';
 // Database connection
@@ -337,7 +337,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Project Prioritization - LGU IPMS</title>
-    <link rel="icon" type="image/png" href="../logocityhall.png">
+    <link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -369,26 +369,26 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
             </svg>
         </button>
         <div class="nav-logo">
-            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
             <a href="dashboard.php"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
             <div class="nav-item-group">
-                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">▼</span></a>
+                <a href="project_registration.php" class="nav-main-item" id="projectRegToggle"><img src="../assets/images/admin/list.png" class="nav-icon">Project Registration<span class="dropdown-arrow">â–¼</span></a>
                 <div class="nav-submenu" id="projectRegSubmenu">
-                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>New Project</span></a>
-                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Projects</span></a>
+                    <a href="project_registration.php" class="nav-submenu-item"><span class="submenu-icon">âž•</span><span>New Project</span></a>
+                    <a href="registered_projects.php" class="nav-submenu-item"><span class="submenu-icon">ðŸ“‹</span><span>Registered Projects</span></a>
                 </div>
             </div>
             <a href="progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
             <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
-                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">▼</span></a>
+                <a href="contractors.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">â–¼</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">➕</span><span>Add Engineer</span></a>
-                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">📋</span><span>Registered Engineers</span></a>
+                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">âž•</span><span>Add Engineer</span></a>
+                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">ðŸ“‹</span><span>Registered Engineers</span></a>
                 </div>
             </div>
             <a href="project-prioritization.php" class="active"><img src="../assets/images/admin/prioritization.png" alt="Priority Icon" class="nav-icon">Project Prioritization</a>
@@ -528,7 +528,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                             <tr>
                                 <td colspan="9">
                                     <div class="no-results">
-                                        <div class="no-results-icon">📋</div>
+                                        <div class="no-results-icon">ðŸ“‹</div>
                                         <div class="no-results-title">No Feedback Found</div>
                                         <div class="no-results-text">No feedback submitted yet. Please check back later.</div>
                                     </div>
@@ -850,6 +850,8 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
     <script src="../assets/js/admin-project-prioritization.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-project-prioritization.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 

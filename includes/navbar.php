@@ -13,7 +13,7 @@
 
 <header class="navbar" id="navbar">
     <div class="nav-logo">
-        <img src="<?php echo image('logo.png'); ?>" alt="City Hall Logo" class="logo-img">
+        <img src="<?php echo image('ipms-icon.png', 'icons'); ?>" alt="City Hall Logo" class="logo-img">
         <span class="logo-text">IPMS</span>
     </div>
     

@@ -302,7 +302,7 @@ $csrfToken = generate_csrf_token();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Settings - LGU IPMS</title>
-    <link rel="icon" type="image/png" href="/logocityhall.png">
+    <link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -322,7 +322,7 @@ $csrfToken = generate_csrf_token();
 
     <header class="nav" id="navbar">
         <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
-        <div class="nav-logo"><img src="/logocityhall.png" alt="City Hall Logo" class="logo-img"><span class="logo-text">IPMS</span></div>
+        <div class="nav-logo"><img src="/assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img"><span class="logo-text">IPMS</span></div>
         <div class="nav-user-profile">
             <?php if ($profileImageWebPath !== ''): ?>
                 <img src="<?php echo htmlspecialchars($profileImageWebPath, ENT_QUOTES, 'UTF-8'); ?>" alt="Profile" class="user-profile-image">
@@ -553,6 +553,8 @@ $csrfToken = generate_csrf_token();
     <script src="/user-dashboard/user-settings.js?v=<?php echo filemtime(__DIR__ . '/user-settings.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 

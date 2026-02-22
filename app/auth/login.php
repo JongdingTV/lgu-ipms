@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Load configuration and auth
 require_once dirname(dirname(__DIR__)) . '/config/app.php';
 require_once INCLUDES_PATH . '/helpers.php';
@@ -79,7 +79,7 @@ $pageTitle = $loginType === 'employee' ? 'Employee Login' : 'Citizen Login';
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<title>LGU IPMS | <?php echo htmlspecialchars($pageTitle); ?></title>
-	<link rel="icon" type="image/png" href="<?php echo ASSETS_URL; ?>/images/logo.png">
+	<link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
 	
 	<!-- Bootstrap CSS -->
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -306,7 +306,7 @@ $pageTitle = $loginType === 'employee' ? 'Employee Login' : 'Citizen Login';
 			<!-- Back Link -->
 			<div class="back-link">
 				<a href="<?php echo asset('../../../public/index.php'); ?>">
-					<span>←</span> Back to Home
+					<span>â†</span> Back to Home
 				</a>
 			</div>
 			
@@ -402,6 +402,7 @@ $pageTitle = $loginType === 'employee' ? 'Employee Login' : 'Citizen Login';
 	<script src="<?php echo ASSETS_URL; ?>/js/main.js"></script>
 </body>
 </html>
+
 
 
 

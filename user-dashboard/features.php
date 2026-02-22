@@ -1,4 +1,4 @@
-                <div style="font-size:0.97em;color:#64748b;line-height:1.1;"> <?php echo htmlspecialchars($user_email); ?> </div>
+﻿                <div style="font-size:0.97em;color:#64748b;line-height:1.1;"> <?php echo htmlspecialchars($user_email); ?> </div>
 <?php
 /**
  * New Features for Citizens
@@ -161,7 +161,7 @@ $asset_url = '/assets';
     <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand text-white" href="/user-dashboard/user-dashboard.php">
-                <img src="<?php echo $asset_url; ?>/images/logocityhall.png" alt="Logo">
+                <img src="/assets/images/icons/ipms-icon.png" alt="Logo">
                 <span>LGU IPMS - Citizen Portal</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -351,6 +351,7 @@ $asset_url = '/assets';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
 
 
 

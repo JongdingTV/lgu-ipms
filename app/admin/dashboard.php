@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once dirname(dirname(__DIR__)) . '/config/app.php';
 require_once INCLUDES_PATH . '/helpers.php';
 require_once INCLUDES_PATH . '/auth.php';
@@ -17,7 +17,7 @@ if (!has_role('employee') && !has_role('admin')) {
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<title>Admin Dashboard - LGU IPMS</title>
-	<link rel="icon" type="image/png" href="<?php echo ASSETS_URL; ?>/images/logo.png">
+	<link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
 	
 	<!-- Bootstrap CSS -->
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -260,7 +260,7 @@ if (!has_role('employee') && !has_role('admin')) {
 							<div class="card-icon" style="color: #e74c3c;">
 								<i class="fas fa-money-bill-wave"></i>
 							</div>
-							<div class="card-stat">₱2.5M</div>
+							<div class="card-stat">â‚±2.5M</div>
 							<div class="card-label">Total Budget</div>
 						</div>
 					</div>
@@ -285,3 +285,4 @@ if (!has_role('employee') && !has_role('admin')) {
 	<script src="<?php echo ASSETS_URL; ?>/js/main.js"></script>
 </body>
 </html>
+

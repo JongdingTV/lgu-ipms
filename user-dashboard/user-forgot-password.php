@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -238,7 +238,7 @@ if (isset($db) && $db instanceof mysqli) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LGU | Forgot Password</title>
-<link rel="icon" type="image/png" href="/logocityhall.png">
+<link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -420,13 +420,13 @@ body.user-forgot-page .requirements {
 </head>
 <body class="user-forgot-page">
 <header class="nav">
-    <div class="nav-logo"><img src="/logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
+    <div class="nav-logo"><img src="/assets/images/icons/ipms-icon.png" alt="LGU Logo"> Local Government Unit Portal</div>
     <a href="/public/index.php" class="home-btn" aria-label="Go to Home">Home</a>
 </header>
 
 <div class="wrapper">
     <div class="card">
-        <img src="/logocityhall.png" class="icon-top" alt="LGU Logo">
+        <img src="/assets/images/icons/ipms-icon.png" class="icon-top" alt="LGU Logo">
         <h2 class="title">Forgot Password</h2>
         <p class="subtitle">Reset your citizen account password.</p>
 
@@ -472,3 +472,5 @@ body.user-forgot-page .requirements {
 <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
+
+

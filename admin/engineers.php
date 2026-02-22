@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -280,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </svg>
         </button>
         <div class="nav-logo">
-            <img src="../logocityhall.png" alt="City Hall Logo" class="logo-img">
+            <img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS</span>
         </div>
         <div class="nav-links">
@@ -516,3 +516,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="../assets/js/admin-engineers-add.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-engineers-add.js'); ?>"></script>
 </body>
 </html>
+

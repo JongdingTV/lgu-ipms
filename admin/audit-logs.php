@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Start session first
 session_start();
 
@@ -72,7 +72,7 @@ if (isset($db)) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audit Logs - LGU Admin</title>
-<link rel="icon" type="image/png" href="../logocityhall.png">
+<link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
 <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
@@ -147,7 +147,7 @@ if (isset($db)) {
                             </td>
                             <td><?php echo date('M d, Y H:i:s', strtotime($log['login_time'])); ?></td>
                             <td><code><?php echo htmlspecialchars($log['ip_address']); ?></code></td>
-                            <td><?php echo !empty($log['reason']) ? htmlspecialchars($log['reason']) : '—'; ?></td>
+                            <td><?php echo !empty($log['reason']) ? htmlspecialchars($log['reason']) : 'â€”'; ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -164,12 +164,12 @@ if (isset($db)) {
         </div>
         <div class="card-body">
             <ul class="ac-648149ce">
-                <li>✅ Change your password regularly (at least every 90 days)</li>
-                <li>✅ Use strong passwords with mixed characters</li>
-                <li>✅ Never share your credentials with anyone</li>
-                <li>✅ Log out when finished, especially on shared computers</li>
-                <li>✅ Review login activity regularly for suspicious access</li>
-                <li>✅ Report any unauthorized access immediately</li>
+                <li>âœ… Change your password regularly (at least every 90 days)</li>
+                <li>âœ… Use strong passwords with mixed characters</li>
+                <li>âœ… Never share your credentials with anyone</li>
+                <li>âœ… Log out when finished, especially on shared computers</li>
+                <li>âœ… Review login activity regularly for suspicious access</li>
+                <li>âœ… Report any unauthorized access immediately</li>
             </ul>
         </div>
     </div>
@@ -178,6 +178,8 @@ if (isset($db)) {
 <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 

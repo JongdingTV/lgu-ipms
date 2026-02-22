@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Start session first
 session_start();
 
@@ -73,7 +73,7 @@ function send_reset_email($email, $employee_name, $reset_token) {
             <body>
                 <div class=\"container\">
                     <div class=\"header\">
-                        <h1>🔐 Password Reset Request</h1>
+                        <h1>ðŸ” Password Reset Request</h1>
                     </div>
                     
                     <p>Hello " . htmlspecialchars($employee_name) . ",</p>
@@ -88,14 +88,14 @@ function send_reset_email($email, $employee_name, $reset_token) {
                     <p class=\"link-text\">" . htmlspecialchars($reset_link) . "</p>
                     
                     <div class=\"warning\">
-                        <strong>⚠️ Security Notice:</strong><br>
-                        • This link expires in 1 hour<br>
-                        • Never share this link with anyone<br>
-                        • If you didn't request this, please ignore this email
+                        <strong>âš ï¸ Security Notice:</strong><br>
+                        â€¢ This link expires in 1 hour<br>
+                        â€¢ Never share this link with anyone<br>
+                        â€¢ If you didn't request this, please ignore this email
                     </div>
                     
                 <div class=\"footer\">
-                        <p>© " . date('Y') . " LGU IPMS System. All rights reserved.</p>
+                        <p>Â© " . date('Y') . " LGU IPMS System. All rights reserved.</p>
                 </div>
                 </div>
             </body>
@@ -107,21 +107,21 @@ function send_reset_email($email, $employee_name, $reset_token) {
         try {
             if ($mail->send()) {
                 ob_end_clean();
-                error_log('✅ Email sent successfully to: ' . $email);
+                error_log('âœ… Email sent successfully to: ' . $email);
                 return true;
             } else {
                 $error_info = $mail->ErrorInfo;
                 ob_end_clean();
-                error_log('❌ Email send failed: ' . $error_info);
+                error_log('âŒ Email send failed: ' . $error_info);
                 return false;
             }
         } catch (Exception $e) {
             ob_end_clean();
-            error_log('❌ PHPMailer Exception: ' . $e->getMessage());
+            error_log('âŒ PHPMailer Exception: ' . $e->getMessage());
             return false;
         }
     } catch (Exception $e) {
-        error_log('❌ Password reset email exception: ' . $e->getMessage());
+        error_log('âŒ Password reset email exception: ' . $e->getMessage());
         return false;
     }
 }
@@ -316,7 +316,7 @@ if (isset($db)) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Forgot Password - LGU Employee Portal</title>
-<link rel="icon" type="image/png" href="../logocityhall.png">
+<link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -330,13 +330,13 @@ if (isset($db)) {
 <body>
 
 <header class="nav">
-    <div class="nav-logo"><img src="../logocityhall.png" alt="LGU Logo"> Local Government Unit Portal</div>
+    <div class="nav-logo"><img src="../assets/images/icons/ipms-icon.png" alt="LGU Logo"> Local Government Unit Portal</div>
 </header>
 
 <div class="wrapper">
     <div class="card">
 
-        <img src="../logocityhall.png" class="icon-top">
+        <img src="../assets/images/icons/ipms-icon.png" class="icon-top">
 
         <h2 class="title">Reset Password</h2>
         <p class="subtitle">Recover your account access</p>
@@ -359,7 +359,7 @@ if (isset($db)) {
             <div class="input-box">
                 <label>Email Address</label>
                 <input type="email" name="email" placeholder="employee@lgu.gov.ph" required>
-                <span class="icon">📧</span>
+                <span class="icon">ðŸ“§</span>
             </div>
 
             <button class="btn-primary" type="submit" name="step1_request">Send Reset Link</button>
@@ -374,14 +374,14 @@ if (isset($db)) {
         <form method="post">
             <div class="input-box">
                 <label>New Password</label>
-                <input type="password" name="new_password" placeholder="••••••••" required>
-                <span class="icon">🔒</span>
+                <input type="password" name="new_password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required>
+                <span class="icon">ðŸ”’</span>
             </div>
 
             <div class="input-box">
                 <label>Confirm Password</label>
-                <input type="password" name="confirm_password" placeholder="••••••••" required>
-                <span class="icon">🔒</span>
+                <input type="password" name="confirm_password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required>
+                <span class="icon">ðŸ”’</span>
             </div>
 
             <div class="ac-97825712">
@@ -409,6 +409,8 @@ if (isset($db)) {
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 
