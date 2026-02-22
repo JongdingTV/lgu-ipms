@@ -118,6 +118,30 @@ function feedback_clean_display_description(string $description): string
     return implode("\n", $result);
 }
 
+function feedback_extract_photo_files(string $description, string $photoPathRaw = ''): array
+{
+    $files = [];
+    $add = static function (string $value) use (&$files): void {
+        $base = basename(str_replace('\\', '/', trim($value)));
+        if ($base !== '' && preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $base)) {
+            $files[$base] = true;
+        }
+    };
+
+    if ($photoPathRaw !== '') {
+        $add($photoPathRaw);
+    }
+
+    if (preg_match_all('/\[Photo Attachment Private\]\s+([^\s]+\.(?:jpg|jpeg|png|webp))/i', $description, $m1)) {
+        foreach ($m1[1] as $candidate) $add((string)$candidate);
+    }
+    if (preg_match_all('/\[Photo Attachment\]\s+([^\s]+\.(?:jpg|jpeg|png|webp))/i', $description, $m2)) {
+        foreach ($m2[1] as $candidate) $add((string)$candidate);
+    }
+
+    return array_keys($files);
+}
+
 function resolve_feedback_upload_dir(): ?string
 {
     $candidates = [
@@ -185,75 +209,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
     $status = 'Pending';
 
     $photoSavedName = '';
-    if (isset($_FILES['photo']) && (int) ($_FILES['photo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-        if ((int) $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
-            echo json_encode(['success' => false, 'message' => 'Photo upload failed. Please try another image.']);
+    $uploadedPhotos = [];
+    if (isset($_FILES['photo'])) {
+        $photoNames = $_FILES['photo']['name'] ?? [];
+        $photoTmp = $_FILES['photo']['tmp_name'] ?? [];
+        $photoErr = $_FILES['photo']['error'] ?? [];
+        $photoSize = $_FILES['photo']['size'] ?? [];
+
+        if (!is_array($photoNames)) {
+            $photoNames = [$photoNames];
+            $photoTmp = [$photoTmp];
+            $photoErr = [$photoErr];
+            $photoSize = [$photoSize];
+        }
+
+        $selectedIdx = [];
+        foreach ($photoNames as $idx => $nm) {
+            if ((int)($photoErr[$idx] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) continue;
+            $selectedIdx[] = $idx;
+        }
+        if (count($selectedIdx) > 3) {
+            echo json_encode(['success' => false, 'message' => 'You can upload up to 3 photos only.']);
             $db->close();
             exit;
         }
 
-        $allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
-        $fileName = (string) ($_FILES['photo']['name'] ?? '');
-        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        $tmpName = (string) ($_FILES['photo']['tmp_name'] ?? '');
-        $size = (int) ($_FILES['photo']['size'] ?? 0);
-
-        if (!in_array($ext, $allowedExt, true) || $size <= 0 || $size > 5 * 1024 * 1024) {
-            echo json_encode(['success' => false, 'message' => 'Photo must be JPG, PNG, or WEBP and up to 5MB only.']);
-            $db->close();
-            exit;
-        }
-
-        $mime = function_exists('mime_content_type') ? (string) mime_content_type($tmpName) : '';
-        if ($mime !== '' && strpos($mime, 'image/') !== 0) {
-            echo json_encode(['success' => false, 'message' => 'Invalid photo file type.']);
-            $db->close();
-            exit;
-        }
-
-        $uploadDir = resolve_feedback_upload_dir();
-        if ($uploadDir === null) {
-            echo json_encode(['success' => false, 'message' => 'Unable to prepare upload directory.']);
-            $db->close();
-            exit;
-        }
-
-        $savedName = 'feedback_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-        $savedPath = $uploadDir . '/' . $savedName;
-        $saved = false;
-        if (function_exists('getimagesize') && function_exists('imagecreatetruecolor')) {
-            $imgInfo = @getimagesize($tmpName);
-            $imgMime = (string) ($imgInfo['mime'] ?? '');
-            $src = null;
-            if ($imgMime === 'image/jpeg' && function_exists('imagecreatefromjpeg')) {
-                $src = @imagecreatefromjpeg($tmpName);
-            } elseif ($imgMime === 'image/png' && function_exists('imagecreatefrompng')) {
-                $src = @imagecreatefrompng($tmpName);
-            } elseif ($imgMime === 'image/webp' && function_exists('imagecreatefromwebp')) {
-                $src = @imagecreatefromwebp($tmpName);
+        if (!empty($selectedIdx)) {
+            $uploadDir = resolve_feedback_upload_dir();
+            if ($uploadDir === null) {
+                echo json_encode(['success' => false, 'message' => 'Unable to prepare upload directory.']);
+                $db->close();
+                exit;
             }
-            if ($src) {
-                imagesavealpha($src, true);
-                if ($ext === 'jpg' || $ext === 'jpeg') {
-                    $saved = @imagejpeg($src, $savedPath, 88);
-                } elseif ($ext === 'png') {
-                    $saved = @imagepng($src, $savedPath, 6);
-                } elseif ($ext === 'webp' && function_exists('imagewebp')) {
-                    $saved = @imagewebp($src, $savedPath, 85);
+
+            $allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
+            foreach ($selectedIdx as $idx) {
+                if ((int)($photoErr[$idx] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                    echo json_encode(['success' => false, 'message' => 'Photo upload failed. Please try another image.']);
+                    $db->close();
+                    exit;
                 }
-                imagedestroy($src);
+                $fileName = (string)($photoNames[$idx] ?? '');
+                $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                $tmpName = (string)($photoTmp[$idx] ?? '');
+                $size = (int)($photoSize[$idx] ?? 0);
+                if (!in_array($ext, $allowedExt, true) || $size <= 0 || $size > 5 * 1024 * 1024) {
+                    echo json_encode(['success' => false, 'message' => 'Each photo must be JPG, PNG, or WEBP and up to 5MB only.']);
+                    $db->close();
+                    exit;
+                }
+                $mime = function_exists('mime_content_type') ? (string) mime_content_type($tmpName) : '';
+                if ($mime !== '' && strpos($mime, 'image/') !== 0) {
+                    echo json_encode(['success' => false, 'message' => 'Invalid photo file type detected.']);
+                    $db->close();
+                    exit;
+                }
+
+                $savedName = 'feedback_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+                $savedPath = $uploadDir . '/' . $savedName;
+                $saved = false;
+                if (function_exists('getimagesize') && function_exists('imagecreatetruecolor')) {
+                    $imgInfo = @getimagesize($tmpName);
+                    $imgMime = (string) ($imgInfo['mime'] ?? '');
+                    $src = null;
+                    if ($imgMime === 'image/jpeg' && function_exists('imagecreatefromjpeg')) $src = @imagecreatefromjpeg($tmpName);
+                    elseif ($imgMime === 'image/png' && function_exists('imagecreatefrompng')) $src = @imagecreatefrompng($tmpName);
+                    elseif ($imgMime === 'image/webp' && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($tmpName);
+                    if ($src) {
+                        imagesavealpha($src, true);
+                        if ($ext === 'jpg' || $ext === 'jpeg') $saved = @imagejpeg($src, $savedPath, 88);
+                        elseif ($ext === 'png') $saved = @imagepng($src, $savedPath, 6);
+                        elseif ($ext === 'webp' && function_exists('imagewebp')) $saved = @imagewebp($src, $savedPath, 85);
+                        imagedestroy($src);
+                    }
+                }
+                if (!$saved) $saved = move_uploaded_file($tmpName, $savedPath);
+                if (!$saved) {
+                    echo json_encode(['success' => false, 'message' => 'Unable to save uploaded photo.']);
+                    $db->close();
+                    exit;
+                }
+                $uploadedPhotos[] = $savedName;
             }
         }
-        if (!$saved) {
-            $saved = move_uploaded_file($tmpName, $savedPath);
+    }
+    if (!empty($uploadedPhotos)) {
+        $photoSavedName = (string)$uploadedPhotos[0];
+        foreach ($uploadedPhotos as $photoFile) {
+            $description .= "\n\n[Photo Attachment Private] " . $photoFile;
         }
-        if (!$saved) {
-            echo json_encode(['success' => false, 'message' => 'Unable to save uploaded photo.']);
-            $db->close();
-            exit;
-        }
-        $photoSavedName = $savedName;
-        $description .= "\n\n[Photo Attachment Private] " . $savedName;
     }
 
     $mapLink = $gpsMapUrl !== '' ? $gpsMapUrl : null;
@@ -469,8 +513,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['feedback_submit'])) {
 $hasFeedbackUserId = feedback_table_has_user_id($db);
 $hasFeedbackPhotoPath = feedback_table_has_column($db, 'photo_path');
 $listFields = $hasFeedbackPhotoPath
-    ? 'subject, category, location, description, status, date_submitted, photo_path'
-    : 'subject, category, location, description, status, date_submitted';
+    ? 'id, subject, category, location, description, status, date_submitted, photo_path'
+    : 'id, subject, category, location, description, status, date_submitted';
 $listSql = $hasFeedbackUserId
     ? "SELECT {$listFields} FROM feedback WHERE user_id = ? ORDER BY date_submitted DESC LIMIT 20"
     : "SELECT {$listFields} FROM feedback WHERE user_name = ? ORDER BY date_submitted DESC LIMIT 20";
@@ -645,12 +689,12 @@ $csrfToken = generate_csrf_token();
                         <textarea id="feedback" name="feedback" rows="5" required></textarea>
                     </div>
                     <div class="full">
-                        <label for="photo">Upload a Photo (Optional)</label>
+                        <label for="photo">Upload Photos (Optional, 1-3)</label>
                         <div id="feedbackPhotoRow" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                            <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp" style="flex:1 1 280px;">
+                            <input type="file" id="photo" name="photo[]" accept="image/jpeg,image/png,image/webp" multiple style="flex:1 1 280px;">
                             <button type="button" id="removePhotoBtn" class="ac-f84d9680">Remove Photo</button>
                         </div>
-                        <small id="photoStatus" style="display:block;margin-top:6px;color:#64748b;">No photo selected.</small>
+                        <small id="photoStatus" style="display:block;margin-top:6px;color:#64748b;">No photos selected.</small>
                     </div>
                     <div class="full">
                         <label>Map Pinpoint</label>
@@ -737,20 +781,9 @@ $csrfToken = generate_csrf_token();
                             $displayDesc = feedback_clean_display_description($desc);
                             $photoPath = '';
                             $photoPathCol = trim((string) ($row['photo_path'] ?? ''));
-                            if ($photoPathCol !== '') {
-                                $normalizedPath = str_replace('\\', '/', $photoPathCol);
-                                $basePhotoFile = basename($normalizedPath);
-                                if (preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $basePhotoFile)) {
-                                    $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($basePhotoFile);
-                                }
-                            }
-                            if ($photoPath === '' && preg_match('/\[Photo Attachment Private\]\s+([\w\-.]+\.(?:jpg|jpeg|png|webp))/i', $desc, $m)) {
-                                $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($m[1]);
-                            } elseif ($photoPath === '' && preg_match('/\[Photo Attachment\]\s+([^\s]+\.(?:jpg|jpeg|png|webp))/i', $desc, $m)) {
-                                $legacyBase = basename(str_replace('\\', '/', (string)$m[1]));
-                                if ($legacyBase !== '' && preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $legacyBase)) {
-                                    $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($legacyBase);
-                                }
+                            $photoFiles = feedback_extract_photo_files($desc, $photoPathCol);
+                            if (!empty($photoFiles)) {
+                                $photoPath = '/user-dashboard/feedback-photo.php?feedback_id=' . (int)($row['id'] ?? 0) . '&photo_index=0';
                             }
                             ?>
                             <div

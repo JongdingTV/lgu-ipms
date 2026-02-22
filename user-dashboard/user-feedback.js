@@ -511,16 +511,23 @@
 
     if (photoInput && photoStatus) {
         photoInput.addEventListener('change', function () {
-            photoStatus.textContent = photoInput.files && photoInput.files.length > 0
-                ? 'Selected: ' + photoInput.files[0].name
-                : 'No photo selected.';
+            const files = photoInput.files ? Array.from(photoInput.files) : [];
+            if (files.length > 3) {
+                photoInput.value = '';
+                photoStatus.textContent = 'No photos selected.';
+                showMessage('You can upload up to 3 photos only.', false);
+                return;
+            }
+            photoStatus.textContent = files.length > 0
+                ? ('Selected (' + files.length + '): ' + files.map(function (f) { return f.name; }).join(', '))
+                : 'No photos selected.';
         });
     }
 
     if (removePhotoBtn && photoInput) {
         removePhotoBtn.addEventListener('click', function () {
             photoInput.value = '';
-            if (photoStatus) photoStatus.textContent = 'No photo selected.';
+            if (photoStatus) photoStatus.textContent = 'No photos selected.';
         });
     }
 
@@ -788,7 +795,7 @@
                 if (gpsMapUrl) gpsMapUrl.value = '';
                 if (gpsAddress) gpsAddress.value = '';
                 if (pinnedAddress) pinnedAddress.textContent = 'No pinned address yet.';
-                if (photoStatus) photoStatus.textContent = 'No photo selected.';
+                if (photoStatus) photoStatus.textContent = 'No photos selected.';
                 if (marker && map) {
                     map.removeLayer(marker);
                     marker = null;
