@@ -56,6 +56,7 @@ if (isset($db) && !$db->connect_error) {
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/super-admin.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/super-admin.css'); ?>">
 </head>
 <body class="super-admin-theme">
     <div class="sidebar-toggle-wrapper">
@@ -71,7 +72,6 @@ if (isset($db) && !$db->connect_error) {
         <div class="nav-links">
             <a href="/super-admin/dashboard_overview.php" class="active"><img src="../assets/images/admin/dashboard.png" class="nav-icon">Dashboard Overview</a>
             <a href="/super-admin/progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
-            <a href="/super-admin/registered_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon">Registered Projects</a>
             <a href="/super-admin/employee_accounts.php"><img src="../assets/images/admin/person.png" class="nav-icon">Employee Accounts</a>
             <a href="/super-admin/dashboard.php"><img src="../assets/images/admin/check.png" class="nav-icon">Control Center</a>
         </div>
@@ -93,11 +93,23 @@ if (isset($db) && !$db->connect_error) {
             <p>Super Admin view of core project metrics.</p>
         </div>
 
-        <div class="pm-stats-wrapper">
-            <div class="stat-box stat-total"><div class="stat-number"><?php echo (int)$totalProjects; ?></div><div class="stat-label">Total Projects</div></div>
-            <div class="stat-box stat-progress"><div class="stat-number"><?php echo (int)$inProgress; ?></div><div class="stat-label">In Progress</div></div>
-            <div class="stat-box stat-completed"><div class="stat-number"><?php echo (int)$completed; ?></div><div class="stat-label">Completed</div></div>
-            <div class="stat-box stat-approved"><div class="stat-number">PHP <?php echo number_format($totalBudget, 2); ?></div><div class="stat-label">Total Budget</div></div>
+        <div class="sa-kpi-grid">
+            <article class="sa-kpi-card">
+                <p class="sa-kpi-value"><?php echo (int)$totalProjects; ?></p>
+                <p class="sa-kpi-label">Total Projects</p>
+            </article>
+            <article class="sa-kpi-card">
+                <p class="sa-kpi-value"><?php echo (int)$inProgress; ?></p>
+                <p class="sa-kpi-label">In Progress</p>
+            </article>
+            <article class="sa-kpi-card">
+                <p class="sa-kpi-value"><?php echo (int)$completed; ?></p>
+                <p class="sa-kpi-label">Completed</p>
+            </article>
+            <article class="sa-kpi-card">
+                <p class="sa-kpi-value">PHP <?php echo number_format($totalBudget, 2); ?></p>
+                <p class="sa-kpi-label">Total Budget</p>
+            </article>
         </div>
 
         <div class="recent-projects" style="margin-top:16px;">
@@ -128,4 +140,3 @@ if (isset($db) && !$db->connect_error) {
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
-
