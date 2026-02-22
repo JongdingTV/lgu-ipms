@@ -402,6 +402,57 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <style>
+        .status-section-row td {
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            padding: 12px 14px;
+            border-top: 2px solid #dbe7f3;
+            border-bottom: 1px solid #e8eef6;
+            background: #f8fbff;
+            color: #1f2937;
+        }
+        .status-section-row[data-section-header="pending"] td {
+            background: #fff7ed;
+            border-top-color: #fdba74;
+            color: #9a3412;
+        }
+        .status-section-row[data-section-header="reviewed"] td {
+            background: #eff6ff;
+            border-top-color: #93c5fd;
+            color: #1d4ed8;
+        }
+        .status-section-row[data-section-header="addressed"] td {
+            background: #ecfdf5;
+            border-top-color: #86efac;
+            color: #166534;
+        }
+        .status-section-row[data-section-header="rejected"] td {
+            background: #fef2f2;
+            border-top-color: #fca5a5;
+            color: #991b1b;
+        }
+        .section-empty-row td {
+            font-style: italic;
+            color: #64748b;
+            background: #f8fafc;
+            padding: 10px 14px;
+        }
+        .feedback-table tbody tr[data-status]:hover {
+            box-shadow: inset 0 0 0 9999px rgba(15, 23, 42, 0.03);
+        }
+        .rejection-note-wrap textarea {
+            width: 100%;
+            border: 1px solid #dbe7f3;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-family: inherit;
+            font-size: 15px;
+            line-height: 1.55;
+            resize: vertical;
+            min-height: 150px;
+        }
+    </style>
     </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -710,7 +761,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                             </select>
                                         </div>
                                         <div class="modal-field rejection-note-wrap" id="reject-note-wrap-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" style="<?= (isset($fb_lc['status']) && $fb_lc['status']==='Rejected') ? '' : 'display:none;' ?>">
-                                            <label for="rejection-note-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal-label">Reason for Rejection (visible to citizen):</label>
+                                            <label for="rejection-note-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" class="modal-label">Reason for Rejection:</label>
                                             <textarea id="rejection-note-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>" name="rejection_note" rows="3" placeholder="Explain why this concern is rejected..."><?= isset($fb_lc['rejection_note']) ? htmlspecialchars((string)$fb_lc['rejection_note']) : '' ?></textarea>
                                         </div>
                                     </div>

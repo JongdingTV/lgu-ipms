@@ -98,6 +98,26 @@ function feedback_strlen(string $value): int
     return (int) strlen($value);
 }
 
+function feedback_clean_display_description(string $description): string
+{
+    // Remove system metadata lines from citizen-facing description view.
+    $cleaned = preg_replace('/^\[(Photo Attachment Private|Google Maps Pin|Pinned Address|Complete Address)\].*$/mi', '', $description);
+    $cleaned = (string) ($cleaned ?? '');
+    $lines = preg_split("/\r\n|\n|\r/", $cleaned);
+    $normalizedSeen = [];
+    $result = [];
+    foreach ($lines as $line) {
+        $trimmed = trim((string) $line);
+        if ($trimmed === '') continue;
+        $key = strtolower(preg_replace('/\s+/', ' ', $trimmed) ?? $trimmed);
+        if (isset($normalizedSeen[$key])) continue;
+        $normalizedSeen[$key] = true;
+        $result[] = $trimmed;
+    }
+    if (empty($result)) return '-';
+    return implode("\n", $result);
+}
+
 function resolve_feedback_upload_dir(): ?string
 {
     $candidates = [
@@ -714,12 +734,15 @@ $csrfToken = generate_csrf_token();
                                 $statusClass = 'onhold';
                             }
                             $desc = (string) ($row['description'] ?? '');
+                            $displayDesc = feedback_clean_display_description($desc);
                             $photoPath = '';
                             $photoPathCol = trim((string) ($row['photo_path'] ?? ''));
                             if ($photoPathCol !== '') {
-                                if (preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $photoPathCol)) {
-                                    $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($photoPathCol);
-                                } elseif (preg_match('#^/uploads/feedback/[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$#i', $photoPathCol)) {
+                                $normalizedPath = str_replace('\\', '/', $photoPathCol);
+                                $basePhotoFile = basename($normalizedPath);
+                                if (preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $basePhotoFile)) {
+                                    $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($basePhotoFile);
+                                } elseif (preg_match('#^/?uploads/feedback/[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$#i', $normalizedPath)) {
                                     $photoPath = $photoPathCol;
                                 }
                             }
@@ -740,7 +763,7 @@ $csrfToken = generate_csrf_token();
                                 data-category="<?php echo htmlspecialchars((string) $row['category'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-location="<?php echo htmlspecialchars((string) $row['location'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-status="<?php echo htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8'); ?>"
-                                data-description="<?php echo htmlspecialchars((string) $row['description'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-description="<?php echo htmlspecialchars($displayDesc, ENT_QUOTES, 'UTF-8'); ?>"
                                 style="cursor:pointer;"
                             >
                                 <span class="feedback-mail-dot <?php echo $statusClass; ?>"></span>
