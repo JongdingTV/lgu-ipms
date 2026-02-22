@@ -79,7 +79,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
 <section class="main-content">
     <div class="dash-header">
         <h1>Contractor Dashboard</h1>
-        <p>Welcome, <?php echo htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8'); ?>. Manage project validation, budgets, and expenses.</p>
+        <p>Welcome, <?php echo htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8'); ?>. Manage project expenses and progress updates.</p>
     </div>
 
     <div class="contractor-stats">
@@ -90,10 +90,6 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
         <div class="contractor-stat-card">
             <div class="label">Approved</div>
             <div class="value" id="statApproved">0</div>
-        </div>
-        <div class="contractor-stat-card">
-            <div class="label">Total Budget</div>
-            <div class="value" id="statBudget">PHP 0</div>
         </div>
         <div class="contractor-stat-card">
             <div class="label">Total Spent</div>
@@ -125,7 +121,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
             </div>
         </div>
         <div class="contractor-help">
-            <strong>How to use:</strong> Update budget and expenses, then submit status requests. Engineer reviews technically, admin performs final approval.
+            <strong>How to use:</strong> Track project details, log expenses, and update progress. Project budgeting and approvals are handled by Department Head/Admin.
         </div>
         <div id="feedback" class="ac-c8be1ccb"></div>
         <div class="table-wrap">
@@ -135,8 +131,6 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                         <th>Code</th>
                         <th>Project</th>
                         <th>Status</th>
-                        <th>Budget Management</th>
-                        <th>Status Request</th>
                         <th>Expense Update</th>
                         <th>Progress Module</th>
                     </tr>
@@ -203,10 +197,8 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
         var projects = state.projects || [];
         var total = projects.length;
         var approved = projects.filter(function (p) { return String(p.status || '').toLowerCase() === 'approved'; }).length;
-        var totalBudget = projects.reduce(function (sum, p) { return sum + Number(p.budget || 0); }, 0);
         document.getElementById('statTotal').textContent = String(total);
         document.getElementById('statApproved').textContent = String(approved);
-        document.getElementById('statBudget').textContent = 'PHP ' + totalBudget.toLocaleString();
         document.getElementById('statSpent').textContent = 'PHP ' + Number(state.totalSpent || 0).toLocaleString();
     }
 
@@ -239,25 +231,6 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 '<td><strong>' + esc(p.name) + '</strong><br><small>' + esc(p.location || 'N/A') + '</small></td>',
                 '<td>' + statusChip(p.status || 'Draft') + '</td>',
                 '<td>',
-                '  <div class="section-title">Current</div>',
-                '  <div><strong>PHP ' + Number(p.budget || 0).toLocaleString() + '</strong></div>',
-                '  <div class="section-title">Update</div>',
-                '  <input class="contractor-input" data-type="budget" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="New budget">',
-                '  <button class="contractor-btn btn-warning" type="button" data-action="budget" data-id="' + p.id + '">Save Budget</button>',
-                '</td>',
-                '<td>',
-                '  <div class="section-title">Request Status Change</div>',
-                '  <select class="contractor-select" data-type="validate" data-id="' + p.id + '">',
-                '    <option value="">Select target status</option>',
-                '    <option value="For Approval">For Approval</option>',
-                '    <option value="Approved">Approved</option>',
-                '    <option value="On-hold">On-hold</option>',
-                '    <option value="Completed">Completed</option>',
-                '  </select>',
-                '  <input class="contractor-input" data-type="status-note" data-id="' + p.id + '" type="text" placeholder="Reason / note for engineer/admin">',
-                '  <button class="contractor-btn btn-warning" type="button" data-action="status-request" data-id="' + p.id + '">Submit Request</button>',
-                '</td>',
-                '<td>',
                 '  <div class="section-title">Log Expense</div>',
                 '  <input class="contractor-input" data-type="amount" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="Amount">',
                 '  <input class="contractor-input" data-type="desc" data-id="' + p.id + '" type="text" placeholder="Description">',
@@ -271,48 +244,6 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 '</td>'
             ].join('');
             tbody.appendChild(tr);
-        });
-
-        tbody.querySelectorAll('button[data-action="status-request"]').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-                const id = this.getAttribute('data-id');
-                const statusEl = document.querySelector('select[data-type="validate"][data-id="' + id + '"]');
-                const noteEl = document.querySelector('input[data-type="status-note"][data-id="' + id + '"]');
-                if (!statusEl || !statusEl.value) {
-                    showMessage('err', 'Select a target status first.');
-                    return;
-                }
-                try {
-                    await apiPost('submit_status_request', {
-                        project_id: id,
-                        requested_status: statusEl.value,
-                        note: noteEl ? noteEl.value : ''
-                    });
-                    if (noteEl) noteEl.value = '';
-                    statusEl.value = '';
-                    showMessage('ok', 'Status request submitted to Engineer/Admin.');
-                } catch (e) {
-                    showMessage('err', e.message);
-                }
-            });
-        });
-
-        tbody.querySelectorAll('button[data-action="budget"]').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-                const id = this.getAttribute('data-id');
-                const budget = document.querySelector('input[data-type="budget"][data-id="' + id + '"]');
-                try {
-                    await apiPost('update_budget', {
-                        project_id: id,
-                        budget: Number(budget.value || 0)
-                    });
-                    budget.value = '';
-                    showMessage('ok', 'Project budget updated.');
-                    await load();
-                } catch (e) {
-                    showMessage('err', e.message);
-                }
-            });
         });
 
         tbody.querySelectorAll('button[data-action="expense"]').forEach(function (btn) {

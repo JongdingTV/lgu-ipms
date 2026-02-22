@@ -29,6 +29,39 @@ $avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
 $profileImageWebPath = user_profile_photo_web_path($userId);
 $progressUpdatedAt = date('M d, Y h:i A');
 
+function user_extract_location_terms(string $address): array
+{
+    $address = strtolower(trim($address));
+    if ($address === '') {
+        return [];
+    }
+    $normalized = preg_replace('/[^a-z0-9,\-\s]/', ' ', $address) ?? '';
+    $parts = preg_split('/[\s,]+/', $normalized) ?: [];
+    $stop = [
+        'quezon', 'city', 'metro', 'manila', 'philippines', 'barangay', 'brgy',
+        'district', 'street', 'st', 'road', 'rd', 'avenue', 'ave', 'block', 'lot',
+        'phase', 'unit', 'house', 'number', 'no', 'near', 'zone'
+    ];
+    $terms = [];
+    foreach ($parts as $part) {
+        $part = trim($part);
+        if ($part === '' || strlen($part) < 4) {
+            continue;
+        }
+        if (in_array($part, $stop, true)) {
+            continue;
+        }
+        if (ctype_digit($part)) {
+            continue;
+        }
+        $terms[$part] = true;
+        if (count($terms) >= 8) {
+            break;
+        }
+    }
+    return array_keys($terms);
+}
+
 function user_progress_has_created_at(mysqli $db): bool
 {
     $stmt = $db->prepare(
@@ -88,6 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'load_pr
     $selectProgress = $hasProgress ? ', COALESCE(progress, 0) AS progress' : ', 0 AS progress';
     $orderBy = $hasCreatedAt ? 'created_at DESC' : 'id DESC';
 
+    $hasBarangay = user_table_has_column($db, 'projects', 'barangay');
+    $selectBarangay = $hasBarangay ? ', barangay' : ", '' AS barangay";
     $result = $db->query(
         "SELECT id, code, name, description, location, province, sector,
             CASE
@@ -95,24 +130,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'load_pr
                 WHEN LOWER(COALESCE(status, '')) = 'cancelled' THEN 'Closed'
                 ELSE 'Ongoing'
             END AS public_status,
-            start_date, end_date, duration_months{$selectCreatedAt}{$selectProgress}
+            start_date, end_date, duration_months{$selectCreatedAt}{$selectProgress}{$selectBarangay}
          FROM projects
          ORDER BY {$orderBy}
          LIMIT 500"
     );
 
     $projects = [];
+    $scopedProjects = [];
+    $locationTerms = user_extract_location_terms((string) ($user['address'] ?? ''));
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             if (!isset($row['progress'])) {
                 $row['progress'] = 0;
             }
             $projects[] = $row;
+            if (!empty($locationTerms)) {
+                $hay = strtolower(trim(
+                    (string) ($row['location'] ?? '') . ' ' .
+                    (string) ($row['province'] ?? '') . ' ' .
+                    (string) ($row['barangay'] ?? '')
+                ));
+                foreach ($locationTerms as $term) {
+                    if ($term !== '' && strpos($hay, $term) !== false) {
+                        $scopedProjects[] = $row;
+                        break;
+                    }
+                }
+            }
         }
         $result->free();
     }
 
-    echo json_encode($projects);
+    // Use scoped list when we have location terms and actual matches.
+    $output = (!empty($locationTerms) && !empty($scopedProjects)) ? $scopedProjects : $projects;
+    echo json_encode($output);
     $db->close();
     exit;
 }
@@ -176,7 +228,7 @@ $db->close();
             <a href="user-dashboard.php"><img src="/assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon"> Dashboard Overview</a>
             <a href="user-progress-monitoring.php" class="active"><img src="/assets/images/admin/monitoring.png" alt="Progress Monitoring Icon" class="nav-icon"> Progress Monitoring</a>
             <a href="user-feedback.php"><img src="/assets/images/admin/prioritization.png" alt="Feedback Icon" class="nav-icon"> Feedback</a>
-            <a href="user-settings.php"><img src="/assets/images/admin/person.png" alt="Settings Icon" class="nav-icon"> Settings</a>
+            <a href="user-settings.php"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 3.63 17l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82L4.3 6.46A2 2 0 1 1 7.12 3.63l.06.06A1.65 1.65 0 0 0 9 4.6c.38 0 .74-.13 1-.37.27-.24.42-.58.42-.94V3a2 2 0 1 1 4 0v.09c0 .36.15.7.42.94.26.24.62.37 1 .37a1.65 1.65 0 0 0 1.82-.33l.06-.06A2 2 0 1 1 20.37 7.1l-.06.06A1.65 1.65 0 0 0 19.4 9c0 .38.13.74.37 1 .24.27.58.42.94.42H21a2 2 0 1 1 0 4h-.09c-.36 0-.7.15-.94.42-.24.26-.37.62-.37 1z"></path></svg> Settings</a>
         </div>
 
         <div class="nav-divider"></div>

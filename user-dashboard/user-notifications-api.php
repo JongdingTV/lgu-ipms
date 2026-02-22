@@ -21,6 +21,30 @@ $items = [];
 $latestId = 0;
 $seenId = 0;
 
+function notif_table_has_column(mysqli $db, string $table, string $column): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('ss', $table, $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $ok = $res && $res->num_rows > 0;
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+    return $ok;
+}
+
 if ($userId <= 0) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     $db->close();
@@ -70,6 +94,57 @@ if ($seenStmt) {
 }
 
 // Privacy scope: user notifications should only include user-owned account/feedback updates.
+// Include public project updates that are already visible on user-facing pages.
+$hasProjectCreated = notif_table_has_column($db, 'projects', 'created_at');
+$hasProjectUpdated = notif_table_has_column($db, 'projects', 'updated_at');
+$projectTimeExpr = $hasProjectUpdated
+    ? 'COALESCE(updated_at, created_at)'
+    : ($hasProjectCreated ? 'created_at' : 'NULL');
+$projectSql = "SELECT id, name, location, status, {$projectTimeExpr} AS event_at
+               FROM projects
+               ORDER BY id DESC
+               LIMIT 20";
+$projectRes = $db->query($projectSql);
+if ($projectRes) {
+    while ($row = $projectRes->fetch_assoc()) {
+        $pid = (int) ($row['id'] ?? 0);
+        if ($pid <= 0) {
+            continue;
+        }
+        $statusRaw = strtolower(trim((string) ($row['status'] ?? '')));
+        $publicStatus = 'Ongoing';
+        $statusVersion = 1;
+        $level = 'info';
+        if ($statusRaw === 'completed') {
+            $publicStatus = 'Completed';
+            $statusVersion = 2;
+            $level = 'success';
+        } elseif ($statusRaw === 'cancelled') {
+            $publicStatus = 'Closed';
+            $statusVersion = 3;
+            $level = 'warning';
+        }
+        $nid = 200000000 + ($pid * 10) + $statusVersion;
+        $title = 'Project Update: ' . trim((string) ($row['name'] ?? 'Project'));
+        $location = trim((string) ($row['location'] ?? ''));
+        $message = $location !== '' ? ($publicStatus . ' | ' . $location) : $publicStatus;
+        $eventAt = (string) ($row['event_at'] ?? '');
+        $items[] = [
+            'id' => $nid,
+            'level' => $level,
+            'category' => 'Project',
+            'link' => '/user-dashboard/user-progress-monitoring.php',
+            'title' => $title,
+            'message' => $message,
+            'created_at' => $eventAt !== '' ? $eventAt : null,
+            'created_at_ts' => $eventAt !== '' ? strtotime($eventAt) : null
+        ];
+        if ($nid > $latestId) {
+            $latestId = $nid;
+        }
+    }
+    $projectRes->free();
+}
 
 // User verification status updates
 if (user_table_has_column($db, 'users', 'verification_status')) {
@@ -96,6 +171,8 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
             $items[] = [
                 'id' => $nid,
                 'level' => $status === 'verified' ? 'success' : 'danger',
+                'category' => 'Verification',
+                'link' => '/user-dashboard/user-settings.php',
                 'title' => $status === 'verified' ? 'ID Verification Approved' : 'ID Verification Rejected',
                 'message' => $status === 'verified'
                     ? 'Your account is now fully unlocked.'
@@ -111,6 +188,8 @@ if (user_table_has_column($db, 'users', 'verification_status')) {
             $items[] = [
                 'id' => $nid,
                 'level' => 'warning',
+                'category' => 'Verification',
+                'link' => '/user-dashboard/user-settings.php',
                 'title' => 'ID Verification Pending',
                 'message' => 'Your account is in limited mode until verification is approved.',
                 'created_at' => $verificationTime !== '' ? $verificationTime : null,
@@ -198,6 +277,8 @@ if ($userId > 0 || $userName !== '') {
             $items[] = [
                 'id' => $nid,
                 'level' => $level,
+                'category' => 'Feedback',
+                'link' => '/user-dashboard/user-feedback.php',
                 'title' => 'Feedback Update: ' . $subject,
                 'message' => 'Current status: ' . ($statusText !== '' ? $statusText : 'Pending'),
                 'created_at' => $fbRow['date_submitted'] ?? null,
@@ -227,6 +308,7 @@ echo json_encode([
     'success' => true,
     'latest_id' => $latestId,
     'seen_id' => $seenId,
+    'server_now_ts' => time(),
     'items' => $items
 ]);
 

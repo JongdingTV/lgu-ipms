@@ -74,6 +74,46 @@ function build_db_debug_error(mysqli $db, string $context, string $stmtError = '
     return implode(' | ', $parts);
 }
 
+function ensure_department_head_review_table(mysqli $db): void
+{
+    $db->query("CREATE TABLE IF NOT EXISTS project_department_head_reviews (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL UNIQUE,
+        decision_status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+        decision_note TEXT NULL,
+        decided_by INT NULL,
+        decided_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_decision_status (decision_status),
+        CONSTRAINT fk_dept_review_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        CONSTRAINT fk_dept_review_employee FOREIGN KEY (decided_by) REFERENCES employees(id) ON DELETE SET NULL
+    )");
+}
+
+function queue_project_for_department_head(mysqli $db, int $projectId): void
+{
+    if ($projectId <= 0) {
+        return;
+    }
+    ensure_department_head_review_table($db);
+    $stmt = $db->prepare(
+        "INSERT INTO project_department_head_reviews (project_id, decision_status, decision_note, decided_by, decided_at)
+         VALUES (?, 'Pending', NULL, NULL, NULL)
+         ON DUPLICATE KEY UPDATE
+            decision_status = 'Pending',
+            decision_note = NULL,
+            decided_by = NULL,
+            decided_at = NULL"
+    );
+    if (!$stmt) {
+        return;
+    }
+    $stmt->bind_param('i', $projectId);
+    $stmt->execute();
+    $stmt->close();
+}
+
 function is_ajax_request(): bool
 {
     if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
@@ -201,6 +241,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             respond_project_registration(false, 'Invalid project status value.');
         }
         $status = $normalizedStatus;
+        $isUpdate = isset($_POST['id']) && !empty($_POST['id']);
+
+        // Workflow rule: every newly registered project must pass Department Head approval first.
+        if (!$isUpdate) {
+            $status = 'For Approval';
+            $budget = 0.0;
+        }
         
         if ($budget !== null && $budget > MAX_PROJECT_BUDGET) {
             respond_project_registration(false, 'Budget exceeds the maximum allowed amount of PHP ' . number_format((float) MAX_PROJECT_BUDGET, 2) . '.');
@@ -224,8 +271,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             respond_project_registration(false, $e->getMessage());
         }
         
+
         $oldStatus = '';
         if (isset($_POST['id']) && !empty($_POST['id'])) {
+
+        if ($isUpdate) {
+
             // Update existing project
             $id = (int)$_POST['id'];
             $transition = pw_validate_transition($db, $id, $status);
@@ -351,6 +402,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $executed = $stmt->execute();
             if ($executed) {
                 $savedId = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : (int)$db->insert_id;
+
                 $isUpdate = isset($_POST['id']) && !empty($_POST['id']);
                 $actorId = (int)($_SESSION['employee_id'] ?? 0);
                 if ($isUpdate && $oldStatus !== '' && $oldStatus !== $status) {
@@ -367,6 +419,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         'priority' => $priority,
                         'budget' => $budget
                     ]);
+
+                if (!$isUpdate) {
+                    queue_project_for_department_head($db, $savedId);
+
                 }
                 $okMessage = $isUpdate ? 'Project has been updated successfully.' : 'Project has been added successfully.';
                 respond_project_registration(true, $okMessage, ['project_id' => $savedId]);

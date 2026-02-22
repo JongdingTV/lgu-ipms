@@ -1099,7 +1099,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilit
     z-index: 1320 !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: space-between !important;
+    justify-content: flex-end !important;
     gap: 10px !important;
     min-height: 68px !important;
     padding: 10px 18px !important;
@@ -1108,12 +1108,24 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-utilit
     box-shadow: 0 2px 12px rgba(14, 33, 58, 0.1) !important;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-top-left {
+    display: block !important;
+    position: absolute !important;
+    left: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 1 !important;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip {
     display: inline-flex !important;
     flex-direction: column !important;
     justify-content: center !important;
-    align-items: flex-end !important;
-    gap: 2px !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 0 !important;
     min-width: 180px !important;
     min-height: 40px !important;
     box-sizing: border-box !important;
@@ -1121,14 +1133,14 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip 
     border-radius: 10px !important;
     background: linear-gradient(160deg, #ffffff, #f6fbff) !important;
     box-shadow: 0 6px 16px rgba(14, 33, 58, 0.12) !important;
-    padding: 4px 8px !important;
+    padding: 6px 10px !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-time {
     color: #183e6b !important;
     font-weight: 800 !important;
     font-size: 0.98rem !important;
-    line-height: 1.1 !important;
+    line-height: 1.15 !important;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .admin-time-chip .admin-date {
@@ -1494,6 +1506,262 @@ body.theme-dark .admin-notif-head button {
     background: #1e293b !important;
     border-color: #475569 !important;
     color: #cfe3ff !important;
+}
+
+body.theme-dark .admin-top-utilities {
+    background: linear-gradient(160deg, rgba(7, 16, 30, 0.98), rgba(15, 23, 42, 0.98)) !important;
+    border-bottom-color: #334155 !important;
+}
+
+body.theme-dark .admin-time-chip {
+    background: linear-gradient(160deg, #111827, #0f172a) !important;
+    border-color: #334155 !important;
+}
+
+body.theme-dark .admin-time-chip .admin-time {
+    color: #f8fafc !important;
+}
+
+body.theme-dark .admin-time-chip .admin-date {
+    color: #cbd5e1 !important;
+}
+
+body.theme-dark .admin-utility-btn {
+    background: #111827 !important;
+    border-color: #334155 !important;
+    color: #e2e8f0 !important;
+}
+
+body.theme-dark .admin-calendar-panel {
+    background: #0f172a !important;
+    border: 1px solid #334155 !important;
+    color: #e2e8f0 !important;
+}
+
+body.theme-dark .admin-calendar-weekdays span {
+    color: #cbd5e1 !important;
+}
+
+body.theme-dark .admin-calendar-grid span {
+    color: #e2e8f0 !important;
+    border-color: #334155 !important;
+}
+
+body.theme-dark .admin-calendar-grid span.is-outside {
+    color: #64748b !important;
+}
+
+body.theme-dark .admin-calendar-grid span.is-today {
+    background: #1d4ed8 !important;
+    color: #fff !important;
+    border-color: #3b82f6 !important;
+}
+
+/* ===== Unified User Dark Palette ===== */
+body.theme-dark {
+    --u-bg: #0b1220;
+    --u-surface: #121a2b;
+    --u-surface-2: #17233a;
+    --u-border: #2a3a57;
+    --u-text: #e7eefb;
+    --u-muted: #aab9d4;
+    --u-accent: #4f8cff;
+    --u-accent-2: #2563eb;
+    --u-success-bg: #123a2d;
+    --u-success-text: #9be7c3;
+    --u-warn-bg: #4a3512;
+    --u-warn-text: #ffd58a;
+    --u-danger-bg: #4a1f2a;
+    --u-danger-text: #ffb2c2;
+}
+
+body.theme-dark,
+body.theme-dark .main-content {
+    background: var(--u-bg) !important;
+    color: var(--u-text) !important;
+}
+
+body.theme-dark #navbar,
+body.theme-dark .admin-top-utilities {
+    background: linear-gradient(180deg, #0f1a2f, #0d1628) !important;
+    border-color: var(--u-border) !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+}
+
+body.theme-dark .nav-links a,
+body.theme-dark .nav-user-name,
+body.theme-dark .nav-user-email,
+body.theme-dark .logo-text {
+    color: var(--u-text) !important;
+}
+
+body.theme-dark .nav-links a:hover,
+body.theme-dark .nav-links a.active {
+    background: #1a2a45 !important;
+    border-color: #355a96 !important;
+    color: #f4f8ff !important;
+}
+
+body.theme-dark .main-content .card,
+body.theme-dark .main-content .pm-section.card,
+body.theme-dark .main-content .recent-projects,
+body.theme-dark .main-content .settings-card,
+body.theme-dark .main-content .dash-header,
+body.theme-dark .main-content .table-wrap,
+body.theme-dark .main-content .chart-box,
+body.theme-dark .main-content .metric-card {
+    background: linear-gradient(180deg, var(--u-surface), var(--u-surface-2)) !important;
+    border: 1px solid var(--u-border) !important;
+    color: var(--u-text) !important;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35) !important;
+}
+
+body.theme-dark .main-content h1,
+body.theme-dark .main-content h2,
+body.theme-dark .main-content h3,
+body.theme-dark .main-content h4,
+body.theme-dark .main-content strong,
+body.theme-dark .main-content th,
+body.theme-dark .main-content td,
+body.theme-dark .main-content label {
+    color: var(--u-text) !important;
+}
+
+body.theme-dark .main-content p,
+body.theme-dark .main-content small,
+body.theme-dark .main-content .metric-status,
+body.theme-dark .main-content .project-meta-label,
+body.theme-dark .main-content .pm-result-summary {
+    color: var(--u-muted) !important;
+}
+
+body.theme-dark .main-content span,
+body.theme-dark .main-content .project-meta-value,
+body.theme-dark .main-content .metric-value,
+body.theme-dark .main-content .feedback-mail-subject,
+body.theme-dark .main-content .feedback-mail-meta,
+body.theme-dark .main-content .settings-info-value,
+body.theme-dark .main-content .stat-number,
+body.theme-dark .main-content .stat-label {
+    color: var(--u-text) !important;
+}
+
+body.theme-dark .main-content .stat-label,
+body.theme-dark .main-content .project-meta-label,
+body.theme-dark .main-content .feedback-mail-meta,
+body.theme-dark .main-content small {
+    color: #b7c7e2 !important;
+}
+
+body.theme-dark input,
+body.theme-dark select,
+body.theme-dark textarea,
+body.theme-dark .user-feedback-form input,
+body.theme-dark .user-feedback-form select,
+body.theme-dark .user-feedback-form textarea {
+    background: #0f1728 !important;
+    border: 1px solid #304262 !important;
+    color: var(--u-text) !important;
+}
+
+body.theme-dark input::placeholder,
+body.theme-dark textarea::placeholder {
+    color: #8fa2c1 !important;
+}
+
+body.theme-dark input:focus,
+body.theme-dark select:focus,
+body.theme-dark textarea:focus {
+    border-color: var(--u-accent) !important;
+    box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.25) !important;
+}
+
+body.theme-dark .projects-table thead,
+body.theme-dark .table thead {
+    background: #18263f !important;
+}
+
+body.theme-dark .projects-table tbody tr,
+body.theme-dark .table tbody tr {
+    background: #10192c !important;
+}
+
+body.theme-dark .projects-table tbody tr:hover,
+body.theme-dark .table tbody tr:hover {
+    background: #192742 !important;
+}
+
+body.theme-dark .projects-table th,
+body.theme-dark .projects-table td,
+body.theme-dark .table th,
+body.theme-dark .table td {
+    border-color: #2c3f5f !important;
+    color: var(--u-text) !important;
+}
+
+body.theme-dark .status-badge.pending,
+body.theme-dark .project-status.pending,
+body.theme-dark .project-status.for-approval,
+body.theme-dark .project-status.ongoing {
+    background: var(--u-warn-bg) !important;
+    color: var(--u-warn-text) !important;
+    border-color: #7a5721 !important;
+}
+
+body.theme-dark .status-badge.approved,
+body.theme-dark .status-badge.completed,
+body.theme-dark .project-status.approved,
+body.theme-dark .project-status.completed {
+    background: var(--u-success-bg) !important;
+    color: var(--u-success-text) !important;
+    border-color: #23634e !important;
+}
+
+body.theme-dark .status-badge.cancelled,
+body.theme-dark .project-status.cancelled,
+body.theme-dark .project-status.closed {
+    background: var(--u-danger-bg) !important;
+    color: var(--u-danger-text) !important;
+    border-color: #6a2d3a !important;
+}
+
+body.theme-dark .ac-f84d9680,
+body.theme-dark .btn-export,
+body.theme-dark .btn-clear-filters,
+body.theme-dark .profile-action-btn-primary,
+body.theme-dark .admin-utility-btn {
+    background: linear-gradient(135deg, var(--u-accent), var(--u-accent-2)) !important;
+    border-color: #5d95ff !important;
+    color: #ffffff !important;
+}
+
+body.theme-dark .ac-f84d9680:hover,
+body.theme-dark .btn-export:hover,
+body.theme-dark .btn-clear-filters:hover,
+body.theme-dark .profile-action-btn-primary:hover,
+body.theme-dark .admin-utility-btn:hover {
+    filter: brightness(1.06) !important;
+}
+
+body.theme-dark .avatar-crop-dialog,
+body.theme-dark .avatar-crop-header h3,
+body.theme-dark .avatar-crop-body,
+body.theme-dark .avatar-crop-body label,
+body.theme-dark .avatar-crop-body small,
+body.theme-dark .avatar-crop-actions,
+body.theme-dark .admin-notif-item strong,
+body.theme-dark .admin-notif-item small,
+body.theme-dark .admin-notif-item em,
+body.theme-dark .admin-notif-head strong,
+body.theme-dark .admin-calendar-head strong,
+body.theme-dark .admin-calendar-foot button {
+    color: var(--u-text) !important;
+}
+
+body.theme-dark .admin-notif-item small,
+body.theme-dark .admin-notif-item em,
+body.theme-dark .avatar-crop-body small {
+    color: #c0cde3 !important;
 }
 
 
