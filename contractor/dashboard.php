@@ -77,10 +77,10 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                         <th>Code</th>
                         <th>Project</th>
                         <th>Status</th>
-                        <th>Budget</th>
+                        <th>Budget Management</th>
                         <th>Validate</th>
                         <th>Expense Update</th>
-                        <th>Progress Update</th>
+                        <th>Progress Validation</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -156,7 +156,11 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 '<td>' + esc(p.code) + '</td>',
                 '<td><strong>' + esc(p.name) + '</strong><br><small>' + esc(p.location || 'N/A') + '</small></td>',
                 '<td>' + esc(p.status || 'Draft') + '</td>',
-                '<td>PHP ' + Number(p.budget || 0).toLocaleString() + '</td>',
+                '<td>',
+                '  <div><strong>PHP ' + Number(p.budget || 0).toLocaleString() + '</strong></div>',
+                '  <input data-type="budget" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="New budget">',
+                '  <button type="button" data-action="budget" data-id="' + p.id + '">Update</button>',
+                '</td>',
                 '<td>',
                 '  <select data-type="validate" data-id="' + p.id + '">',
                 '    <option value="">Set status</option>',
@@ -172,6 +176,8 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 '  <button type="button" data-action="expense" data-id="' + p.id + '">Save</button>',
                 '</td>',
                 '<td>',
+                '  <div>Current: ' + Number(p.progress_percent || 0).toFixed(2) + '%</div>',
+                '  <small>' + esc(p.progress_updated_at || 'No updates yet') + '</small><br>',
                 '  <input data-type="progress" data-id="' + p.id + '" type="number" min="0" max="100" step="1" placeholder="%">',
                 '  <button type="button" data-action="progress" data-id="' + p.id + '">Save</button>',
                 '</td>'
@@ -185,6 +191,24 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 try {
                     await apiPost('validate_project', { project_id: this.getAttribute('data-id'), status: this.value });
                     showMessage('ok', 'Project status updated.');
+                    await load();
+                } catch (e) {
+                    showMessage('err', e.message);
+                }
+            });
+        });
+
+        tbody.querySelectorAll('button[data-action="budget"]').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                const id = this.getAttribute('data-id');
+                const budget = document.querySelector('input[data-type="budget"][data-id="' + id + '"]');
+                try {
+                    await apiPost('update_budget', {
+                        project_id: id,
+                        budget: Number(budget.value || 0)
+                    });
+                    budget.value = '';
+                    showMessage('ok', 'Project budget updated.');
                     await load();
                 } catch (e) {
                     showMessage('err', e.message);

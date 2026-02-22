@@ -127,6 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $hasTaskTable = progress_table_exists($db, 'project_tasks');
     $hasMilestoneTable = progress_table_exists($db, 'project_milestones');
     $hasAssignmentsTable = progress_table_exists($db, 'contractor_project_assignments');
+    $hasProgressUpdatesTable = progress_table_exists($db, 'project_progress_updates');
     $contractorCompanyCol = progress_table_has_column($db, 'contractors', 'company') ? 'company' : (progress_table_has_column($db, 'contractors', 'company_name') ? 'company_name' : (progress_table_has_column($db, 'contractors', 'name') ? 'name' : null));
     $contractorRatingCol = progress_table_has_column($db, 'contractors', 'rating') ? 'rating' : null;
 
@@ -152,14 +153,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 
     $orderBy = $hasCreatedAt ? "created_at DESC" : "id DESC";
     $projects = [];
+    $latestProgressByProject = [];
+    if ($hasProgressUpdatesTable) {
+        $progressRes = $db->query("SELECT p1.project_id, p1.progress_percent, p1.created_at
+                                   FROM project_progress_updates p1
+                                   INNER JOIN (
+                                       SELECT project_id, MAX(created_at) AS max_created
+                                       FROM project_progress_updates
+                                       GROUP BY project_id
+                                   ) p2 ON p1.project_id = p2.project_id AND p1.created_at = p2.max_created");
+        if ($progressRes) {
+            while ($p = $progressRes->fetch_assoc()) {
+                $latestProgressByProject[(int) ($p['project_id'] ?? 0)] = [
+                    'progress_percent' => (float) ($p['progress_percent'] ?? 0),
+                    'created_at' => (string) ($p['created_at'] ?? '')
+                ];
+            }
+            $progressRes->free();
+        }
+    }
 
     try {
         $result = $db->query("SELECT " . implode(', ', $selectFields) . " FROM projects ORDER BY {$orderBy} LIMIT 500");
         if ($result) {
             while ($row = $result->fetch_assoc()) {
-            // Keep progress neutral unless an explicit progress field is available from schema/data.
-            $row['progress'] = isset($row['progress']) ? (float)$row['progress'] : 0;
-            $updateDate = $row['created_at'] ?? $row['start_date'] ?? null;
+            $pid = (int) ($row['id'] ?? 0);
+            $progressMeta = $latestProgressByProject[$pid] ?? null;
+            $row['progress'] = $progressMeta ? (float) ($progressMeta['progress_percent'] ?? 0) : (isset($row['progress']) ? (float) $row['progress'] : 0);
+            $updateDate = $progressMeta['created_at'] ?? ($row['created_at'] ?? $row['start_date'] ?? null);
             $status = (string)($row['status'] ?? 'Draft');
             $row['process_update'] = $status . ($updateDate ? ' (' . date('M d, Y', strtotime((string)$updateDate)) . ')' : '');
             

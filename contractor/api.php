@@ -39,6 +39,56 @@ function ensure_progress_table(mysqli $db): void {
     )");
 }
 
+function contractor_sync_projects_to_milestones(mysqli $db): void {
+    $projects = [];
+    $res = $db->query("SELECT name, COALESCE(budget, 0) AS budget FROM projects ORDER BY id DESC");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $projects[$name] = max(0, (float) ($row['budget'] ?? 0));
+        }
+        $res->free();
+    }
+
+    $existing = [];
+    $msRes = $db->query("SELECT id, name FROM milestones");
+    if ($msRes) {
+        while ($row = $msRes->fetch_assoc()) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name !== '' && !isset($existing[$name])) {
+                $existing[$name] = (int) $row['id'];
+            }
+        }
+        $msRes->free();
+    }
+
+    $insert = $db->prepare("INSERT INTO milestones (name, allocated, spent) VALUES (?, ?, 0)");
+    $update = $db->prepare("UPDATE milestones SET allocated = ? WHERE id = ?");
+    foreach ($projects as $name => $budget) {
+        if (isset($existing[$name])) {
+            $id = (int) $existing[$name];
+            if ($update) {
+                $update->bind_param('di', $budget, $id);
+                $update->execute();
+            }
+            continue;
+        }
+        if ($insert) {
+            $insert->bind_param('sd', $name, $budget);
+            $insert->execute();
+        }
+    }
+    if ($insert) {
+        $insert->close();
+    }
+    if ($update) {
+        $update->close();
+    }
+}
+
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
@@ -46,8 +96,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST
 }
 
 if ($action === 'load_projects') {
+    ensure_progress_table($db);
     $rows = [];
-    $res = $db->query("SELECT id, code, name, location, COALESCE(budget, 0) AS budget, status FROM projects ORDER BY id DESC LIMIT 500");
+    $res = $db->query("SELECT
+            p.id,
+            p.code,
+            p.name,
+            p.location,
+            COALESCE(p.budget, 0) AS budget,
+            p.status,
+            COALESCE(pp.progress_percent, 0) AS progress_percent,
+            DATE_FORMAT(pp.created_at, '%b %d, %Y %h:%i %p') AS progress_updated_at
+        FROM projects p
+        LEFT JOIN (
+            SELECT p1.project_id, p1.progress_percent, p1.created_at
+            FROM project_progress_updates p1
+            INNER JOIN (
+                SELECT project_id, MAX(created_at) AS max_created
+                FROM project_progress_updates
+                GROUP BY project_id
+            ) p2 ON p1.project_id = p2.project_id AND p1.created_at = p2.max_created
+        ) pp ON pp.project_id = p.id
+        ORDER BY p.id DESC
+        LIMIT 500");
     if ($res) {
         while ($r = $res->fetch_assoc()) {
             $rows[] = $r;
@@ -58,6 +129,7 @@ if ($action === 'load_projects') {
 }
 
 if ($action === 'load_budget_state') {
+    contractor_sync_projects_to_milestones($db);
     $milestones = [];
     $msRes = $db->query("SELECT id, name, allocated, spent FROM milestones ORDER BY id ASC");
     if ($msRes) {
@@ -88,6 +160,25 @@ if ($action === 'validate_project') {
     $stmt->bind_param('si', $status, $projectId);
     $stmt->execute();
     $stmt->close();
+    json_out(['success' => true]);
+}
+
+if ($action === 'update_budget') {
+    $projectId = (int) ($_POST['project_id'] ?? 0);
+    $budget = max(0, (float) ($_POST['budget'] ?? 0));
+    if ($projectId <= 0) {
+        json_out(['success' => false, 'message' => 'Invalid project.'], 422);
+    }
+
+    $stmt = $db->prepare("UPDATE projects SET budget = ? WHERE id = ?");
+    if (!$stmt) {
+        json_out(['success' => false, 'message' => 'Database error.'], 500);
+    }
+    $stmt->bind_param('di', $budget, $projectId);
+    $stmt->execute();
+    $stmt->close();
+
+    contractor_sync_projects_to_milestones($db);
     json_out(['success' => true]);
 }
 
