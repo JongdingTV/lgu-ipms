@@ -8,10 +8,18 @@ session_start();
 
 // DATABASE CONNECTION
 require_once dirname(__DIR__) . '/database.php';
+require_once dirname(__DIR__) . '/session-auth.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['employee_id'])) {
     header('Location: /index.php');
+    exit;
+}
+
+$role = strtolower((string)($_SESSION['employee_role'] ?? ''));
+$isSuperAdmin = !empty($_SESSION['is_super_admin']) || $role === 'super_admin';
+if (!$isSuperAdmin) {
+    header('Location: /admin/dashboard.php?error=super_admin_only');
     exit;
 }
 
