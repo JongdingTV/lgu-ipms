@@ -5,6 +5,7 @@
         const projectsTbody = document.querySelector('#projectsTable tbody');
         const searchInput = document.getElementById('searchContractors');
         const statusFilter = document.getElementById('filterStatus');
+        const approvalFilter = document.getElementById('filterApproval');
         const countEl = document.getElementById('contractorsCount');
         const formMessage = document.getElementById('formMessage');
         const lastSyncEl = document.getElementById('contractorLastSync');
@@ -72,6 +73,20 @@
             if (key.includes('complete')) return 'is-complete';
             if (key.includes('expired')) return 'is-expired';
             return 'is-incomplete';
+        }
+
+        function approvalBadgeClass(status) {
+            const key = String(status || '').toLowerCase();
+            if (key === 'approved') return 'is-complete';
+            if (key === 'verified') return 'is-warning';
+            if (key === 'rejected') return 'is-expired';
+            if (key === 'suspended' || key === 'blacklisted' || key === 'inactive') return 'is-incomplete';
+            return 'is-incomplete';
+        }
+
+        function approvalLabel(status) {
+            const key = String(status || 'pending').toLowerCase();
+            return key.charAt(0).toUpperCase() + key.slice(1);
         }
 
         function projectDetailCardMarkup(p, withCheckbox, assignedSet) {
@@ -171,23 +186,35 @@
             if (countEl) countEl.textContent = `${list.length} Engineer${list.length === 1 ? '' : 's'}`;
 
             if (!list.length) {
-                contractorsTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:18px; color:#6b7280;">No Engineers found.</td></tr>';
+                contractorsTbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:18px; color:#6b7280;">No Engineers found.</td></tr>';
                 return;
             }
 
             for (const c of list) {
+                const approvalStatus = approvalLabel(c.approval_status || 'pending');
+                const approvalClass = approvalBadgeClass(c.approval_status || 'pending');
+                const approvalKey = String(c.approval_status || '').toLowerCase();
+                const canVerify = approvalKey === 'pending';
+                const canApprove = approvalKey === 'pending' || approvalKey === 'verified';
+                const canReject = approvalKey !== 'approved';
+                const canSuspend = approvalKey === 'approved' || approvalKey === 'verified';
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${esc(c.display_name || c.company || 'N/A')}</strong></td>
                     <td>${esc(c.license || 'N/A')}</td>
                     <td>${esc(c.email || c.phone || 'N/A')}</td>
                     <td><span class="status-badge ${esc(String(c.status || '').toLowerCase().replace(/\s+/g, '-'))}">${esc(c.status || 'N/A')}</span></td>
+                    <td><span class="verification-badge ${approvalClass}">${esc(approvalStatus)}</span></td>
                     <td><span class="verification-badge ${verificationBadgeClass(c.verification_status)}">${esc(c.verification_status || 'Incomplete')}</span></td>
                     <td>${Number(c.performance_score || c.rating || 0).toFixed(1)} | ${esc(c.risk_level || 'Medium')}</td>
                     <td><button class="btn-view-projects" data-id="${esc(c.id)}">View Projects</button></td>
                     <td><button class="btn-contractor-secondary btn-docs" data-id="${esc(c.id)}">Documents</button></td>
                     <td>
                         <div class="action-buttons">
+                            <button class="btn-contractor-secondary btn-approve" data-id="${esc(c.id)}" data-status="verified" ${canVerify ? '' : 'disabled'}>Verify</button>
+                            <button class="btn-contractor-secondary btn-approve" data-id="${esc(c.id)}" data-status="approved" ${canApprove ? '' : 'disabled'}>Approve</button>
+                            <button class="btn-contractor-secondary btn-approve" data-id="${esc(c.id)}" data-status="rejected" ${canReject ? '' : 'disabled'}>Reject</button>
+                            <button class="btn-contractor-secondary btn-approve" data-id="${esc(c.id)}" data-status="suspended" ${canSuspend ? '' : 'disabled'}>Suspend</button>
                             <button class="btn-assign" data-id="${esc(c.id)}">Assign Projects</button>
                             <button class="btn-delete" data-id="${esc(c.id)}">Delete</button>
                         </div>
@@ -514,10 +541,12 @@
         function applyFilters() {
             const q = (searchInput?.value || '').trim().toLowerCase();
             const s = (statusFilter?.value || '').trim();
+            const a = (approvalFilter?.value || '').trim().toLowerCase();
             const filtered = contractorsCache.filter((c) => {
                 const hitSearch = !q || `${c.company || ''} ${c.license || ''} ${c.email || ''} ${c.phone || ''}`.toLowerCase().includes(q);
                 const hitStatus = !s || String(c.status || '') === s;
-                return hitSearch && hitStatus;
+                const hitApproval = !a || String(c.approval_status || 'pending').toLowerCase() === a;
+                return hitSearch && hitStatus && hitApproval;
             });
             renderContractors(filtered);
         }
@@ -541,7 +570,7 @@
                 renderProjects(projectsCache);
                 await loadEvaluationOverview();
             } catch (err) {
-                if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:18px; color:#c00;">Failed to load Engineers data.</td></tr>';
+                if (contractorsTbody) contractorsTbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:18px; color:#c00;">Failed to load Engineers data.</td></tr>';
                 if (projectsTbody) projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#c00;">Failed to load projects data.</td></tr>';
                 if (formMessage) {
                     formMessage.style.display = 'block';
@@ -564,6 +593,7 @@
 
         searchInput?.addEventListener('input', applyFilters);
         statusFilter?.addEventListener('change', applyFilters);
+        approvalFilter?.addEventListener('change', applyFilters);
         contractorsTbody?.addEventListener('click', async (e) => {
             const btn = e.target.closest('button');
             if (!btn) return;
@@ -571,6 +601,22 @@
             const row = btn.closest('tr');
             const contractorName = row ? row.querySelector('td:first-child')?.textContent.trim() : 'Engineer';
             if (!contractorId) return;
+
+            if (btn.classList.contains('btn-approve')) {
+                const nextStatus = btn.getAttribute('data-status');
+                if (!nextStatus) return;
+                try {
+                    const result = await postJsonWithFallback(`action=update_contractor_approval&contractor_id=${encodeURIComponent(contractorId)}&status=${encodeURIComponent(nextStatus)}`);
+                    if (!result || result.success === false) throw new Error((result && result.message) || 'Approval update failed');
+                    const target = contractorsCache.find((c) => String(c.id) === String(contractorId));
+                    if (target) target.approval_status = nextStatus;
+                    applyFilters();
+                    setMessage(`Engineer ${nextStatus} successfully.`, false);
+                } catch (err) {
+                    setMessage(err.message || 'Failed to update approval status.', true);
+                }
+                return;
+            }
 
             if (btn.classList.contains('btn-view-projects')) {
                 openProjectsModal(contractorId, contractorName || 'Engineer');

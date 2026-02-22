@@ -384,6 +384,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_contractor_approval') {
+    header('Content-Type: application/json');
+    $contractorId = isset($_POST['contractor_id']) ? (int) $_POST['contractor_id'] : 0;
+    $status = strtolower(trim((string) ($_POST['status'] ?? '')));
+    $allowed = ['pending', 'verified', 'approved', 'rejected', 'suspended', 'blacklisted', 'inactive'];
+    if ($contractorId <= 0 || !in_array($status, $allowed, true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid approval request.']);
+        exit;
+    }
+
+    if (!registered_table_has_column($db, 'contractors', 'approval_status')) {
+        echo json_encode(['success' => false, 'message' => 'Approval fields not available. Run migration.']);
+        exit;
+    }
+
+    $verifiedAt = "CASE WHEN ? = 'verified' THEN NOW() ELSE verified_at END";
+    $approvedAt = "CASE WHEN ? = 'approved' THEN NOW() ELSE approved_at END";
+    $rejectedAt = "CASE WHEN ? = 'rejected' THEN NOW() ELSE rejected_at END";
+    $stmt = $db->prepare(
+        "UPDATE contractors
+         SET approval_status = ?, 
+             verified_at = {$verifiedAt},
+             approved_at = {$approvedAt},
+             rejected_at = {$rejectedAt}
+         WHERE id = ?"
+    );
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Failed to prepare approval update.']);
+        exit;
+    }
+    $stmt->bind_param('ssssi', $status, $status, $status, $status, $contractorId);
+    $ok = $stmt->execute();
+    $stmt->close();
+
+    if ($ok && registered_table_exists($db, 'approvals')) {
+        $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+        $role = strtolower((string)($_SESSION['employee_role'] ?? ''));
+        $note = 'Updated approval status to ' . $status;
+        $aStmt = $db->prepare(
+            "INSERT INTO approvals (entity_type, entity_id, status, reviewer_id, reviewer_role, notes, reviewed_at)
+             VALUES ('contractor', ?, ?, ?, ?, ?, NOW())"
+        );
+        if ($aStmt) {
+            $aStmt->bind_param('isiss', $contractorId, $status, $employeeId, $role, $note);
+            $aStmt->execute();
+            $aStmt->close();
+        }
+    }
+
+    if ($ok && function_exists('rbac_audit')) {
+        rbac_audit('contractor.approval_update', 'contractor', $contractorId, ['status' => $status]);
+    }
+
+    echo json_encode(['success' => (bool) $ok]);
+    exit;
+}
+
 // Handle GET request for loading projects
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
@@ -789,6 +846,14 @@ $db->close();
                     <option>Suspended</option>
                     <option>Blacklisted</option>
                 </select>
+                <select id="filterApproval">
+                    <option value="">All Approvals</option>
+                    <option value="pending">Pending</option>
+                    <option value="verified">Verified</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="suspended">Suspended</option>
+                </select>
                 <div id="contractorsCount" class="contractor-count-pill">0 Engineers</div>
             </div>
 
@@ -860,6 +925,7 @@ $db->close();
                                 <th>License Number</th>
                                 <th>Contact Email</th>
                                 <th>Status</th>
+                                <th>Approval</th>
                                 <th>Verification</th>
                                 <th>Performance / Risk</th>
                                 <th>Projects Assigned</th>

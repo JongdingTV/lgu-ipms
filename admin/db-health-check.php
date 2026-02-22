@@ -5,7 +5,8 @@ require dirname(__DIR__) . '/database.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['admin','department_admin','super_admin']);\n
+rbac_require_roles(['admin','department_admin','super_admin']);
+
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['employee_id'])) {

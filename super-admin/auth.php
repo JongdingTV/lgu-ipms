@@ -5,7 +5,8 @@ require_once dirname(__DIR__) . '/database.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['super_admin']);\n
+rbac_require_roles(['super_admin']);
+
 if (!isset($_SESSION['employee_id'])) {
     header('Location: /super-admin/index.php');
     exit;

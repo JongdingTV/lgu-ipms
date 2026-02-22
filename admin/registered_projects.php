@@ -11,7 +11,8 @@ set_no_cache_headers();
 // Check authentication
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['admin','department_admin','super_admin']);\n
+rbac_require_roles(['admin','department_admin','super_admin']);
+
 // Check for suspicious activity
 check_suspicious_activity();
 
