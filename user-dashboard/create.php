@@ -779,13 +779,19 @@ body.user-signup-page .subtitle {
                         <label for="idNumber">ID Number *</label>
                         <input id="idNumber" name="idNumber" type="text" required value="<?php echo htmlspecialchars($form['idNumber'], ENT_QUOTES, 'UTF-8'); ?>">
                     </div>
-                    <div class="input-box">
+                    <div class="input-box full" id="createIdFrontStage">
                         <label for="idUploadFront">Upload ID Front * (JPG/PNG/WEBP, max 5MB)</label>
                         <input id="idUploadFront" name="idUploadFront" type="file" required accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                        <div style="margin-top:8px;">
+                            <button type="button" class="btn-secondary" id="createIdFrontNextBtn">Next</button>
+                        </div>
                     </div>
-                    <div class="input-box">
+                    <div class="input-box full" id="createIdBackStage" style="display:none;">
                         <label for="idUploadBack">Upload ID Back * (JPG/PNG/WEBP, max 5MB)</label>
                         <input id="idUploadBack" name="idUploadBack" type="file" required accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                        <div style="margin-top:8px;display:flex;gap:10px;">
+                            <button type="button" class="btn-secondary" id="createIdBackPrevBtn">Back</button>
+                        </div>
                     </div>
                     <div class="input-box full">
                         <small style="display:block;margin-top:6px;color:#64748b;">
@@ -850,11 +856,40 @@ body.user-signup-page .subtitle {
     var prevBtn = document.getElementById('prevStepBtn');
     var submitBtn = document.getElementById('submitStepBtn');
     var errorBox = document.getElementById('stepErrorBox');
+    var createIdFrontStage = document.getElementById('createIdFrontStage');
+    var createIdBackStage = document.getElementById('createIdBackStage');
+    var createIdFrontNextBtn = document.getElementById('createIdFrontNextBtn');
+    var createIdBackPrevBtn = document.getElementById('createIdBackPrevBtn');
     var passwordInput = document.getElementById('password');
     var strengthFill = document.getElementById('passwordStrengthFill');
     var strengthLabel = document.getElementById('passwordStrengthLabel');
 
     if (!form || !nextBtn || !prevBtn || !submitBtn) return;
+
+    function showCreateIdFront() {
+        if (createIdFrontStage) createIdFrontStage.style.display = '';
+        if (createIdBackStage) createIdBackStage.style.display = 'none';
+    }
+    function showCreateIdBack() {
+        if (createIdFrontStage) createIdFrontStage.style.display = 'none';
+        if (createIdBackStage) createIdBackStage.style.display = '';
+    }
+    if (createIdFrontNextBtn) {
+        createIdFrontNextBtn.addEventListener('click', function () {
+            var front = document.getElementById('idUploadFront');
+            if (!front || !front.files || front.files.length === 0) {
+                showError('Please upload the front side of your ID first.');
+                return;
+            }
+            clearError();
+            showCreateIdBack();
+        });
+    }
+    if (createIdBackPrevBtn) {
+        createIdBackPrevBtn.addEventListener('click', function () {
+            showCreateIdFront();
+        });
+    }
 
     function showError(message) {
         if (!errorBox) return;
@@ -882,6 +917,12 @@ body.user-signup-page .subtitle {
         prevBtn.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
         nextBtn.style.display = currentStep === totalSteps ? 'none' : 'inline-flex';
         submitBtn.style.display = currentStep === totalSteps ? 'inline-flex' : 'none';
+        if (currentStep === 3) {
+            var back = document.getElementById('idUploadBack');
+            if (!back || !back.value) {
+                showCreateIdFront();
+            }
+        }
         clearError();
     }
 

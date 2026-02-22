@@ -177,15 +177,47 @@
     }
     const idFrontInput = document.getElementById('idFrontInput');
     const idBackInput = document.getElementById('idBackInput');
+    const idFrontStage = document.getElementById('idFrontStage');
+    const idBackStage = document.getElementById('idBackStage');
+    const idFrontNextBtn = document.getElementById('idFrontNextBtn');
+    const idBackPrevBtn = document.getElementById('idBackPrevBtn');
     const idUploadForm = document.getElementById('idUploadForm');
-    if (idFrontInput && idBackInput && idUploadForm) {
-        function maybeSubmitIdUpload() {
-            if (idFrontInput.files && idFrontInput.files.length > 0 && idBackInput.files && idBackInput.files.length > 0) {
-                idUploadForm.submit();
-            }
+    if (idFrontInput && idBackInput && idUploadForm && idFrontStage && idBackStage) {
+        function showFront() {
+            idFrontStage.style.display = '';
+            idBackStage.style.display = 'none';
         }
-        idFrontInput.addEventListener('change', maybeSubmitIdUpload);
-        idBackInput.addEventListener('change', maybeSubmitIdUpload);
+        function showBack() {
+            idFrontStage.style.display = 'none';
+            idBackStage.style.display = '';
+        }
+        if (idFrontNextBtn) {
+            idFrontNextBtn.addEventListener('click', function () {
+                if (!idFrontInput.files || idFrontInput.files.length === 0) {
+                    alert('Please choose the front side of your ID first.');
+                    return;
+                }
+                showBack();
+            });
+        }
+        if (idBackPrevBtn) {
+            idBackPrevBtn.addEventListener('click', function () {
+                showFront();
+            });
+        }
+        idUploadForm.addEventListener('submit', function (event) {
+            if (!idFrontInput.files || idFrontInput.files.length === 0) {
+                event.preventDefault();
+                alert('Please choose the front side of your ID.');
+                showFront();
+                return;
+            }
+            if (!idBackInput.files || idBackInput.files.length === 0) {
+                event.preventDefault();
+                alert('Please choose the back side of your ID.');
+                showBack();
+            }
+        });
     }
     const fileInput = document.getElementById('profilePhotoInput');
     const modal = document.getElementById('avatarCropModal');

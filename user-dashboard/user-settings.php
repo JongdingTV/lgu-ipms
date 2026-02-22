@@ -468,9 +468,14 @@ $csrfToken = generate_csrf_token();
                                     <form id="idUploadForm" method="post" action="user-settings.php?tab=profile" enctype="multipart/form-data" class="id-upload-form">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="id_action" value="upload">
-                                        <div class="id-upload-row">
+                                        <div id="idFrontStage" class="id-upload-row">
                                             <input type="file" id="idFrontInput" name="id_file_front" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
+                                            <button type="button" id="idFrontNextBtn" class="profile-action-btn profile-action-btn-primary">Next</button>
+                                        </div>
+                                        <div id="idBackStage" class="id-upload-row" style="display:none;">
                                             <input type="file" id="idBackInput" name="id_file_back" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
+                                            <button type="button" id="idBackPrevBtn" class="profile-action-btn profile-action-btn-ghost">Back</button>
+                                            <button type="submit" id="idUploadSubmitBtn" class="profile-action-btn profile-action-btn-primary">Upload IDs</button>
                                             <?php if (!empty($user['id_upload'])): ?>
                                                 <button form="removeIdForm" type="submit" class="profile-action-btn profile-action-btn-ghost">Remove ID</button>
                                             <?php endif; ?>
