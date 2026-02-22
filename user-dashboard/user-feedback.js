@@ -766,6 +766,26 @@
 
         buildLocationValue();
 
+        if (photoInput && photoInput.files && photoInput.files.length > 3) {
+            showMessage('You can upload only 1 to 3 photos.', false);
+            return;
+        }
+        if (photoInput && photoInput.files && photoInput.files.length > 0) {
+            for (var i = 0; i < photoInput.files.length; i++) {
+                var f = photoInput.files[i];
+                var mime = (f.type || '').toLowerCase();
+                var okMime = mime === 'image/jpeg' || mime === 'image/png' || mime === 'image/webp';
+                if (!okMime) {
+                    showMessage('Only JPG, PNG, or WEBP photos are allowed.', false);
+                    return;
+                }
+                if (f.size > 5 * 1024 * 1024) {
+                    showMessage('Each photo must be 5MB or less.', false);
+                    return;
+                }
+            }
+        }
+
         const data = new FormData(form);
 
         try {
