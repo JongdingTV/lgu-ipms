@@ -140,25 +140,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_submit'])) {
         }
 
         $idUploadPath = '';
-        if (empty($_FILES['idUpload']['name'])) {
-            $errors[] = 'ID upload is required for verification.';
-        } elseif (!isset($_FILES['idUpload']) || $_FILES['idUpload']['error'] !== UPLOAD_ERR_OK) {
-            $errors[] = 'Unable to upload ID file. Please try again.';
+        $frontFile = $_FILES['idUploadFront'] ?? null;
+        $backFile = $_FILES['idUploadBack'] ?? null;
+        if (!$frontFile || !$backFile || empty($frontFile['name']) || empty($backFile['name'])) {
+            $errors[] = 'Both ID Front and ID Back images are required for verification.';
+        } elseif ((int)($frontFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || (int)($backFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $errors[] = 'Unable to upload ID images. Please try again.';
         } else {
-            $tmpFile = (string) $_FILES['idUpload']['tmp_name'];
-            $fileSize = (int) ($_FILES['idUpload']['size'] ?? 0);
-            if ($fileSize > (5 * 1024 * 1024)) {
-                $errors[] = 'ID upload must be 5MB or less.';
+            $allowed = [
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/webp' => 'webp'
+            ];
+            $frontSize = (int) ($frontFile['size'] ?? 0);
+            $backSize = (int) ($backFile['size'] ?? 0);
+            if ($frontSize > (5 * 1024 * 1024) || $backSize > (5 * 1024 * 1024)) {
+                $errors[] = 'Each ID image must be 5MB or less.';
             } else {
-                $mime = (string) (mime_content_type($tmpFile) ?: '');
-                $allowed = [
-                    'image/jpeg' => 'jpg',
-                    'image/png' => 'png',
-                    'application/pdf' => 'pdf'
-                ];
-
-                if (!isset($allowed[$mime])) {
-                    $errors[] = 'Only JPG, PNG, or PDF files are allowed for ID upload.';
+                $frontMime = (string) (mime_content_type((string)$frontFile['tmp_name']) ?: '');
+                $backMime = (string) (mime_content_type((string)$backFile['tmp_name']) ?: '');
+                if (!isset($allowed[$frontMime]) || !isset($allowed[$backMime])) {
+                    $errors[] = 'Only JPG, PNG, or WEBP files are allowed for ID verification.';
                 }
             }
         }
@@ -211,26 +213,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_submit'])) {
             }
         }
 
-        if (empty($errors) && !empty($_FILES['idUpload']['name'])) {
+        if (empty($errors)) {
             $uploadDir = dirname(__DIR__) . '/uploads/user-ids';
             if (!is_dir($uploadDir) && !@mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
                 $errors[] = 'Unable to create upload directory.';
             } else {
-                $tmpFile = (string) $_FILES['idUpload']['tmp_name'];
-                $mime = (string) (mime_content_type($tmpFile) ?: '');
                 $extMap = [
                     'image/jpeg' => 'jpg',
                     'image/png' => 'png',
-                    'application/pdf' => 'pdf'
+                    'image/webp' => 'webp'
                 ];
-                $ext = $extMap[$mime] ?? 'bin';
-                $fileName = 'id_' . bin2hex(random_bytes(8)) . '.' . $ext;
-                $targetPath = $uploadDir . '/' . $fileName;
+                $frontMime = (string) (mime_content_type((string)$frontFile['tmp_name']) ?: '');
+                $backMime = (string) (mime_content_type((string)$backFile['tmp_name']) ?: '');
+                $frontExt = $extMap[$frontMime] ?? 'bin';
+                $backExt = $extMap[$backMime] ?? 'bin';
+                $token = bin2hex(random_bytes(8));
+                $frontName = 'id_' . $token . '_front.' . $frontExt;
+                $backName = 'id_' . $token . '_back.' . $backExt;
+                $frontTarget = $uploadDir . '/' . $frontName;
+                $backTarget = $uploadDir . '/' . $backName;
 
-                if (!move_uploaded_file($tmpFile, $targetPath)) {
-                    $errors[] = 'Unable to save uploaded ID file.';
+                if (!move_uploaded_file((string)$frontFile['tmp_name'], $frontTarget)) {
+                    $errors[] = 'Unable to save uploaded ID Front image.';
+                } elseif (!move_uploaded_file((string)$backFile['tmp_name'], $backTarget)) {
+                    $errors[] = 'Unable to save uploaded ID Back image.';
                 } else {
-                    $idUploadPath = '/uploads/user-ids/' . $fileName;
+                    $idUploadPath = json_encode([
+                        'front' => '/uploads/user-ids/' . $frontName,
+                        'back' => '/uploads/user-ids/' . $backName
+                    ], JSON_UNESCAPED_SLASHES);
                 }
             }
         }
@@ -768,11 +779,17 @@ body.user-signup-page .subtitle {
                         <label for="idNumber">ID Number *</label>
                         <input id="idNumber" name="idNumber" type="text" required value="<?php echo htmlspecialchars($form['idNumber'], ENT_QUOTES, 'UTF-8'); ?>">
                     </div>
+                    <div class="input-box">
+                        <label for="idUploadFront">Upload ID Front * (JPG/PNG/WEBP, max 5MB)</label>
+                        <input id="idUploadFront" name="idUploadFront" type="file" required accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                    </div>
+                    <div class="input-box">
+                        <label for="idUploadBack">Upload ID Back * (JPG/PNG/WEBP, max 5MB)</label>
+                        <input id="idUploadBack" name="idUploadBack" type="file" required accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                    </div>
                     <div class="input-box full">
-                        <label for="idUpload">Upload ID * (JPG/PNG/PDF, max 5MB)</label>
-                        <input id="idUpload" name="idUpload" type="file" required accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf">
                         <small style="display:block;margin-top:6px;color:#64748b;">
-                            Barangay ID is recommended. Other IDs are accepted if your address is in Quezon City.
+                            Barangay ID is recommended. Other IDs are accepted if your address is in Quezon City. Front and Back are both required.
                         </small>
                     </div>
                 </div>
@@ -932,7 +949,8 @@ body.user-signup-page .subtitle {
             var civilStatus = document.getElementById('civilStatus').value;
             var idType = document.getElementById('idType').value;
             var idNumber = document.getElementById('idNumber').value.trim();
-            var idUpload = document.getElementById('idUpload').value;
+            var idUploadFront = document.getElementById('idUploadFront').value;
+            var idUploadBack = document.getElementById('idUploadBack').value;
             var addressForIdCheck = document.getElementById('address').value.trim().toLowerCase();
             var isQcAddress = addressForIdCheck.indexOf('quezon city') >= 0 || /\bqc\b/.test(addressForIdCheck);
 
@@ -940,8 +958,8 @@ body.user-signup-page .subtitle {
                 showError('Please select gender and civil status.');
                 return false;
             }
-            if (!idType || !idNumber || !idUpload) {
-                showError('Please provide ID type, ID number, and upload your ID.');
+            if (!idType || !idNumber || !idUploadFront || !idUploadBack) {
+                showError('Please provide ID type, ID number, and upload both ID Front and ID Back.');
                 return false;
             }
             if (idType !== 'barangayid' && !isQcAddress) {

@@ -31,6 +31,9 @@
     const idViewerModal = document.getElementById('idViewerModal');
     const idViewerClose = document.getElementById('idViewerClose');
     const idViewerImage = document.getElementById('idViewerImage');
+    const idViewerFrontImage = document.getElementById('idViewerFrontImage');
+    const idViewerBackImage = document.getElementById('idViewerBackImage');
+    const idViewerDualWrap = document.getElementById('idViewerDualWrap');
     const idViewerPdf = document.getElementById('idViewerPdf');
     const idViewerImageWrap = document.getElementById('idViewerImageWrap');
     const idViewerZoomControls = document.getElementById('idViewerZoomControls');
@@ -60,6 +63,9 @@
             idViewerImage.style.display = 'none';
             idViewerImage.style.transform = 'scale(1)';
         }
+        if (idViewerFrontImage) idViewerFrontImage.src = '';
+        if (idViewerBackImage) idViewerBackImage.src = '';
+        if (idViewerDualWrap) idViewerDualWrap.style.display = 'none';
         if (idViewerImageWrap) {
             idViewerImageWrap.style.display = 'none';
             idViewerImageWrap.scrollTop = 0;
@@ -76,7 +82,35 @@
     if (idViewBtn && idViewerModal) {
         idViewBtn.addEventListener('click', function () {
             const url = idViewBtn.getAttribute('data-id-url') || '';
-            if (url === '') return;
+            const frontUrl = idViewBtn.getAttribute('data-id-front-url') || '';
+            const backUrl = idViewBtn.getAttribute('data-id-back-url') || '';
+            if (url === '' && frontUrl === '' && backUrl === '') return;
+
+            if (frontUrl || backUrl) {
+                if (idViewerFrontImage) {
+                    idViewerFrontImage.src = frontUrl || backUrl || '';
+                    idViewerFrontImage.style.display = 'block';
+                }
+                if (idViewerBackImage) {
+                    idViewerBackImage.src = backUrl || frontUrl || '';
+                    idViewerBackImage.style.display = 'block';
+                }
+                if (idViewerDualWrap) idViewerDualWrap.style.display = 'grid';
+                if (idViewerImage) {
+                    idViewerImage.src = '';
+                    idViewerImage.style.display = 'none';
+                }
+                if (idViewerPdf) {
+                    idViewerPdf.src = '';
+                    idViewerPdf.style.display = 'none';
+                }
+                if (idViewerImageWrap) idViewerImageWrap.style.display = 'block';
+                if (idViewerZoomControls) idViewerZoomControls.style.display = 'none';
+                idViewerModal.hidden = false;
+                document.body.style.overflow = 'hidden';
+                return;
+            }
+
             const isPdf = /\.pdf($|\?)/i.test(url);
 
             if (isPdf) {
@@ -141,14 +175,17 @@
             setIdZoom(1);
         });
     }
-    const idFileInput = document.getElementById('idFileInput');
+    const idFrontInput = document.getElementById('idFrontInput');
+    const idBackInput = document.getElementById('idBackInput');
     const idUploadForm = document.getElementById('idUploadForm');
-    if (idFileInput && idUploadForm) {
-        idFileInput.addEventListener('change', function () {
-            if (idFileInput.files && idFileInput.files.length > 0) {
+    if (idFrontInput && idBackInput && idUploadForm) {
+        function maybeSubmitIdUpload() {
+            if (idFrontInput.files && idFrontInput.files.length > 0 && idBackInput.files && idBackInput.files.length > 0) {
                 idUploadForm.submit();
             }
-        });
+        }
+        idFrontInput.addEventListener('change', maybeSubmitIdUpload);
+        idBackInput.addEventListener('change', maybeSubmitIdUpload);
     }
     const fileInput = document.getElementById('profilePhotoInput');
     const modal = document.getElementById('avatarCropModal');

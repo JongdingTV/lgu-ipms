@@ -51,6 +51,21 @@ $userInitials = user_avatar_initials($userName);
 $avatarColor = user_avatar_color($userEmail !== '' ? $userEmail : $userName);
 $profileImageWebPath = user_profile_photo_web_path($userId);
 
+function parse_id_upload_bundle(string $raw): array
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return ['front' => '', 'back' => '', 'single' => ''];
+    }
+    $decoded = json_decode($raw, true);
+    if (is_array($decoded)) {
+        $front = trim((string) ($decoded['front'] ?? ''));
+        $back = trim((string) ($decoded['back'] ?? ''));
+        return ['front' => $front, 'back' => $back, 'single' => ''];
+    }
+    return ['front' => '', 'back' => '', 'single' => $raw];
+}
+
 $activeTab = $_GET['tab'] ?? 'profile';
 if (!in_array($activeTab, ['profile', 'password'], true)) {
     $activeTab = 'profile';
@@ -169,9 +184,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_action'])) {
 
         if ($_POST['id_action'] === 'remove') {
             if (!empty($user['id_upload'])) {
-                $existingPath = dirname(__DIR__) . '/' . ltrim((string) $user['id_upload'], '/');
-                if (is_file($existingPath)) {
-                    @unlink($existingPath);
+                $bundle = parse_id_upload_bundle((string) $user['id_upload']);
+                $toDelete = [];
+                if ($bundle['front'] !== '') $toDelete[] = $bundle['front'];
+                if ($bundle['back'] !== '') $toDelete[] = $bundle['back'];
+                if ($bundle['single'] !== '') $toDelete[] = $bundle['single'];
+                foreach ($toDelete as $pathWeb) {
+                    $existingPath = dirname(__DIR__) . '/' . ltrim((string) $pathWeb, '/');
+                    if (is_file($existingPath)) {
+                        @unlink($existingPath);
+                    }
                 }
             }
 
@@ -188,53 +210,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_action'])) {
                 $errors[] = 'Unable to remove ID file.';
             }
         } elseif ($_POST['id_action'] === 'upload') {
-            if (!isset($_FILES['id_file']) || $_FILES['id_file']['error'] !== UPLOAD_ERR_OK) {
-                $errors[] = 'Please select a valid ID file.';
+            $frontFile = $_FILES['id_file_front'] ?? null;
+            $backFile = $_FILES['id_file_back'] ?? null;
+            if (!$frontFile || !$backFile || (int)($frontFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || (int)($backFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                $errors[] = 'Please upload both ID Front and ID Back images.';
             } else {
-                $tmpFile = $_FILES['id_file']['tmp_name'];
-                $fileSize = (int) ($_FILES['id_file']['size'] ?? 0);
-                if ($fileSize > 5 * 1024 * 1024) {
-                    $errors[] = 'ID file must be 5MB or less.';
-                } else {
+                $mimeMap = [
+                    'image/jpeg' => 'jpg',
+                    'image/png' => 'png',
+                    'image/webp' => 'webp'
+                ];
+
+                $processFile = static function (array $file, string $suffix) use ($mimeMap, $uploadDir, $userId): array {
+                    $tmpFile = (string) ($file['tmp_name'] ?? '');
+                    $fileSize = (int) ($file['size'] ?? 0);
+                    if ($fileSize <= 0 || $fileSize > 5 * 1024 * 1024) {
+                        return [false, '', 'Each ID image must be 5MB or less.'];
+                    }
                     $finfo = finfo_open(FILEINFO_MIME_TYPE);
                     $mimeType = $finfo ? (string) finfo_file($finfo, $tmpFile) : '';
-                    if ($finfo) {
-                        finfo_close($finfo);
-                    }
-
-                    $mimeMap = [
-                        'image/jpeg' => 'jpg',
-                        'image/png' => 'png',
-                        'image/webp' => 'webp',
-                        'application/pdf' => 'pdf'
-                    ];
-
+                    if ($finfo) finfo_close($finfo);
                     if (!isset($mimeMap[$mimeType])) {
-                        $errors[] = 'Only JPG, PNG, WEBP, or PDF files are allowed for ID upload.';
+                        return [false, '', 'Only JPG, PNG, or WEBP images are allowed for ID verification.'];
+                    }
+                    $ext = $mimeMap[$mimeType];
+                    $target = $uploadDir . '/user_' . $userId . '_' . $suffix . '.' . $ext;
+                    if (!move_uploaded_file($tmpFile, $target)) {
+                        return [false, '', 'Unable to save ID image file.'];
+                    }
+                    return [true, '/uploads/user-id/' . basename($target), ''];
+                };
+
+                // Remove old user_id files (front/back legacy/single).
+                $existing = glob($uploadDir . '/user_' . $userId . '*.*') ?: [];
+                foreach ($existing as $path) {
+                    @unlink($path);
+                }
+
+                [$okFront, $frontPath, $frontErr] = $processFile($frontFile, 'front');
+                if (!$okFront) {
+                    $errors[] = $frontErr;
+                } else {
+                    [$okBack, $backPath, $backErr] = $processFile($backFile, 'back');
+                    if (!$okBack) {
+                        $errors[] = $backErr;
                     } else {
-                        $existing = glob($uploadDir . '/user_' . $userId . '.*') ?: [];
-                        foreach ($existing as $path) {
-                            @unlink($path);
-                        }
+                        $bundleJson = json_encode(['front' => $frontPath, 'back' => $backPath], JSON_UNESCAPED_SLASHES);
+                        $idStmt = $db->prepare('UPDATE users SET id_upload = ? WHERE id = ?');
+                        $idStmt->bind_param('si', $bundleJson, $userId);
+                        $ok = $idStmt->execute();
+                        $idStmt->close();
 
-                        $ext = $mimeMap[$mimeType];
-                        $target = $uploadDir . '/user_' . $userId . '.' . $ext;
-                        if (!move_uploaded_file($tmpFile, $target)) {
-                            $errors[] = 'Unable to save the ID file.';
+                        if ($ok) {
+                            $user['id_upload'] = $bundleJson;
+                            $success = 'ID Front and Back uploaded successfully.';
+                            $activeTab = 'profile';
                         } else {
-                            $webPath = '/uploads/user-id/' . basename($target);
-                            $idStmt = $db->prepare('UPDATE users SET id_upload = ? WHERE id = ?');
-                            $idStmt->bind_param('si', $webPath, $userId);
-                            $ok = $idStmt->execute();
-                            $idStmt->close();
-
-                            if ($ok) {
-                                $user['id_upload'] = $webPath;
-                                $success = 'ID file uploaded successfully.';
-                                $activeTab = 'profile';
-                            } else {
-                                $errors[] = 'Unable to save ID file reference.';
-                            }
+                            $errors[] = 'Unable to save ID file references.';
                         }
                     }
                 }
@@ -415,8 +447,20 @@ $csrfToken = generate_csrf_token();
                                 <div class="settings-info-field settings-info-field-full">
                                     <label>ID Upload</label>
                                     <div class="settings-info-value">
-                                        <?php if (!empty($user['id_upload'])): ?>
-                                            <button type="button" class="profile-action-btn profile-action-btn-primary id-view-btn" data-id-url="<?php echo htmlspecialchars((string) $user['id_upload'], ENT_QUOTES, 'UTF-8'); ?>">View Uploaded ID</button>
+                                        <?php
+                                        $idBundle = parse_id_upload_bundle((string) ($user['id_upload'] ?? ''));
+                                        $idFront = $idBundle['front'];
+                                        $idBack = $idBundle['back'];
+                                        $idSingle = $idBundle['single'];
+                                        ?>
+                                        <?php if ($idFront !== '' || $idBack !== '' || $idSingle !== ''): ?>
+                                            <button
+                                                type="button"
+                                                class="profile-action-btn profile-action-btn-primary id-view-btn"
+                                                data-id-url="<?php echo htmlspecialchars($idSingle, ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-id-front-url="<?php echo htmlspecialchars($idFront, ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-id-back-url="<?php echo htmlspecialchars($idBack, ENT_QUOTES, 'UTF-8'); ?>"
+                                            >View Uploaded ID</button>
                                         <?php else: ?>
                                             -
                                         <?php endif; ?>
@@ -425,7 +469,8 @@ $csrfToken = generate_csrf_token();
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="id_action" value="upload">
                                         <div class="id-upload-row">
-                                            <input type="file" id="idFileInput" name="id_file" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" required>
+                                            <input type="file" id="idFrontInput" name="id_file_front" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
+                                            <input type="file" id="idBackInput" name="id_file_back" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
                                             <?php if (!empty($user['id_upload'])): ?>
                                                 <button form="removeIdForm" type="submit" class="profile-action-btn profile-action-btn-ghost">Remove ID</button>
                                             <?php endif; ?>
@@ -437,7 +482,7 @@ $csrfToken = generate_csrf_token();
                                             <input type="hidden" name="id_action" value="remove">
                                         </form>
                                     <?php endif; ?>
-                                    <small style="display:block;color:#64748b;margin-top:6px;">Allowed: JPG, PNG, WEBP, PDF. Max: 5MB. Upload starts automatically when you choose a file.</small>
+                                    <small style="display:block;color:#64748b;margin-top:6px;">Required: upload both ID Front and ID Back. Allowed: JPG, PNG, WEBP. Max: 5MB each. Upload starts automatically after both files are selected.</small>
                                 </div>
                                 <div class="settings-info-field"><label>Registered On</label><div class="settings-info-value"><?php echo !empty($user['created_at']) ? date('M d, Y', strtotime((string) $user['created_at'])) : '-'; ?></div></div>
                                 <div class="settings-info-field"><label>Feedback Submitted</label><div class="settings-info-value"><?php echo (int) ($feedbackStats['total'] ?? 0); ?></div></div>
@@ -532,7 +577,7 @@ $csrfToken = generate_csrf_token();
     <div class="avatar-crop-modal" id="idViewerModal" hidden>
         <div class="avatar-crop-dialog" role="dialog" aria-modal="true" aria-labelledby="idViewerTitle" style="max-width:900px;width:min(94vw,900px);">
             <div class="avatar-crop-header">
-                <h3 id="idViewerTitle">Uploaded ID</h3>
+                <h3 id="idViewerTitle">Uploaded ID (Front / Back)</h3>
                 <button type="button" class="avatar-crop-close" id="idViewerClose" aria-label="Close ID viewer">&times;</button>
             </div>
             <div class="avatar-crop-body" style="padding:12px;">
@@ -542,8 +587,12 @@ $csrfToken = generate_csrf_token();
                     <button type="button" class="btn-clear-filters" id="idZoomIn">+</button>
                     <button type="button" class="ac-f84d9680" id="idZoomReset">Reset</button>
                 </div>
-                <div id="idViewerImageWrap" style="display:none;max-height:74vh;overflow:auto;border:1px solid #dbe7f3;border-radius:8px;background:#fff;">
-                    <img id="idViewerImage" src="" alt="Uploaded ID" style="display:block;max-height:none;width:auto;max-width:none;margin:0 auto;border-radius:8px;transform-origin:center center;">
+                <div id="idViewerImageWrap" style="display:none;max-height:74vh;overflow:auto;border:1px solid #dbe7f3;border-radius:8px;background:#fff;padding:10px;">
+                    <div id="idViewerDualWrap" style="display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:10px;">
+                        <img id="idViewerFrontImage" src="" alt="Uploaded ID Front" style="display:block;max-width:100%;height:auto;margin:0 auto;border-radius:8px;border:1px solid #e2e8f0;">
+                        <img id="idViewerBackImage" src="" alt="Uploaded ID Back" style="display:block;max-width:100%;height:auto;margin:0 auto;border-radius:8px;border:1px solid #e2e8f0;">
+                    </div>
+                    <img id="idViewerImage" src="" alt="Uploaded ID" style="display:none;max-height:none;width:auto;max-width:none;margin:0 auto;border-radius:8px;transform-origin:center center;">
                 </div>
                 <iframe id="idViewerPdf" src="" title="Uploaded ID PDF" style="display:none;width:100%;height:74vh;border:1px solid #dbe7f3;border-radius:8px;background:#fff;"></iframe>
             </div>
