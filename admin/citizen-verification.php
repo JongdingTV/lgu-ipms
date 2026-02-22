@@ -119,6 +119,7 @@ $db->close();
 
         .verify-id-preview { margin-top:12px; border:1px solid #dbe7f3; border-radius:10px; background:#fff; padding:8px; min-height:260px; }
         .verify-id-preview img { max-width:100%; max-height:56vh; display:block; margin:0 auto; border-radius:8px; }
+        .verify-id-dual { display:grid; grid-template-columns:repeat(2,minmax(220px,1fr)); gap:10px; }
         .verify-id-preview iframe { width:100%; height:56vh; border:0; border-radius:8px; }
         .verify-actions { margin-top:12px; display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
 
@@ -252,6 +253,10 @@ $db->close();
 
                 <div class="verify-id-preview">
                     <div id="vmIdEmpty">No uploaded ID file.</div>
+                    <div id="vmIdDual" class="verify-id-dual" style="display:none;">
+                        <img id="vmIdFrontImage" alt="Citizen ID Front" style="display:none;">
+                        <img id="vmIdBackImage" alt="Citizen ID Back" style="display:none;">
+                    </div>
                     <img id="vmIdImage" alt="Citizen ID Preview" style="display:none;">
                     <iframe id="vmIdPdf" title="Citizen ID PDF" style="display:none;"></iframe>
                 </div>
@@ -278,6 +283,9 @@ $db->close();
     var filter = document.getElementById('verifyStatus');
     var userIdInput = document.getElementById('vmUserId');
     var idImg = document.getElementById('vmIdImage');
+    var idFrontImg = document.getElementById('vmIdFrontImage');
+    var idBackImg = document.getElementById('vmIdBackImage');
+    var idDual = document.getElementById('vmIdDual');
     var idPdf = document.getElementById('vmIdPdf');
     var idEmpty = document.getElementById('vmIdEmpty');
 
@@ -310,6 +318,9 @@ $db->close();
         if (userIdInput) userIdInput.value = row.getAttribute('data-user_id') || '0';
 
         if (idImg) { idImg.src = ''; idImg.style.display = 'none'; }
+        if (idFrontImg) { idFrontImg.src = ''; idFrontImg.style.display = 'none'; }
+        if (idBackImg) { idBackImg.src = ''; idBackImg.style.display = 'none'; }
+        if (idDual) idDual.style.display = 'none';
         if (idPdf) { idPdf.src = ''; idPdf.style.display = 'none'; }
 
         var file = row.getAttribute('data-id_upload') || '';
@@ -320,6 +331,23 @@ $db->close();
         if (idEmpty) idEmpty.style.display = 'none';
 
         var lower = file.toLowerCase();
+        var parsed = null;
+        if (file && (file.charAt(0) === '{' || file.charAt(0) === '[')) {
+            try { parsed = JSON.parse(file); } catch (_) { parsed = null; }
+        }
+        if (parsed && typeof parsed === 'object' && (parsed.front || parsed.back)) {
+            if (idDual) idDual.style.display = 'grid';
+            if (idFrontImg) {
+                idFrontImg.src = parsed.front || parsed.back || '';
+                idFrontImg.style.display = 'block';
+            }
+            if (idBackImg) {
+                idBackImg.src = parsed.back || parsed.front || '';
+                idBackImg.style.display = 'block';
+            }
+            return;
+        }
+
         if (lower.endsWith('.pdf')) {
             if (idPdf) { idPdf.src = file; idPdf.style.display = 'block'; }
         } else {
