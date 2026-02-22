@@ -11,6 +11,42 @@ SET @sql = IF(
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- engineer_documents compatibility columns (for mixed/legacy schemas)
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineer_documents' AND COLUMN_NAME='document_type'),
+    'SELECT 1',
+    'ALTER TABLE engineer_documents ADD COLUMN document_type VARCHAR(60) NULL AFTER engineer_id'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineer_documents' AND COLUMN_NAME='file_path'),
+    'SELECT 1',
+    'ALTER TABLE engineer_documents ADD COLUMN file_path VARCHAR(255) NULL AFTER document_type'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineer_documents' AND COLUMN_NAME='original_name'),
+    'SELECT 1',
+    'ALTER TABLE engineer_documents ADD COLUMN original_name VARCHAR(255) NULL AFTER file_path'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineer_documents' AND COLUMN_NAME='mime_type'),
+    'SELECT 1',
+    'ALTER TABLE engineer_documents ADD COLUMN mime_type VARCHAR(120) NULL AFTER original_name'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineer_documents' AND COLUMN_NAME='file_size'),
+    'SELECT 1',
+    'ALTER TABLE engineer_documents ADD COLUMN file_size BIGINT NULL AFTER mime_type'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 SET @sql = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='engineers' AND COLUMN_NAME='middle_name'),
     'SELECT 1',

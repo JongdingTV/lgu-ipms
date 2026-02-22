@@ -48,6 +48,26 @@ function eng_table_has_column(mysqli $db, string $table, string $column): bool
     return $exists;
 }
 
+function eng_pick_existing_column(mysqli $db, string $table, array $candidates): ?string
+{
+    foreach ($candidates as $candidate) {
+        if (eng_table_has_column($db, $table, $candidate)) {
+            return $candidate;
+        }
+    }
+    return null;
+}
+
+function eng_bind_dynamic(mysqli_stmt $stmt, string $types, array &$values): bool
+{
+    $refs = [];
+    $refs[] = &$types;
+    foreach ($values as $idx => &$value) {
+        $refs[] = &$value;
+    }
+    return (bool)call_user_func_array([$stmt, 'bind_param'], $refs);
+}
+
 function eng_store_uploaded_file(array $file, string $docType): array
 {
     $allowedMimeToExt = [
@@ -257,25 +277,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $engineerId = (int)$db->insert_id;
             $insert->close();
 
+            $engineerIdColumn = eng_pick_existing_column($db, 'engineer_documents', ['engineer_id']);
+            if ($engineerIdColumn === null) {
+                throw new RuntimeException('Engineers documents schema is missing engineer_id column.');
+            }
+            $docTypeColumn = eng_pick_existing_column($db, 'engineer_documents', ['document_type', 'doc_type', 'type']);
+            $filePathColumn = eng_pick_existing_column($db, 'engineer_documents', ['file_path', 'path']);
+            $originalNameColumn = eng_pick_existing_column($db, 'engineer_documents', ['original_name', 'file_name', 'original_filename', 'filename']);
+            $mimeTypeColumn = eng_pick_existing_column($db, 'engineer_documents', ['mime_type', 'file_mime', 'mime']);
+            $fileSizeColumn = eng_pick_existing_column($db, 'engineer_documents', ['file_size', 'size', 'size_bytes']);
+
+            if ($filePathColumn === null) {
+                throw new RuntimeException('Engineers documents schema is missing file path column.');
+            }
+
+            $docColumns = [$engineerIdColumn];
+            if ($docTypeColumn !== null) $docColumns[] = $docTypeColumn;
+            $docColumns[] = $filePathColumn;
+            if ($originalNameColumn !== null) $docColumns[] = $originalNameColumn;
+            if ($mimeTypeColumn !== null) $docColumns[] = $mimeTypeColumn;
+            if ($fileSizeColumn !== null) $docColumns[] = $fileSizeColumn;
+
+            $placeholders = implode(', ', array_fill(0, count($docColumns), '?'));
             $docStmt = $db->prepare(
-                "INSERT INTO engineer_documents (
-                    engineer_id, document_type, file_path, original_name, mime_type, file_size
-                ) VALUES (?, ?, ?, ?, ?, ?)"
+                "INSERT INTO engineer_documents (" . implode(', ', $docColumns) . ") VALUES (" . $placeholders . ")"
             );
             if (!$docStmt) {
                 throw new RuntimeException('Unable to prepare document insert.');
             }
 
             foreach ($documents as $doc) {
-                $docStmt->bind_param(
-                    'issssi',
-                    $engineerId,
-                    $doc['document_type'],
-                    $doc['file_path'],
-                    $doc['original_name'],
-                    $doc['mime_type'],
-                    $doc['file_size']
-                );
+                $docValues = [(int)$engineerId];
+                $docTypes = 'i';
+
+                if ($docTypeColumn !== null) {
+                    $docValues[] = (string)$doc['document_type'];
+                    $docTypes .= 's';
+                }
+
+                $docValues[] = (string)$doc['file_path'];
+                $docTypes .= 's';
+
+                if ($originalNameColumn !== null) {
+                    $docValues[] = (string)$doc['original_name'];
+                    $docTypes .= 's';
+                }
+
+                if ($mimeTypeColumn !== null) {
+                    $docValues[] = (string)$doc['mime_type'];
+                    $docTypes .= 's';
+                }
+
+                if ($fileSizeColumn !== null) {
+                    $docValues[] = (int)$doc['file_size'];
+                    $docTypes .= 'i';
+                }
+
+                if (!eng_bind_dynamic($docStmt, $docTypes, $docValues)) {
+                    throw new RuntimeException('Unable to bind document parameters.');
+                }
                 if (!$docStmt->execute()) {
                     throw new RuntimeException('Unable to save uploaded document.');
                 }
