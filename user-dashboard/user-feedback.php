@@ -742,14 +742,15 @@ $csrfToken = generate_csrf_token();
                                 $basePhotoFile = basename($normalizedPath);
                                 if (preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $basePhotoFile)) {
                                     $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($basePhotoFile);
-                                } elseif (preg_match('#^/?uploads/feedback/[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$#i', $normalizedPath)) {
-                                    $photoPath = $photoPathCol;
                                 }
                             }
                             if ($photoPath === '' && preg_match('/\[Photo Attachment Private\]\s+([\w\-.]+\.(?:jpg|jpeg|png|webp))/i', $desc, $m)) {
                                 $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($m[1]);
-                            } elseif ($photoPath === '' && preg_match('/\[Photo Attachment\]\s+(\/uploads\/feedback\/[\w\-.]+\.((jpg)|(jpeg)|(png)|(webp)))/i', $desc, $m)) {
-                                $photoPath = $m[1];
+                            } elseif ($photoPath === '' && preg_match('/\[Photo Attachment\]\s+([^\s]+\.(?:jpg|jpeg|png|webp))/i', $desc, $m)) {
+                                $legacyBase = basename(str_replace('\\', '/', (string)$m[1]));
+                                if ($legacyBase !== '' && preg_match('/^[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp)$/i', $legacyBase)) {
+                                    $photoPath = '/user-dashboard/feedback-photo.php?file=' . rawurlencode($legacyBase);
+                                }
                             }
                             ?>
                             <div

@@ -9,6 +9,14 @@
         document.body.style.overflow = 'hidden';
     }
 
+    function openOverlayModalById(modalId) {
+        var modal = document.getElementById(modalId);
+        if (!modal) return;
+        // Keep currently opened details modal visible; just open photo on top.
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
     function closeModalById(modalId) {
         var modal = document.getElementById(modalId);
         if (!modal) return;
@@ -41,7 +49,7 @@
         if (addressBtn) return openModalById(addressBtn.getAttribute('data-address-modal'));
 
         var photoBtn = e.target.closest('[data-photo-modal]');
-        if (photoBtn) return openModalById(photoBtn.getAttribute('data-photo-modal'));
+        if (photoBtn) return openOverlayModalById(photoBtn.getAttribute('data-photo-modal'));
 
         var closeBtn = e.target.closest('[data-close-modal]');
         if (closeBtn) return closeModalById(closeBtn.getAttribute('data-close-modal'));
