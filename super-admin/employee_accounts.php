@@ -225,11 +225,11 @@ if ($result) {
             <span class="logo-text">Super Admin</span>
         </div>
         <div class="nav-links">
-            <a href="/super-admin/dashboard.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon">Super Admin Overview</a>
+            <a href="/super-admin/dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon">Dashboard Overview</a>
+            <a href="/super-admin/progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
+            <a href="/super-admin/registered_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon">Registered Projects</a>
             <a href="/super-admin/employee_accounts.php" class="active"><img src="../assets/images/admin/person.png" class="nav-icon">Employee Accounts</a>
-            <a href="/admin/dashboard.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon">Dashboard Overview</a>
-            <a href="/admin/progress_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon">Progress Monitoring</a>
-            <a href="/admin/registered_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon">Registered Projects</a>
+            <a href="/super-admin/dashboard.php"><img src="../assets/images/admin/check.png" class="nav-icon">Control Center</a>
             <a href="/admin/audit-logs.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Security Audit Logs</a>
         </div>
         <div class="nav-divider"></div>
