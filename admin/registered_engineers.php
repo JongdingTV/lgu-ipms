@@ -134,6 +134,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $riskScoreCol = registered_pick_column($db, 'contractors', ['risk_score']);
     $performanceCol = registered_pick_column($db, 'contractors', ['performance_rating']);
     $reliabilityCol = registered_pick_column($db, 'contractors', ['reliability_score']);
+    $approvalCol = registered_pick_column($db, 'contractors', ['approval_status']);
+    $verifiedAtCol = registered_pick_column($db, 'contractors', ['verified_at']);
+    $approvedAtCol = registered_pick_column($db, 'contractors', ['approved_at']);
+    $rejectedAtCol = registered_pick_column($db, 'contractors', ['rejected_at']);
 
     $selectParts = ['id'];
     $selectParts[] = $companyCol ? "{$companyCol} AS company" : "'' AS company";
@@ -151,6 +155,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $selectParts[] = $riskScoreCol ? "{$riskScoreCol} AS risk_score" : "0 AS risk_score";
     $selectParts[] = $performanceCol ? "{$performanceCol} AS performance_rating" : "0 AS performance_rating";
     $selectParts[] = $reliabilityCol ? "{$reliabilityCol} AS reliability_score" : "0 AS reliability_score";
+    $selectParts[] = $approvalCol ? "{$approvalCol} AS approval_status" : "'pending' AS approval_status";
+    $selectParts[] = $verifiedAtCol ? "{$verifiedAtCol} AS verified_at" : "NULL AS verified_at";
+    $selectParts[] = $approvedAtCol ? "{$approvedAtCol} AS approved_at" : "NULL AS approved_at";
+    $selectParts[] = $rejectedAtCol ? "{$rejectedAtCol} AS rejected_at" : "NULL AS rejected_at";
 
     $Engineers = [];
     $hasDocumentsTable = registered_table_exists($db, 'contractor_documents');
