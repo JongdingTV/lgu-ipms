@@ -39,7 +39,7 @@ $csrfToken = generate_csrf_token();
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-tasks-validation.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-tasks-validation.css'); ?>">
 </head>
-<body>
+<body class="tasks-validation-page">
     <div class="sidebar-toggle-wrapper">
         <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
