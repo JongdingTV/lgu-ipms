@@ -59,18 +59,25 @@ function ensure_task_milestone_tables(mysqli $db): void {
 }
 
 function ensure_progress_review_table(mysqli $db): void {
-    $db->query("CREATE TABLE IF NOT EXISTS project_progress_reviews (
+    $db->query("CREATE TABLE IF NOT EXISTS project_progress_submissions (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        progress_update_id INT NOT NULL UNIQUE,
         project_id INT NOT NULL,
-        decision_status VARCHAR(20) NOT NULL DEFAULT 'Pending',
-        decision_note TEXT NULL,
-        decided_by INT NOT NULL,
-        decided_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_project_decision (project_id, decision_status),
-        CONSTRAINT fk_progress_review_update FOREIGN KEY (progress_update_id) REFERENCES project_progress_updates(id) ON DELETE CASCADE,
-        CONSTRAINT fk_progress_review_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-        CONSTRAINT fk_progress_review_employee FOREIGN KEY (decided_by) REFERENCES employees(id) ON DELETE CASCADE
+        submitted_progress_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+        work_details TEXT NOT NULL,
+        validation_notes TEXT NOT NULL,
+        proof_image_path VARCHAR(255) NOT NULL,
+        discrepancy_flag TINYINT(1) NOT NULL DEFAULT 0,
+        discrepancy_note VARCHAR(255) NULL,
+        review_status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+        review_note TEXT NULL,
+        submitted_by INT NOT NULL,
+        reviewed_by INT NULL,
+        submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        reviewed_at DATETIME NULL,
+        INDEX idx_project_submitted (project_id, submitted_at),
+        INDEX idx_review_status (review_status),
+        CONSTRAINT fk_progress_submission_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        CONSTRAINT fk_progress_submission_submitter FOREIGN KEY (submitted_by) REFERENCES employees(id) ON DELETE CASCADE
     )");
 }
 
@@ -274,20 +281,24 @@ if ($action === 'load_notifications') {
 if ($action === 'load_progress_submissions') {
     ensure_progress_review_table($db);
     $sql = "SELECT
-                ppu.id AS update_id,
-                ppu.project_id,
+                pps.id AS submission_id,
+                pps.project_id,
                 p.code,
                 p.name,
-                ppu.progress_percent,
-                DATE_FORMAT(ppu.created_at, '%b %d, %Y %h:%i %p') AS submitted_at,
+                pps.submitted_progress_percent AS progress_percent,
+                pps.work_details,
+                pps.validation_notes,
+                pps.proof_image_path,
+                pps.discrepancy_flag,
+                pps.discrepancy_note,
+                DATE_FORMAT(pps.submitted_at, '%b %d, %Y %h:%i %p') AS submitted_at,
                 CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS submitted_by,
-                COALESCE(pr.decision_status, 'Pending') AS decision_status,
-                pr.decision_note
-            FROM project_progress_updates ppu
-            INNER JOIN projects p ON p.id = ppu.project_id
-            LEFT JOIN employees e ON e.id = ppu.updated_by
-            LEFT JOIN project_progress_reviews pr ON pr.progress_update_id = ppu.id
-            ORDER BY ppu.created_at DESC
+                pps.review_status AS decision_status,
+                pps.review_note AS decision_note
+            FROM project_progress_submissions pps
+            INNER JOIN projects p ON p.id = pps.project_id
+            LEFT JOIN employees e ON e.id = pps.submitted_by
+            ORDER BY pps.submitted_at DESC
             LIMIT 400";
     $rows = [];
     $res = $db->query($sql);
@@ -302,13 +313,13 @@ if ($action === 'load_progress_submissions') {
 
 if ($action === 'decide_progress') {
     ensure_progress_review_table($db);
-    $updateId = (int) ($_POST['update_id'] ?? 0);
+    $submissionId = (int) ($_POST['submission_id'] ?? 0);
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $decision = trim((string) ($_POST['decision_status'] ?? ''));
     $note = trim((string) ($_POST['decision_note'] ?? ''));
     $allowed = ['Approved', 'Rejected'];
 
-    if ($updateId <= 0 || $projectId <= 0 || !in_array($decision, $allowed, true)) {
+    if ($submissionId <= 0 || $projectId <= 0 || !in_array($decision, $allowed, true)) {
         json_out(['success' => false, 'message' => 'Invalid decision payload.'], 422);
     }
 
@@ -317,21 +328,50 @@ if ($action === 'decide_progress') {
         json_out(['success' => false, 'message' => 'Invalid session.'], 403);
     }
 
-    $stmt = $db->prepare(
-        "INSERT INTO project_progress_reviews (progress_update_id, project_id, decision_status, decision_note, decided_by)
-         VALUES (?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE
-            decision_status = VALUES(decision_status),
-            decision_note = VALUES(decision_note),
-            decided_by = VALUES(decided_by),
-            decided_at = CURRENT_TIMESTAMP"
-    );
-    if (!$stmt) {
+    $pick = $db->prepare("SELECT submitted_progress_percent, review_status
+                          FROM project_progress_submissions
+                          WHERE id = ? AND project_id = ?
+                          LIMIT 1");
+    if (!$pick) {
         json_out(['success' => false, 'message' => 'Database error.'], 500);
     }
-    $stmt->bind_param('iissi', $updateId, $projectId, $decision, $note, $decidedBy);
-    $stmt->execute();
-    $stmt->close();
+    $pick->bind_param('ii', $submissionId, $projectId);
+    $pick->execute();
+    $pickedRes = $pick->get_result();
+    $submission = $pickedRes ? $pickedRes->fetch_assoc() : null;
+    if ($pickedRes) $pickedRes->free();
+    $pick->close();
+    if (!$submission) {
+        json_out(['success' => false, 'message' => 'Submission not found.'], 404);
+    }
+
+    $db->begin_transaction();
+    try {
+        $up = $db->prepare("UPDATE project_progress_submissions
+                            SET review_status = ?, review_note = ?, reviewed_by = ?, reviewed_at = NOW()
+                            WHERE id = ? AND project_id = ?");
+        if (!$up) {
+            throw new RuntimeException('Database error.');
+        }
+        $up->bind_param('ssiii', $decision, $note, $decidedBy, $submissionId, $projectId);
+        $up->execute();
+        $up->close();
+
+        if ($decision === 'Approved') {
+            $officialProgress = (float)($submission['submitted_progress_percent'] ?? 0);
+            $ins = $db->prepare("INSERT INTO project_progress_updates (project_id, progress_percent, updated_by) VALUES (?, ?, ?)");
+            if (!$ins) {
+                throw new RuntimeException('Unable to write official progress.');
+            }
+            $ins->bind_param('idi', $projectId, $officialProgress, $decidedBy);
+            $ins->execute();
+            $ins->close();
+        }
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollback();
+        json_out(['success' => false, 'message' => $e->getMessage()], 500);
+    }
     json_out(['success' => true]);
 }
 

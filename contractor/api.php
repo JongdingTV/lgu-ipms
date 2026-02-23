@@ -41,6 +41,79 @@ function ensure_progress_table(mysqli $db): void {
     )");
 }
 
+function ensure_progress_submission_table(mysqli $db): void {
+    $db->query("CREATE TABLE IF NOT EXISTS project_progress_submissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        submitted_progress_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+        work_details TEXT NOT NULL,
+        validation_notes TEXT NOT NULL,
+        proof_image_path VARCHAR(255) NOT NULL,
+        discrepancy_flag TINYINT(1) NOT NULL DEFAULT 0,
+        discrepancy_note VARCHAR(255) NULL,
+        review_status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+        review_note TEXT NULL,
+        submitted_by INT NOT NULL,
+        reviewed_by INT NULL,
+        submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        reviewed_at DATETIME NULL,
+        INDEX idx_project_submitted (project_id, submitted_at),
+        INDEX idx_review_status (review_status),
+        CONSTRAINT fk_progress_submission_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        CONSTRAINT fk_progress_submission_submitter FOREIGN KEY (submitted_by) REFERENCES employees(id) ON DELETE CASCADE
+    )");
+}
+
+function contractor_store_progress_proof(array $file): string {
+    $tmp = (string)($file['tmp_name'] ?? '');
+    $err = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+    $size = (int)($file['size'] ?? 0);
+    if ($err !== UPLOAD_ERR_OK || $tmp === '') {
+        throw new RuntimeException('Proof photo is required.');
+    }
+    if ($size <= 0 || $size > 5 * 1024 * 1024) {
+        throw new RuntimeException('Proof photo must be 5MB or less.');
+    }
+
+    $mime = (string)(mime_content_type($tmp) ?: '');
+    $allowed = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp'
+    ];
+    if (!isset($allowed[$mime])) {
+        throw new RuntimeException('Proof photo must be JPG, PNG, or WEBP.');
+    }
+
+    $uploadDir = dirname(__DIR__) . '/uploads/progress-proofs';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+        throw new RuntimeException('Unable to prepare proof upload folder.');
+    }
+
+    $filename = 'proof_' . date('Ymd_His') . '_' . bin2hex(random_bytes(8)) . '.' . $allowed[$mime];
+    $target = $uploadDir . '/' . $filename;
+    if (!move_uploaded_file($tmp, $target)) {
+        throw new RuntimeException('Unable to save proof photo.');
+    }
+    return 'uploads/progress-proofs/' . $filename;
+}
+
+function contractor_latest_official_progress(mysqli $db, int $projectId): float {
+    $stmt = $db->prepare("SELECT COALESCE(progress_percent, 0) AS progress_percent
+                          FROM project_progress_updates
+                          WHERE project_id = ?
+                          ORDER BY created_at DESC
+                          LIMIT 1");
+    if (!$stmt) return 0.0;
+    $stmt->bind_param('i', $projectId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    if ($res) $res->free();
+    $stmt->close();
+    return (float)($row['progress_percent'] ?? 0);
+}
+
 function ensure_task_milestone_tables(mysqli $db): void {
     $db->query("CREATE TABLE IF NOT EXISTS project_tasks (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -180,6 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST
 
 if ($action === 'load_projects') {
     ensure_progress_table($db);
+    ensure_progress_submission_table($db);
     $rows = [];
     $res = $db->query("SELECT
             p.id,
@@ -189,6 +263,11 @@ if ($action === 'load_projects') {
             COALESCE(p.budget, 0) AS budget,
             p.status,
             COALESCE(pp.progress_percent, 0) AS progress_percent,
+            (
+                SELECT COUNT(*)
+                FROM project_progress_submissions s
+                WHERE s.project_id = p.id AND s.review_status = 'Pending'
+            ) AS pending_submissions,
             DATE_FORMAT(pp.created_at, '%b %d, %Y %h:%i %p') AS progress_updated_at
         FROM projects p
         LEFT JOIN (
@@ -404,35 +483,80 @@ if ($action === 'update_expense') {
 
 if ($action === 'update_progress') {
     ensure_progress_table($db);
+    ensure_progress_submission_table($db);
     $projectId = (int) ($_POST['project_id'] ?? 0);
     $progress = (float) ($_POST['progress'] ?? -1);
+    $workDetails = trim((string)($_POST['work_details'] ?? ''));
+    $validationNotes = trim((string)($_POST['validation_notes'] ?? ''));
     if ($projectId <= 0 || $progress < 0 || $progress > 100) {
         json_out(['success' => false, 'message' => 'Progress must be between 0 and 100.'], 422);
     }
+    if ($workDetails === '' || strlen($workDetails) < 10) {
+        json_out(['success' => false, 'message' => 'Please provide work details (at least 10 characters).'], 422);
+    }
+    if ($validationNotes === '' || strlen($validationNotes) < 10) {
+        json_out(['success' => false, 'message' => 'Please provide validation information (at least 10 characters).'], 422);
+    }
+    if (!isset($_FILES['proof_image'])) {
+        json_out(['success' => false, 'message' => 'Please attach a proof photo.'], 422);
+    }
 
     $employeeId = (int) $_SESSION['employee_id'];
-    $stmt = $db->prepare("INSERT INTO project_progress_updates (project_id, progress_percent, updated_by) VALUES (?, ?, ?)");
+    $proofPath = '';
+    try {
+        $proofPath = contractor_store_progress_proof($_FILES['proof_image']);
+    } catch (Throwable $e) {
+        json_out(['success' => false, 'message' => $e->getMessage()], 422);
+    }
+
+    $official = contractor_latest_official_progress($db, $projectId);
+    $delta = $progress - $official;
+    $discrepancyFlag = 0;
+    $discrepancyNote = null;
+    if ($delta < 0) {
+        $discrepancyFlag = 1;
+        $discrepancyNote = 'Submitted progress is lower than official progress.';
+    } elseif ($delta > 20) {
+        $discrepancyFlag = 1;
+        $discrepancyNote = 'Submitted progress jump is greater than 20%.';
+    }
+
+    $stmt = $db->prepare("INSERT INTO project_progress_submissions
+        (project_id, submitted_progress_percent, work_details, validation_notes, proof_image_path, discrepancy_flag, discrepancy_note, review_status, submitted_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?)");
     if (!$stmt) {
         json_out(['success' => false, 'message' => 'Database error.'], 500);
     }
-    $stmt->bind_param('idi', $projectId, $progress, $employeeId);
+    $stmt->bind_param('idsssisi', $projectId, $progress, $workDetails, $validationNotes, $proofPath, $discrepancyFlag, $discrepancyNote, $employeeId);
     $stmt->execute();
     $stmt->close();
-    json_out(['success' => true]);
+    json_out(['success' => true, 'message' => 'Progress submission sent to engineer for review.']);
 }
 
 if ($action === 'load_progress_history') {
     ensure_progress_table($db);
+    ensure_progress_submission_table($db);
     $projectId = (int) ($_GET['project_id'] ?? 0);
     if ($projectId <= 0) {
         json_out(['success' => false, 'message' => 'Invalid project.'], 422);
     }
     $rows = [];
-    $stmt = $db->prepare("SELECT ppu.id, ppu.progress_percent, ppu.created_at, CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS updated_by
-                          FROM project_progress_updates ppu
-                          LEFT JOIN employees e ON e.id = ppu.updated_by
-                          WHERE ppu.project_id = ?
-                          ORDER BY ppu.created_at DESC
+    $stmt = $db->prepare("SELECT
+                            pps.id,
+                            pps.submitted_progress_percent AS progress_percent,
+                            DATE_FORMAT(pps.submitted_at, '%b %d, %Y %h:%i %p') AS created_at,
+                            CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS updated_by,
+                            pps.review_status,
+                            pps.discrepancy_flag,
+                            pps.discrepancy_note,
+                            pps.work_details,
+                            pps.validation_notes,
+                            pps.proof_image_path,
+                            pps.review_note
+                          FROM project_progress_submissions pps
+                          LEFT JOIN employees e ON e.id = pps.submitted_by
+                          WHERE pps.project_id = ?
+                          ORDER BY pps.submitted_at DESC
                           LIMIT 200");
     if ($stmt) {
         $stmt->bind_param('i', $projectId);
