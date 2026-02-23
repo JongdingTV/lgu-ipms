@@ -389,6 +389,50 @@ function messaging_store_attachment(array $file): ?array {
     return ['path' => 'uploads/project-messages/' . $name, 'name' => (string)($file['name'] ?? $name), 'type' => $mime, 'size' => $size];
 }
 
+function contractor_ensure_module_tables(mysqli $db): void {
+    $db->query("CREATE TABLE IF NOT EXISTS contractor_deliverables (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        contractor_id INT NOT NULL,
+        project_id INT NOT NULL,
+        deliverable_type VARCHAR(120) NOT NULL,
+        milestone_reference VARCHAR(180) NULL,
+        remarks TEXT NULL,
+        file_path VARCHAR(255) NULL,
+        status VARCHAR(30) NOT NULL DEFAULT 'Submitted',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS contractor_expenses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        contractor_id INT NOT NULL,
+        project_id INT NOT NULL,
+        amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+        category VARCHAR(120) NOT NULL,
+        description TEXT NULL,
+        receipt_path VARCHAR(255) NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS contractor_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        contractor_id INT NOT NULL,
+        project_id INT NOT NULL,
+        request_type VARCHAR(120) NOT NULL,
+        details TEXT NOT NULL,
+        attachment_path VARCHAR(255) NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS contractor_notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        recipient_user_id INT NOT NULL,
+        project_id INT NULL,
+        title VARCHAR(160) NOT NULL,
+        body TEXT NOT NULL,
+        is_read TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+}
+
 function contractor_sync_projects_to_milestones(mysqli $db): void {
     $projects = [];
     $res = $db->query("SELECT name, COALESCE(budget, 0) AS budget FROM projects ORDER BY id DESC");
@@ -1328,6 +1372,116 @@ if ($action === 'load_project_details') {
     json_out(['success' => true, 'data' => ['project' => $project, 'tasks' => $tasks, 'milestones' => $milestones, 'progress_history' => $progress]]);
 }
 
+if ($action === 'load_deliverables') {
+    contractor_ensure_module_tables($db);
+    $allowedProjects = contractor_assigned_project_ids($db);
+    $rows = [];
+    $res = $db->query("SELECT id, contractor_id, project_id, deliverable_type, milestone_reference, remarks, file_path, status, created_at FROM contractor_deliverables ORDER BY id DESC LIMIT 250");
+    if ($res) {
+        while ($r = $res->fetch_assoc()) {
+            if (in_array((int)($r['project_id'] ?? 0), $allowedProjects, true)) $rows[] = $r;
+        }
+        $res->free();
+    }
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'submit_deliverable') {
+    contractor_ensure_module_tables($db);
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    if (!contractor_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    $type = trim((string)($_POST['deliverable_type'] ?? ''));
+    $milestoneRef = trim((string)($_POST['milestone_reference'] ?? ''));
+    $remarks = trim((string)($_POST['remarks'] ?? ''));
+    if ($type === '') json_out(['success' => false, 'message' => 'Deliverable type is required.'], 422);
+    $att = null;
+    try { $att = isset($_FILES['attachment']) ? messaging_store_attachment($_FILES['attachment']) : null; } catch (Throwable $e) { json_out(['success' => false, 'message' => $e->getMessage()], 422); }
+    $path = $att ? $att['path'] : null;
+    $identity = contractor_identity($db);
+    $contractorId = (int)($identity['contractor_ids'][0] ?? ($identity['employee_id'] ?? 0));
+    $stmt = $db->prepare("INSERT INTO contractor_deliverables (contractor_id, project_id, deliverable_type, milestone_reference, remarks, file_path, status) VALUES (?, ?, ?, ?, ?, ?, 'Submitted')");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('iissss', $contractorId, $projectId, $type, $milestoneRef, $remarks, $path);
+    $stmt->execute();
+    $deliverableId = (int)$db->insert_id;
+    $stmt->close();
+    if (function_exists('rbac_audit')) rbac_audit('contractor.deliverable_submit', 'contractor_deliverable', $deliverableId, ['project_id' => $projectId]);
+    json_out(['success' => true, 'id' => $deliverableId]);
+}
+
+if ($action === 'load_expense_entries') {
+    contractor_ensure_module_tables($db);
+    $allowedProjects = contractor_assigned_project_ids($db);
+    $rows = [];
+    $res = $db->query("SELECT id, contractor_id, project_id, amount, category, description, receipt_path, status, created_at FROM contractor_expenses ORDER BY id DESC LIMIT 250");
+    if ($res) {
+        while ($r = $res->fetch_assoc()) {
+            if (in_array((int)($r['project_id'] ?? 0), $allowedProjects, true)) $rows[] = $r;
+        }
+        $res->free();
+    }
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'submit_expense_entry') {
+    contractor_ensure_module_tables($db);
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    if (!contractor_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    $amount = (float)($_POST['amount'] ?? 0);
+    $category = trim((string)($_POST['category'] ?? ''));
+    $description = trim((string)($_POST['description'] ?? ''));
+    if ($amount <= 0 || $category === '') json_out(['success' => false, 'message' => 'Amount and category are required.'], 422);
+    $receipt = null;
+    try { $receipt = isset($_FILES['receipt']) ? messaging_store_attachment($_FILES['receipt']) : null; } catch (Throwable $e) { json_out(['success' => false, 'message' => $e->getMessage()], 422); }
+    $path = $receipt ? $receipt['path'] : null;
+    $identity = contractor_identity($db);
+    $contractorId = (int)($identity['contractor_ids'][0] ?? ($identity['employee_id'] ?? 0));
+    $stmt = $db->prepare("INSERT INTO contractor_expenses (contractor_id, project_id, amount, category, description, receipt_path, status) VALUES (?, ?, ?, ?, ?, ?, 'Pending')");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('iidsss', $contractorId, $projectId, $amount, $category, $description, $path);
+    $stmt->execute();
+    $expenseId = (int)$db->insert_id;
+    $stmt->close();
+    if (function_exists('rbac_audit')) rbac_audit('contractor.expense_submit', 'contractor_expense', $expenseId, ['project_id' => $projectId, 'amount' => $amount]);
+    json_out(['success' => true, 'id' => $expenseId]);
+}
+
+if ($action === 'load_requests_center') {
+    contractor_ensure_module_tables($db);
+    $allowedProjects = contractor_assigned_project_ids($db);
+    $rows = [];
+    $res = $db->query("SELECT id, contractor_id, project_id, request_type, details, attachment_path, status, created_at FROM contractor_requests ORDER BY id DESC LIMIT 250");
+    if ($res) {
+        while ($r = $res->fetch_assoc()) {
+            if (in_array((int)($r['project_id'] ?? 0), $allowedProjects, true)) $rows[] = $r;
+        }
+        $res->free();
+    }
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'submit_request_center') {
+    contractor_ensure_module_tables($db);
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    if (!contractor_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    $requestType = trim((string)($_POST['request_type'] ?? ''));
+    $details = trim((string)($_POST['details'] ?? ''));
+    if ($requestType === '' || $details === '') json_out(['success' => false, 'message' => 'Request type and details are required.'], 422);
+    $attachment = null;
+    try { $attachment = isset($_FILES['attachment']) ? messaging_store_attachment($_FILES['attachment']) : null; } catch (Throwable $e) { json_out(['success' => false, 'message' => $e->getMessage()], 422); }
+    $path = $attachment ? $attachment['path'] : null;
+    $identity = contractor_identity($db);
+    $contractorId = (int)($identity['contractor_ids'][0] ?? ($identity['employee_id'] ?? 0));
+    $stmt = $db->prepare("INSERT INTO contractor_requests (contractor_id, project_id, request_type, details, attachment_path, status) VALUES (?, ?, ?, ?, ?, 'Pending')");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('iisss', $contractorId, $projectId, $requestType, $details, $path);
+    $stmt->execute();
+    $requestId = (int)$db->insert_id;
+    $stmt->close();
+    if (function_exists('rbac_audit')) rbac_audit('contractor.request_submit', 'contractor_request', $requestId, ['project_id' => $projectId, 'request_type' => $requestType]);
+    json_out(['success' => true, 'id' => $requestId]);
+}
+
 if ($action === 'submit_issue' || $action === 'load_issues') {
     $db->query("CREATE TABLE IF NOT EXISTS contractor_issues (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1379,6 +1533,7 @@ if ($action === 'load_issues') {
 }
 
 if ($action === 'load_notifications_center') {
+    contractor_ensure_module_tables($db);
     $employeeId = (int)($_SESSION['employee_id'] ?? 0);
     $rows = [];
     if ($employeeId > 0 && contractor_table_exists($db, 'contractor_notifications')) {
