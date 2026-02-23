@@ -6,6 +6,7 @@ check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('contractor.workspace.view', ['contractor','admin','super_admin']);
 check_suspicious_activity();
+$csrfToken = generate_csrf_token();
 $name = (string)($_SESSION['employee_name'] ?? 'Contractor');
 $initial = strtoupper(substr($name !== '' ? $name : 'C', 0, 1));
 $roleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_role'] ?? 'contractor')));
@@ -37,7 +38,7 @@ $roleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_role'] ?
 <a href="notifications.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Notifications</a>
 <a href="profile.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Profile</a>
 </div><div class="nav-divider"></div><div class="nav-action-footer"><a href="/contractor/logout.php" class="btn-logout nav-logout"><span>Logout</span></a></div></header>
-<section class="main-content" data-contractor-module data-module="my-projects" data-csrf="<?php echo htmlspecialchars((string)($_SESSION['csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+<section class="main-content" data-contractor-module data-module="my-projects" data-csrf="<?php echo htmlspecialchars((string)($csrfToken), ENT_QUOTES, 'UTF-8'); ?>">
 <div class="dash-header"><h1>My Projects</h1><p>Assigned projects and execution actions.</p></div>
 <div class="cm-card cm-table-wrap"><table class="cm-table"><thead><tr><th>Code</th><th>Project</th><th>Location</th><th>Progress</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody id="cmMyProjectsBody"><tr><td colspan="7">Loading...</td></tr></tbody></table></div>
 </section>
@@ -45,3 +46,5 @@ $roleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_role'] ?
 <script src="contractor-enterprise.js?v=<?php echo filemtime(__DIR__ . '/contractor-enterprise.js'); ?>"></script>
 <script src="../assets/js/contractor-module.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/contractor-module.js'); ?>"></script>
 </body></html>
+
+

@@ -7,6 +7,7 @@ check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('engineer.workspace.view', ['engineer','admin','super_admin']);
 check_suspicious_activity();
+$csrfToken = generate_csrf_token();
 
 if (!isset($_SESSION['employee_id'])) {
     header('Location: /engineer/index.php');
@@ -47,16 +48,22 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
     </div>
     <div class="nav-links">
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
-        <a href="monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Monitoring</a>
+        <a href="assigned_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">My Assigned Projects</a>
         <a href="task_milestone.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
+        <a href="submissions_validation.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Submissions for Validation</a>
+        <a href="site_reports.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Site Reports</a>
+        <a href="inspection_requests.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Inspection Requests</a>
+        <a href="issues_risks.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Issues & Risks</a>
+        <a href="documents.php"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">Documents</a>
         <a href="messages.php" class="active"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Messages</a>
+        <a href="notifications.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Notifications</a>
         <a href="profile.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Profile</a>
     </div>
     <div class="nav-divider"></div>
     <div class="nav-action-footer"><a href="/engineer/logout.php" class="btn-logout nav-logout"><span>Logout</span></a></div>
 </header>
 
-<section class="main-content" data-messages-root data-api-base="/engineer/api.php" data-role="engineer" data-user-id="<?php echo (int)($_SESSION['employee_id'] ?? 0); ?>" data-csrf="<?php echo htmlspecialchars((string)($_SESSION['csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+<section class="main-content" data-messages-root data-api-base="/engineer/api.php" data-role="engineer" data-user-id="<?php echo (int)($_SESSION['employee_id'] ?? 0); ?>" data-csrf="<?php echo htmlspecialchars((string)($csrfToken), ENT_QUOTES, 'UTF-8'); ?>">
     <div class="dash-header">
         <h1>Project Messages</h1>
         <p>Secure project-based messaging with assigned contractors.</p>
@@ -87,3 +94,5 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
 <script src="../assets/js/project-messages.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/project-messages.js'); ?>"></script>
 </body>
 </html>
+
+

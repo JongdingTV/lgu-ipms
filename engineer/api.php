@@ -302,6 +302,20 @@ rbac_require_action_matrix(
         'update_task_status' => 'engineer.tasks.manage',
         'add_milestone' => 'engineer.tasks.manage',
         'update_milestone_status' => 'engineer.tasks.manage',
+        'load_engineer_dashboard' => 'engineer.workspace.view',
+        'load_assigned_projects' => 'engineer.workspace.view',
+        'load_validation_queue' => 'engineer.progress.review',
+        'decide_validation_item' => 'engineer.progress.review',
+        'create_site_report' => 'engineer.workspace.manage',
+        'load_site_reports' => 'engineer.workspace.view',
+        'load_inspection_requests_center' => 'engineer.status.review',
+        'decide_inspection_request' => 'engineer.status.review',
+        'create_issue_risk' => 'engineer.workspace.manage',
+        'load_issues_risks' => 'engineer.workspace.view',
+        'upload_project_document' => 'engineer.workspace.manage',
+        'load_project_documents' => 'engineer.workspace.view',
+        'load_engineer_notifications_center' => 'engineer.notifications.read',
+        'load_project_quick_view' => 'engineer.workspace.view',
     ],
     'engineer.workspace.view'
 );
@@ -937,6 +951,516 @@ if ($action === 'update_milestone_status') {
         ]);
     }
     json_out(['success' => true]);
+}
+
+function ensure_engineer_module_tables(mysqli $db): void {
+    $db->query("CREATE TABLE IF NOT EXISTS engineer_site_reports (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        engineer_id INT NOT NULL,
+        observed_progress_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+        notes TEXT NOT NULL,
+        issues_found TEXT NULL,
+        recommendation TEXT NULL,
+        report_datetime DATETIME NOT NULL,
+        attachment_path VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_esr_project_time (project_id, report_datetime),
+        CONSTRAINT fk_esr_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS engineer_inspection_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        contractor_id INT NULL,
+        request_type VARCHAR(50) NOT NULL,
+        proposed_datetime DATETIME NULL,
+        details TEXT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+        engineer_decision VARCHAR(20) NULL,
+        engineer_remarks TEXT NULL,
+        scheduled_datetime DATETIME NULL,
+        decided_by INT NULL,
+        decided_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_eir_project_status (project_id, status),
+        CONSTRAINT fk_eir_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS engineer_issues_risks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        engineer_id INT NOT NULL,
+        issue_type VARCHAR(60) NOT NULL,
+        severity_level VARCHAR(20) NOT NULL DEFAULT 'Low',
+        status VARCHAR(20) NOT NULL DEFAULT 'Open',
+        description TEXT NOT NULL,
+        attachment_path VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_eirisk_project_status (project_id, status),
+        CONSTRAINT fk_eirisk_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS project_documents (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        uploaded_by INT NOT NULL,
+        document_name VARCHAR(255) NOT NULL,
+        category VARCHAR(80) NOT NULL DEFAULT 'General',
+        tags VARCHAR(255) NULL,
+        file_path VARCHAR(255) NOT NULL,
+        is_sensitive TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_pdoc_project_time (project_id, created_at),
+        CONSTRAINT fk_pdoc_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS engineer_notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        recipient_user_id INT NOT NULL,
+        project_id INT NULL,
+        title VARCHAR(180) NOT NULL,
+        body TEXT NOT NULL,
+        is_read TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_enotif_user_time (recipient_user_id, created_at)
+    )");
+}
+
+function engineer_ensure_contractor_submission_tables(mysqli $db): void {
+    $db->query("CREATE TABLE IF NOT EXISTS contractor_deliverables (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        contractor_id INT NOT NULL,
+        project_id INT NOT NULL,
+        deliverable_type VARCHAR(120) NOT NULL,
+        milestone_reference VARCHAR(120) NULL,
+        remarks TEXT NULL,
+        file_path VARCHAR(255) NULL,
+        status VARCHAR(30) NOT NULL DEFAULT 'Submitted',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS contractor_expenses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        contractor_id INT NOT NULL,
+        project_id INT NOT NULL,
+        amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+        category VARCHAR(120) NOT NULL,
+        description TEXT NULL,
+        receipt_path VARCHAR(255) NULL,
+        status VARCHAR(30) NOT NULL DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+}
+
+function engineer_emit_notification(mysqli $db, int $recipientUserId, int $projectId, string $title, string $body): void {
+    if ($recipientUserId <= 0) return;
+    $stmt = $db->prepare("INSERT INTO engineer_notifications (recipient_user_id, project_id, title, body) VALUES (?, ?, ?, ?)");
+    if (!$stmt) return;
+    $stmt->bind_param('iiss', $recipientUserId, $projectId, $title, $body);
+    $stmt->execute();
+    $stmt->close();
+}
+
+function fetch_project_name(mysqli $db, int $projectId): string {
+    $stmt = $db->prepare("SELECT name FROM projects WHERE id = ? LIMIT 1");
+    if (!$stmt) return '';
+    $stmt->bind_param('i', $projectId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    if ($res) $res->free();
+    $stmt->close();
+    return (string)($row['name'] ?? '');
+}
+
+if ($action === 'load_engineer_dashboard') {
+    ensure_engineer_module_tables($db);
+    ensure_progress_review_table($db);
+    $assigned = engineer_assigned_project_ids($db);
+    if (empty($assigned)) {
+        json_out(['success' => true, 'data' => [
+            'summary' => ['assigned_projects' => 0, 'pending_validations' => 0, 'pending_inspections' => 0, 'open_risks' => 0, 'budget_alerts' => 0],
+            'status_distribution' => [],
+            'monthly_activity' => [],
+        ]]);
+    }
+    $idList = implode(',', array_map('intval', $assigned));
+    $summary = ['assigned_projects' => count($assigned), 'pending_validations' => 0, 'pending_inspections' => 0, 'open_risks' => 0, 'budget_alerts' => 0];
+    $q1 = $db->query("SELECT COUNT(*) c FROM project_progress_submissions WHERE project_id IN ({$idList}) AND review_status = 'Pending'");
+    if ($q1) { $summary['pending_validations'] = (int)($q1->fetch_assoc()['c'] ?? 0); $q1->free(); }
+    $q2 = $db->query("SELECT COUNT(*) c FROM engineer_inspection_requests WHERE project_id IN ({$idList}) AND status = 'Pending'");
+    if ($q2) { $summary['pending_inspections'] = (int)($q2->fetch_assoc()['c'] ?? 0); $q2->free(); }
+    $q3 = $db->query("SELECT COUNT(*) c FROM engineer_issues_risks WHERE project_id IN ({$idList}) AND status IN ('Open','Mitigating')");
+    if ($q3) { $summary['open_risks'] = (int)($q3->fetch_assoc()['c'] ?? 0); $q3->free(); }
+    $q4 = $db->query("SELECT COUNT(*) c FROM projects WHERE id IN ({$idList}) AND budget > 0 AND COALESCE(expense,0) >= (budget * 0.9)");
+    if ($q4) { $summary['budget_alerts'] = (int)($q4->fetch_assoc()['c'] ?? 0); $q4->free(); }
+
+    $distribution = [];
+    $resD = $db->query("SELECT COALESCE(status,'Unknown') AS status, COUNT(*) c FROM projects WHERE id IN ({$idList}) GROUP BY COALESCE(status,'Unknown') ORDER BY c DESC");
+    while ($resD && ($r = $resD->fetch_assoc())) $distribution[] = $r;
+    if ($resD) $resD->free();
+
+    $monthly = [];
+    $resM = $db->query("SELECT DATE_FORMAT(submitted_at, '%Y-%m') ym, COUNT(*) c
+                        FROM project_progress_submissions
+                        WHERE project_id IN ({$idList}) AND submitted_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                        GROUP BY DATE_FORMAT(submitted_at, '%Y-%m')
+                        ORDER BY ym ASC");
+    while ($resM && ($r = $resM->fetch_assoc())) $monthly[] = $r;
+    if ($resM) $resM->free();
+    json_out(['success' => true, 'data' => ['summary' => $summary, 'status_distribution' => $distribution, 'monthly_activity' => $monthly]]);
+}
+
+if ($action === 'load_assigned_projects') {
+    $assigned = engineer_assigned_project_ids($db);
+    if (empty($assigned)) json_out(['success' => true, 'data' => [], 'meta' => ['total' => 0]]);
+    $idList = implode(',', array_map('intval', $assigned));
+    $status = trim((string)($_GET['status'] ?? ''));
+    $priority = trim((string)($_GET['priority'] ?? ''));
+    $search = trim((string)($_GET['search'] ?? ''));
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $limit = min(50, max(5, (int)($_GET['limit'] ?? 10)));
+    $offset = ($page - 1) * $limit;
+    $where = ["p.id IN ({$idList})"];
+    if ($status !== '') $where[] = "p.status = '" . $db->real_escape_string($status) . "'";
+    if ($priority !== '') $where[] = "p.priority = '" . $db->real_escape_string($priority) . "'";
+    if ($search !== '') {
+        $like = '%' . $db->real_escape_string($search) . '%';
+        $where[] = "(p.code LIKE '{$like}' OR p.name LIKE '{$like}' OR p.location LIKE '{$like}')";
+    }
+    $whereSql = implode(' AND ', $where);
+    $countRes = $db->query("SELECT COUNT(*) c FROM projects p WHERE {$whereSql}");
+    $total = (int)(($countRes ? $countRes->fetch_assoc()['c'] : 0) ?? 0);
+    if ($countRes) $countRes->free();
+    $rows = [];
+    $sql = "SELECT p.id, p.code, p.name, p.location, p.priority, p.start_date, p.end_date, p.status, p.budget,
+                   COALESCE(pp.progress_percent,0) AS progress_percent,
+                   COALESCE(c.company_name, CONCAT(COALESCE(c.first_name,''),' ',COALESCE(c.last_name,''))) AS contractor_name
+            FROM projects p
+            LEFT JOIN (
+                SELECT p1.project_id, p1.progress_percent
+                FROM project_progress_updates p1
+                INNER JOIN (SELECT project_id, MAX(created_at) mx FROM project_progress_updates GROUP BY project_id) p2
+                  ON p1.project_id = p2.project_id AND p1.created_at = p2.mx
+            ) pp ON pp.project_id = p.id
+            LEFT JOIN contractor_project_assignments cpa ON cpa.project_id = p.id
+            LEFT JOIN contractors c ON c.id = cpa.contractor_id
+            WHERE {$whereSql}
+            ORDER BY p.id DESC
+            LIMIT {$limit} OFFSET {$offset}";
+    $res = $db->query($sql);
+    while ($res && ($r = $res->fetch_assoc())) $rows[] = $r;
+    if ($res) $res->free();
+    json_out(['success' => true, 'data' => $rows, 'meta' => ['total' => $total, 'page' => $page, 'limit' => $limit]]);
+}
+
+if ($action === 'load_validation_queue') {
+    ensure_engineer_module_tables($db);
+    ensure_progress_review_table($db);
+    engineer_ensure_contractor_submission_tables($db);
+    $assigned = engineer_assigned_project_ids($db);
+    if (empty($assigned)) json_out(['success' => true, 'data' => []]);
+    $idList = implode(',', array_map('intval', $assigned));
+    $rows = [];
+    $res1 = $db->query("SELECT id, project_id, 'progress' AS submission_type, submitted_at AS created_at, review_status AS status,
+                               submitted_progress_percent AS amount_or_progress, work_details AS details
+                        FROM project_progress_submissions WHERE project_id IN ({$idList})");
+    while ($res1 && ($r = $res1->fetch_assoc())) $rows[] = $r;
+    if ($res1) $res1->free();
+    if (engineer_table_exists($db, 'contractor_deliverables')) {
+        $res2 = $db->query("SELECT id, project_id, 'deliverable' AS submission_type, created_at, status, 0 AS amount_or_progress,
+                                   CONCAT(deliverable_type, ' - ', COALESCE(milestone_reference,'')) AS details
+                            FROM contractor_deliverables WHERE project_id IN ({$idList})");
+        while ($res2 && ($r = $res2->fetch_assoc())) $rows[] = $r;
+        if ($res2) $res2->free();
+    }
+    if (engineer_table_exists($db, 'contractor_expenses')) {
+        $res3 = $db->query("SELECT id, project_id, 'expense' AS submission_type, created_at, status, amount AS amount_or_progress,
+                                   CONCAT(category, ' - ', COALESCE(description,'')) AS details
+                            FROM contractor_expenses WHERE project_id IN ({$idList})");
+        while ($res3 && ($r = $res3->fetch_assoc())) $rows[] = $r;
+        if ($res3) $res3->free();
+    }
+    usort($rows, static function ($a, $b) { return strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? '')); });
+    json_out(['success' => true, 'data' => array_slice($rows, 0, 500)]);
+}
+
+if ($action === 'decide_validation_item') {
+    ensure_engineer_module_tables($db);
+    ensure_progress_review_table($db);
+    engineer_ensure_contractor_submission_tables($db);
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    $type = trim((string)($_POST['submission_type'] ?? ''));
+    $itemId = (int)($_POST['item_id'] ?? 0);
+    $decision = trim((string)($_POST['decision'] ?? ''));
+    $remarks = trim((string)($_POST['remarks'] ?? ''));
+    if (!engineer_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    if (!in_array($decision, ['Approved', 'Rejected', 'Returned'], true)) json_out(['success' => false, 'message' => 'Invalid decision.'], 422);
+    if (($decision === 'Rejected' || $decision === 'Returned') && $remarks === '') json_out(['success' => false, 'message' => 'Remarks are required.'], 422);
+    $userId = (int)($_SESSION['employee_id'] ?? 0);
+    if ($type === 'progress') {
+        $status = $decision === 'Returned' ? 'Needs Revision' : $decision;
+        $stmt = $db->prepare("UPDATE project_progress_submissions SET review_status = ?, review_note = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ? AND project_id = ?");
+        if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+        $stmt->bind_param('ssiii', $status, $remarks, $userId, $itemId, $projectId);
+        $stmt->execute();
+        $stmt->close();
+    } elseif ($type === 'deliverable') {
+        $status = $decision === 'Returned' ? 'Under Review' : $decision;
+        $stmt = $db->prepare("UPDATE contractor_deliverables SET status = ? WHERE id = ? AND project_id = ?");
+        if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+        $stmt->bind_param('sii', $status, $itemId, $projectId);
+        $stmt->execute();
+        $stmt->close();
+    } elseif ($type === 'expense') {
+        $status = $decision === 'Returned' ? 'Pending' : $decision;
+        $stmt = $db->prepare("UPDATE contractor_expenses SET status = ? WHERE id = ? AND project_id = ?");
+        if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+        $stmt->bind_param('sii', $status, $itemId, $projectId);
+        $stmt->execute();
+        $stmt->close();
+    } else {
+        json_out(['success' => false, 'message' => 'Unsupported submission type.'], 422);
+    }
+    if (function_exists('rbac_audit')) {
+        rbac_audit('engineer.validation_decision', 'validation_item', $itemId, ['project_id' => $projectId, 'type' => $type, 'decision' => $decision, 'remarks' => $remarks]);
+    }
+    json_out(['success' => true]);
+}
+
+if ($action === 'create_site_report') {
+    ensure_engineer_module_tables($db);
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    $progress = (float)($_POST['observed_progress_percent'] ?? 0);
+    $notes = trim((string)($_POST['notes'] ?? ''));
+    $issuesFound = trim((string)($_POST['issues_found'] ?? ''));
+    $recommendation = trim((string)($_POST['recommendation'] ?? ''));
+    $reportDt = trim((string)($_POST['report_datetime'] ?? ''));
+    if (!engineer_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    if ($notes === '' || $reportDt === '') json_out(['success' => false, 'message' => 'Notes and date/time are required.'], 422);
+    if ($progress < 0 || $progress > 100) json_out(['success' => false, 'message' => 'Progress must be 0-100.'], 422);
+    $att = null;
+    try { $att = isset($_FILES['attachment']) ? messaging_store_attachment($_FILES['attachment']) : null; } catch (Throwable $e) { json_out(['success' => false, 'message' => $e->getMessage()], 422); }
+    $path = $att ? $att['path'] : null;
+    $engineerId = (int)($_SESSION['employee_id'] ?? 0);
+    $stmt = $db->prepare("INSERT INTO engineer_site_reports (project_id, engineer_id, observed_progress_percent, notes, issues_found, recommendation, report_datetime, attachment_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('iidsssss', $projectId, $engineerId, $progress, $notes, $issuesFound, $recommendation, $reportDt, $path);
+    $stmt->execute();
+    $id = (int)$db->insert_id;
+    $stmt->close();
+    if (function_exists('rbac_audit')) rbac_audit('engineer.site_report_create', 'engineer_site_report', $id, ['project_id' => $projectId]);
+    json_out(['success' => true, 'id' => $id]);
+}
+
+if ($action === 'load_site_reports') {
+    ensure_engineer_module_tables($db);
+    $assigned = engineer_assigned_project_ids($db);
+    if (empty($assigned)) json_out(['success' => true, 'data' => []]);
+    $idList = implode(',', array_map('intval', $assigned));
+    $rows = [];
+    $res = $db->query("SELECT sr.id, sr.project_id, p.code, p.name, sr.observed_progress_percent, sr.notes, sr.issues_found, sr.recommendation, sr.report_datetime, sr.attachment_path, sr.created_at
+                       FROM engineer_site_reports sr
+                       INNER JOIN projects p ON p.id = sr.project_id
+                       WHERE sr.project_id IN ({$idList})
+                       ORDER BY sr.report_datetime DESC LIMIT 300");
+    while ($res && ($r = $res->fetch_assoc())) $rows[] = $r;
+    if ($res) $res->free();
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_inspection_requests_center') {
+    ensure_engineer_module_tables($db);
+    $assigned = engineer_assigned_project_ids($db);
+    if (empty($assigned)) json_out(['success' => true, 'data' => []]);
+    $idList = implode(',', array_map('intval', $assigned));
+    if (engineer_table_exists($db, 'contractor_requests')) {
+        $src = $db->query("SELECT cr.id, cr.project_id, cr.contractor_id, cr.request_type, cr.details, cr.created_at
+                           FROM contractor_requests cr
+                           WHERE cr.project_id IN ({$idList})
+                             AND LOWER(cr.request_type) IN ('inspection','milestone review','milestone verification','clarification')
+                           ORDER BY cr.id DESC LIMIT 500");
+        while ($src && ($r = $src->fetch_assoc())) {
+            $rid = (int)($r['id'] ?? 0);
+            $pid = (int)($r['project_id'] ?? 0);
+            if ($rid <= 0 || $pid <= 0) continue;
+            $stmtSync = $db->prepare("INSERT IGNORE INTO engineer_inspection_requests (id, project_id, contractor_id, request_type, proposed_datetime, details, status, created_at) VALUES (?, ?, ?, ?, NULL, ?, 'Pending', ?)");
+            if ($stmtSync) {
+                $contractorId = (int)($r['contractor_id'] ?? 0);
+                $rtype = (string)($r['request_type'] ?? 'Inspection');
+                $details = (string)($r['details'] ?? '');
+                $createdAt = (string)($r['created_at'] ?? date('Y-m-d H:i:s'));
+                $stmtSync->bind_param('iiisss', $rid, $pid, $contractorId, $rtype, $details, $createdAt);
+                $stmtSync->execute();
+                $stmtSync->close();
+            }
+        }
+        if ($src) $src->free();
+    }
+    $rows = [];
+    $res = $db->query("SELECT ir.id, ir.project_id, p.code, p.name, ir.request_type, ir.proposed_datetime, ir.details, ir.status, ir.engineer_decision, ir.engineer_remarks, ir.scheduled_datetime, ir.created_at
+                       FROM engineer_inspection_requests ir
+                       INNER JOIN projects p ON p.id = ir.project_id
+                       WHERE ir.project_id IN ({$idList})
+                       ORDER BY ir.created_at DESC LIMIT 300");
+    while ($res && ($r = $res->fetch_assoc())) $rows[] = $r;
+    if ($res) $res->free();
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'decide_inspection_request') {
+    ensure_engineer_module_tables($db);
+    $id = (int)($_POST['request_id'] ?? 0);
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    $decision = trim((string)($_POST['decision'] ?? ''));
+    $remarks = trim((string)($_POST['remarks'] ?? ''));
+    $scheduled = trim((string)($_POST['scheduled_datetime'] ?? ''));
+    if (!engineer_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    if (!in_array($decision, ['Approved', 'Rejected', 'Rescheduled', 'Completed'], true)) json_out(['success' => false, 'message' => 'Invalid decision.'], 422);
+    if ($remarks === '') json_out(['success' => false, 'message' => 'Remarks required.'], 422);
+    $status = $decision === 'Rescheduled' ? 'Approved' : $decision;
+    $userId = (int)($_SESSION['employee_id'] ?? 0);
+    $stmt = $db->prepare("UPDATE engineer_inspection_requests
+                          SET status = ?, engineer_decision = ?, engineer_remarks = ?, scheduled_datetime = NULLIF(?, ''), decided_by = ?, decided_at = NOW()
+                          WHERE id = ? AND project_id = ?");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('ssssiii', $status, $decision, $remarks, $scheduled, $userId, $id, $projectId);
+    $stmt->execute();
+    $stmt->close();
+    if (function_exists('rbac_audit')) rbac_audit('engineer.inspection_decision', 'engineer_inspection_request', $id, ['project_id' => $projectId, 'decision' => $decision, 'remarks' => $remarks]);
+    json_out(['success' => true]);
+}
+
+if ($action === 'create_issue_risk') {
+    ensure_engineer_module_tables($db);
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    $type = trim((string)($_POST['issue_type'] ?? ''));
+    $severity = trim((string)($_POST['severity_level'] ?? 'Low'));
+    $status = trim((string)($_POST['status'] ?? 'Open'));
+    $description = trim((string)($_POST['description'] ?? ''));
+    if (!engineer_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    if ($type === '' || $description === '') json_out(['success' => false, 'message' => 'Type and description are required.'], 422);
+    if (!in_array($severity, ['Low', 'Medium', 'High', 'Critical'], true)) $severity = 'Low';
+    if (!in_array($status, ['Open', 'Mitigating', 'Resolved'], true)) $status = 'Open';
+    $att = null;
+    try { $att = isset($_FILES['attachment']) ? messaging_store_attachment($_FILES['attachment']) : null; } catch (Throwable $e) { json_out(['success' => false, 'message' => $e->getMessage()], 422); }
+    $path = $att ? $att['path'] : null;
+    $engineerId = (int)($_SESSION['employee_id'] ?? 0);
+    $stmt = $db->prepare("INSERT INTO engineer_issues_risks (project_id, engineer_id, issue_type, severity_level, status, description, attachment_path) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('iisssss', $projectId, $engineerId, $type, $severity, $status, $description, $path);
+    $stmt->execute();
+    $id = (int)$db->insert_id;
+    $stmt->close();
+    if (function_exists('rbac_audit')) rbac_audit('engineer.issue_risk_create', 'engineer_issue_risk', $id, ['project_id' => $projectId, 'severity' => $severity]);
+    json_out(['success' => true, 'id' => $id]);
+}
+
+if ($action === 'load_issues_risks') {
+    ensure_engineer_module_tables($db);
+    $assigned = engineer_assigned_project_ids($db);
+    if (empty($assigned)) json_out(['success' => true, 'data' => []]);
+    $idList = implode(',', array_map('intval', $assigned));
+    $rows = [];
+    $res = $db->query("SELECT ir.id, ir.project_id, p.code, p.name, ir.issue_type, ir.severity_level, ir.status, ir.description, ir.attachment_path, ir.created_at
+                       FROM engineer_issues_risks ir
+                       INNER JOIN projects p ON p.id = ir.project_id
+                       WHERE ir.project_id IN ({$idList})
+                       ORDER BY ir.created_at DESC LIMIT 300");
+    while ($res && ($r = $res->fetch_assoc())) $rows[] = $r;
+    if ($res) $res->free();
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'upload_project_document') {
+    ensure_engineer_module_tables($db);
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    $name = trim((string)($_POST['document_name'] ?? ''));
+    $category = trim((string)($_POST['category'] ?? 'General'));
+    $tags = trim((string)($_POST['tags'] ?? ''));
+    if (!engineer_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    if ($name === '') json_out(['success' => false, 'message' => 'Document name is required.'], 422);
+    $att = null;
+    try { $att = isset($_FILES['attachment']) ? messaging_store_attachment($_FILES['attachment']) : null; } catch (Throwable $e) { json_out(['success' => false, 'message' => $e->getMessage()], 422); }
+    if (!$att) json_out(['success' => false, 'message' => 'File is required.'], 422);
+    $userId = (int)($_SESSION['employee_id'] ?? 0);
+    $path = (string)$att['path'];
+    $stmt = $db->prepare("INSERT INTO project_documents (project_id, uploaded_by, document_name, category, tags, file_path, is_sensitive) VALUES (?, ?, ?, ?, ?, ?, 0)");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('iissss', $projectId, $userId, $name, $category, $tags, $path);
+    $stmt->execute();
+    $id = (int)$db->insert_id;
+    $stmt->close();
+    if (function_exists('rbac_audit')) rbac_audit('engineer.document_upload', 'project_document', $id, ['project_id' => $projectId, 'category' => $category]);
+    json_out(['success' => true, 'id' => $id]);
+}
+
+if ($action === 'load_project_documents') {
+    ensure_engineer_module_tables($db);
+    $assigned = engineer_assigned_project_ids($db);
+    if (empty($assigned)) json_out(['success' => true, 'data' => []]);
+    $idList = implode(',', array_map('intval', $assigned));
+    $rows = [];
+    $res = $db->query("SELECT d.id, d.project_id, p.code, p.name, d.document_name, d.category, d.tags, d.file_path, d.created_at
+                       FROM project_documents d
+                       INNER JOIN projects p ON p.id = d.project_id
+                       WHERE d.project_id IN ({$idList}) AND COALESCE(d.is_sensitive,0) = 0
+                       ORDER BY d.created_at DESC LIMIT 300");
+    while ($res && ($r = $res->fetch_assoc())) $rows[] = $r;
+    if ($res) $res->free();
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_engineer_notifications_center') {
+    ensure_engineer_module_tables($db);
+    $userId = (int)($_SESSION['employee_id'] ?? 0);
+    $rows = [];
+    $stmt = $db->prepare("SELECT id, project_id, title, body, is_read, created_at FROM engineer_notifications WHERE recipient_user_id = ? ORDER BY id DESC LIMIT 300");
+    if ($stmt) {
+        $stmt->bind_param('i', $userId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($res && ($r = $res->fetch_assoc())) $rows[] = $r;
+        if ($res) $res->free();
+        $stmt->close();
+    }
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_project_quick_view') {
+    ensure_engineer_module_tables($db);
+    ensure_progress_review_table($db);
+    $projectId = (int)($_GET['project_id'] ?? 0);
+    if (!engineer_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    $project = null;
+    $stmt = $db->prepare("SELECT id, code, name, location, status, priority, start_date, end_date, budget FROM projects WHERE id = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param('i', $projectId);
+        $stmt->execute();
+        $project = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+    }
+    $contractor = '';
+    if (engineer_table_exists($db, 'contractor_project_assignments') && engineer_table_exists($db, 'contractors')) {
+        $stmt2 = $db->prepare("SELECT COALESCE(c.company_name, CONCAT(COALESCE(c.first_name,''),' ',COALESCE(c.last_name,''))) AS contractor_name, c.email, c.phone
+                               FROM contractor_project_assignments cpa
+                               INNER JOIN contractors c ON c.id = cpa.contractor_id
+                               WHERE cpa.project_id = ? LIMIT 1");
+        if ($stmt2) {
+            $stmt2->bind_param('i', $projectId);
+            $stmt2->execute();
+            $row2 = $stmt2->get_result()->fetch_assoc();
+            $contractor = trim((string)($row2['contractor_name'] ?? ''));
+            if ($contractor !== '' && (string)($row2['email'] ?? '') !== '') $contractor .= ' | ' . (string)$row2['email'];
+            $stmt2->close();
+        }
+    }
+    $progress = 0.0;
+    $resP = $db->query("SELECT COALESCE(progress_percent,0) AS p FROM project_progress_updates WHERE project_id = {$projectId} ORDER BY created_at DESC LIMIT 1");
+    if ($resP) { $progress = (float)($resP->fetch_assoc()['p'] ?? 0); $resP->free(); }
+    $pendingValidations = 0;
+    $resV = $db->query("SELECT COUNT(*) c FROM project_progress_submissions WHERE project_id = {$projectId} AND review_status = 'Pending'");
+    if ($resV) { $pendingValidations = (int)($resV->fetch_assoc()['c'] ?? 0); $resV->free(); }
+    $openIssues = 0;
+    $resI = $db->query("SELECT COUNT(*) c FROM engineer_issues_risks WHERE project_id = {$projectId} AND status IN ('Open','Mitigating')");
+    if ($resI) { $openIssues = (int)($resI->fetch_assoc()['c'] ?? 0); $resI->free(); }
+    json_out(['success' => true, 'data' => ['project' => $project, 'contractor' => $contractor, 'progress' => $progress, 'pending_validations' => $pendingValidations, 'open_issues' => $openIssues]]);
 }
 
 json_out(['success' => false, 'message' => 'Unknown action.'], 400);
