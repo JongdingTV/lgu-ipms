@@ -243,6 +243,19 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
             reviewMsg(false, 'You are not allowed to review progress submissions.');
             return;
         }
+        const row = state.submissions.find(function (s) { return Number(s.submission_id || 0) === Number(submissionId); }) || null;
+        let inspectedProgress = '';
+        if (decision === 'Approved') {
+            const submitted = Number((row && row.progress_percent) || 0);
+            const input = window.prompt('Enter engineer inspected progress % (0-100):', String(submitted));
+            if (input === null) return;
+            const parsed = Number(input);
+            if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+                reviewMsg(false, 'Engineer inspected progress must be between 0 and 100.');
+                return;
+            }
+            inspectedProgress = String(parsed);
+        }
         const note = window.prompt(decision + ' note (required for rejection, optional for approval):', '') || '';
         if (decision === 'Rejected' && note.trim() === '') {
             reviewMsg(false, 'Rejection note is required.');
@@ -254,6 +267,9 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
         form.set('project_id', String(projectId));
         form.set('decision_status', decision);
         form.set('decision_note', note.trim());
+        if (decision === 'Approved') {
+            form.set('inspected_progress', inspectedProgress);
+        }
         const res = await fetch('/engineer/api.php?action=decide_progress', {
             method: 'POST',
             credentials: 'same-origin',
@@ -265,7 +281,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
             reviewMsg(false, (json && json.message) || 'Decision failed.');
             return;
         }
-        reviewMsg(true, 'Submission ' + decision.toLowerCase() + ' successfully.');
+        reviewMsg(true, (json && json.message) || ('Submission ' + decision.toLowerCase() + ' successfully.'));
         load();
     }
 
