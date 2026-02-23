@@ -10,21 +10,21 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.budget.manage', ['admin','department_admin','super_admin']);
-rbac_require_action_roles(
+rbac_require_action_matrix(
     strtolower(trim((string)($_REQUEST['action'] ?? ''))),
     [
-        'load_projects' => ['admin', 'department_admin', 'super_admin'],
-        'load_budget_state' => ['admin', 'department_admin', 'super_admin'],
-        'load_milestones' => ['admin', 'department_admin', 'super_admin'],
-        'load_expenses' => ['admin', 'department_admin', 'super_admin'],
-        'set_global_budget' => ['admin', 'department_admin', 'super_admin'],
-        'add_milestone' => ['admin', 'department_admin', 'super_admin'],
-        'update_milestone_alloc' => ['admin', 'department_admin', 'super_admin'],
-        'delete_milestone' => ['admin', 'super_admin'],
-        'add_expense' => ['admin', 'department_admin', 'super_admin'],
-        'delete_expense' => ['admin', 'super_admin'],
+        'load_projects' => 'admin.budget.manage',
+        'load_budget_state' => 'admin.budget.manage',
+        'load_milestones' => 'admin.budget.manage',
+        'load_expenses' => 'admin.budget.manage',
+        'set_global_budget' => 'admin.budget.manage',
+        'add_milestone' => 'admin.budget.manage',
+        'update_milestone_alloc' => 'admin.budget.manage',
+        'delete_milestone' => 'admin.budget.delete',
+        'add_expense' => 'admin.budget.manage',
+        'delete_expense' => 'admin.budget.delete',
     ],
-    ['admin', 'department_admin', 'super_admin']
+    'admin.budget.manage'
 );
 check_suspicious_activity();
 
@@ -756,7 +756,6 @@ $db->close();
     <script src="../assets/js/admin-budget-resources.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-budget-resources.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

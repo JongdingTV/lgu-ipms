@@ -14,15 +14,15 @@ check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.progress.view', ['admin','department_admin','super_admin']);
 $rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
-rbac_require_action_roles(
+rbac_require_action_matrix(
     $rbacAction,
     [
-        'load_status_requests' => ['admin', 'department_admin', 'super_admin'],
-        'admin_decide_status_request' => ['admin', 'department_admin', 'super_admin'],
-        'load_projects' => ['admin', 'department_admin', 'super_admin'],
-        'export_projects_csv' => ['admin', 'department_admin', 'super_admin'],
+        'load_status_requests' => 'admin.progress.view',
+        'admin_decide_status_request' => 'admin.progress.manage',
+        'load_projects' => 'admin.progress.view',
+        'export_projects_csv' => 'admin.projects.export',
     ],
-    ['admin', 'department_admin', 'super_admin']
+    'admin.progress.view'
 );
 
 // Check for suspicious activity
@@ -969,7 +969,6 @@ $db->close();
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

@@ -14,17 +14,17 @@ check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.projects.manage', ['admin','department_admin','super_admin']);
 $rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
-rbac_require_action_roles(
+rbac_require_action_matrix(
     $rbacAction,
     [
-        'delete_project' => ['admin', 'super_admin'],
-        'update_project' => ['admin', 'department_admin', 'super_admin'],
-        'get_project' => ['admin', 'department_admin', 'super_admin'],
-        'load_projects' => ['admin', 'department_admin', 'super_admin'],
-        'export_projects_csv' => ['admin', 'department_admin', 'super_admin'],
-        'load_project_timeline' => ['admin', 'department_admin', 'super_admin'],
+        'delete_project' => 'admin.projects.delete',
+        'update_project' => 'admin.projects.manage',
+        'get_project' => 'admin.projects.read',
+        'load_projects' => 'admin.projects.read',
+        'export_projects_csv' => 'admin.projects.export',
+        'load_project_timeline' => 'admin.projects.read',
     ],
-    ['admin', 'department_admin', 'super_admin']
+    'admin.projects.manage'
 );
 
 // Check for suspicious activity
@@ -753,7 +753,6 @@ $db->close();
     <script src="../assets/js/admin-registered-projects.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-registered-projects.js'); ?>"></script>
 </body>
 </html>
-
 
 
 
