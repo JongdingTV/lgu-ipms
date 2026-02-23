@@ -107,6 +107,13 @@ function ec_create_account(mysqli $db, array $data): void
             $data['specialization']
         ];
 
+        if (ec_table_has_column($db, 'engineers', 'engineer_code')) {
+            $engineerCode = 'ENG-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            $columns[] = 'engineer_code';
+            $types .= 's';
+            $values[] = $engineerCode;
+        }
+
         if (ec_table_has_column($db, 'engineers', 'contact_number')) { $columns[] = 'contact_number'; $types .= 's'; $values[] = $data['contact_number']; }
         if (ec_table_has_column($db, 'engineers', 'position_title')) { $columns[] = 'position_title'; $types .= 's'; $values[] = $data['position_title']; }
         if (ec_table_has_column($db, 'engineers', 'availability_status')) { $columns[] = 'availability_status'; $types .= 's'; $values[] = 'Available'; }
