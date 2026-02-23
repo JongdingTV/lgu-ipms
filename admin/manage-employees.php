@@ -34,13 +34,16 @@ rbac_require_action_matrix(
     'super_admin.employee_accounts.manage'
 );
 
+$csrfToken = generate_csrf_token();
 $message = '';
 $error = '';
 $action = $_GET['action'] ?? 'list';
 
 // HANDLE FORM SUBMISSIONS
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['add_employee'])) {
+    if (!verify_csrf_token((string)($_POST['csrf_token'] ?? ''))) {
+        $error = 'Security token mismatch. Please refresh and try again.';
+    } elseif (isset($_POST['add_employee'])) {
         $emp_id = !empty($_POST['emp_id']) ? (int)trim($_POST['emp_id']) : '';
         $first_name = trim($_POST['first_name'] ?? '');
         $last_name = trim($_POST['last_name'] ?? '');
@@ -187,6 +190,7 @@ if ($result) {
                     </div>
 
                     <form method="POST">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="emp_id">
@@ -333,6 +337,7 @@ if ($result) {
                                             </td>
                                             <td>
                                                 <form method="POST" class="ac-434fc32e">
+                                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="emp_id" value="<?php echo $emp['id']; ?>">
                                                     <button type="submit" name="delete_employee" class="btn btn-danger" 
                                                             data-onclick="return confirm('Delete <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>?')">
@@ -396,7 +401,6 @@ if ($result) {
 <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

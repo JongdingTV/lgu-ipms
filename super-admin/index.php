@@ -98,18 +98,25 @@ function sa_ensure_builtin_super_admin(mysqli $db): void
 
 $error = '';
 $emailInput = '';
+if (empty($_SESSION['super_admin_login_csrf'])) {
+    $_SESSION['super_admin_login_csrf'] = bin2hex(random_bytes(32));
+}
+$loginCsrfToken = (string)$_SESSION['super_admin_login_csrf'];
 if (isset($db) && !$db->connect_error) {
     sa_ensure_builtin_super_admin($db);
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!hash_equals($loginCsrfToken, (string)($_POST['csrf_token'] ?? ''))) {
+        $error = 'Security token mismatch. Please refresh and try again.';
+    }
     $emailInput = trim((string)($_POST['email'] ?? ''));
     $password = trim((string)($_POST['password'] ?? ''));
 
-    if ($emailInput === '' || $password === '') {
+    if ($error === '' && ($emailInput === '' || $password === '')) {
         $error = 'Please enter both email and password.';
-    } elseif (!isset($db) || $db->connect_error) {
+    } elseif ($error === '' && (!isset($db) || $db->connect_error)) {
         $error = 'Database connection failed.';
-    } else {
+    } elseif ($error === '') {
         $hasRole = sa_has_column($db, 'role');
         $hasStatus = sa_has_column($db, 'account_status');
         $fields = 'id, first_name, last_name, email, password';
@@ -188,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="sa-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
             <form method="post" novalidate>
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($loginCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="input-box">
                     <label for="saEmail">Email Address</label>
                     <input id="saEmail" type="email" name="email" placeholder="superadmin@lgu.gov.ph" value="<?php echo htmlspecialchars($emailInput, ENT_QUOTES, 'UTF-8'); ?>" required>

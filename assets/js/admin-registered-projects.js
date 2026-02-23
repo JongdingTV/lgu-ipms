@@ -45,6 +45,7 @@
         let currentFilteredTimelineEntries = [];
         let timelineVisibleCount = 30;
         const timelinePageSize = 30;
+        const csrfTokenInput = document.getElementById('projectCsrfToken');
 
         function showMsg(text, ok) {
             if (!msg) return;
@@ -425,11 +426,16 @@
                 });
         }
 
+        function getCsrfToken() {
+            return csrfTokenInput ? String(csrfTokenInput.value || '') : '';
+        }
+
         function performDelete(id) {
+            const csrfToken = getCsrfToken();
             fetchJsonWithFallback(apiUrls(''), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'action=delete_project&id=' + encodeURIComponent(id)
+                body: 'action=delete_project&id=' + encodeURIComponent(id) + '&csrf_token=' + encodeURIComponent(csrfToken)
             })
             .then((data) => {
                 showMsg(data.message || (data.success ? 'Project deleted.' : 'Delete failed.'), !!data.success);

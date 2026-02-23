@@ -1629,8 +1629,12 @@ if (contractorForm && resetBtn && formMessage) {
 
         try {
             let response;
+            const csrfToken = getEngineerFormCsrfToken();
             if (editingId) {
                 data.id = editingId;
+                if (csrfToken) {
+                    data.csrf_token = csrfToken;
+                }
                 response = await fetch(getApiUrl('admin/engineers-api.php'), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -1640,6 +1644,9 @@ if (contractorForm && resetBtn && formMessage) {
                 const formData = new FormData();
                 Object.keys(data).forEach((key) => formData.append(key, data[key]));
                 formData.append('action', 'create_with_docs');
+                if (csrfToken) {
+                    formData.append('csrf_token', csrfToken);
+                }
                 if (licenseFile) formData.append('license_document', licenseFile);
                 if (resumeFile) formData.append('resume_document', resumeFile);
                 if (certFile) formData.append('certificate_document', certFile);
@@ -1806,6 +1813,24 @@ function editProject(index) {
     document.getElementById('projectForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function getProjectRegistrationCsrfToken() {
+    const tokenInput = document.getElementById('projectCsrfToken');
+    return tokenInput ? String(tokenInput.value || '').trim() : '';
+}
+
+function getRegisteredEngineersCsrfToken() {
+    const tokenInput = document.getElementById('registeredEngineersCsrfToken')
+        || document.getElementById('registeredContractorsCsrfToken');
+    return tokenInput ? String(tokenInput.value || '').trim() : '';
+}
+
+function getEngineerFormCsrfToken() {
+    const tokenInput = document.getElementById('engineerFormCsrfToken')
+        || document.querySelector('#contractorForm input[name="csrf_token"]')
+        || document.querySelector('#engineerForm input[name="csrf_token"]');
+    return tokenInput ? String(tokenInput.value || '').trim() : '';
+}
+
 function deleteProject(index) {
     const project = projects[index];
     showConfirmation({
@@ -1819,6 +1844,10 @@ function deleteProject(index) {
             const formData = new FormData();
             formData.append('action', 'delete_project');
             formData.append('id', project.id);
+            const csrfToken = getProjectRegistrationCsrfToken();
+            if (csrfToken) {
+                formData.append('csrf_token', csrfToken);
+            }
 
             fetch(getApiUrl('admin/project_registration.php'), {
                 method: 'POST',
@@ -1864,6 +1893,10 @@ document.getElementById('projectForm').addEventListener('submit', function(e) {
     formData.append('duration_months', document.getElementById('projDuration').value);
     formData.append('budget', document.getElementById('projBudget').value);
     formData.append('status', document.getElementById('status').value);
+    const csrfToken = getProjectRegistrationCsrfToken();
+    if (csrfToken) {
+        formData.append('csrf_token', csrfToken);
+    }
     const licenseFile = document.getElementById('engineerLicenseDoc');
     const certificationFile = document.getElementById('engineerCertificationDoc');
     const credentialsFile = document.getElementById('engineerCredentialsDoc');
@@ -2904,7 +2937,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             fetch('registered_contractors.php', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                body: `action=delete_contractor&id=${encodeURIComponent(id)}`
+                                body: `action=delete_contractor&id=${encodeURIComponent(id)}&csrf_token=${encodeURIComponent(getRegisteredEngineersCsrfToken())}`
                             })
                             .then(res => res.json())
                             .then(data => {
@@ -3159,7 +3192,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const action = isChecked ? 'assign_contractor' : 'unassign_contractor';
-                const body = `action=${action}&contractor_id=${contractorId}&project_id=${projectId}`;
+                const body = `action=${action}&contractor_id=${contractorId}&project_id=${projectId}&csrf_token=${encodeURIComponent(getRegisteredEngineersCsrfToken())}`;
                 
                 console.log(`Sending request: ${action}`, body);
                 
@@ -3501,7 +3534,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     fetchJsonWithFallback(projectRegistrationUrls(''), {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                        body: `action=delete_project&id=${encodeURIComponent(id)}`
+                                        body: `action=delete_project&id=${encodeURIComponent(id)}&csrf_token=${encodeURIComponent(getProjectRegistrationCsrfToken())}`
                                     })
                                     .then(data => {
                                         msg.textContent = data.message;
@@ -3563,6 +3596,10 @@ document.addEventListener('DOMContentLoaded', function() {
             fd.set('duration_months', document.getElementById('projDuration').value);
             fd.set('budget', document.getElementById('projBudget').value);
             fd.set('status', document.getElementById('status').value);
+            const csrfToken = getProjectRegistrationCsrfToken();
+            if (csrfToken) {
+                fd.set('csrf_token', csrfToken);
+            }
             const licenseFile = document.getElementById('engineerLicenseDoc');
             const certificationFile = document.getElementById('engineerCertificationDoc');
             const credentialsFile = document.getElementById('engineerCredentialsDoc');

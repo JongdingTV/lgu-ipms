@@ -12,6 +12,10 @@ require_once dirname(__DIR__) . '/config/email.php';
 $error = '';
 $success = '';
 $step = 1;
+if (empty($_SESSION['forgot_password_csrf'])) {
+    $_SESSION['forgot_password_csrf'] = bin2hex(random_bytes(32));
+}
+$forgotPasswordCsrf = (string)$_SESSION['forgot_password_csrf'];
 
 // Check if we have a reset token in the URL
 if (isset($_GET['token']) && !empty($_GET['token'])) {
@@ -128,6 +132,9 @@ function send_reset_email($email, $employee_name, $reset_token) {
 
 // STEP 1: Request password reset
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step1_request'])) {
+    if (!hash_equals($forgotPasswordCsrf, (string)($_POST['csrf_token'] ?? ''))) {
+        $error = 'Invalid request token. Please refresh the page and try again.';
+    }
     $email = isset($_POST['email']) ? trim($_POST['email']) : '';
     
     // Debug: Log the request
@@ -153,7 +160,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step1_request'])) {
         file_put_contents($rate_limit_file, '1');
     }
     
-    if (empty($email)) {
+    if ($error !== '') {
+        // keep csrf token error
+    } elseif (empty($email)) {
         $error = 'Please enter your email address.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Please enter a valid email address.';
@@ -234,10 +243,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step1_request'])) {
 
 // STEP 2: Reset password
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['step2_reset'])) {
+    if (!hash_equals($forgotPasswordCsrf, (string)($_POST['csrf_token'] ?? ''))) {
+        $error = 'Invalid request token. Please refresh the page and try again.';
+    }
     $new_password = isset($_POST['new_password']) ? trim($_POST['new_password']) : '';
     $confirm_password = isset($_POST['confirm_password']) ? trim($_POST['confirm_password']) : '';
     
-    if (empty($new_password) || empty($confirm_password)) {
+    if ($error !== '') {
+        // keep csrf token error
+    } elseif (empty($new_password) || empty($confirm_password)) {
         $error = 'Please enter both password fields.';
     } elseif ($new_password !== $confirm_password) {
         $error = 'Passwords do not match.';
@@ -356,6 +370,7 @@ if (isset($db)) {
         <?php if ($step == 1): ?>
         <!-- STEP 1: Request Reset -->
         <form method="post">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($forgotPasswordCsrf, ENT_QUOTES, 'UTF-8'); ?>">
             <div class="input-box">
                 <label>Email Address</label>
                 <input type="email" name="email" placeholder="employee@lgu.gov.ph" required>
@@ -372,6 +387,7 @@ if (isset($db)) {
         <?php elseif ($step == 2): ?>
         <!-- STEP 2: Reset Password -->
         <form method="post">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($forgotPasswordCsrf, ENT_QUOTES, 'UTF-8'); ?>">
             <div class="input-box">
                 <label>New Password</label>
                 <input type="password" name="new_password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required>

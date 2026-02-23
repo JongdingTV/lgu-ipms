@@ -139,10 +139,13 @@ $gate_error = '';
 $employee_id_input = '';
 $gate_ok_flash = '';
 $gate_passed = true;
+$loginCsrfToken = generate_csrf_token();
 unset($_SESSION['admin_gate_passed'], $_SESSION['admin_gate_verified_id'], $_SESSION['admin_gate_notice']);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (!isset($db) || $db->connect_error) {
+    if (!verify_csrf_token((string)($_POST['csrf_token'] ?? ''))) {
+        $error = 'Security token mismatch. Please refresh and try again.';
+    } elseif (!isset($db) || $db->connect_error) {
         $error = 'Database connection error. Please try again later.';
     } else {
             $email = isset($_POST['email']) ? trim($_POST['email']) : '';
@@ -345,6 +348,7 @@ $show_gate_wall = false;
 
         <?php if ($show_login_form): ?>
         <form method="post">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($loginCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
             <div class="input-box">
                 <label>Email Address</label>
@@ -374,7 +378,6 @@ $show_gate_wall = false;
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
-
 
 
 

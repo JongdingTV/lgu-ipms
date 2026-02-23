@@ -78,6 +78,11 @@
         const contractorsPerPage = 25;
         let contractorsPaginationEl = null;
 
+        function getCsrfToken() {
+            const tokenInput = document.getElementById('registeredEngineersCsrfToken');
+            return tokenInput ? String(tokenInput.value || '').trim() : '';
+        }
+
         function esc(v) {
             return String(v ?? '')
                 .replace(/&/g, '&amp;')
@@ -190,12 +195,18 @@
 
         async function postJsonWithFallback(formBody) {
             const urls = postApiCandidates();
+            const bodyParams = new URLSearchParams(formBody || '');
+            const csrfToken = getCsrfToken();
+            if (csrfToken && !bodyParams.has('csrf_token')) {
+                bodyParams.set('csrf_token', csrfToken);
+            }
+            const encodedBody = bodyParams.toString();
             for (const url of urls) {
                 try {
                     const res = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: formBody,
+                        body: encodedBody,
                         credentials: 'same-origin'
                     });
                     if (!res.ok) continue;

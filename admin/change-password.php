@@ -23,6 +23,7 @@ $error = '';
 $success = '';
 $employee_id = $_SESSION['employee_id'];
 $employee_name = $_SESSION['employee_name'] ?? '';
+$csrfToken = generate_csrf_token();
 
 // Get client IP
 function get_client_ip() {
@@ -42,11 +43,16 @@ $_SESSION['last_activity'] = time();
 
 // Handle password change
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (!verify_csrf_token((string)($_POST['csrf_token'] ?? ''))) {
+        $error = 'Security token mismatch. Please refresh and try again.';
+    }
     $current_password = isset($_POST['current_password']) ? trim($_POST['current_password']) : '';
     $new_password = isset($_POST['new_password']) ? trim($_POST['new_password']) : '';
     $confirm_password = isset($_POST['confirm_password']) ? trim($_POST['confirm_password']) : '';
     
-    if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
+    if ($error !== '') {
+        // no-op; keep csrf message
+    } elseif (empty($current_password) || empty($new_password) || empty($confirm_password)) {
         $error = 'Please fill in all fields.';
     } elseif ($new_password !== $confirm_password) {
         $error = 'New passwords do not match.';
@@ -172,6 +178,7 @@ if (isset($db)) {
         <?php endif; ?>
 
         <form method="post">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
             <div class="input-box">
                 <label>Current Password</label>
                 <input type="password" name="current_password" placeholder="••••••••" required autocomplete="current-password">
@@ -213,7 +220,6 @@ if (isset($db)) {
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

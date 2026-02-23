@@ -19,6 +19,11 @@ if ($db->connect_error) {
 }
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+$rawInput = file_get_contents('php://input');
+$rawPayload = json_decode((string)$rawInput, true);
+if (!is_array($rawPayload)) {
+    $rawPayload = [];
+}
 $postedAction = strtolower(trim((string)($_POST['action'] ?? '')));
 $rbacAction = '';
 if ($method === 'GET') {
@@ -42,6 +47,22 @@ rbac_require_action_matrix(
     ],
     'admin.engineers.manage'
 );
+
+if (in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
+    $csrfToken = '';
+    if ($method === 'POST') {
+        $csrfToken = (string)($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($rawPayload['csrf_token'] ?? '')));
+    } else {
+        $csrfToken = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($rawPayload['csrf_token'] ?? ''));
+    }
+
+    if (!verify_csrf_token($csrfToken)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Security token mismatch. Please refresh and try again.']);
+        $db->close();
+        exit;
+    }
+}
 
 function capi_table_exists(mysqli $db, string $table): bool
 {
@@ -291,7 +312,7 @@ if ($method === 'POST') {
     }
 
     // Legacy JSON create fallback
-    $data = json_decode(file_get_contents('php://input'), true);
+    $data = $rawPayload;
     if (!is_array($data)) {
         echo json_encode(['error' => 'Invalid JSON input']);
         $db->close();
@@ -334,7 +355,7 @@ if ($method === 'POST') {
 }
 
 if ($method === 'PUT') {
-    $data = json_decode(file_get_contents('php://input'), true);
+    $data = $rawPayload;
     $id = (int)($data['id'] ?? 0);
     $stmt = $db->prepare("UPDATE contractors SET company=?, owner=?, license=?, email=?, phone=?, address=?, specialization=?, experience=?, rating=?, status=?, notes=? WHERE id=?");
     if (!$stmt) {
@@ -372,7 +393,7 @@ if ($method === 'PUT') {
 }
 
 if ($method === 'DELETE') {
-    $data = json_decode(file_get_contents('php://input'), true);
+    $data = $rawPayload;
     $id = (int)($data['id'] ?? 0);
     $stmt = $db->prepare("DELETE FROM contractors WHERE id=?");
     if (!$stmt) {

@@ -26,6 +26,7 @@ rbac_require_action_matrix(
     'admin.prioritization.manage'
 );
 check_suspicious_activity();
+$csrfToken = generate_csrf_token();
 if ($db->connect_error) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
@@ -54,6 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 
 // Handle feedback status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
+    if (!verify_csrf_token((string)($_POST['csrf_token'] ?? ''))) {
+        header('Location: project-prioritization.php?status=invalid_csrf');
+        exit;
+    }
     $feedback_id = intval($_POST['feedback_id']);
     $new_status = trim((string)($_POST['new_status'] ?? ''));
     $rejection_note = trim((string)($_POST['rejection_note'] ?? ''));
@@ -823,6 +828,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                                     </div>
                                     <div class="modal-footer">
                                         <input type="hidden" name="feedback_id" value="<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                         <button type="button" class="modal-btn modal-btn-close" data-close-modal="edit-modal-<?= isset($fb_lc['id']) ? $fb_lc['id'] : '' ?>">Cancel</button>
                                         <button type="submit" name="update_status" class="modal-btn modal-btn-action">Save Changes</button>
                                     </div>
@@ -1046,5 +1052,8 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
 
 
 
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes

@@ -23,6 +23,7 @@ rbac_require_action_matrix(
     'admin.projects.manage'
 );
 check_suspicious_activity();
+$csrfToken = generate_csrf_token();
 if ($db->connect_error) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $db->connect_error]);
@@ -214,6 +215,9 @@ function bind_stmt_params(mysqli_stmt $stmt, string $types, array &$params): boo
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     error_reporting(E_ALL);
+    if (!verify_csrf_token((string)($_POST['csrf_token'] ?? ''))) {
+        respond_project_registration(false, 'Security token mismatch. Please refresh the page and try again.');
+    }
     
     if ($_POST['action'] === 'save_project') {
         // Validate required fields
@@ -587,6 +591,7 @@ $db->close();
 
             <form id="projectForm" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="save_project">
+                <input type="hidden" name="csrf_token" id="projectCsrfToken" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <!-- Basic project details -->
                 <fieldset>
                     <legend>Basic Project Details</legend>
@@ -720,5 +725,8 @@ $db->close();
 
 
 
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes

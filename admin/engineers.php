@@ -508,7 +508,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form id="engineerRegistrationForm" class="engineer-form" method="post" enctype="multipart/form-data" novalidate>
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($formToken, ENT_QUOTES, 'UTF-8'); ?>">
+            <input type="hidden" id="engineerFormCsrfToken" name="csrf_token" value="<?php echo htmlspecialchars($formToken, ENT_QUOTES, 'UTF-8'); ?>">
 
             <section class="engineer-section">
                 <h2>Personal Information</h2>

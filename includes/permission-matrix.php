@@ -6,6 +6,7 @@
  * can use the same source of truth for allowed roles per module/action.
  */
 return [
+    // Admin workspace
     'admin.dashboard.view' => ['admin', 'department_admin', 'super_admin'],
     'admin.projects.manage' => ['admin', 'department_admin', 'super_admin'],
     'admin.progress.view' => ['admin', 'department_admin', 'super_admin'],
@@ -27,6 +28,8 @@ return [
     'admin.legacy.contractors_alias' => ['admin', 'department_admin', 'super_admin'],
     'admin.audit.view' => ['admin', 'department_admin', 'super_admin'],
     'admin.db_health.run' => ['super_admin'],
+
+    // Super Admin workspace
     'super_admin.dashboard.view' => ['super_admin'],
     'super_admin.employee_accounts.view' => ['super_admin'],
     'super_admin.employee_accounts.manage' => ['super_admin'],

@@ -13,6 +13,7 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.projects.manage', ['admin','department_admin','super_admin']);
+$csrfToken = generate_csrf_token();
 $rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
 rbac_require_action_matrix(
     $rbacAction,
@@ -338,6 +339,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 // Handle UPDATE request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_project') {
     header('Content-Type: application/json');
+    if (!verify_csrf_token((string)($_POST['csrf_token'] ?? ''))) {
+        echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+        exit;
+    }
     
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     $name = isset($_POST['name']) ? $_POST['name'] : '';
@@ -387,6 +392,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Handle DELETE request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_project') {
     header('Content-Type: application/json');
+    if (!verify_csrf_token((string)($_POST['csrf_token'] ?? ''))) {
+        echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+        exit;
+    }
     
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     
@@ -613,6 +622,7 @@ $db->close();
             <div class="edit-project-modal-body">
                 <form id="editProjectForm">
                     <input type="hidden" id="projectId" name="id">
+                    <input type="hidden" id="projectCsrfToken" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                     
                     <div class="form-group">
                         <label for="projectCode">Project Code</label>
@@ -774,5 +784,8 @@ $db->close();
 
 
 
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes

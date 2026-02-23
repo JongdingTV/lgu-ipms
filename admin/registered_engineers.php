@@ -32,11 +32,21 @@ rbac_require_action_matrix(
     'admin.engineers.manage'
 );
 check_suspicious_activity();
+$csrfToken = generate_csrf_token();
 
 if ($db->connect_error) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
+}
+
+function registered_require_post_csrf_json(): void
+{
+    if (!verify_csrf_token((string)($_POST['csrf_token'] ?? ''))) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Security token mismatch. Please refresh the page and try again.']);
+        exit;
+    }
 }
 
 function registered_projects_has_column(mysqli $db, string $column): bool
@@ -753,6 +763,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_contractor_document') {
+    registered_require_post_csrf_json();
     header('Content-Type: application/json');
     $documentId = isset($_POST['document_id']) ? (int) $_POST['document_id'] : 0;
     $isVerified = isset($_POST['is_verified']) ? (int) $_POST['is_verified'] : 1;
@@ -790,6 +801,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_contractor_approval') {
+    registered_require_post_csrf_json();
     header('Content-Type: application/json');
     $contractorId = isset($_POST['contractor_id']) ? (int) $_POST['contractor_id'] : 0;
     $status = strtolower(trim((string) ($_POST['status'] ?? '')));
@@ -986,6 +998,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 
 // Handle POST request for assigning Engineer to project
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'assign_contractor') {
+    registered_require_post_csrf_json();
     header('Content-Type: application/json');
     
     $contractor_id = isset($_POST['contractor_id']) ? (int)$_POST['contractor_id'] : 0;
@@ -1023,6 +1036,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Handle POST request for removing Engineer from project
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'unassign_contractor') {
+    registered_require_post_csrf_json();
     header('Content-Type: application/json');
     
     $contractor_id = isset($_POST['contractor_id']) ? (int)$_POST['contractor_id'] : 0;
@@ -1053,6 +1067,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Handle POST request for deleting Engineer
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_contractor') {
+    registered_require_post_csrf_json();
     header('Content-Type: application/json');
 
     $contractor_id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
@@ -1079,6 +1094,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'evaluate_contractor') {
+    registered_require_post_csrf_json();
     header('Content-Type: application/json');
     $contractorId = isset($_POST['contractor_id']) ? (int) $_POST['contractor_id'] : 0;
     if ($contractorId <= 0) {
@@ -1216,8 +1232,9 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/table-redesign-base.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
-    </head>
+</head>
 <body>
+    <input type="hidden" id="registeredEngineersCsrfToken" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
     <!-- Sidebar Toggle Button (Floating) -->
     <div class="sidebar-toggle-wrapper">
         <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
@@ -1582,6 +1599,9 @@ $db->close();
 
 
 
+<<<<<<< Updated upstream
 
 
 
+=======
+>>>>>>> Stashed changes
