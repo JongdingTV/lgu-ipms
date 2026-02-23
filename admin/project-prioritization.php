@@ -10,6 +10,21 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.prioritization.manage', ['admin','department_admin','super_admin']);
+$rbacAction = 'view_prioritization';
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && (string)($_GET['action'] ?? '') === 'load_projects') {
+    $rbacAction = 'load_projects';
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
+    $rbacAction = 'update_feedback_status';
+}
+rbac_require_action_matrix(
+    $rbacAction,
+    [
+        'view_prioritization' => 'admin.prioritization.read',
+        'load_projects' => 'admin.prioritization.read',
+        'update_feedback_status' => 'admin.prioritization.manage',
+    ],
+    'admin.prioritization.manage'
+);
 check_suspicious_activity();
 if ($db->connect_error) {
     header('Content-Type: application/json');
@@ -1011,7 +1026,6 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
     <script src="../assets/js/admin-project-prioritization.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-project-prioritization.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

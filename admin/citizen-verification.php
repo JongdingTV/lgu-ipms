@@ -7,6 +7,17 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.citizen_verification.manage', ['admin','department_admin','super_admin']);
+$rbacAction = $_SERVER['REQUEST_METHOD'] === 'POST'
+    ? 'update_verification_status'
+    : 'view_citizen_verification';
+rbac_require_action_matrix(
+    $rbacAction,
+    [
+        'view_citizen_verification' => 'admin.citizen_verification.manage',
+        'update_verification_status' => 'admin.citizen_verification.manage',
+    ],
+    'admin.citizen_verification.manage'
+);
 check_suspicious_activity();
 
 if (!isset($db) || $db->connect_error) {
@@ -245,5 +256,4 @@ $db->close();
 <script src="../assets/js/admin-citizen-verification.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-citizen-verification.js'); ?>"></script>
 </body>
 </html>
-
 

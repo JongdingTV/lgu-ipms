@@ -6,12 +6,13 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.dashboard.view', ['admin','department_admin','super_admin']);
-rbac_require_action_roles(
-    'read_notifications',
+$rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? 'read_notifications')));
+rbac_require_action_matrix(
+    $rbacAction,
     [
-        'read_notifications' => ['admin', 'department_admin', 'super_admin'],
+        'read_notifications' => 'admin.notifications.read',
     ],
-    ['admin', 'department_admin', 'super_admin']
+    'admin.notifications.read'
 );
 check_suspicious_activity();
 
@@ -102,4 +103,3 @@ echo json_encode([
     'pending_count' => $pendingCount,
     'items' => $items
 ]);
-
