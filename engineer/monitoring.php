@@ -63,6 +63,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
         <a href="monitoring.php" class="active"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Monitoring</a>
         <a href="task_milestone.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
+        <a href="messages.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Messages</a>
         <a href="profile.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Profile</a>
     </div>
     <div class="nav-divider"></div>
@@ -112,6 +113,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
                         <th>Budget</th>
                         <th>Progress</th>
                         <th>Last Update</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -205,7 +207,8 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
                 '<td>' + esc(p.status || 'Draft') + '</td>',
                 '<td>PHP ' + Number(p.budget || 0).toLocaleString() + '</td>',
                 '<td>' + Number(p.progress_percent || 0).toFixed(2) + '%</td>',
-                '<td>' + esc(p.progress_updated_at || 'No updates yet') + '</td>'
+                '<td>' + esc(p.progress_updated_at || 'No updates yet') + '</td>',
+                '<td><a href="/engineer/messages.php?project_id=' + Number(p.id || 0) + '">Open Messages</a></td>'
             ].join('');
             tbody.appendChild(tr);
         });

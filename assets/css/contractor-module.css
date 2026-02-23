@@ -1,0 +1,63 @@
+.cm-card {
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid #dbe6f3;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    padding: 14px;
+}
+.cm-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 12px;
+}
+.cm-stat { grid-column: span 3; }
+.cm-stat strong { font-size: 1.4rem; color: #0f2a4a; display: block; margin-top: 4px; }
+.cm-form {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+.cm-form .full { grid-column: 1 / -1; }
+.cm-input, .cm-select, .cm-textarea {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #c8d8ea;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font: inherit;
+}
+.cm-textarea { min-height: 88px; resize: vertical; }
+.cm-btn {
+    min-height: 42px;
+    border: 0;
+    border-radius: 10px;
+    padding: 0 14px;
+    color: #fff;
+    font-weight: 700;
+    background: linear-gradient(135deg, #1d4e89, #2563eb);
+    cursor: pointer;
+}
+.cm-btn.secondary { background: linear-gradient(135deg, #334155, #475569); }
+.cm-table-wrap { overflow: auto; }
+.cm-table { width: 100%; border-collapse: collapse; }
+.cm-table th, .cm-table td { padding: 10px; border-bottom: 1px solid #e8eef6; text-align: left; }
+.cm-table th { font-size: .8rem; color: #334155; text-transform: uppercase; letter-spacing: .02em; }
+.cm-badge {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: .74rem;
+    font-weight: 700;
+}
+.cm-badge.pending { color: #92400e; background: #fef3c7; }
+.cm-badge.approved, .cm-badge.completed, .cm-badge.resolved { color: #166534; background: #dcfce7; }
+.cm-badge.rejected, .cm-badge.open, .cm-badge.critical { color: #991b1b; background: #fee2e2; }
+.cm-feedback { margin-top: 10px; font-size: .9rem; color: #334155; }
+@media (max-width: 1100px) {
+    .cm-stat { grid-column: span 6; }
+    .cm-form { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 760px) {
+    .cm-stat { grid-column: span 12; }
+    .cm-form { grid-template-columns: 1fr; }
+}
