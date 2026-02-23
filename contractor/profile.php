@@ -169,7 +169,13 @@ $csrf = generate_csrf_token();
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="/user-dashboard/user-shell.css?v=<?php echo filemtime(dirname(__DIR__) . '/user-dashboard/user-shell.css'); ?>">
     <style>
+        .nav-user-profile { display:flex; align-items:center; gap:10px; margin:8px 12px 14px; padding:10px; border:1px solid rgba(148,163,184,.22); border-radius:12px; background:rgba(248,251,255,.8); }
+        .nav-user-badge { width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:linear-gradient(135deg,#1d4e89,#3f83c9); flex:0 0 36px; }
+        .nav-user-meta { min-width:0; }
+        .nav-user-name { color:#0f2a4a; font-weight:700; font-size:.9rem; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .nav-user-email { color:#64748b; font-size:.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .profile-layout { display:grid; grid-template-columns: 320px 1fr; gap:18px; align-items:start; }
         .profile-side {
             border-radius:16px;
@@ -187,12 +193,13 @@ $csrf = generate_csrf_token();
         .profile-meta-item label { display:block; color:#64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
         .profile-meta-item div { color:#0f2a4a; font-weight:600; font-size:.92rem; word-break:break-word; }
         .profile-main { display:grid; gap:16px; }
-        .profile-card { border-radius:16px; border:1px solid #dbe7f3; background:#fff; padding:16px; }
-        .readonly-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px; }
-        .readonly-item { border:1px solid #e2e8f0; border-radius:10px; background:#f8fbff; padding:10px 12px; min-height:64px; }
+        .profile-card { border-radius:14px; border:1px solid #dbe7f3; background:#fff; padding:16px; box-shadow:0 4px 14px rgba(15,23,42,.06); }
+        .readonly-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:10px; }
+        .readonly-item { border:1px solid #dbe7f3; border-radius:10px; background:#fff; padding:10px 12px; min-height:64px; }
         .readonly-item label { display:block; color:#64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
         .readonly-item div { color:#0f2a4a; font-size:.92rem; font-weight:600; word-break:break-word; }
         .readonly-item.full { grid-column:1 / -1; }
+        .profile-card h3 { color:#0f172a; margin-bottom:6px; font-size:1.02rem; }
         .profile-btn {
             height:44px;
             border:none;
@@ -221,6 +228,13 @@ $csrf = generate_csrf_token();
 <div class="sidebar-toggle-wrapper"><button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
 <header class="nav" id="navbar">
     <div class="nav-logo"><img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img"><span class="logo-text">IPMS Contractor</span></div>
+    <div class="nav-user-profile">
+        <div class="nav-user-badge"><?php echo htmlspecialchars(strtoupper(substr((string)($employee['first_name'] ?? 'C'), 0, 1)), ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="nav-user-meta">
+            <div class="nav-user-name"><?php echo htmlspecialchars(trim((string)($employee['first_name'] ?? '') . ' ' . (string)($employee['last_name'] ?? '')), ENT_QUOTES, 'UTF-8'); ?></div>
+            <div class="nav-user-email"><?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div>
+        </div>
+    </div>
     <div class="nav-links">
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
         <a href="dashboard.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation & Budget</a>
@@ -261,11 +275,14 @@ $csrf = generate_csrf_token();
                     <div class="readonly-item"><label>First Name</label><div><?php echo htmlspecialchars((string)($employee['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>Last Name</label><div><?php echo htmlspecialchars((string)($employee['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>Contractor Type</label><div><?php echo htmlspecialchars((string)($contractor['contractor_type'] ?? 'company'), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Company / Contractor Name</label><div><?php echo htmlspecialchars((string)($contractor['company'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>License Number</label><div><?php echo htmlspecialchars((string)($contractor['license'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <?php if ($hasLicenseExp): ?><div class="readonly-item"><label>License Expiry</label><div><?php echo htmlspecialchars((string)($contractor['license_expiration_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
                     <?php if ($hasTin): ?><div class="readonly-item"><label>TIN</label><div><?php echo htmlspecialchars((string)($contractor['tin'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
                     <div class="readonly-item"><label>Specialization</label><div><?php echo htmlspecialchars((string)($contractor['specialization'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>Experience</label><div><?php echo htmlspecialchars((string)($contractor['experience'] ?? '0'), ENT_QUOTES, 'UTF-8'); ?> years</div></div>
+                    <div class="readonly-item"><label>Email</label><div><?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Mobile Number</label><div><?php echo htmlspecialchars((string)($contractor['phone'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <?php if ($hasContactFirst): ?><div class="readonly-item"><label>Contact First Name</label><div><?php echo htmlspecialchars((string)($contractor['contact_person_first_name'] ?? $employee['first_name']), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
                     <?php if ($hasContactLast): ?><div class="readonly-item"><label>Contact Last Name</label><div><?php echo htmlspecialchars((string)($contractor['contact_person_last_name'] ?? $employee['last_name']), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
                     <?php if ($hasContactRole): ?><div class="readonly-item"><label>Contact Role</label><div><?php echo htmlspecialchars((string)($contractor['contact_person_role'] ?? 'Owner'), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>

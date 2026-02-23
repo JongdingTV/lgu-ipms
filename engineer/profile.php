@@ -121,6 +121,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $csrf = generate_csrf_token();
 $fullName = trim((string)($employee['first_name'] ?? '') . ' ' . (string)($employee['last_name'] ?? ''));
+$skillsDisplay = '';
+if ($engineer && isset($engineer['skills_json'])) {
+    $decodedSkills = json_decode((string)$engineer['skills_json'], true);
+    if (is_array($decodedSkills)) {
+        $cleanSkills = [];
+        foreach ($decodedSkills as $skill) {
+            $s = trim((string)$skill);
+            if ($s !== '') $cleanSkills[] = $s;
+        }
+        $skillsDisplay = implode(', ', $cleanSkills);
+    } else {
+        $skillsDisplay = trim((string)$engineer['skills_json']);
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -139,7 +153,13 @@ $fullName = trim((string)($employee['first_name'] ?? '') . ' ' . (string)($emplo
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <link rel="stylesheet" href="/user-dashboard/user-shell.css?v=<?php echo filemtime(dirname(__DIR__) . '/user-dashboard/user-shell.css'); ?>">
     <style>
+        .nav-user-profile { display:flex; align-items:center; gap:10px; margin:8px 12px 14px; padding:10px; border:1px solid rgba(148,163,184,.22); border-radius:12px; background:rgba(248,251,255,.8); }
+        .nav-user-badge { width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:linear-gradient(135deg,#1d4e89,#3f83c9); flex:0 0 36px; }
+        .nav-user-meta { min-width:0; }
+        .nav-user-name { color:#0f2a4a; font-weight:700; font-size:.9rem; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .nav-user-email { color:#64748b; font-size:.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .profile-layout { display:grid; grid-template-columns:320px 1fr; gap:18px; align-items:start; }
         .profile-side { border-radius:16px; border:1px solid #dbe7f3; background:#fff; padding:18px; position:sticky; top:14px; }
         .profile-avatar { width:72px; height:72px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:linear-gradient(135deg,#1d4e89,#3f83c9); margin-bottom:10px; font-size:1.15rem; }
@@ -150,12 +170,13 @@ $fullName = trim((string)($employee['first_name'] ?? '') . ' ' . (string)($emplo
         .profile-meta-item label { display:block; color:#64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
         .profile-meta-item div { color:#0f2a4a; font-weight:600; font-size:.92rem; word-break:break-word; }
         .profile-main { display:grid; gap:16px; }
-        .profile-card { border-radius:16px; border:1px solid #dbe7f3; background:#fff; padding:16px; }
-        .readonly-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px; }
-        .readonly-item { border:1px solid #e2e8f0; border-radius:10px; background:#f8fbff; padding:10px 12px; min-height:64px; }
+        .profile-card { border-radius:14px; border:1px solid #dbe7f3; background:#fff; padding:16px; box-shadow:0 4px 14px rgba(15,23,42,.06); }
+        .readonly-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:10px; }
+        .readonly-item { border:1px solid #dbe7f3; border-radius:10px; background:#fff; padding:10px 12px; min-height:64px; }
         .readonly-item label { display:block; color:#64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
         .readonly-item div { color:#0f2a4a; font-size:.92rem; font-weight:600; word-break:break-word; }
         .readonly-item.full { grid-column:1 / -1; }
+        .profile-card h3 { color:#0f172a; margin-bottom:6px; font-size:1.02rem; }
         .profile-btn { height:44px; border:none; border-radius:11px; padding:0 16px; font-weight:700; color:#fff; background:linear-gradient(135deg,#16416f,#2f73b5); cursor:pointer; box-shadow:0 6px 16px rgba(22,65,111,.26); }
         .password-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:10px 0 12px; }
         .password-grid input { width:100%; height:44px; border:1px solid #c8d8ea; border-radius:10px; padding:0 12px; }
@@ -166,6 +187,13 @@ $fullName = trim((string)($employee['first_name'] ?? '') . ' ' . (string)($emplo
 <div class="sidebar-toggle-wrapper"><button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
 <header class="nav" id="navbar">
     <div class="nav-logo"><img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img"><span class="logo-text">IPMS Engineer</span></div>
+    <div class="nav-user-profile">
+        <div class="nav-user-badge"><?php echo htmlspecialchars(strtoupper(substr((string)($employee['first_name'] ?? 'E'), 0, 1)), ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="nav-user-meta">
+            <div class="nav-user-name"><?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?></div>
+            <div class="nav-user-email"><?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div>
+        </div>
+    </div>
     <div class="nav-links">
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
         <a href="monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Monitoring</a>
@@ -204,7 +232,14 @@ $fullName = trim((string)($employee['first_name'] ?? '') . ' ' . (string)($emplo
                 <p style="margin:6px 0 0;color:#64748b;">Registration details are view-only and cannot be edited.</p>
                 <div class="readonly-grid">
                     <div class="readonly-item"><label>First Name</label><div><?php echo htmlspecialchars((string)($engineer['first_name'] ?? $employee['first_name']), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Middle Name</label><div><?php echo htmlspecialchars((string)($engineer['middle_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>Last Name</label><div><?php echo htmlspecialchars((string)($engineer['last_name'] ?? $employee['last_name']), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Suffix</label><div><?php echo htmlspecialchars((string)($engineer['suffix'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Date of Birth</label><div><?php echo htmlspecialchars((string)($engineer['date_of_birth'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Gender</label><div><?php echo htmlspecialchars((string)($engineer['gender'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Civil Status</label><div><?php echo htmlspecialchars((string)($engineer['civil_status'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Email</label><div><?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Mobile Number</label><div><?php echo htmlspecialchars((string)($engineer['contact_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>PRC License Number</label><div><?php echo htmlspecialchars((string)($engineer['prc_license_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>License Expiry</label><div><?php echo htmlspecialchars((string)($engineer['license_expiry_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>Specialization</label><div><?php echo htmlspecialchars((string)($engineer['specialization'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
@@ -213,6 +248,12 @@ $fullName = trim((string)($employee['first_name'] ?? '') . ' ' . (string)($emplo
                     <div class="readonly-item"><label>Highest Education</label><div><?php echo htmlspecialchars((string)($engineer['highest_education'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>School/University</label><div><?php echo htmlspecialchars((string)($engineer['school_university'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>Past Projects</label><div><?php echo htmlspecialchars((string)($engineer['past_projects_count'] ?? '0'), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item full"><label>Skills</label><div><?php echo htmlspecialchars($skillsDisplay, ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item full"><label>Certifications/Trainings</label><div><?php echo htmlspecialchars((string)($engineer['certifications_trainings'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item full"><label>Notes</label><div><?php echo htmlspecialchars((string)($engineer['notes'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Emergency Contact Name</label><div><?php echo htmlspecialchars((string)($engineer['emergency_contact_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Emergency Contact Number</label><div><?php echo htmlspecialchars((string)($engineer['emergency_contact_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Emergency Contact Relationship</label><div><?php echo htmlspecialchars((string)($engineer['emergency_contact_relationship'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item full"><label>Address</label><div><?php echo htmlspecialchars((string)($engineer['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                 </div>
             </div>
