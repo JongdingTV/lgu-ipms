@@ -419,6 +419,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         'priority' => $priority,
                         'budget' => $budget
                     ]);
+                }
 
                 if (!$isUpdate) {
                     queue_project_for_department_head($db, $savedId);
