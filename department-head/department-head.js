@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var canManage = Boolean(permissionFlags.approvalsManage);
     var canReadNotifications = Boolean(permissionFlags.notificationsRead);
     var state = { rows: [], mode: 'pending' };
+    var searchDebounce = null;
 
     function esc(v) {
         return String(v == null ? '' : v)
@@ -467,7 +468,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function load() {
-        apiGet('load_projects', { mode: state.mode }).then(function (res) {
+        var qValue = (document.getElementById('searchInput') && document.getElementById('searchInput').value || '').trim();
+        apiGet('load_projects', { mode: state.mode, q: qValue, page: 1, per_page: 50 }).then(function (res) {
             if (!res.ok || !res.json || res.json.success === false) {
                 throw new Error((res.json && res.json.message) ? res.json.message : 'Unable to load projects.');
             }
@@ -485,7 +487,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var searchInput = document.getElementById('searchInput');
     var statusFilter = document.getElementById('statusFilter');
     if (searchInput) {
-        searchInput.addEventListener('input', renderTable);
+        searchInput.addEventListener('input', function () {
+            if (searchDebounce) {
+                clearTimeout(searchDebounce);
+            }
+            searchDebounce = setTimeout(load, 220);
+        });
     }
     if (statusFilter) {
         statusFilter.addEventListener('change', function () {
