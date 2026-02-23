@@ -167,17 +167,38 @@ if ($engineer && isset($engineer['skills_json'])) {
     <link rel="stylesheet" href="/assets/css/form-redesign-base.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
     <link rel="stylesheet" href="/user-dashboard/user-shell.css?v=<?php echo filemtime(dirname(__DIR__) . '/user-dashboard/user-shell.css'); ?>">
+    <style>
+        .profile-layout { display:grid; grid-template-columns:320px 1fr; gap:18px; align-items:start; }
+        .profile-side { border-radius:16px; border:1px solid #dbe7f3; background:#fff; padding:18px; position:sticky; top:14px; }
+        .profile-avatar { width:72px; height:72px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:linear-gradient(135deg,#1d4e89,#3f83c9); margin-bottom:10px; font-size:1.15rem; }
+        .profile-name { margin:0; color:#0f2a4a; font-size:1.25rem; line-height:1.2; }
+        .profile-role { margin:4px 0 0; color:#64748b; font-size:.92rem; }
+        .profile-meta { margin-top:14px; display:grid; gap:10px; }
+        .profile-meta-item { padding:10px 12px; border:1px solid #e2e8f0; border-radius:10px; background:#f8fbff; }
+        .profile-meta-item label { display:block; color:#64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+        .profile-meta-item div { color:#0f2a4a; font-weight:600; font-size:.92rem; word-break:break-word; }
+        .profile-main { display:grid; gap:16px; }
+        .settings-card { border-radius:14px; border:1px solid #dbe7f3; background:#fff; padding:16px; box-shadow:0 4px 14px rgba(15,23,42,.06); }
+        .settings-info-form { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:12px; margin-top:10px; }
+        .settings-info-field { border:1px solid #dbe7f3; border-radius:10px; background:#fff; padding:10px 12px; min-height:64px; }
+        .settings-info-field label { display:block; color:#64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+        .settings-info-value { color:#0f2a4a; font-size:.92rem; font-weight:600; word-break:break-word; border:1px solid #dbe7f3; background:#f8fbff; border-radius:8px; min-height:38px; padding:8px 10px; }
+        .settings-info-field-full { grid-column:1 / -1; }
+        .settings-card h3 { color:#0f172a; margin-bottom:6px; font-size:1.02rem; }
+        .profile-btn { height:44px; border:none; border-radius:11px; padding:0 16px; font-weight:700; color:#fff; background:linear-gradient(135deg,#16416f,#2f73b5); cursor:pointer; box-shadow:0 6px 16px rgba(22,65,111,.26); }
+        .password-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:10px 0 12px; }
+        .password-grid input { width:100%; height:44px; border:1px solid #c8d8ea; border-radius:10px; padding:0 12px; }
+        @media (max-width: 1000px) { .profile-layout { grid-template-columns:1fr; } .profile-side { position:static; } .settings-info-form, .password-grid { grid-template-columns:1fr; } }
+    </style>
 </head>
 <body>
 <div class="sidebar-toggle-wrapper"><button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
 <header class="nav" id="navbar">
     <div class="nav-logo"><img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img"><span class="logo-text">IPMS Engineer</span></div>
     <div class="nav-user-profile">
-        <div class="nav-user-badge"><?php echo htmlspecialchars(strtoupper(substr((string)($employee['first_name'] ?? 'E'), 0, 1)), ENT_QUOTES, 'UTF-8'); ?></div>
-        <div class="nav-user-meta">
-            <div class="nav-user-name"><?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?></div>
-            <div class="nav-user-email"><?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div>
-        </div>
+        <div class="user-initial-badge"><?php echo htmlspecialchars(strtoupper(substr((string)($employee['first_name'] ?? 'E'), 0, 1)), ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="nav-user-name"><?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="nav-user-email"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', (string)($employee['role'] ?? 'engineer'))), ENT_QUOTES, 'UTF-8'); ?></div>
     </div>
     <div class="nav-links">
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
@@ -191,7 +212,7 @@ if ($engineer && isset($engineer['skills_json'])) {
 </header>
 <div class="toggle-btn" id="showSidebarBtn"><a href="#" id="toggleSidebarShow" title="Show sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></a></div>
 
-<section class="main-content">
+<section class="main-content settings-page">
     <div class="dash-header">
         <h1>My Profile</h1>
         <p>Manage your engineer account details and security settings.</p>

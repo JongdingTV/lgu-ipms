@@ -18,6 +18,9 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     exit;
 }
 $canProgressSubmit = in_array($role, rbac_roles_for('contractor.progress.submit', ['contractor', 'admin', 'super_admin']), true);
+$sidebarName = trim((string)($_SESSION['employee_name'] ?? 'Contractor'));
+$sidebarInitial = strtoupper(substr($sidebarName !== '' ? $sidebarName : 'C', 0, 1));
+$sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_role'] ?? 'contractor')));
 ?>
 <!doctype html>
 <html lang="en">
@@ -37,6 +40,18 @@ $canProgressSubmit = in_array($role, rbac_roles_for('contractor.progress.submit'
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <style>
+        .flow-note {
+            margin: 0 0 14px;
+            border: 1px solid #dbe7f3;
+            background: #f8fbff;
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: #0f2a4a;
+            font-size: .92rem;
+            line-height: 1.5;
+        }
+    </style>
 </head>
 <body>
 <div class="sidebar-toggle-wrapper">
@@ -50,6 +65,11 @@ $canProgressSubmit = in_array($role, rbac_roles_for('contractor.progress.submit'
     <div class="nav-logo">
         <img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img">
         <span class="logo-text">IPMS Contractor</span>
+    </div>
+    <div class="nav-user-profile">
+        <div class="user-initial-badge"><?php echo htmlspecialchars($sidebarInitial, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="nav-user-name"><?php echo htmlspecialchars($sidebarName, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="nav-user-email"><?php echo htmlspecialchars($sidebarRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
     </div>
     <div class="nav-links">
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
