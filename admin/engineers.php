@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -442,7 +442,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
                 <a href="engineers.php" class="nav-main-item active" id="contractorsToggle">
-                    <img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers
+                    <img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers/Contractors
                     <span class="dropdown-arrow">&#9662;</span>
                 </a>
                 <div class="nav-submenu show" id="contractorsSubmenu">
@@ -450,6 +450,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <span class="submenu-icon">&#128203;</span>
                         <span>Registered Engineers</span>
                     </a>
+                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Contractors</span></a>
                 </div>
             </div>
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
@@ -631,3 +632,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="../assets/js/admin-engineers-add.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-engineers-add.js'); ?>"></script>
 </body>
 </html>
+
