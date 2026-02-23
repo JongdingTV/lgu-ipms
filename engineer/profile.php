@@ -210,7 +210,6 @@ $fullName = trim((string)($employee['first_name'] ?? '') . ' ' . (string)($emplo
                     <div class="readonly-item"><label>Specialization</label><div><?php echo htmlspecialchars((string)($engineer['specialization'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>Experience</label><div><?php echo htmlspecialchars((string)($engineer['years_experience'] ?? '0'), ENT_QUOTES, 'UTF-8'); ?> years</div></div>
                     <div class="readonly-item"><label>Position Title</label><div><?php echo htmlspecialchars((string)($engineer['position_title'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                    <div class="readonly-item"><label>Availability</label><div><?php echo htmlspecialchars((string)($engineer['availability_status'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>Highest Education</label><div><?php echo htmlspecialchars((string)($engineer['highest_education'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>School/University</label><div><?php echo htmlspecialchars((string)($engineer['school_university'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="readonly-item"><label>Past Projects</label><div><?php echo htmlspecialchars((string)($engineer['past_projects_count'] ?? '0'), ENT_QUOTES, 'UTF-8'); ?></div></div>

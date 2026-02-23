@@ -37,7 +37,6 @@ $form = [
     'specialization' => '',
     'years_experience' => '0',
     'position_title' => '',
-    'availability_status' => 'Available',
     'highest_education' => '',
     'school_university' => '',
     'certifications_trainings' => '',
@@ -142,7 +141,7 @@ function ec_validate(array $input): array
     foreach ([
         'first_name','middle_name','last_name','suffix','dob','gender','civil_status',
         'email','contact_number','address','prc_license_number','license_expiry_date','specialization',
-        'position_title','availability_status','highest_education','school_university',
+        'position_title','highest_education','school_university',
         'certifications_trainings','notes','emergency_contact_name','emergency_contact_number','emergency_contact_relationship'
     ] as $k) {
         $data[$k] = trim((string)($input[$k] ?? ''));
@@ -169,9 +168,6 @@ function ec_validate(array $input): array
         $errors[] = 'License expiry date must be in the future.';
     }
     if ($data['highest_education'] === '') $errors[] = 'Highest educational attainment is required.';
-    if ($data['availability_status'] === '' || !in_array($data['availability_status'], ['Available', 'Assigned', 'On Leave'], true)) {
-        $data['availability_status'] = 'Available';
-    }
 
     if (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[^A-Za-z0-9]/', $password)) {
         $errors[] = 'Password must be at least 8 chars and include uppercase, lowercase, number, and symbol.';
@@ -220,7 +216,7 @@ function ec_create_account(mysqli $db, array $data): void
         if (ec_table_has_column($db, 'engineers', 'years_experience')) { $columns[] = 'years_experience'; $types .= 'i'; $values[] = $data['years_experience']; }
         if (ec_table_has_column($db, 'engineers', 'position_title')) { $columns[] = 'position_title'; $types .= 's'; $values[] = $data['position_title']; }
         if (ec_table_has_column($db, 'engineers', 'skills_json')) { $columns[] = 'skills_json'; $types .= 's'; $values[] = $skillsJson; }
-        if (ec_table_has_column($db, 'engineers', 'availability_status')) { $columns[] = 'availability_status'; $types .= 's'; $values[] = $data['availability_status']; }
+        if (ec_table_has_column($db, 'engineers', 'availability_status')) { $columns[] = 'availability_status'; $types .= 's'; $values[] = 'Available'; }
         if (ec_table_has_column($db, 'engineers', 'highest_education')) { $columns[] = 'highest_education'; $types .= 's'; $values[] = $data['highest_education']; }
         if (ec_table_has_column($db, 'engineers', 'school_university')) { $columns[] = 'school_university'; $types .= 's'; $values[] = $data['school_university']; }
         if (ec_table_has_column($db, 'engineers', 'certifications_trainings')) { $columns[] = 'certifications_trainings'; $types .= 's'; $values[] = $data['certifications_trainings']; }
@@ -263,7 +259,7 @@ function ec_create_account(mysqli $db, array $data): void
                 case 'contact_number': $val = $data['contact_number']; break;
                 case 'position_title': $val = $data['position_title'] !== '' ? $data['position_title'] : 'Engineer'; break;
                 case 'specialization': $val = $data['specialization']; break;
-                case 'availability_status': $val = $data['availability_status']; break;
+                case 'availability_status': $val = 'Available'; break;
                 case 'prc_license_number': $val = $data['prc_license_number']; break;
                 case 'license_expiry_date': $val = $data['license_expiry_date']; break;
                 case 'highest_education': $val = $data['highest_education']; break;
@@ -337,7 +333,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $csrfToken = $_SESSION['engineer_create_token'];
                 foreach ($form as $k => $v) {
                     if ($k === 'years_experience' || $k === 'past_projects_count') $form[$k] = '0';
-                    elseif ($k === 'availability_status') $form[$k] = 'Available';
                     else $form[$k] = '';
                 }
             } catch (Throwable $e) {
@@ -434,7 +429,6 @@ body.user-signup-page .subtitle{margin:0;color:var(--page-muted)}
 <div class="input-box"><label>Specialization</label><select name="specialization" required><option value="">-- Select --</option><?php foreach (['Civil Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Structural Engineering', 'Geotechnical Engineering'] as $spec): ?><option value="<?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $form['specialization'] === $spec ? 'selected' : ''; ?>><?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
 <div class="input-box"><label>Years of Experience</label><input type="number" name="years_experience" min="0" value="<?php echo htmlspecialchars($form['years_experience'], ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="input-box"><label>Current Position/Title</label><input type="text" name="position_title" value="<?php echo htmlspecialchars($form['position_title'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-<div class="input-box"><label>Availability Status</label><select name="availability_status"><option value="Available" <?php echo $form['availability_status'] === 'Available' ? 'selected' : ''; ?>>Available</option><option value="Assigned" <?php echo $form['availability_status'] === 'Assigned' ? 'selected' : ''; ?>>Assigned</option><option value="On Leave" <?php echo $form['availability_status'] === 'On Leave' ? 'selected' : ''; ?>>On Leave</option></select></div>
 </div></div>
 <div class="form-section"><h3>Credentials and Emergency Contact</h3><div class="form-grid">
 <div class="input-box"><label>Highest Educational Attainment</label><input type="text" name="highest_education" required value="<?php echo htmlspecialchars($form['highest_education'], ENT_QUOTES, 'UTF-8'); ?>"></div>
