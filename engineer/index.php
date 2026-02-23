@@ -21,6 +21,86 @@ $otpPending = isset(
     $_SESSION['engineer_login_otp_expires']
 );
 $otpEmail = (string)($_SESSION['engineer_login_otp_email'] ?? '');
+const ENGINEER_OTP_TRUST_HOURS = 12;
+const ENGINEER_OTP_TRUST_COOKIE = 'engineer_trusted_device';
+
+function engineer_cookie_secure(): bool
+{
+    return (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+        || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443);
+}
+
+function engineer_set_cookie(string $name, string $value, int $expires): void
+{
+    setcookie($name, $value, [
+        'expires' => $expires,
+        'path' => '/',
+        'secure' => engineer_cookie_secure(),
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+}
+
+function engineer_ensure_otp_trust_table(mysqli $db): void
+{
+    $db->query("CREATE TABLE IF NOT EXISTS otp_trusted_devices (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        employee_id INT NOT NULL,
+        role VARCHAR(32) NOT NULL,
+        selector VARCHAR(32) NOT NULL,
+        token_hash CHAR(64) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_emp_role_exp (employee_id, role, expires_at),
+        UNIQUE KEY uq_selector (selector)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
+function engineer_issue_otp_trust(mysqli $db, int $employeeId, string $role): void
+{
+    engineer_ensure_otp_trust_table($db);
+    $selector = bin2hex(random_bytes(8));
+    $token = bin2hex(random_bytes(32));
+    $tokenHash = hash('sha256', $token);
+    $hours = max(1, (int)ENGINEER_OTP_TRUST_HOURS);
+    $expiresTs = time() + ($hours * 3600);
+    $expiresAt = date('Y-m-d H:i:s', $expiresTs);
+
+    $stmt = $db->prepare("INSERT INTO otp_trusted_devices (employee_id, role, selector, token_hash, expires_at) VALUES (?, ?, ?, ?, ?)");
+    if ($stmt) {
+        $stmt->bind_param('issss', $employeeId, $role, $selector, $tokenHash, $expiresAt);
+        $stmt->execute();
+        $stmt->close();
+    }
+    engineer_set_cookie(ENGINEER_OTP_TRUST_COOKIE, $selector . ':' . $token, $expiresTs);
+}
+
+function engineer_has_valid_otp_trust(mysqli $db, int $employeeId, string $role): bool
+{
+    engineer_ensure_otp_trust_table($db);
+    $raw = (string)($_COOKIE[ENGINEER_OTP_TRUST_COOKIE] ?? '');
+    if ($raw === '' || strpos($raw, ':') === false) return false;
+    [$selector, $token] = explode(':', $raw, 2);
+    if ($selector === '' || $token === '') return false;
+
+    $stmt = $db->prepare("SELECT token_hash, expires_at
+                          FROM otp_trusted_devices
+                          WHERE employee_id = ? AND role = ? AND selector = ?
+                          ORDER BY id DESC LIMIT 1");
+    if (!$stmt) return false;
+    $stmt->bind_param('iss', $employeeId, $role, $selector);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    if ($res) $res->free();
+    $stmt->close();
+    if (!$row) return false;
+
+    $expiresAt = strtotime((string)($row['expires_at'] ?? ''));
+    if ($expiresAt === false || $expiresAt < time()) return false;
+    $storedHash = (string)($row['token_hash'] ?? '');
+    return hash_equals($storedHash, hash('sha256', $token));
+}
 
 function clear_engineer_login_otp_session(): void
 {
@@ -95,6 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['last_activity'] = time();
                 $_SESSION['login_time'] = time();
                 $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                engineer_issue_otp_trust($db, $employeeId, $role);
                 header('Location: /engineer/dashboard_overview.php');
                 exit;
             }
@@ -154,6 +235,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         log_security_event('ROLE_DENIED', 'Engineer login blocked for non-engineer role');
                         $error = 'Your account is not assigned to engineer access.';
                     } else {
+                        if (engineer_has_valid_otp_trust($db, (int)$employee['id'], $userRole)) {
+                            session_regenerate_id(true);
+                            $_SESSION['employee_id'] = (int)$employee['id'];
+                            $_SESSION['employee_name'] = trim((string)$employee['first_name'] . ' ' . (string)$employee['last_name']);
+                            $_SESSION['employee_role'] = $userRole;
+                            $_SESSION['user_type'] = 'employee';
+                            $_SESSION['last_activity'] = time();
+                            $_SESSION['login_time'] = time();
+                            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                            header('Location: /engineer/dashboard_overview.php');
+                            exit;
+                        }
                         clear_engineer_login_otp_session();
                         $fullName = trim((string)$employee['first_name'] . ' ' . (string)$employee['last_name']);
                         if (issue_engineer_login_otp((int)$employee['id'], $fullName, $emailInput, $userRole)) {
