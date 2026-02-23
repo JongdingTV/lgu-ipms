@@ -235,9 +235,15 @@ $db->close();
             <div class="nav-user-email"><?php echo htmlspecialchars($sidebarRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
         <div class="nav-links">
-            <a href="dashboard_overview.php" class="active"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
-            <a href="dashboard.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation & Budget</a>
-            <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Progress Monitoring</a>
+            <a href="dashboard_overview.php" class="active"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard</a>
+            <a href="my_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">My Projects</a>
+            <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Submit Progress</a>
+            <a href="deliverables.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Deliverables</a>
+            <a href="expenses.php"><img src="../assets/images/admin/budget.png" class="nav-icon" alt="">Expenses / Billing</a>
+            <a href="requests.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Requests</a>
+            <a href="issues.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Issues</a>
+            <a href="messages.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Messages</a>
+            <a href="notifications.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Notifications</a>
             <a href="profile.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Profile</a>
         </div>
         <div class="nav-divider"></div>
@@ -463,8 +469,6 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
-
-
 
 
 

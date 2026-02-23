@@ -242,6 +242,153 @@ function contractor_table_exists(mysqli $db, string $table): bool {
     return $ok;
 }
 
+function messaging_ensure_tables(mysqli $db): void {
+    $db->query("CREATE TABLE IF NOT EXISTS project_conversations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_message_at DATETIME NULL,
+        CONSTRAINT fk_pc_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS project_messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        conversation_id INT NOT NULL,
+        project_id INT NOT NULL,
+        sender_user_id INT NOT NULL,
+        sender_role VARCHAR(30) NOT NULL,
+        message_text TEXT NULL,
+        message_type VARCHAR(20) NOT NULL DEFAULT 'text',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+        INDEX idx_pm_project_time (project_id, created_at),
+        CONSTRAINT fk_pm_conv FOREIGN KEY (conversation_id) REFERENCES project_conversations(id) ON DELETE CASCADE,
+        CONSTRAINT fk_pm_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS project_message_attachments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        message_id INT NOT NULL,
+        file_path VARCHAR(255) NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        file_type VARCHAR(120) NOT NULL,
+        file_size INT NOT NULL DEFAULT 0,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_pma_msg FOREIGN KEY (message_id) REFERENCES project_messages(id) ON DELETE CASCADE
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS message_reads (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        message_id INT NOT NULL,
+        user_id INT NOT NULL,
+        read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_read (message_id, user_id),
+        CONSTRAINT fk_mr_msg FOREIGN KEY (message_id) REFERENCES project_messages(id) ON DELETE CASCADE
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS messaging_audit_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        user_id INT NOT NULL,
+        action VARCHAR(50) NOT NULL,
+        reference_id INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+}
+
+function messaging_log(mysqli $db, int $projectId, int $userId, string $action, ?int $refId = null): void {
+    $stmt = $db->prepare("INSERT INTO messaging_audit_logs (project_id, user_id, action, reference_id) VALUES (?, ?, ?, ?)");
+    if (!$stmt) return;
+    $stmt->bind_param('iisi', $projectId, $userId, $action, $refId);
+    $stmt->execute();
+    $stmt->close();
+}
+
+function contractor_identity(mysqli $db): array {
+    $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+    $email = '';
+    if ($employeeId > 0) {
+        $stmt = $db->prepare("SELECT email FROM employees WHERE id = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param('i', $employeeId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $row = $res ? $res->fetch_assoc() : null;
+            if ($res) $res->free();
+            $stmt->close();
+            $email = strtolower(trim((string)($row['email'] ?? '')));
+        }
+    }
+    $ids = [];
+    if ($employeeId > 0) $ids[$employeeId] = true;
+    if ($email !== '' && contractor_table_exists($db, 'contractors')) {
+        $stmt2 = $db->prepare("SELECT id FROM contractors WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))");
+        if ($stmt2) {
+            $stmt2->bind_param('s', $email);
+            $stmt2->execute();
+            $res2 = $stmt2->get_result();
+            while ($res2 && ($r = $res2->fetch_assoc())) {
+                $cid = (int)($r['id'] ?? 0);
+                if ($cid > 0) $ids[$cid] = true;
+            }
+            $stmt2->close();
+        }
+    }
+    return ['employee_id' => $employeeId, 'contractor_ids' => array_map('intval', array_keys($ids))];
+}
+
+function contractor_assigned_project_ids(mysqli $db): array {
+    $identity = contractor_identity($db);
+    $ids = $identity['contractor_ids'];
+    if (empty($ids) || !contractor_table_exists($db, 'contractor_project_assignments')) return [];
+    $list = implode(',', array_map('intval', $ids));
+    $rows = [];
+    $res = $db->query("SELECT DISTINCT project_id FROM contractor_project_assignments WHERE contractor_id IN ({$list})");
+    if ($res) {
+        while ($r = $res->fetch_assoc()) $rows[] = (int)($r['project_id'] ?? 0);
+        $res->free();
+    }
+    return array_values(array_filter(array_unique($rows)));
+}
+
+function contractor_has_project_access(mysqli $db, int $projectId): bool {
+    return $projectId > 0 && in_array($projectId, contractor_assigned_project_ids($db), true);
+}
+
+function messaging_ensure_conversation(mysqli $db, int $projectId): int {
+    $stmt = $db->prepare("SELECT id FROM project_conversations WHERE project_id = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param('i', $projectId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
+        if ($res) $res->free();
+        $stmt->close();
+        if ($row) return (int)$row['id'];
+    }
+    $ins = $db->prepare("INSERT INTO project_conversations (project_id, last_message_at) VALUES (?, NOW())");
+    if (!$ins) throw new RuntimeException('Failed to create conversation.');
+    $ins->bind_param('i', $projectId);
+    $ins->execute();
+    $id = (int)$db->insert_id;
+    $ins->close();
+    return $id;
+}
+
+function messaging_store_attachment(array $file): ?array {
+    $err = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($err === UPLOAD_ERR_NO_FILE) return null;
+    if ($err !== UPLOAD_ERR_OK) throw new RuntimeException('Attachment upload failed.');
+    $size = (int)($file['size'] ?? 0);
+    if ($size <= 0 || $size > 10 * 1024 * 1024) throw new RuntimeException('Attachment must be 10MB or less.');
+    $tmp = (string)($file['tmp_name'] ?? '');
+    $mime = (string)(mime_content_type($tmp) ?: '');
+    $allowed = ['application/pdf' => 'pdf', 'image/jpeg' => 'jpg', 'image/png' => 'png'];
+    if (!isset($allowed[$mime])) throw new RuntimeException('Only PDF/JPG/PNG are allowed.');
+    $dir = dirname(__DIR__) . '/uploads/project-messages';
+    if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) throw new RuntimeException('Failed to prepare upload directory.');
+    $name = 'msg_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $allowed[$mime];
+    $target = $dir . '/' . $name;
+    if (!move_uploaded_file($tmp, $target)) throw new RuntimeException('Failed to save attachment.');
+    return ['path' => 'uploads/project-messages/' . $name, 'name' => (string)($file['name'] ?? $name), 'type' => $mime, 'size' => $size];
+}
+
 function contractor_sync_projects_to_milestones(mysqli $db): void {
     $projects = [];
     $res = $db->query("SELECT name, COALESCE(budget, 0) AS budget FROM projects ORDER BY id DESC");
@@ -298,6 +445,11 @@ rbac_require_action_matrix(
     [
         'load_projects' => 'contractor.workspace.view',
         'load_notifications' => 'contractor.notifications.read',
+        'load_message_projects' => 'contractor.workspace.view',
+        'load_project_messages' => 'contractor.workspace.view',
+        'send_project_message' => 'contractor.workspace.manage',
+        'delete_project_message' => 'contractor.workspace.manage',
+        'mark_project_messages_read' => 'contractor.workspace.view',
         'load_budget_state' => 'contractor.budget.read',
         'submit_status_request' => 'contractor.status.request',
         'load_status_requests' => 'contractor.status.request',
@@ -312,6 +464,17 @@ rbac_require_action_matrix(
         'update_task_status' => 'contractor.workspace.manage',
         'add_milestone' => 'contractor.workspace.manage',
         'update_milestone_status' => 'contractor.workspace.manage',
+        'load_my_projects' => 'contractor.workspace.view',
+        'load_project_details' => 'contractor.workspace.view',
+        'load_deliverables' => 'contractor.workspace.view',
+        'submit_deliverable' => 'contractor.workspace.manage',
+        'load_expense_entries' => 'contractor.workspace.view',
+        'submit_expense_entry' => 'contractor.workspace.manage',
+        'load_requests_center' => 'contractor.workspace.view',
+        'submit_request_center' => 'contractor.workspace.manage',
+        'load_issues' => 'contractor.workspace.view',
+        'submit_issue' => 'contractor.workspace.manage',
+        'load_notifications_center' => 'contractor.notifications.read',
     ],
     'contractor.workspace.view'
 );
@@ -937,6 +1100,299 @@ if ($action === 'update_milestone_status') {
     $stmt->execute();
     $stmt->close();
     json_out(['success' => true]);
+}
+
+if ($action === 'load_message_projects') {
+    messaging_ensure_tables($db);
+    $projectIds = contractor_assigned_project_ids($db);
+    if (empty($projectIds)) {
+        json_out(['success' => true, 'data' => []]);
+    }
+    $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+    $idList = implode(',', array_map('intval', $projectIds));
+    $sql = "SELECT p.id, p.code, p.name,
+                   COALESCE(pc.last_message_at, p.created_at, NOW()) AS last_message_at,
+                   (SELECT pm.message_text FROM project_messages pm WHERE pm.project_id = p.id AND pm.is_deleted = 0 ORDER BY pm.created_at DESC LIMIT 1) AS last_message_text,
+                   (SELECT COUNT(*)
+                    FROM project_messages um
+                    LEFT JOIN message_reads mr ON mr.message_id = um.id AND mr.user_id = {$employeeId}
+                    WHERE um.project_id = p.id AND um.sender_user_id <> {$employeeId} AND um.is_deleted = 0 AND mr.id IS NULL) AS unread_count
+            FROM projects p
+            LEFT JOIN project_conversations pc ON pc.project_id = p.id
+            WHERE p.id IN ({$idList})
+            ORDER BY COALESCE(pc.last_message_at, p.created_at, NOW()) DESC";
+    $rows = [];
+    $res = $db->query($sql);
+    if ($res) {
+        while ($row = $res->fetch_assoc()) $rows[] = $row;
+        $res->free();
+    }
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_project_messages') {
+    messaging_ensure_tables($db);
+    $projectId = (int)($_GET['project_id'] ?? 0);
+    $q = trim((string)($_GET['q'] ?? ''));
+    if (!contractor_has_project_access($db, $projectId)) {
+        json_out(['success' => false, 'message' => 'Access denied.'], 403);
+    }
+    $convId = messaging_ensure_conversation($db, $projectId);
+    $sql = "SELECT pm.id, pm.sender_user_id, pm.sender_role, pm.message_text, pm.message_type, pm.created_at,
+                   CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS sender_name,
+                   a.file_path, a.file_name, a.file_type, a.file_size
+            FROM project_messages pm
+            LEFT JOIN employees e ON e.id = pm.sender_user_id
+            LEFT JOIN project_message_attachments a ON a.message_id = pm.id
+            WHERE pm.conversation_id = ? AND pm.is_deleted = 0";
+    $types = 'i';
+    $params = [$convId];
+    if ($q !== '') {
+        $sql .= " AND pm.message_text LIKE ?";
+        $types .= 's';
+        $params[] = '%' . $q . '%';
+    }
+    $sql .= " ORDER BY pm.created_at ASC";
+    $stmt = $db->prepare($sql);
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = [];
+    while ($res && ($row = $res->fetch_assoc())) $rows[] = $row;
+    if ($res) $res->free();
+    $stmt->close();
+    messaging_log($db, $projectId, (int)($_SESSION['employee_id'] ?? 0), 'view_thread', null);
+    json_out(['success' => true, 'conversation_id' => $convId, 'data' => $rows]);
+}
+
+if ($action === 'send_project_message') {
+    messaging_ensure_tables($db);
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    $text = trim((string)($_POST['message_text'] ?? ''));
+    if (!contractor_has_project_access($db, $projectId)) {
+        json_out(['success' => false, 'message' => 'Access denied.'], 403);
+    }
+    $attachment = null;
+    try {
+        $attachment = isset($_FILES['attachment']) ? messaging_store_attachment($_FILES['attachment']) : null;
+    } catch (Throwable $e) {
+        json_out(['success' => false, 'message' => $e->getMessage()], 422);
+    }
+    if ($text === '' && !$attachment) {
+        json_out(['success' => false, 'message' => 'Message is empty.'], 422);
+    }
+    $text = strip_tags($text);
+    if (strlen($text) > 4000) $text = substr($text, 0, 4000);
+    $convId = messaging_ensure_conversation($db, $projectId);
+    $senderId = (int)($_SESSION['employee_id'] ?? 0);
+    $type = $attachment ? 'file' : 'text';
+    $db->begin_transaction();
+    try {
+        $stmt = $db->prepare("INSERT INTO project_messages (conversation_id, project_id, sender_user_id, sender_role, message_text, message_type) VALUES (?, ?, ?, 'contractor', ?, ?)");
+        if (!$stmt) throw new RuntimeException('Failed to save message.');
+        $stmt->bind_param('iiiss', $convId, $projectId, $senderId, $text, $type);
+        $stmt->execute();
+        $messageId = (int)$db->insert_id;
+        $stmt->close();
+        if ($attachment) {
+            $insA = $db->prepare("INSERT INTO project_message_attachments (message_id, file_path, file_name, file_type, file_size) VALUES (?, ?, ?, ?, ?)");
+            if ($insA) {
+                $insA->bind_param('isssi', $messageId, $attachment['path'], $attachment['name'], $attachment['type'], $attachment['size']);
+                $insA->execute();
+                $insA->close();
+            }
+            messaging_log($db, $projectId, $senderId, 'upload_file', $messageId);
+        }
+        $up = $db->prepare("UPDATE project_conversations SET last_message_at = NOW() WHERE id = ?");
+        if ($up) {
+            $up->bind_param('i', $convId);
+            $up->execute();
+            $up->close();
+        }
+        messaging_log($db, $projectId, $senderId, 'send_message', $messageId);
+        $db->commit();
+        json_out(['success' => true, 'message_id' => $messageId]);
+    } catch (Throwable $e) {
+        $db->rollback();
+        json_out(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'delete_project_message') {
+    messaging_ensure_tables($db);
+    $messageId = (int)($_POST['message_id'] ?? 0);
+    $userId = (int)($_SESSION['employee_id'] ?? 0);
+    if ($messageId <= 0) json_out(['success' => false, 'message' => 'Invalid message.'], 422);
+    $stmt = $db->prepare("SELECT project_id, sender_user_id FROM project_messages WHERE id = ? LIMIT 1");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('i', $messageId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    if ($res) $res->free();
+    $stmt->close();
+    if (!$row) json_out(['success' => false, 'message' => 'Message not found.'], 404);
+    $projectId = (int)($row['project_id'] ?? 0);
+    if ((int)($row['sender_user_id'] ?? 0) !== $userId || !contractor_has_project_access($db, $projectId)) {
+        json_out(['success' => false, 'message' => 'Not allowed.'], 403);
+    }
+    $up = $db->prepare("UPDATE project_messages SET is_deleted = 1 WHERE id = ?");
+    if (!$up) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $up->bind_param('i', $messageId);
+    $up->execute();
+    $up->close();
+    messaging_log($db, $projectId, $userId, 'delete_message', $messageId);
+    json_out(['success' => true]);
+}
+
+if ($action === 'mark_project_messages_read') {
+    messaging_ensure_tables($db);
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    $userId = (int)($_SESSION['employee_id'] ?? 0);
+    if (!contractor_has_project_access($db, $projectId)) {
+        json_out(['success' => false, 'message' => 'Access denied.'], 403);
+    }
+    $db->query("INSERT IGNORE INTO message_reads (message_id, user_id, read_at)
+                SELECT pm.id, {$userId}, NOW()
+                FROM project_messages pm
+                WHERE pm.project_id = {$projectId} AND pm.sender_user_id <> {$userId} AND pm.is_deleted = 0");
+    json_out(['success' => true]);
+}
+
+if ($action === 'load_my_projects') {
+    $rows = [];
+    $res = $db->query("SELECT p.id, p.code, p.name, p.location, p.status, COALESCE(p.priority,'') AS priority, COALESCE(p.budget,0) AS budget,
+                              COALESCE(pp.progress_percent,0) AS progress_percent
+                       FROM projects p
+                       LEFT JOIN (
+                         SELECT p1.project_id, p1.progress_percent
+                         FROM project_progress_updates p1
+                         INNER JOIN (SELECT project_id, MAX(created_at) mx FROM project_progress_updates GROUP BY project_id) p2
+                           ON p1.project_id = p2.project_id AND p1.created_at = p2.mx
+                       ) pp ON pp.project_id = p.id
+                       ORDER BY p.id DESC");
+    $allowed = contractor_assigned_project_ids($db);
+    if ($res) {
+        while ($r = $res->fetch_assoc()) {
+            if (in_array((int)($r['id'] ?? 0), $allowed, true)) $rows[] = $r;
+        }
+        $res->free();
+    }
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_project_details') {
+    $projectId = (int)($_GET['project_id'] ?? 0);
+    if (!contractor_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    ensure_task_milestone_tables($db);
+    ensure_progress_submission_table($db);
+    $project = null;
+    $s = $db->prepare("SELECT id, code, name, location, status, priority, budget, start_date, end_date, description FROM projects WHERE id = ? LIMIT 1");
+    if ($s) {
+        $s->bind_param('i', $projectId);
+        $s->execute();
+        $project = $s->get_result()->fetch_assoc();
+        $s->close();
+    }
+    $tasks = [];
+    $t = $db->prepare("SELECT id, title, status, planned_start, planned_end, actual_start, actual_end, notes FROM project_tasks WHERE project_id = ? ORDER BY id DESC");
+    if ($t) {
+        $t->bind_param('i', $projectId);
+        $t->execute();
+        $res = $t->get_result();
+        while ($res && ($r = $res->fetch_assoc())) $tasks[] = $r;
+        if ($res) $res->free();
+        $t->close();
+    }
+    $milestones = [];
+    $m = $db->prepare("SELECT id, title, status, planned_date, actual_date, notes FROM project_milestones WHERE project_id = ? ORDER BY id DESC");
+    if ($m) {
+        $m->bind_param('i', $projectId);
+        $m->execute();
+        $res = $m->get_result();
+        while ($res && ($r = $res->fetch_assoc())) $milestones[] = $r;
+        if ($res) $res->free();
+        $m->close();
+    }
+    $progress = [];
+    $p = $db->prepare("SELECT submitted_progress_percent AS progress_percent, review_status, submitted_at FROM project_progress_submissions WHERE project_id = ? ORDER BY id DESC LIMIT 40");
+    if ($p) {
+        $p->bind_param('i', $projectId);
+        $p->execute();
+        $res = $p->get_result();
+        while ($res && ($r = $res->fetch_assoc())) $progress[] = $r;
+        if ($res) $res->free();
+        $p->close();
+    }
+    json_out(['success' => true, 'data' => ['project' => $project, 'tasks' => $tasks, 'milestones' => $milestones, 'progress_history' => $progress]]);
+}
+
+if ($action === 'submit_issue' || $action === 'load_issues') {
+    $db->query("CREATE TABLE IF NOT EXISTS contractor_issues (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        contractor_id INT NOT NULL,
+        project_id INT NOT NULL,
+        issue_type VARCHAR(120) NOT NULL,
+        severity_level VARCHAR(20) NOT NULL DEFAULT 'Low',
+        description TEXT NOT NULL,
+        attachment_path VARCHAR(255) NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'Open',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+}
+
+if ($action === 'submit_issue') {
+    $projectId = (int)($_POST['project_id'] ?? 0);
+    if (!contractor_has_project_access($db, $projectId)) json_out(['success' => false, 'message' => 'Project access denied.'], 403);
+    $issueType = trim((string)($_POST['issue_type'] ?? ''));
+    $severity = trim((string)($_POST['severity_level'] ?? 'Low'));
+    $description = trim((string)($_POST['description'] ?? ''));
+    if ($issueType === '' || $description === '') json_out(['success' => false, 'message' => 'Issue type and description are required.'], 422);
+    if (!in_array($severity, ['Low', 'Medium', 'High', 'Critical'], true)) $severity = 'Low';
+    $att = null;
+    try { $att = isset($_FILES['attachment']) ? messaging_store_attachment($_FILES['attachment']) : null; } catch (Throwable $e) { json_out(['success' => false, 'message' => $e->getMessage()], 422); }
+    $identity = contractor_identity($db);
+    $contractorId = (int)($identity['contractor_ids'][0] ?? ($identity['employee_id'] ?? 0));
+    $path = $att ? $att['path'] : null;
+    $stmt = $db->prepare("INSERT INTO contractor_issues (contractor_id, project_id, issue_type, severity_level, description, attachment_path, status) VALUES (?, ?, ?, ?, ?, ?, 'Open')");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('iissss', $contractorId, $projectId, $issueType, $severity, $description, $path);
+    $stmt->execute();
+    $issueId = (int)$db->insert_id;
+    $stmt->close();
+    if (function_exists('rbac_audit')) rbac_audit('contractor.issue_submit', 'contractor_issue', $issueId, ['project_id' => $projectId, 'severity' => $severity]);
+    json_out(['success' => true, 'id' => $issueId]);
+}
+
+if ($action === 'load_issues') {
+    $allowed = contractor_assigned_project_ids($db);
+    $rows = [];
+    $res = $db->query("SELECT * FROM contractor_issues ORDER BY id DESC LIMIT 200");
+    if ($res) {
+        while ($r = $res->fetch_assoc()) {
+            if (in_array((int)($r['project_id'] ?? 0), $allowed, true)) $rows[] = $r;
+        }
+        $res->free();
+    }
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_notifications_center') {
+    $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+    $rows = [];
+    if ($employeeId > 0 && contractor_table_exists($db, 'contractor_notifications')) {
+        $stmt = $db->prepare("SELECT id, project_id, title, body, is_read, created_at FROM contractor_notifications WHERE recipient_user_id = ? ORDER BY id DESC LIMIT 200");
+        if ($stmt) {
+            $stmt->bind_param('i', $employeeId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            while ($res && ($r = $res->fetch_assoc())) $rows[] = $r;
+            if ($res) $res->free();
+            $stmt->close();
+        }
+    }
+    json_out(['success' => true, 'data' => $rows]);
 }
 
 json_out(['success' => false, 'message' => 'Unknown action.'], 400);

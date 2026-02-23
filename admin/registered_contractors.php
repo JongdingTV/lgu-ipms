@@ -8,6 +8,7 @@ check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.engineers.manage', ['admin', 'department_admin', 'super_admin']);
 check_suspicious_activity();
+$csrfToken = generate_csrf_token();
 
 if ($db->connect_error) {
     die('Database connection failed: ' . $db->connect_error);
@@ -37,6 +38,151 @@ function rc_table_has_column(mysqli $db, string $table, string $column): bool
     return $exists;
 }
 
+function rc_table_exists(mysqli $db, string $table): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $table);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+    return $exists;
+}
+
+function rc_ensure_assignment_table(mysqli $db): bool
+{
+    if (rc_table_exists($db, 'contractor_project_assignments')) {
+        return true;
+    }
+    $ok = $db->query("CREATE TABLE IF NOT EXISTS contractor_project_assignments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        contractor_id INT NOT NULL,
+        project_id INT NOT NULL,
+        assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_assignment (contractor_id, project_id)
+    )");
+    return (bool)$ok;
+}
+
+if (isset($_GET['action']) && $_GET['action'] === 'load_projects') {
+    header('Content-Type: application/json');
+    $rows = [];
+    $res = $db->query("SELECT id, code, name, status FROM projects ORDER BY id DESC");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $rows[] = $row;
+        }
+        $res->free();
+    }
+    echo json_encode(['success' => true, 'data' => $rows]);
+    $db->close();
+    exit;
+}
+
+if (isset($_GET['action']) && $_GET['action'] === 'get_assigned_projects') {
+    header('Content-Type: application/json');
+    $contractorId = (int)($_GET['contractor_id'] ?? 0);
+    if ($contractorId <= 0 || !rc_ensure_assignment_table($db)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid request.']);
+        $db->close();
+        exit;
+    }
+    $rows = [];
+    $stmt = $db->prepare("SELECT p.id, p.code, p.name, p.status
+                          FROM projects p
+                          INNER JOIN contractor_project_assignments cpa ON cpa.project_id = p.id
+                          WHERE cpa.contractor_id = ?
+                          ORDER BY p.id DESC");
+    if ($stmt) {
+        $stmt->bind_param('i', $contractorId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($res && ($row = $res->fetch_assoc())) {
+            $rows[] = $row;
+        }
+        if ($res) {
+            $res->free();
+        }
+        $stmt->close();
+    }
+    echo json_encode(['success' => true, 'data' => $rows]);
+    $db->close();
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+    if (!verify_csrf_token((string)($_POST['csrf_token'] ?? ''))) {
+        echo json_encode(['success' => false, 'message' => 'Security token mismatch.']);
+        $db->close();
+        exit;
+    }
+
+    $action = (string)$_POST['action'];
+    if ($action === 'assign_project') {
+        $contractorId = (int)($_POST['contractor_id'] ?? 0);
+        $projectId = (int)($_POST['project_id'] ?? 0);
+        if ($contractorId <= 0 || $projectId <= 0 || !rc_ensure_assignment_table($db)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid assignment request.']);
+            $db->close();
+            exit;
+        }
+        $stmt = $db->prepare("INSERT INTO contractor_project_assignments (contractor_id, project_id) VALUES (?, ?)");
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Unable to prepare assignment.']);
+            $db->close();
+            exit;
+        }
+        $stmt->bind_param('ii', $contractorId, $projectId);
+        $ok = $stmt->execute();
+        $errno = $stmt->errno;
+        $stmt->close();
+        if ($ok) {
+            echo json_encode(['success' => true, 'message' => 'Project assigned to contractor.']);
+        } elseif ($errno === 1062) {
+            echo json_encode(['success' => false, 'message' => 'Contractor is already assigned to that project.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to assign project.']);
+        }
+        $db->close();
+        exit;
+    }
+
+    if ($action === 'unassign_project') {
+        $contractorId = (int)($_POST['contractor_id'] ?? 0);
+        $projectId = (int)($_POST['project_id'] ?? 0);
+        if ($contractorId <= 0 || $projectId <= 0 || !rc_ensure_assignment_table($db)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid unassignment request.']);
+            $db->close();
+            exit;
+        }
+        $stmt = $db->prepare("DELETE FROM contractor_project_assignments WHERE contractor_id = ? AND project_id = ?");
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Unable to prepare unassignment.']);
+            $db->close();
+            exit;
+        }
+        $stmt->bind_param('ii', $contractorId, $projectId);
+        $ok = $stmt->execute();
+        $stmt->close();
+        echo json_encode(['success' => $ok, 'message' => $ok ? 'Project unassigned from contractor.' : 'Failed to unassign project.']);
+        $db->close();
+        exit;
+    }
+}
+
 $columns = [
     'company',
     'owner',
@@ -63,8 +209,10 @@ $joinEmployee = rc_table_has_column($db, 'contractors', 'account_employee_id') &
 if ($joinEmployee) {
     $selectCols .= ", e.role AS account_role, e.account_status AS account_status";
 }
+rc_ensure_assignment_table($db);
 
-$sql = "SELECT {$selectCols}
+$sql = "SELECT {$selectCols},
+               (SELECT COUNT(*) FROM contractor_project_assignments cpa WHERE cpa.contractor_id = c.id) AS assigned_projects
         FROM contractors c";
 if ($joinEmployee) {
     $sql .= " LEFT JOIN employees e ON e.id = c.account_employee_id";
@@ -79,7 +227,6 @@ if ($res) {
     }
     $res->free();
 }
-$db->close();
 ?>
 <!doctype html>
 <html lang="en">
@@ -120,6 +267,58 @@ $db->close();
         .rc-tag.active { color: #166534; background: #dcfce7; border-color: #bbf7d0; }
         .rc-tag.inactive { color: #991b1b; background: #fee2e2; border-color: #fecaca; }
         .rc-tag.pending { color: #92400e; background: #fef3c7; border-color: #fde68a; }
+        .rc-assign-btn {
+            min-height: 34px;
+            border: 0;
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: .8rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #1d4e89, #2563eb);
+            cursor: pointer;
+        }
+        .rc-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 6, 23, 0.5);
+        }
+        .rc-modal.show { display: flex; }
+        .rc-modal-card {
+            width: min(760px, 94vw);
+            max-height: 86vh;
+            overflow: auto;
+            border-radius: 14px;
+            background: #fff;
+            border: 1px solid #dbe4f0;
+            box-shadow: 0 18px 48px rgba(2, 6, 23, 0.28);
+            padding: 16px;
+        }
+        .rc-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .rc-modal-actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-bottom: 12px; }
+        .rc-modal-actions select {
+            min-height: 42px;
+            border: 1px solid #c8d8ea;
+            border-radius: 10px;
+            padding: 8px 10px;
+            font: inherit;
+        }
+        .rc-modal-message { margin-bottom: 10px; font-size: .88rem; color: #334155; }
+        .rc-mini-btn {
+            min-height: 30px;
+            border-radius: 7px;
+            border: 0;
+            padding: 5px 10px;
+            color: #fff;
+            background: #b91c1c;
+            cursor: pointer;
+            font-size: .76rem;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -194,6 +393,7 @@ $db->close();
                         <th>Experience</th>
                         <th>Status</th>
                         <th>Account</th>
+                        <th>Projects</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -220,6 +420,11 @@ $db->close();
                         <td><?php echo (int)($r['experience'] ?? 0); ?> yrs</td>
                         <td><span class="rc-tag <?php echo $statusClass; ?>"><?php echo htmlspecialchars((string)($r['status'] ?? 'Pending'), ENT_QUOTES, 'UTF-8'); ?></span></td>
                         <td><?php echo htmlspecialchars((string)($r['account_role'] ?? 'contractor'), ENT_QUOTES, 'UTF-8'); ?><br><small><?php echo htmlspecialchars($accountStatus !== '' ? $accountStatus : '-', ENT_QUOTES, 'UTF-8'); ?></small></td>
+                        <td>
+                            <button class="rc-assign-btn" data-contractor-id="<?php echo (int)($r['id'] ?? 0); ?>" data-contractor-name="<?php echo htmlspecialchars($company !== '' ? $company : ($owner !== '' ? $owner : 'N/A'), ENT_QUOTES, 'UTF-8'); ?>">
+                                Manage (<?php echo (int)($r['assigned_projects'] ?? 0); ?>)
+                            </button>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
@@ -227,6 +432,32 @@ $db->close();
         </div>
     </div>
 </section>
+
+<div class="rc-modal" id="rcAssignModal" role="dialog" aria-modal="true" aria-labelledby="rcAssignTitle">
+    <div class="rc-modal-card">
+        <div class="rc-modal-head">
+            <h3 id="rcAssignTitle">Assign Projects to Contractor</h3>
+            <button class="rc-mini-btn" id="rcCloseModal" type="button">Close</button>
+        </div>
+        <div class="rc-modal-message" id="rcAssignTarget"></div>
+        <div class="rc-modal-actions">
+            <select id="rcProjectSelect">
+                <option value="">Select project</option>
+            </select>
+            <button class="rc-assign-btn" id="rcAssignBtn" type="button">Assign</button>
+        </div>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr><th>Project Code</th><th>Project Name</th><th>Status</th><th>Action</th></tr>
+                </thead>
+                <tbody id="rcAssignedBody">
+                    <tr><td colspan="4">No assigned projects.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <script>
 (function () {
@@ -249,6 +480,118 @@ $db->close();
     }
 
     search.addEventListener('input', filterRows);
+
+    const modal = document.getElementById('rcAssignModal');
+    const closeBtn = document.getElementById('rcCloseModal');
+    const assignBtn = document.getElementById('rcAssignBtn');
+    const projectSelect = document.getElementById('rcProjectSelect');
+    const assignedBody = document.getElementById('rcAssignedBody');
+    const targetText = document.getElementById('rcAssignTarget');
+    const csrf = <?php echo json_encode((string)$csrfToken); ?>;
+    let currentContractorId = 0;
+    let currentContractorName = '';
+
+    function modalMsg(text, bad) {
+        targetText.textContent = text;
+        targetText.style.color = bad ? '#b91c1c' : '#334155';
+    }
+
+    function openModal(contractorId, contractorName) {
+        currentContractorId = Number(contractorId || 0);
+        currentContractorName = contractorName || 'Contractor';
+        modal.classList.add('show');
+        modalMsg('Managing assignments for: ' + currentContractorName, false);
+        loadProjects();
+        loadAssigned();
+    }
+
+    function closeModal() {
+        modal.classList.remove('show');
+        currentContractorId = 0;
+        currentContractorName = '';
+    }
+
+    function loadProjects() {
+        fetch('registered_contractors.php?action=load_projects', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(j => {
+                const rows = Array.isArray(j.data) ? j.data : [];
+                projectSelect.innerHTML = '<option value="">Select project</option>';
+                rows.forEach(p => {
+                    const o = document.createElement('option');
+                    o.value = String(p.id || '');
+                    o.textContent = String((p.code || 'PRJ') + ' - ' + (p.name || 'Project'));
+                    projectSelect.appendChild(o);
+                });
+            });
+    }
+
+    function loadAssigned() {
+        if (!currentContractorId) return;
+        assignedBody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+        fetch('registered_contractors.php?action=get_assigned_projects&contractor_id=' + encodeURIComponent(currentContractorId), { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(j => {
+                const rows = Array.isArray(j.data) ? j.data : [];
+                assignedBody.innerHTML = '';
+                if (!rows.length) {
+                    assignedBody.innerHTML = '<tr><td colspan="4">No assigned projects.</td></tr>';
+                    return;
+                }
+                rows.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = '<td>' + (p.code || '') + '</td><td>' + (p.name || '') + '</td><td>' + (p.status || '') + '</td><td><button type="button" class="rc-mini-btn" data-unassign-project="' + Number(p.id || 0) + '">Unassign</button></td>';
+                    assignedBody.appendChild(tr);
+                });
+            });
+    }
+
+    function postAction(action, payload) {
+        const body = new URLSearchParams();
+        Object.keys(payload || {}).forEach(k => body.set(k, String(payload[k])));
+        body.set('action', action);
+        body.set('csrf_token', csrf);
+        return fetch('registered_contractors.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+        }).then(r => r.json());
+    }
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.rc-assign-btn[data-contractor-id]');
+        if (!btn) return;
+        openModal(btn.getAttribute('data-contractor-id'), btn.getAttribute('data-contractor-name') || 'Contractor');
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeModal();
+    });
+
+    assignBtn.addEventListener('click', function () {
+        const projectId = Number(projectSelect.value || 0);
+        if (!currentContractorId || !projectId) {
+            modalMsg('Select a project first.', true);
+            return;
+        }
+        postAction('assign_project', { contractor_id: currentContractorId, project_id: projectId }).then(j => {
+            modalMsg((j && j.message) || 'Assignment updated.', !(j && j.success));
+            if (j && j.success) loadAssigned();
+        });
+    });
+
+    assignedBody.addEventListener('click', function (e) {
+        const btn = e.target.closest('button[data-unassign-project]');
+        if (!btn || !currentContractorId) return;
+        const projectId = Number(btn.getAttribute('data-unassign-project') || 0);
+        if (!projectId) return;
+        postAction('unassign_project', { contractor_id: currentContractorId, project_id: projectId }).then(j => {
+            modalMsg((j && j.message) || 'Assignment updated.', !(j && j.success));
+            if (j && j.success) loadAssigned();
+        });
+    });
 })();
 </script>
 <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>

@@ -238,6 +238,7 @@ $db->close();
             <a href="dashboard_overview.php" class="active"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
             <a href="monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Monitoring</a>
             <a href="task_milestone.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
+            <a href="messages.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Messages</a>
             <a href="profile.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Profile</a>
         </div>
         <div class="nav-divider"></div>
@@ -464,7 +465,6 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
-
 
 
 
