@@ -219,7 +219,6 @@ body.user-signup-page .subtitle{margin:0;color:var(--page-muted)}
 <div class="input-box"><label>Mobile Number</label><input type="text" name="contact_number" required placeholder="09XXXXXXXXX or +639XXXXXXXXX" value="<?php echo htmlspecialchars($form['contact_number'], ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="input-box"><label>Position/Title</label><input type="text" name="position_title" value="<?php echo htmlspecialchars($form['position_title'], ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="input-box"><label>Specialization</label><select name="specialization" required><option value="">-- Select --</option><?php foreach (['Civil Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Structural Engineering', 'Geotechnical Engineering'] as $spec): ?><option value="<?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $form['specialization'] === $spec ? 'selected' : ''; ?>><?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
-<div class="input-box"></div>
 <div class="input-box"><label>Password</label><input type="password" name="password" required></div>
 <div class="input-box"><label>Confirm Password</label><input type="password" name="confirm_password" required></div>
 </div>
