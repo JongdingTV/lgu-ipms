@@ -3,8 +3,15 @@ USE `ipms_lgu`;
 CREATE TABLE `contractors` (
   `id` int(11) NOT NULL,
   `company` varchar(255) NOT NULL,
+  `contractor_type` varchar(30) DEFAULT NULL,
   `owner` varchar(100) DEFAULT NULL,
+  `contact_person_first_name` varchar(80) DEFAULT NULL,
+  `contact_person_last_name` varchar(80) DEFAULT NULL,
+  `contact_person_role` varchar(80) DEFAULT NULL,
   `license` varchar(100) NOT NULL,
+  `license_expiration_date` date DEFAULT NULL,
+  `tin` varchar(20) DEFAULT NULL,
+  `account_employee_id` int(11) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `address` text DEFAULT NULL,
@@ -191,7 +198,8 @@ INSERT INTO `users` (`id`, `first_name`, `middle_name`, `last_name`, `suffix`, `
 --
 ALTER TABLE `contractors`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `license` (`license`);
+  ADD UNIQUE KEY `license` (`license`),
+  ADD UNIQUE KEY `uniq_contractors_account_employee` (`account_employee_id`);
 
 --
 -- Indexes for table `employees`

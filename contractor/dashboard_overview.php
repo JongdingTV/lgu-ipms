@@ -189,10 +189,11 @@ $db->close();
             <img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS Contractor</span>
         </div>
-                <div class="nav-links">
+        <div class="nav-links">
             <a href="dashboard_overview.php" class="active"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
             <a href="dashboard.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation & Budget</a>
             <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Progress Monitoring</a>
+            <a href="profile.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Profile</a>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-action-footer">
