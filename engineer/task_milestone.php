@@ -18,6 +18,9 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
     exit;
 }
 $canTaskManage = in_array($role, rbac_roles_for('engineer.tasks.manage', ['engineer', 'admin', 'super_admin']), true);
+$sidebarName = trim((string)($_SESSION['employee_name'] ?? 'Engineer'));
+$sidebarInitial = strtoupper(substr($sidebarName !== '' ? $sidebarName : 'E', 0, 1));
+$sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_role'] ?? 'engineer')));
 ?>
 <!doctype html>
 <html lang="en">
@@ -49,6 +52,11 @@ $canTaskManage = in_array($role, rbac_roles_for('engineer.tasks.manage', ['engin
     <div class="nav-logo">
         <img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img">
         <span class="logo-text">IPMS Engineer</span>
+    </div>
+    <div class="nav-user-profile">
+        <div class="user-initial-badge"><?php echo htmlspecialchars($sidebarInitial, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="nav-user-name"><?php echo htmlspecialchars($sidebarName, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="nav-user-email"><?php echo htmlspecialchars($sidebarRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
     </div>
     <div class="nav-links">
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
@@ -275,5 +283,4 @@ $canTaskManage = in_array($role, rbac_roles_for('engineer.tasks.manage', ['engin
 <script src="engineer-enterprise.js?v=<?php echo filemtime(__DIR__ . '/engineer-enterprise.js'); ?>"></script>
 </body>
 </html>
-
 

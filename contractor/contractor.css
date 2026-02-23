@@ -181,6 +181,45 @@ body.sidebar-hidden .sidebar-toggle-btn {
     color: #64748b;
 }
 
+.nav-user-profile {
+    margin: 0 14px 12px;
+    padding: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 14px;
+    background: linear-gradient(160deg, rgba(248, 250, 252, 0.98), rgba(236, 244, 255, 0.95));
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.nav-user-profile .user-initial-badge {
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-weight: 700;
+    color: #ffffff;
+    background: linear-gradient(145deg, #1d4ed8, #2563eb);
+}
+
+.nav-user-profile .nav-user-name {
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+.nav-user-profile .nav-user-email {
+    text-align: center;
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: #64748b;
+    word-break: break-word;
+}
+
 /* Search */
 .nav-search-container {
     padding: 12px 15px;

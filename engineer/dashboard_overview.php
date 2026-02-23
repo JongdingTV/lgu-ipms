@@ -143,6 +143,9 @@ foreach ($monthlyActivityValues as $index => $value) {
     $monthlyPoints[] = $x . ',' . $y;
 }
 $monthlyPolylinePoints = implode(' ', $monthlyPoints);
+$sidebarName = trim((string)($_SESSION['employee_name'] ?? 'Engineer'));
+$sidebarInitial = strtoupper(substr($sidebarName !== '' ? $sidebarName : 'E', 0, 1));
+$sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_role'] ?? 'engineer')));
 
 
 $db->close();
@@ -166,6 +169,43 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/dashboard-redesign-enhanced.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <style>
+        .nav-user-profile {
+            margin: 0 14px 12px;
+            padding: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 14px;
+            background: linear-gradient(160deg, rgba(248, 250, 252, 0.98), rgba(236, 244, 255, 0.95));
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+        }
+        .nav-user-profile .user-initial-badge {
+            width: 52px;
+            height: 52px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-weight: 700;
+            color: #ffffff;
+            background: linear-gradient(145deg, #1d4ed8, #2563eb);
+        }
+        .nav-user-profile .nav-user-name {
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+        .nav-user-profile .nav-user-email {
+            text-align: center;
+            margin-top: 2px;
+            font-size: 0.78rem;
+            color: #64748b;
+            word-break: break-word;
+        }
+    </style>
     </head>
 <body>
     <!-- Sidebar Toggle Button (Floating) -->
@@ -188,6 +228,11 @@ $db->close();
         <div class="nav-logo">
             <img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img">
             <span class="logo-text">IPMS Engineer</span>
+        </div>
+        <div class="nav-user-profile">
+            <div class="user-initial-badge"><?php echo htmlspecialchars($sidebarInitial, ENT_QUOTES, 'UTF-8'); ?></div>
+            <div class="nav-user-name"><?php echo htmlspecialchars($sidebarName, ENT_QUOTES, 'UTF-8'); ?></div>
+            <div class="nav-user-email"><?php echo htmlspecialchars($sidebarRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
                 <div class="nav-links">
             <a href="dashboard_overview.php" class="active"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
@@ -425,8 +470,6 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
-
-
 
 
 
