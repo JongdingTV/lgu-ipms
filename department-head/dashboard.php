@@ -135,7 +135,7 @@ $csrfToken = (string) generate_csrf_token();
 window.DEPARTMENT_HEAD_CSRF = <?php echo json_encode($csrfToken); ?>;
 </script>
 <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
-<script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 <script src="department-head.js?v=<?php echo filemtime(__DIR__ . '/department-head.js'); ?>"></script>
 </body>
 </html>
+

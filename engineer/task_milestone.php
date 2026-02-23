@@ -50,6 +50,7 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
         <span class="logo-text">IPMS Engineer</span>
     </div>
     <div class="nav-links">
+        <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
         <a href="monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Monitoring</a>
         <a href="task_milestone.php" class="active"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
     </div>
@@ -256,4 +257,5 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
 <script src="engineer-enterprise.js?v=<?php echo filemtime(__DIR__ . '/engineer-enterprise.js'); ?>"></script>
 </body>
 </html>
+
 

@@ -477,7 +477,7 @@
     };
 
     const fetchNotifications = () => {
-      const url = isFn(window.getApiUrl) ? window.getApiUrl('contractor/api.php?action=load_notifications') : '/contractor/api.php?action=load_notifications';
+      const url = '/contractor/api.php?action=load_notifications';
       fetch(url + '?_=' + Date.now(), { credentials: 'same-origin' })
         .then((res) => res.json())
         .then((data) => {
@@ -485,12 +485,12 @@
           notifications = Array.isArray(data.items) ? data.items : [];
           latestNotificationId = Number(data.latest_id || 0) || 0;
           if (!notifications.length) {
-            notifications = [{ id: 0, level: 'info', title: 'No new concerns', message: 'No citizen concerns at the moment.', created_at: null }];
+            notifications = [{ id: 0, level: 'info', title: 'No assignment updates', message: 'No new project assignments right now.', created_at: null }];
           }
           renderNotifications();
         })
         .catch(() => {
-          notifications = [{ id: 0, level: 'danger', title: 'Notification service unavailable', message: 'Unable to fetch citizen concerns right now.', created_at: null }];
+          notifications = [{ id: 0, level: 'danger', title: 'Notification service unavailable', message: 'Unable to fetch assignment alerts right now.', created_at: null }];
           renderNotifications();
         });
     };

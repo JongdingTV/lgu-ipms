@@ -7,7 +7,7 @@ set_no_cache_headers();
 if (isset($_SESSION['employee_id'])) {
     $activeRole = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
     if (in_array($activeRole, ['engineer', 'admin', 'super_admin'], true)) {
-        header('Location: /engineer/monitoring.php');
+        header('Location: /engineer/dashboard_overview.php');
         exit;
     }
 }
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['last_activity'] = time();
                 $_SESSION['login_time'] = time();
                 $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-                header('Location: /engineer/monitoring.php');
+                header('Location: /engineer/dashboard_overview.php');
                 exit;
                 }
             }
