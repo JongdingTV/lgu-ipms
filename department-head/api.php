@@ -44,6 +44,17 @@ function dept_has_col(mysqli $db, string $table, string $column): bool
     return $ok;
 }
 
+function dept_pick_existing_column(mysqli $db, string $table, array $candidates): ?string
+{
+    foreach ($candidates as $col) {
+        $col = trim((string)$col);
+        if ($col !== '' && dept_has_col($db, $table, $col)) {
+            return $col;
+        }
+    }
+    return null;
+}
+
 function dept_has_table(mysqli $db, string $table): bool
 {
     $stmt = $db->prepare("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 1");
@@ -202,145 +213,172 @@ if ($action === 'decide_project') {
 }
 
 if ($action === 'load_monitoring') {
-    $rows = [];
-    $progressExpr = dept_has_table($db, 'project_progress_updates') ? "COALESCE(pp.progress_percent,0)" : "0";
-    $progressJoin = dept_has_table($db, 'project_progress_updates')
-        ? "LEFT JOIN (
-            SELECT x.project_id, x.progress_percent
-            FROM project_progress_updates x
-            JOIN (
-                SELECT project_id, MAX(created_at) mc
-                FROM project_progress_updates
-                GROUP BY project_id
-            ) y ON y.project_id=x.project_id AND y.mc=x.created_at
-        ) pp ON pp.project_id=p.id"
-        : "";
+    try {
+        $rows = [];
+        $progressExpr = dept_has_table($db, 'project_progress_updates') ? "COALESCE(pp.progress_percent,0)" : "0";
+        $progressJoin = dept_has_table($db, 'project_progress_updates')
+            ? "LEFT JOIN (
+                SELECT x.project_id, x.progress_percent
+                FROM project_progress_updates x
+                JOIN (
+                    SELECT project_id, MAX(created_at) mc
+                    FROM project_progress_updates
+                    GROUP BY project_id
+                ) y ON y.project_id=x.project_id AND y.mc=x.created_at
+            ) pp ON pp.project_id=p.id"
+            : "";
 
-    $engineerNameExpr = "COALESCE(pa_engineer.engineer_name, cpa_engineer.engineer_name, '-') AS assigned_engineer";
-    $contractorNameExpr = "COALESCE(pa_contractor.contractor_name, '-') AS assigned_contractor";
+        $engineerDisplayExpr = "NULL";
+        $contractorDisplayExpr = "NULL";
+        $engineerNameExpr = "COALESCE(pa_engineer.engineer_name, cpa_engineer.engineer_name, '-') AS assigned_engineer";
+        $contractorNameExpr = "COALESCE(pa_contractor.contractor_name, '-') AS assigned_contractor";
 
-    $joins = [];
-    if (dept_has_table($db, 'project_assignments') && dept_has_table($db, 'engineers')) {
-        $joins[] = "LEFT JOIN (
-            SELECT pa.project_id, MAX(CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,''))) AS engineer_name
-            FROM project_assignments pa
-            LEFT JOIN engineers e ON e.id = pa.engineer_id
-            GROUP BY pa.project_id
-        ) pa_engineer ON pa_engineer.project_id = p.id";
-    } else {
-        $joins[] = "LEFT JOIN (SELECT NULL AS project_id, NULL AS engineer_name) pa_engineer ON pa_engineer.project_id = p.id";
-    }
+        if (dept_has_table($db, 'engineers')) {
+            $engFirst = dept_pick_existing_column($db, 'engineers', ['first_name']);
+            $engLast = dept_pick_existing_column($db, 'engineers', ['last_name']);
+            if ($engFirst && $engLast) {
+                $engineerDisplayExpr = "TRIM(CONCAT(COALESCE(e.`{$engFirst}`,''), ' ', COALESCE(e.`{$engLast}`,'')))";
+            } else {
+                $engNameSingle = dept_pick_existing_column($db, 'engineers', ['full_name', 'name', 'company_name']);
+                if ($engNameSingle) {
+                    $engineerDisplayExpr = "COALESCE(e.`{$engNameSingle}`,'')";
+                }
+            }
+        }
 
-    if (dept_has_table($db, 'project_assignments') && dept_has_table($db, 'contractors')) {
-        $joins[] = "LEFT JOIN (
-            SELECT pa.project_id, MAX(c.company_name) AS contractor_name
-            FROM project_assignments pa
-            LEFT JOIN contractors c ON c.id = pa.contractor_id
-            GROUP BY pa.project_id
-        ) pa_contractor ON pa_contractor.project_id = p.id";
-    } else {
-        $joins[] = "LEFT JOIN (SELECT NULL AS project_id, NULL AS contractor_name) pa_contractor ON pa_contractor.project_id = p.id";
-    }
+        if (dept_has_table($db, 'contractors')) {
+            $contractorNameCol = dept_pick_existing_column($db, 'contractors', ['company_name', 'name', 'contractor_name']);
+            if ($contractorNameCol) {
+                $contractorDisplayExpr = "COALESCE(c.`{$contractorNameCol}`,'')";
+            }
+        }
 
-    if (dept_has_table($db, 'contractor_project_assignments') && dept_has_table($db, 'engineers')) {
-        $joins[] = "LEFT JOIN (
-            SELECT cpa.project_id, MAX(CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,''))) AS engineer_name
-            FROM contractor_project_assignments cpa
-            LEFT JOIN engineers e ON e.id = cpa.contractor_id
-            GROUP BY cpa.project_id
-        ) cpa_engineer ON cpa_engineer.project_id = p.id";
-    } else {
-        $joins[] = "LEFT JOIN (SELECT NULL AS project_id, NULL AS engineer_name) cpa_engineer ON cpa_engineer.project_id = p.id";
-    }
+        $joins = [];
+        if (dept_has_table($db, 'project_assignments') && dept_has_table($db, 'engineers') && dept_has_col($db, 'project_assignments', 'engineer_id')) {
+            $joins[] = "LEFT JOIN (
+                SELECT pa.project_id, MAX({$engineerDisplayExpr}) AS engineer_name
+                FROM project_assignments pa
+                LEFT JOIN engineers e ON e.id = pa.engineer_id
+                GROUP BY pa.project_id
+            ) pa_engineer ON pa_engineer.project_id = p.id";
+        } else {
+            $joins[] = "LEFT JOIN (SELECT NULL AS project_id, NULL AS engineer_name) pa_engineer ON pa_engineer.project_id = p.id";
+        }
 
-    $where = ["1=1"];
-    $types = '';
-    $params = [];
-    $search = strtolower(trim((string)($_GET['search'] ?? '')));
-    $status = strtolower(trim((string)($_GET['status'] ?? '')));
-    $district = strtolower(trim((string)($_GET['district'] ?? '')));
-    $barangay = strtolower(trim((string)($_GET['barangay'] ?? '')));
-    $priority = strtolower(trim((string)($_GET['priority'] ?? '')));
-    $engineer = strtolower(trim((string)($_GET['engineer'] ?? '')));
-    $contractor = strtolower(trim((string)($_GET['contractor'] ?? '')));
+        if (dept_has_table($db, 'project_assignments') && dept_has_table($db, 'contractors') && dept_has_col($db, 'project_assignments', 'contractor_id')) {
+            $joins[] = "LEFT JOIN (
+                SELECT pa.project_id, MAX({$contractorDisplayExpr}) AS contractor_name
+                FROM project_assignments pa
+                LEFT JOIN contractors c ON c.id = pa.contractor_id
+                GROUP BY pa.project_id
+            ) pa_contractor ON pa_contractor.project_id = p.id";
+        } else {
+            $joins[] = "LEFT JOIN (SELECT NULL AS project_id, NULL AS contractor_name) pa_contractor ON pa_contractor.project_id = p.id";
+        }
 
-    if ($search !== '') {
-        $where[] = "(LOWER(COALESCE(p.code,'')) LIKE ? OR LOWER(COALESCE(p.name,'')) LIKE ? OR LOWER(COALESCE(p.location,'')) LIKE ?)";
-        $like = '%' . $search . '%';
-        $types .= 'sss';
-        $params[] = $like;
-        $params[] = $like;
-        $params[] = $like;
-    }
-    if ($status !== '') {
-        $where[] = "LOWER(COALESCE(p.status,'')) = ?";
-        $types .= 's';
-        $params[] = $status;
-    }
-    if ($district !== '') {
-        $where[] = "LOWER(COALESCE(p.location,'')) LIKE ?";
-        $types .= 's';
-        $params[] = '%' . $district . '%';
-    }
-    if ($barangay !== '') {
-        $where[] = "LOWER(COALESCE(p.location,'')) LIKE ?";
-        $types .= 's';
-        $params[] = '%' . $barangay . '%';
-    }
-    if ($priority !== '') {
-        $where[] = "LOWER(COALESCE(p.priority_level, COALESCE(p.priority,'medium'))) = ?";
-        $types .= 's';
-        $params[] = $priority;
-    }
-    if ($engineer !== '') {
-        $where[] = "LOWER(COALESCE(pa_engineer.engineer_name, cpa_engineer.engineer_name, '')) LIKE ?";
-        $types .= 's';
-        $params[] = '%' . $engineer . '%';
-    }
-    if ($contractor !== '') {
-        $where[] = "LOWER(COALESCE(pa_contractor.contractor_name, '')) LIKE ?";
-        $types .= 's';
-        $params[] = '%' . $contractor . '%';
-    }
+        if (dept_has_table($db, 'contractor_project_assignments') && dept_has_table($db, 'engineers') && dept_has_col($db, 'contractor_project_assignments', 'contractor_id')) {
+            $joins[] = "LEFT JOIN (
+                SELECT cpa.project_id, MAX({$engineerDisplayExpr}) AS engineer_name
+                FROM contractor_project_assignments cpa
+                LEFT JOIN engineers e ON e.id = cpa.contractor_id
+                GROUP BY cpa.project_id
+            ) cpa_engineer ON cpa_engineer.project_id = p.id";
+        } else {
+            $joins[] = "LEFT JOIN (SELECT NULL AS project_id, NULL AS engineer_name) cpa_engineer ON cpa_engineer.project_id = p.id";
+        }
 
-    $sql = "SELECT
-                p.id,
-                p.code,
-                p.name,
-                p.status,
-                COALESCE(p.location,'') AS location,
-                COALESCE(p.priority_level,COALESCE(p.priority,'Medium')) AS priority_level,
-                " . (dept_has_col($db, 'projects', 'start_date') ? "p.start_date" : "NULL") . " AS start_date,
-                " . (dept_has_col($db, 'projects', 'end_date') ? "p.end_date" : "NULL") . " AS end_date,
-                {$progressExpr} AS progress_percent,
-                {$engineerNameExpr},
-                {$contractorNameExpr},
-                CASE WHEN " . (dept_has_col($db, 'projects', 'end_date') ? "p.end_date IS NOT NULL AND p.end_date < CURDATE() AND LOWER(COALESCE(p.status,'')) NOT IN ('completed','cancelled')" : "0=1") . " THEN 1 ELSE 0 END AS is_delayed
-            FROM projects p
-            {$progressJoin}
-            " . implode("\n", $joins) . "
-            WHERE " . implode(' AND ', $where) . "
-            ORDER BY p.id DESC
-            LIMIT 300";
+        $where = ["1=1"];
+        $types = '';
+        $params = [];
+        $search = strtolower(trim((string)($_GET['search'] ?? '')));
+        $status = strtolower(trim((string)($_GET['status'] ?? '')));
+        $district = strtolower(trim((string)($_GET['district'] ?? '')));
+        $barangay = strtolower(trim((string)($_GET['barangay'] ?? '')));
+        $priority = strtolower(trim((string)($_GET['priority'] ?? '')));
+        $engineer = strtolower(trim((string)($_GET['engineer'] ?? '')));
+        $contractor = strtolower(trim((string)($_GET['contractor'] ?? '')));
 
-    $stmt = $db->prepare($sql);
-    if (!$stmt) {
-        dept_json(['success' => false, 'message' => 'Unable to load monitoring data.'], 500);
-    }
-    if (!dept_bind($stmt, $types, $params)) {
+        if ($search !== '') {
+            $where[] = "(LOWER(COALESCE(p.code,'')) LIKE ? OR LOWER(COALESCE(p.name,'')) LIKE ? OR LOWER(COALESCE(p.location,'')) LIKE ?)";
+            $like = '%' . $search . '%';
+            $types .= 'sss';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+        if ($status !== '') {
+            $where[] = "LOWER(COALESCE(p.status,'')) = ?";
+            $types .= 's';
+            $params[] = $status;
+        }
+        if ($district !== '') {
+            $where[] = "LOWER(COALESCE(p.location,'')) LIKE ?";
+            $types .= 's';
+            $params[] = '%' . $district . '%';
+        }
+        if ($barangay !== '') {
+            $where[] = "LOWER(COALESCE(p.location,'')) LIKE ?";
+            $types .= 's';
+            $params[] = '%' . $barangay . '%';
+        }
+        if ($priority !== '') {
+            $where[] = "LOWER(COALESCE(p.priority_level, COALESCE(p.priority,'medium'))) = ?";
+            $types .= 's';
+            $params[] = $priority;
+        }
+        if ($engineer !== '') {
+            $where[] = "LOWER(COALESCE(pa_engineer.engineer_name, cpa_engineer.engineer_name, '')) LIKE ?";
+            $types .= 's';
+            $params[] = '%' . $engineer . '%';
+        }
+        if ($contractor !== '') {
+            $where[] = "LOWER(COALESCE(pa_contractor.contractor_name, '')) LIKE ?";
+            $types .= 's';
+            $params[] = '%' . $contractor . '%';
+        }
+
+        $sql = "SELECT
+                    p.id,
+                    p.code,
+                    p.name,
+                    p.status,
+                    COALESCE(p.location,'') AS location,
+                    COALESCE(p.priority_level,COALESCE(p.priority,'Medium')) AS priority_level,
+                    " . (dept_has_col($db, 'projects', 'start_date') ? "p.start_date" : "NULL") . " AS start_date,
+                    " . (dept_has_col($db, 'projects', 'end_date') ? "p.end_date" : "NULL") . " AS end_date,
+                    {$progressExpr} AS progress_percent,
+                    {$engineerNameExpr},
+                    {$contractorNameExpr},
+                    CASE WHEN " . (dept_has_col($db, 'projects', 'end_date') ? "p.end_date IS NOT NULL AND p.end_date < CURDATE() AND LOWER(COALESCE(p.status,'')) NOT IN ('completed','cancelled')" : "0=1") . " THEN 1 ELSE 0 END AS is_delayed
+                FROM projects p
+                {$progressJoin}
+                " . implode("\n", $joins) . "
+                WHERE " . implode(' AND ', $where) . "
+                ORDER BY p.id DESC
+                LIMIT 300";
+
+        $stmt = $db->prepare($sql);
+        if (!$stmt) {
+            dept_json(['success' => false, 'message' => 'Unable to load monitoring data.'], 500);
+        }
+        if (!dept_bind($stmt, $types, $params)) {
+            $stmt->close();
+            dept_json(['success' => false, 'message' => 'Unable to bind monitoring filters.'], 500);
+        }
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($res && ($row = $res->fetch_assoc())) {
+            $rows[] = $row;
+        }
+        if ($res) {
+            $res->free();
+        }
         $stmt->close();
-        dept_json(['success' => false, 'message' => 'Unable to bind monitoring filters.'], 500);
+        dept_json(['success' => true, 'data' => $rows]);
+    } catch (Throwable $e) {
+        error_log('department-head load_monitoring error: ' . $e->getMessage());
+        dept_json(['success' => false, 'message' => 'Unable to load monitoring data for this deployment schema.'], 500);
     }
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while ($res && ($row = $res->fetch_assoc())) {
-        $rows[] = $row;
-    }
-    if ($res) {
-        $res->free();
-    }
-    $stmt->close();
-    dept_json(['success' => true, 'data' => $rows]);
 }
 
 if ($action === 'load_priority_projects') {
