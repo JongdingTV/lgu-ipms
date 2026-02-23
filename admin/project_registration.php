@@ -273,8 +273,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         
 
         $oldStatus = '';
-        if (isset($_POST['id']) && !empty($_POST['id'])) {
-
         if ($isUpdate) {
 
             // Update existing project
