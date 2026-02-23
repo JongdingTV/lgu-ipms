@@ -7,7 +7,7 @@ set_no_cache_headers();
 if (isset($_SESSION['employee_id'])) {
     $activeRole = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
     if (in_array($activeRole, ['department_head', 'department_admin', 'admin', 'super_admin'], true)) {
-        header('Location: /department-head/dashboard.php');
+        header('Location: /department-head/dashboard_overview.php');
         exit;
     }
 }
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['last_activity'] = time();
                     $_SESSION['login_time'] = time();
                     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-                    header('Location: /department-head/dashboard.php');
+                    header('Location: /department-head/dashboard_overview.php');
                     exit;
                 }
                 }

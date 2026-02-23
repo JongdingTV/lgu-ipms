@@ -53,6 +53,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
         <span class="logo-text">IPMS Contractor</span>
     </div>
     <div class="nav-links">
+        <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
         <a href="dashboard.php" class="active"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation & Budget</a>
         <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Progress Monitoring</a>
     </div>

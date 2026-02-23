@@ -2,8 +2,8 @@
 
 (function () {
   const path = (window.location.pathname || '').replace(/\\/g, '/');
-  const isAdmin = path.includes('/admin/') && !/\/admin\/(index|forgot-password|change-password|logout)\.php$/i.test(path);
-  if (!isAdmin) return;
+  const isEngineer = path.includes('/engineer/') && !/\/engineer\/(index|forgot-password|change-password|logout)\.php$/i.test(path);
+  if (!isEngineer) return;
 
   function $(sel, root = document) { return root.querySelector(sel); }
   function $$(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }

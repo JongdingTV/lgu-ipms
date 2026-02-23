@@ -56,6 +56,7 @@ $csrfToken = (string) generate_csrf_token();
         <span class="logo-text">IPMS Department Head</span>
     </div>
     <div class="nav-links">
+        <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
         <a href="dashboard.php" class="active"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">Project Approval</a>
     </div>
     <div class="nav-divider"></div>
