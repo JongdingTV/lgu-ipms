@@ -77,7 +77,7 @@ function send_reset_email($email, $employee_name, $reset_token) {
             <body>
                 <div class=\"container\">
                     <div class=\"header\">
-                        <h1>ðŸ” Password Reset Request</h1>
+                        <h1>Password Reset Request</h1>
                     </div>
                     
                     <p>Hello " . htmlspecialchars($employee_name) . ",</p>
@@ -92,14 +92,14 @@ function send_reset_email($email, $employee_name, $reset_token) {
                     <p class=\"link-text\">" . htmlspecialchars($reset_link) . "</p>
                     
                     <div class=\"warning\">
-                        <strong>âš ï¸ Security Notice:</strong><br>
-                        â€¢ This link expires in 1 hour<br>
-                        â€¢ Never share this link with anyone<br>
-                        â€¢ If you didn't request this, please ignore this email
+                        <strong>Security Notice:</strong><br>
+                        - This link expires in 1 hour<br>
+                        - Never share this link with anyone<br>
+                        - If you didn't request this, please ignore this email
                     </div>
                     
                 <div class=\"footer\">
-                        <p>Â© " . date('Y') . " LGU IPMS System. All rights reserved.</p>
+                        <p>&copy; " . date('Y') . " LGU IPMS System. All rights reserved.</p>
                 </div>
                 </div>
             </body>
@@ -111,21 +111,21 @@ function send_reset_email($email, $employee_name, $reset_token) {
         try {
             if ($mail->send()) {
                 ob_end_clean();
-                error_log('âœ… Email sent successfully to: ' . $email);
+                error_log('Email sent successfully to: ' . $email);
                 return true;
             } else {
                 $error_info = $mail->ErrorInfo;
                 ob_end_clean();
-                error_log('âŒ Email send failed: ' . $error_info);
+                error_log('Email send failed: ' . $error_info);
                 return false;
             }
         } catch (Exception $e) {
             ob_end_clean();
-            error_log('âŒ PHPMailer Exception: ' . $e->getMessage());
+            error_log('PHPMailer Exception: ' . $e->getMessage());
             return false;
         }
     } catch (Exception $e) {
-        error_log('âŒ Password reset email exception: ' . $e->getMessage());
+        error_log('Password reset email exception: ' . $e->getMessage());
         return false;
     }
 }
@@ -425,7 +425,6 @@ if (isset($db)) {
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

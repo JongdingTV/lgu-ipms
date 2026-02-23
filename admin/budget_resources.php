@@ -703,7 +703,7 @@ $db->close();
                 <select id="expenseMilestone" required>
                     <option value="">Select project</option>
                 </select>
-                <input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount Ã¢â€šÂ±" required>
+                <input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount (PHP)" required>
                 <input id="expenseDesc" type="text" placeholder="Description (optional)">
                 <button type="button" id="addExpense">Add Expense</button>
             </form>
@@ -713,7 +713,7 @@ $db->close();
             <div class="table-wrap">
                 <table id="expensesTable" class="table">
                     <thead>
-                        <tr><th>Date</th><th>Project</th><th>Description</th><th>Amount (Ã¢â€šÂ±)</th><th>Actions</th></tr>
+                        <tr><th>Date</th><th>Project</th><th>Description</th><th>Amount (PHP)</th><th>Actions</th></tr>
                     </thead>
                     <tbody></tbody>
                 </table>
@@ -725,15 +725,15 @@ $db->close();
             <h2>Budget Overview</h2>
             <div class="summary">
                 <div class="stat">
-                    <div id="summaryAllocated">Ã¢â€šÂ±0</div>
+                    <div id="summaryAllocated">PHP 0</div>
                     <small>Allocated</small>
                 </div>
                 <div class="stat">
-                    <div id="summarySpent">Ã¢â€šÂ±0</div>
+                    <div id="summarySpent">PHP 0</div>
                     <small>Spent</small>
                 </div>
                 <div class="stat">
-                    <div id="summaryRemaining">Ã¢â€šÂ±0</div>
+                    <div id="summaryRemaining">PHP 0</div>
                     <small>Remaining</small>
                 </div>
                 <div class="stat">
@@ -764,7 +764,6 @@ $db->close();
     <script src="../assets/js/admin-budget-resources.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-budget-resources.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

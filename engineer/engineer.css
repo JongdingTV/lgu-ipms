@@ -4658,7 +4658,7 @@ body {
 
 .nav-links a {
     margin-left: 25px;
-    text-decoration: none;   /* Ã¢â€ºâ€ Removes underline */
+    text-decoration: none;   /* Removes underline */
     cursor: pointer;
     color: #fff;
     opacity: .8;
@@ -4666,7 +4666,7 @@ body {
 }
 
 .nav-logo {
-    text-decoration: none;   /* Ã¢â€ºâ€ Removes underline */
+    text-decoration: none;   /* Removes underline */
     cursor: pointer;
     color: #fff;
     opacity: .8;
@@ -4676,7 +4676,7 @@ body {
 .nav-links a:hover,
 .nav-links .active {
     opacity: 1;
-    text-decoration: none;   /* Ã¢â€ºâ€ Removes underline */
+    text-decoration: none;   /* Removes underline */
     font-weight: 600;
 }
 
@@ -4792,7 +4792,7 @@ body {
     text-decoration: underline;
 }
 
-/* FOOTER Ã¢â‚¬â€ same design as NAVBAR */
+/* FOOTER - same design as NAVBAR */
 .footer {
     width: 100%;
     padding: 18px 45px;
@@ -4819,7 +4819,7 @@ body {
 
 .footer-links a {
     margin-right: 25px;
-    text-decoration: none;   /* Ã¢â€ºâ€ Removes underline */
+    text-decoration: none;   /* Removes underline */
     cursor: pointer;
     color: #fff;
     opacity: .8;
@@ -4828,7 +4828,7 @@ body {
 
 .footer-links a:hover {
     opacity: 1;
-    text-decoration: none;   /* Ã¢â€ºâ€ Removes underline */
+    text-decoration: none;   /* Removes underline */
     font-weight: 600;
 }
 
