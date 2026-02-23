@@ -40,12 +40,22 @@ return [
     // Department Head workspace
     'department_head.approvals.view' => ['department_head', 'department_admin', 'admin', 'super_admin'],
     'department_head.approvals.manage' => ['department_head', 'department_admin', 'admin', 'super_admin'],
+    'department_head.notifications.read' => ['department_head', 'department_admin', 'admin', 'super_admin'],
 
     // Engineer workspace
     'engineer.workspace.view' => ['engineer', 'admin', 'super_admin'],
     'engineer.workspace.manage' => ['engineer', 'admin', 'super_admin'],
+    'engineer.notifications.read' => ['engineer', 'admin', 'super_admin'],
+    'engineer.progress.review' => ['engineer', 'admin', 'super_admin'],
+    'engineer.status.review' => ['engineer', 'admin', 'super_admin'],
+    'engineer.tasks.manage' => ['engineer', 'admin', 'super_admin'],
 
     // Contractor workspace
     'contractor.workspace.view' => ['contractor', 'admin', 'super_admin'],
     'contractor.workspace.manage' => ['contractor', 'admin', 'super_admin'],
+    'contractor.notifications.read' => ['contractor', 'admin', 'super_admin'],
+    'contractor.progress.submit' => ['contractor', 'admin', 'super_admin'],
+    'contractor.status.request' => ['contractor', 'admin', 'super_admin'],
+    'contractor.budget.read' => ['contractor', 'admin', 'super_admin'],
+    'contractor.budget.manage' => ['admin', 'super_admin'],
 ];

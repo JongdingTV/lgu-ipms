@@ -122,6 +122,23 @@ function engineer_table_exists(mysqli $db, string $table): bool {
 }
 
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
+rbac_require_action_matrix(
+    $action !== '' ? $action : 'load_monitoring',
+    [
+        'load_monitoring' => 'engineer.workspace.view',
+        'load_notifications' => 'engineer.notifications.read',
+        'load_progress_submissions' => 'engineer.progress.review',
+        'decide_progress' => 'engineer.progress.review',
+        'load_status_requests' => 'engineer.status.review',
+        'engineer_decide_status_request' => 'engineer.status.review',
+        'load_task_milestone' => 'engineer.tasks.manage',
+        'add_task' => 'engineer.tasks.manage',
+        'update_task_status' => 'engineer.tasks.manage',
+        'add_milestone' => 'engineer.tasks.manage',
+        'update_milestone_status' => 'engineer.tasks.manage',
+    ],
+    'engineer.workspace.manage'
+);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
     json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
 }

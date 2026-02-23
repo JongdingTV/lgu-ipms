@@ -235,6 +235,26 @@ function contractor_sync_projects_to_milestones(mysqli $db): void {
 }
 
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
+rbac_require_action_matrix(
+    $action !== '' ? $action : 'load_projects',
+    [
+        'load_projects' => 'contractor.workspace.view',
+        'load_notifications' => 'contractor.notifications.read',
+        'load_budget_state' => 'contractor.budget.read',
+        'submit_status_request' => 'contractor.status.request',
+        'load_status_requests' => 'contractor.status.request',
+        'update_budget' => 'contractor.budget.manage',
+        'update_expense' => 'contractor.workspace.manage',
+        'update_progress' => 'contractor.progress.submit',
+        'load_progress_history' => 'contractor.progress.submit',
+        'load_task_milestone' => 'contractor.workspace.manage',
+        'add_task' => 'contractor.workspace.manage',
+        'update_task_status' => 'contractor.workspace.manage',
+        'add_milestone' => 'contractor.workspace.manage',
+        'update_milestone_status' => 'contractor.workspace.manage',
+    ],
+    'contractor.workspace.manage'
+);
 
 $engineerOwnedActions = [
     'load_task_milestone',

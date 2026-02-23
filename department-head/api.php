@@ -79,6 +79,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
+rbac_require_action_matrix(
+    $action !== '' ? $action : 'load_projects',
+    [
+        'load_notifications' => 'department_head.notifications.read',
+        'load_projects' => 'department_head.approvals.view',
+        'decide_project' => 'department_head.approvals.manage',
+    ],
+    'department_head.approvals.manage'
+);
 ensure_department_head_table($db);
 
 if ($action === 'load_notifications') {
