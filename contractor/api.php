@@ -64,6 +64,64 @@ function ensure_progress_submission_table(mysqli $db): void {
     )");
 }
 
+function ensure_validation_workflow_tables(mysqli $db): void {
+    $db->query("CREATE TABLE IF NOT EXISTS project_validation_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        deliverable_type VARCHAR(20) NOT NULL DEFAULT 'manual',
+        deliverable_ref_id INT NULL,
+        deliverable_name VARCHAR(255) NOT NULL,
+        weight DECIMAL(7,2) NOT NULL DEFAULT 1.00,
+        current_status VARCHAR(30) NOT NULL DEFAULT 'Pending',
+        last_submission_id INT NULL,
+        submitted_by INT NULL,
+        submitted_at DATETIME NULL,
+        validated_by INT NULL,
+        validated_at DATETIME NULL,
+        validator_remarks TEXT NULL,
+        created_by INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_validation_source (project_id, deliverable_type, deliverable_ref_id),
+        INDEX idx_validation_project_status (project_id, current_status),
+        CONSTRAINT fk_validation_item_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $db->query("CREATE TABLE IF NOT EXISTS project_validation_submissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        item_id INT NOT NULL,
+        version_no INT NOT NULL DEFAULT 1,
+        progress_percent DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+        change_summary TEXT NULL,
+        attachment_path VARCHAR(255) NULL,
+        submitted_by INT NOT NULL,
+        submitted_role VARCHAR(30) NOT NULL DEFAULT 'contractor',
+        submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        validation_result VARCHAR(30) NULL,
+        validated_by INT NULL,
+        validated_at DATETIME NULL,
+        validator_remarks TEXT NULL,
+        INDEX idx_validation_submission_item (item_id, version_no),
+        CONSTRAINT fk_validation_submission_item FOREIGN KEY (item_id) REFERENCES project_validation_items(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $db->query("CREATE TABLE IF NOT EXISTS project_validation_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        item_id INT NOT NULL,
+        submission_id INT NULL,
+        action_type VARCHAR(40) NOT NULL,
+        previous_status VARCHAR(30) NULL,
+        new_status VARCHAR(30) NULL,
+        remarks TEXT NULL,
+        acted_by INT NOT NULL,
+        acted_role VARCHAR(30) NOT NULL,
+        ip_address VARCHAR(45) NULL,
+        acted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_validation_logs_item_time (item_id, acted_at),
+        CONSTRAINT fk_validation_log_item FOREIGN KEY (item_id) REFERENCES project_validation_items(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
 function contractor_store_progress_proof(array $file): string {
     $tmp = (string)($file['tmp_name'] ?? '');
     $err = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
@@ -247,6 +305,8 @@ rbac_require_action_matrix(
         'update_expense' => 'contractor.workspace.manage',
         'update_progress' => 'contractor.progress.submit',
         'load_progress_history' => 'contractor.workspace.view',
+        'load_validation_items' => 'contractor.workspace.view',
+        'submit_validation_item' => 'contractor.progress.submit',
         'load_task_milestone' => 'contractor.workspace.manage',
         'add_task' => 'contractor.workspace.manage',
         'update_task_status' => 'contractor.workspace.manage',
@@ -617,6 +677,148 @@ if ($action === 'load_progress_history') {
         $stmt->close();
     }
     json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_validation_items') {
+    ensure_validation_workflow_tables($db);
+    $projectId = (int) ($_GET['project_id'] ?? 0);
+    if ($projectId <= 0) {
+        json_out(['success' => false, 'message' => 'Invalid project.'], 422);
+    }
+    $rows = [];
+    $stmt = $db->prepare("SELECT
+                            vi.id,
+                            vi.project_id,
+                            vi.deliverable_type,
+                            vi.deliverable_name,
+                            vi.current_status,
+                            vi.submitted_at,
+                            vi.validated_at,
+                            vi.validator_remarks,
+                            COALESCE(vs.version_no, 0) AS version_no,
+                            COALESCE(vs.progress_percent, 0) AS progress_percent
+                          FROM project_validation_items vi
+                          LEFT JOIN project_validation_submissions vs ON vs.id = vi.last_submission_id
+                          WHERE vi.project_id = ?
+                          ORDER BY vi.id DESC");
+    if ($stmt) {
+        $stmt->bind_param('i', $projectId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($res && ($row = $res->fetch_assoc())) {
+            $rows[] = $row;
+        }
+        $stmt->close();
+    }
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'submit_validation_item') {
+    ensure_validation_workflow_tables($db);
+    $itemId = (int) ($_POST['item_id'] ?? 0);
+    $progress = (float) ($_POST['progress_percent'] ?? 0);
+    $summary = trim((string)($_POST['change_summary'] ?? ''));
+    if ($itemId <= 0 || $progress < 0 || $progress > 100) {
+        json_out(['success' => false, 'message' => 'Invalid validation submission payload.'], 422);
+    }
+    if ($summary === '' || strlen($summary) < 5) {
+        json_out(['success' => false, 'message' => 'Please provide a clear change summary.'], 422);
+    }
+
+    $attachmentPath = null;
+    if (isset($_FILES['proof_image']) && (int)($_FILES['proof_image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+        try {
+            $attachmentPath = contractor_store_progress_proof($_FILES['proof_image']);
+        } catch (Throwable $e) {
+            json_out(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    $pick = $db->prepare("SELECT project_id, current_status FROM project_validation_items WHERE id = ? LIMIT 1");
+    if (!$pick) {
+        json_out(['success' => false, 'message' => 'Database error.'], 500);
+    }
+    $pick->bind_param('i', $itemId);
+    $pick->execute();
+    $resPick = $pick->get_result();
+    $item = $resPick ? $resPick->fetch_assoc() : null;
+    if ($resPick) $resPick->free();
+    $pick->close();
+    if (!$item) {
+        json_out(['success' => false, 'message' => 'Validation item not found.'], 404);
+    }
+
+    $previousStatus = trim((string)($item['current_status'] ?? 'Pending'));
+    $projectId = (int)($item['project_id'] ?? 0);
+    $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
+    if ($employeeId <= 0 || $projectId <= 0) {
+        json_out(['success' => false, 'message' => 'Invalid session.'], 403);
+    }
+
+    $nextVersion = 1;
+    $vStmt = $db->prepare("SELECT COALESCE(MAX(version_no), 0) + 1 AS next_version FROM project_validation_submissions WHERE item_id = ?");
+    if ($vStmt) {
+        $vStmt->bind_param('i', $itemId);
+        $vStmt->execute();
+        $vRes = $vStmt->get_result();
+        $vRow = $vRes ? $vRes->fetch_assoc() : null;
+        $nextVersion = (int)($vRow['next_version'] ?? 1);
+        if ($vRes) $vRes->free();
+        $vStmt->close();
+    }
+
+    $db->begin_transaction();
+    try {
+        $ins = $db->prepare("INSERT INTO project_validation_submissions
+            (item_id, version_no, progress_percent, change_summary, attachment_path, submitted_by, submitted_role)
+            VALUES (?, ?, ?, ?, ?, ?, 'contractor')");
+        if (!$ins) {
+            throw new RuntimeException('Unable to create validation submission.');
+        }
+        $ins->bind_param('iidssi', $itemId, $nextVersion, $progress, $summary, $attachmentPath, $employeeId);
+        $ins->execute();
+        $submissionId = (int) $db->insert_id;
+        $ins->close();
+
+        $newStatus = 'Submitted';
+        $up = $db->prepare("UPDATE project_validation_items
+                            SET current_status = ?, last_submission_id = ?, submitted_by = ?, submitted_at = NOW(),
+                                validated_by = NULL, validated_at = NULL, validator_remarks = NULL
+                            WHERE id = ?");
+        if (!$up) {
+            throw new RuntimeException('Unable to update validation item.');
+        }
+        $up->bind_param('siii', $newStatus, $submissionId, $employeeId, $itemId);
+        $up->execute();
+        $up->close();
+
+        $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+        $log = $db->prepare("INSERT INTO project_validation_logs
+            (item_id, submission_id, action_type, previous_status, new_status, remarks, acted_by, acted_role, ip_address)
+            VALUES (?, ?, 'submit', ?, ?, ?, ?, 'contractor', ?)");
+        if ($log) {
+            $log->bind_param('iisssis', $itemId, $submissionId, $previousStatus, $newStatus, $summary, $employeeId, $ip);
+            $log->execute();
+            $log->close();
+        }
+
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollback();
+        json_out(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+
+    if (function_exists('rbac_audit')) {
+        rbac_audit('contractor.validation_submit', 'project_validation_item', $itemId, [
+            'project_id' => $projectId,
+            'previous_status' => $previousStatus,
+            'new_status' => 'Submitted',
+            'version_no' => $nextVersion,
+            'progress_percent' => $progress,
+        ]);
+    }
+
+    json_out(['success' => true, 'message' => 'Deliverable submitted for validation.']);
 }
 
 if ($action === 'load_task_milestone') {

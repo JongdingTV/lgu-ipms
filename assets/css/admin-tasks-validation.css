@@ -1,0 +1,255 @@
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-workflow-page {
+    display: grid;
+    gap: 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-card {
+    border: 1px solid #dbe7f4;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-card span {
+    display: block;
+    color: #5d7591;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-card strong {
+    display: block;
+    color: #163d6b;
+    font-size: 1.25rem;
+    margin-top: 4px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-card.approved {
+    border-left: 4px solid #16a34a;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-card.pending {
+    border-left: 4px solid #f59e0b;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-card.rejected {
+    border-left: 4px solid #dc2626;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-card.progress {
+    border-left: 4px solid #2563eb;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-progress-rail {
+    width: 100%;
+    height: 12px;
+    border-radius: 999px;
+    background: #e6edf6;
+    overflow: hidden;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-progress-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+    transition: width 0.25s ease;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-controls {
+    padding: 12px;
+    border: 1px solid #d8e6f5;
+    border-radius: 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-control-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-control-grid .filter-group.full {
+    grid-column: span 2;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-controls-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-project-accordion {
+    display: grid;
+    gap: 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-project-group {
+    border: 1px solid #d8e6f5;
+    border-radius: 12px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-project-group > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 12px;
+    background: #f8fbff;
+    border-bottom: 1px solid #e5edf7;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-project-group > summary::-webkit-details-marker {
+    display: none;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-project-title {
+    font-weight: 700;
+    color: #183f6d;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-project-meta {
+    color: #607792;
+    font-size: 0.84rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-items-table {
+    min-width: 1200px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-sticky-head thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-actions-cell {
+    min-width: 260px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-btn {
+    border: 1px solid #c8d9ed;
+    background: #f7fbff;
+    color: #1f4a79;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 6px 9px;
+    margin: 2px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-btn-approve {
+    border-color: #86efac;
+    color: #166534;
+    background: #ecfdf3;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-btn-reject {
+    border-color: #fca5a5;
+    color: #b91c1c;
+    background: #fef2f2;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-btn-return {
+    border-color: #fdba74;
+    color: #b45309;
+    background: #fff7ed;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-attachment-indicator {
+    margin-left: 4px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-detail-modal-content {
+    max-width: 940px;
+    width: calc(100vw - 40px);
+    max-height: 90vh;
+    overflow: auto;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 10px 0 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-detail-grid > div {
+    border: 1px solid #dfebf8;
+    border-radius: 10px;
+    background: #f8fbff;
+    padding: 8px 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-detail-grid label {
+    display: block;
+    color: #617892;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-timeline {
+    display: grid;
+    gap: 8px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-timeline-item {
+    border: 1px solid #dce9f8;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 10px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-timeline-item h5 {
+    margin: 0 0 4px;
+    color: #1b446f;
+    font-size: 0.9rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-timeline-item p {
+    margin: 2px 0;
+    color: #4f6884;
+    font-size: 0.83rem;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-muted {
+    color: #68829f;
+    font-size: 0.84rem;
+}
+
+@media (max-width: 1300px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 980px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-control-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-control-grid .filter-group.full {
+        grid-column: span 2;
+    }
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-grid {
+        grid-template-columns: 1fr;
+    }
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-control-grid {
+        grid-template-columns: 1fr;
+    }
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-control-grid .filter-group.full {
+        grid-column: span 1;
+    }
+}
