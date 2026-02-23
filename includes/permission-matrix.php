@@ -26,6 +26,7 @@ return [
     'admin.audit.view' => ['admin', 'department_admin', 'super_admin'],
     'admin.db_health.run' => ['super_admin'],
     'super_admin.dashboard.view' => ['super_admin'],
+    'super_admin.employee_accounts.view' => ['super_admin'],
     'super_admin.employee_accounts.manage' => ['super_admin'],
     'super_admin.audit.view' => ['super_admin'],
     'super_admin.progress.view' => ['super_admin'],

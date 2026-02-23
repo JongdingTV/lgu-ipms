@@ -21,6 +21,23 @@ $allowedRoles = ['super_admin', 'admin', 'employee', 'engineer'];
 $allowedStatuses = ['active', 'inactive', 'suspended'];
 
 $searchQuery = trim((string)($_GET['q'] ?? ''));
+$rbacAction = 'view_employee_accounts';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $postedAction = strtolower(trim((string)($_POST['action'] ?? '')));
+    $rbacAction = $postedAction !== '' ? $postedAction : 'manage_employee_accounts';
+}
+rbac_require_action_matrix(
+    $rbacAction,
+    [
+        'view_employee_accounts' => 'super_admin.employee_accounts.view',
+        'create' => 'super_admin.employee_accounts.manage',
+        'update' => 'super_admin.employee_accounts.manage',
+        'reset_password' => 'super_admin.employee_accounts.manage',
+        'delete' => 'super_admin.employee_accounts.manage',
+        'manage_employee_accounts' => 'super_admin.employee_accounts.manage',
+    ],
+    'super_admin.employee_accounts.manage'
+);
 
 function sa_table_exists(mysqli $db, string $table): bool
 {

@@ -10,12 +10,12 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.progress.view', ['admin','department_admin','super_admin']);
-rbac_require_action_roles(
+rbac_require_action_matrix(
     strtolower(trim((string)($_REQUEST['action'] ?? ''))),
     [
-        'load_projects' => ['admin', 'department_admin', 'super_admin'],
+        'load_projects' => 'admin.progress.view',
     ],
-    ['admin', 'department_admin', 'super_admin']
+    'admin.progress.view'
 );
 check_suspicious_activity();
 
@@ -318,7 +318,6 @@ $db->close();
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

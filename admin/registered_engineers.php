@@ -12,28 +12,24 @@ check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.engineers.manage', ['admin','department_admin','super_admin']);
 $rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
-rbac_require_action_roles(
+rbac_require_action_matrix(
     $rbacAction,
     [
-        // High-risk/destructive actions
-        'delete_contractor' => ['admin', 'super_admin'],
-        // Approval/verification workflow
-        'verify_contractor_document' => ['admin', 'department_admin', 'super_admin'],
-        'update_contractor_approval' => ['admin', 'department_admin', 'super_admin'],
-        // Assignment operations
-        'assign_contractor' => ['admin', 'department_admin', 'super_admin'],
-        'unassign_contractor' => ['admin', 'department_admin', 'super_admin'],
-        // Evaluation and reads
-        'evaluate_contractor' => ['admin', 'department_admin', 'super_admin'],
-        'load_contractors' => ['admin', 'department_admin', 'super_admin'],
-        'load_projects' => ['admin', 'department_admin', 'super_admin'],
-        'load_contractor_documents' => ['admin', 'department_admin', 'super_admin'],
-        'load_approval_history' => ['admin', 'department_admin', 'super_admin'],
-        'load_evaluation_overview' => ['admin', 'department_admin', 'super_admin'],
-        'recommended_engineers' => ['admin', 'department_admin', 'super_admin'],
-        'get_assigned_projects' => ['admin', 'department_admin', 'super_admin'],
+        'delete_contractor' => 'admin.engineers.delete',
+        'verify_contractor_document' => 'admin.engineers.manage',
+        'update_contractor_approval' => 'admin.engineers.manage',
+        'assign_contractor' => 'admin.engineers.assign',
+        'unassign_contractor' => 'admin.engineers.assign',
+        'evaluate_contractor' => 'admin.engineers.manage',
+        'load_contractors' => 'admin.engineers.manage',
+        'load_projects' => 'admin.engineers.manage',
+        'load_contractor_documents' => 'admin.engineers.manage',
+        'load_approval_history' => 'admin.engineers.manage',
+        'load_evaluation_overview' => 'admin.engineers.manage',
+        'recommended_engineers' => 'admin.engineers.manage',
+        'get_assigned_projects' => 'admin.engineers.manage',
     ],
-    ['admin', 'department_admin', 'super_admin']
+    'admin.engineers.manage'
 );
 check_suspicious_activity();
 
@@ -1564,7 +1560,6 @@ $db->close();
     <script src="../assets/js/admin-registered-engineers.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-registered-engineers.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

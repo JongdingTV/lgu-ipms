@@ -11,7 +11,28 @@ require_once dirname(__DIR__) . '/includes/rbac.php';
 
 set_no_cache_headers();
 check_auth();
-rbac_require_from_matrix('admin.db_health.run', ['super_admin']);
+rbac_require_from_matrix('super_admin.employee_accounts.view', ['super_admin']);
+
+$rbacAction = 'view_employee_accounts';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['add_employee'])) {
+        $rbacAction = 'create';
+    } elseif (isset($_POST['delete_employee'])) {
+        $rbacAction = 'delete';
+    } else {
+        $rbacAction = 'manage_employee_accounts';
+    }
+}
+rbac_require_action_matrix(
+    $rbacAction,
+    [
+        'view_employee_accounts' => 'super_admin.employee_accounts.view',
+        'create' => 'super_admin.employee_accounts.manage',
+        'delete' => 'super_admin.employee_accounts.manage',
+        'manage_employee_accounts' => 'super_admin.employee_accounts.manage',
+    ],
+    'super_admin.employee_accounts.manage'
+);
 
 $message = '';
 $error = '';
@@ -375,7 +396,6 @@ if ($result) {
 <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
-
 
 
 
