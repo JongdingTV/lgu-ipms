@@ -7,6 +7,17 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.engineers.manage', ['admin','department_admin','super_admin']);
+$rbacAction = $_SERVER['REQUEST_METHOD'] === 'POST'
+    ? 'create_engineer'
+    : 'view_engineer_registration';
+rbac_require_action_matrix(
+    $rbacAction,
+    [
+        'view_engineer_registration' => 'admin.engineers.manage',
+        'create_engineer' => 'admin.engineers.manage',
+    ],
+    'admin.engineers.manage'
+);
 check_suspicious_activity();
 
 $errors = [];
@@ -624,4 +635,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="../assets/js/admin-engineers-add.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-engineers-add.js'); ?>"></script>
 </body>
 </html>
-

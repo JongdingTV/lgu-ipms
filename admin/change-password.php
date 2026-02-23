@@ -6,7 +6,18 @@ require dirname(__DIR__) . '/includes/rbac.php';
 
 set_no_cache_headers();
 check_auth();
-rbac_require_from_matrix('admin.dashboard.view', ['admin','department_admin','super_admin']);
+rbac_require_from_matrix('admin.account.security.view', ['admin','department_admin','super_admin']);
+$rbacAction = $_SERVER['REQUEST_METHOD'] === 'POST'
+    ? 'update_own_password'
+    : 'view_change_password';
+rbac_require_action_matrix(
+    $rbacAction,
+    [
+        'view_change_password' => 'admin.account.security.view',
+        'update_own_password' => 'admin.account.security.manage',
+    ],
+    'admin.account.security.view'
+);
 
 $error = '';
 $success = '';
@@ -86,6 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     $log_stmt->bind_param('isss', $employee_id, $email, $client_ip, $user_agent);
                                     $log_stmt->execute();
                                     $log_stmt->close();
+                                }
+                                if (function_exists('rbac_audit')) {
+                                    rbac_audit('employee.password_change', 'employee', (int)$employee_id, []);
                                 }
                                 
                                 $success = 'Password changed successfully!';
@@ -199,7 +213,6 @@ if (isset($db)) {
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

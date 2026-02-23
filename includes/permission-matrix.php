@@ -16,6 +16,8 @@ return [
     'admin.prioritization.read' => ['admin', 'department_admin', 'super_admin'],
     'admin.citizen_verification.manage' => ['admin', 'department_admin', 'super_admin'],
     'admin.notifications.read' => ['admin', 'department_admin', 'super_admin'],
+    'admin.account.security.view' => ['admin', 'department_admin', 'super_admin'],
+    'admin.account.security.manage' => ['admin', 'department_admin', 'super_admin'],
     'admin.engineers.manage' => ['admin', 'department_admin', 'super_admin'],
     'admin.engineers.delete' => ['admin', 'super_admin'],
     'admin.engineers.assign' => ['admin', 'department_admin', 'super_admin'],
