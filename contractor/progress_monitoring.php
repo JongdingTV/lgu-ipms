@@ -40,20 +40,8 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
-    <style>
-        .flow-note {
-            margin: 0 0 14px;
-            border: 1px solid #dbe7f3;
-            background: #f8fbff;
-            border-radius: 12px;
-            padding: 12px 14px;
-            color: #0f2a4a;
-            font-size: .92rem;
-            line-height: 1.5;
-        }
-    </style>
 </head>
-<body>
+<body class="contractor-progress-page">
 <div class="sidebar-toggle-wrapper">
     <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

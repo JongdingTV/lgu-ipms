@@ -5,7 +5,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-workf
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-summary-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 10px;
 }
 
@@ -65,11 +65,13 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-contr
     padding: 12px;
     border: 1px solid #d8e6f5;
     border-radius: 12px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-control-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 10px;
 }
 
@@ -85,6 +87,57 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-contr
     flex-wrap: wrap;
 }
 
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-controls .filter-group label {
+    display: block;
+    margin-bottom: 6px;
+    color: #35516e;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-controls .filter-group input,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-controls .filter-group select {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #c6d8ec;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 0.95rem;
+    color: #123355;
+    background: #fff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-controls .filter-group input:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-controls .filter-group select:focus {
+    outline: none;
+    border-color: #2f73b5;
+    box-shadow: 0 0 0 3px rgba(47, 115, 181, 0.16);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #tvApplyFilters,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #tvClearFilters {
+    min-height: 40px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid #c6d8ec;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #tvApplyFilters {
+    border-color: #2563eb;
+    color: #fff;
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) #tvClearFilters {
+    color: #1f4a79;
+    background: #f7fbff;
+}
+
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-project-accordion {
     display: grid;
     gap: 12px;
@@ -95,6 +148,7 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-project-group
     border-radius: 12px;
     background: #ffffff;
     overflow: hidden;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-project-group > summary {
@@ -164,6 +218,48 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-btn-return {
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-attachment-indicator {
     margin-left: 4px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .status-badge.default,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .status-badge.pending {
+    background: #f8fafc;
+    color: #334155;
+    border-color: #cbd5e1;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .status-badge.submitted,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .status-badge.for-approval {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fcd34d;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .status-badge.approved {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #86efac;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .status-badge.rejected {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .status-badge.needs-revision {
+    background: #ffedd5;
+    color: #9a3412;
+    border-color: #fdba74;
 }
 
 body:not(.admin-login-page):not(.login-page):not(.signup-page) .validation-detail-modal-content {

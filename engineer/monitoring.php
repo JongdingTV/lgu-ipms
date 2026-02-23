@@ -41,7 +41,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
 </head>
-<body>
+<body class="engineer-monitoring-page">
 <div class="sidebar-toggle-wrapper">
     <button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -162,6 +162,15 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     }
+    function statusClass(status) {
+        const key = String(status || '').trim().toLowerCase();
+        if (key === 'approved') return 'approved';
+        if (key === 'submitted' || key === 'for approval' || key === 'for_approval') return 'submitted';
+        if (key === 'rejected') return 'rejected';
+        if (key === 'needs revision' || key === 'needs_revision' || key === 'returned') return 'needs-revision';
+        if (key === 'pending') return 'pending';
+        return 'default';
+    }
 
     async function load() {
         const monitoringRes = await fetch('/engineer/api.php?action=load_monitoring', { credentials: 'same-origin' });
@@ -228,7 +237,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
                 '<td>' + esc(s.validation_notes || '') + '</td>',
                 '<td>' + (proofHref ? ('<a href="' + esc(proofHref) + '" target="_blank" rel="noopener">View Proof</a>') : 'N/A') + '</td>',
                 '<td>' + (flagged ? ('Flagged: ' + esc(s.discrepancy_note || 'Needs review')) : 'None') + '</td>',
-                '<td>' + esc(status) + '</td>',
+                '<td><span class="status-badge validation-status-badge ' + statusClass(status) + '">' + esc(status) + '</span></td>',
                 '<td>' + (canDecide
                     ? ('<button class="approve-btn" data-id="' + Number(s.submission_id || 0) + '" data-project="' + Number(s.project_id || 0) + '" data-decision="Approved">Approve</button> ' +
                        '<button class="reject-btn" data-id="' + Number(s.submission_id || 0) + '" data-project="' + Number(s.project_id || 0) + '" data-decision="Rejected">Reject</button>')
