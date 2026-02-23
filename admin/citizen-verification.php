@@ -130,7 +130,6 @@ $db->close();
             <div class="nav-item-group">
                 <a href="engineers.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers<span class="dropdown-arrow">&#9662;</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
-                    <a href="/engineer/create.php" class="nav-submenu-item"><span class="submenu-icon">&#10133;</span><span>Engineer Account Creation</span></a>
                     <a href="registered_engineers.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Engineers</span></a>
                 </div>
             </div>
@@ -256,4 +255,5 @@ $db->close();
 <script src="../assets/js/admin-citizen-verification.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-citizen-verification.js'); ?>"></script>
 </body>
 </html>
+
 
