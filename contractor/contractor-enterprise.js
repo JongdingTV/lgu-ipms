@@ -36,7 +36,7 @@
         document.body.classList.remove('sidebar-hidden');
         document.body.classList.remove('mobile-nav-open');
       } else {
-        const saved = localStorage.getItem('ipms_admin_sidebar_hidden');
+        const saved = localStorage.getItem('ipms_contractor_sidebar_hidden');
         document.body.classList.toggle('sidebar-hidden', saved === '1');
       }
     };
@@ -49,7 +49,7 @@
         if (!open) $$('.nav-item-group.open').forEach((g) => g.classList.remove('open'));
       } else {
         const hidden = document.body.classList.toggle('sidebar-hidden');
-        localStorage.setItem('ipms_admin_sidebar_hidden', hidden ? '1' : '0');
+        localStorage.setItem('ipms_contractor_sidebar_hidden', hidden ? '1' : '0');
         $$('.nav-item-group.open').forEach((g) => g.classList.remove('open'));
       }
     });
@@ -366,9 +366,9 @@
     const markReadBtn = document.getElementById('adminNotifMarkRead');
     const themeBtn = document.getElementById('adminThemeBtn');
     const themeLabel = document.getElementById('adminThemeLabel');
-    const seenKey = 'ipms_admin_notifications_seen_id';
+    const seenKey = 'ipms_contractor_notifications_seen_id';
 
-    const persistedTheme = localStorage.getItem('ipms_admin_theme') || 'light';
+    const persistedTheme = localStorage.getItem('ipms_contractor_theme') || 'light';
     document.body.classList.toggle('theme-dark', persistedTheme === 'dark');
     if (themeLabel) themeLabel.textContent = persistedTheme === 'dark' ? 'Light' : 'Dark';
 
@@ -477,7 +477,7 @@
     };
 
     const fetchNotifications = () => {
-      const url = isFn(window.getApiUrl) ? window.getApiUrl('admin/notifications_api.php') : '/admin/notifications_api.php';
+      const url = isFn(window.getApiUrl) ? window.getApiUrl('contractor/api.php?action=load_notifications') : '/contractor/api.php?action=load_notifications';
       fetch(url + '?_=' + Date.now(), { credentials: 'same-origin' })
         .then((res) => res.json())
         .then((data) => {
@@ -562,7 +562,7 @@
       themeBtn.addEventListener('click', () => {
         const isDark = !document.body.classList.contains('theme-dark');
         document.body.classList.toggle('theme-dark', isDark);
-        localStorage.setItem('ipms_admin_theme', isDark ? 'dark' : 'light');
+        localStorage.setItem('ipms_contractor_theme', isDark ? 'dark' : 'light');
         if (themeLabel) themeLabel.textContent = isDark ? 'Light' : 'Dark';
       });
     }

@@ -47,6 +47,29 @@ function ensure_department_head_table(mysqli $db): void
     )");
 }
 
+function dept_table_exists(mysqli $db, string $table): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $table);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $ok = $res && $res->num_rows > 0;
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+    return $ok;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sessionToken = (string) generate_csrf_token();
     $requestToken = (string) ($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
@@ -57,6 +80,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
 ensure_department_head_table($db);
+
+if ($action === 'load_notifications') {
+    $items = [];
+    $latestId = 0;
+
+    if (!dept_table_exists($db, 'projects')) {
+        out(['success' => true, 'latest_id' => 0, 'items' => []]);
+    }
+
+    $sql = "SELECT
+                p.id,
+                p.code,
+                p.name,
+                p.created_at,
+                COALESCE(r.decision_status, 'Pending') AS decision_status
+            FROM projects p
+            LEFT JOIN project_department_head_reviews r ON r.project_id = p.id
+            WHERE (r.project_id IS NULL OR r.decision_status = 'Pending')
+              AND LOWER(COALESCE(p.status, '')) IN ('for approval', 'pending', 'draft')
+            ORDER BY p.id DESC
+            LIMIT 30";
+    $res = $db->query($sql);
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $pid = (int) ($row['id'] ?? 0);
+            if ($pid <= 0) {
+                continue;
+            }
+            $nid = 900000000 + $pid;
+            $items[] = [
+                'id' => $nid,
+                'level' => 'warning',
+                'title' => trim((string) ($row['code'] ?? 'Project')) . ' - ' . trim((string) ($row['name'] ?? 'Project')),
+                'message' => 'New project is waiting for Department Head approval.',
+                'created_at' => (string) ($row['created_at'] ?? '')
+            ];
+            if ($nid > $latestId) {
+                $latestId = $nid;
+            }
+        }
+        $res->free();
+    }
+
+    out(['success' => true, 'latest_id' => $latestId, 'items' => $items]);
+}
 
 if ($action === 'load_projects') {
     $mode = strtolower(trim((string) ($_GET['mode'] ?? 'pending')));

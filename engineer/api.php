@@ -96,6 +96,24 @@ function ensure_status_request_table(mysqli $db): void {
     )");
 }
 
+function engineer_table_exists(mysqli $db, string $table): bool {
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) return false;
+    $stmt->bind_param('s', $table);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $ok = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $ok;
+}
+
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
     json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
@@ -144,6 +162,113 @@ if ($action === 'load_monitoring' || $action === '') {
         $res->free();
     }
     json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_notifications') {
+    $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
+    $employeeEmail = '';
+    if ($employeeId > 0 && engineer_table_exists($db, 'employees')) {
+        $emp = $db->prepare("SELECT email FROM employees WHERE id = ? LIMIT 1");
+        if ($emp) {
+            $emp->bind_param('i', $employeeId);
+            $emp->execute();
+            $row = $emp->get_result()->fetch_assoc();
+            $employeeEmail = trim((string) ($row['email'] ?? ''));
+            $emp->close();
+        }
+    }
+
+    $engineerIds = [];
+    if ($employeeId > 0) {
+        $engineerIds[$employeeId] = true; // Backward compatibility for deployments using employee_id directly
+    }
+    if (engineer_table_exists($db, 'engineers')) {
+        $byLink = $db->prepare("SELECT id FROM engineers WHERE employee_id = ?");
+        if ($byLink && $employeeId > 0) {
+            $byLink->bind_param('i', $employeeId);
+            $byLink->execute();
+            $res = $byLink->get_result();
+            while ($res && ($r = $res->fetch_assoc())) {
+                $eid = (int) ($r['id'] ?? 0);
+                if ($eid > 0) $engineerIds[$eid] = true;
+            }
+            $byLink->close();
+        }
+        if ($employeeEmail !== '') {
+            $byEmail = $db->prepare("SELECT id FROM engineers WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))");
+            if ($byEmail) {
+                $byEmail->bind_param('s', $employeeEmail);
+                $byEmail->execute();
+                $res = $byEmail->get_result();
+                while ($res && ($r = $res->fetch_assoc())) {
+                    $eid = (int) ($r['id'] ?? 0);
+                    if ($eid > 0) $engineerIds[$eid] = true;
+                }
+                $byEmail->close();
+            }
+        }
+    }
+
+    $items = [];
+    $latestId = 0;
+    if (!empty($engineerIds) && engineer_table_exists($db, 'projects')) {
+        $idList = implode(',', array_map('intval', array_keys($engineerIds)));
+
+        if (engineer_table_exists($db, 'project_assignments')) {
+            $sql = "SELECT p.id, p.code, p.name, p.created_at
+                    FROM project_assignments pa
+                    INNER JOIN projects p ON p.id = pa.project_id
+                    WHERE pa.engineer_id IN ({$idList})
+                    ORDER BY p.id DESC
+                    LIMIT 50";
+            $res = $db->query($sql);
+            if ($res) {
+                while ($row = $res->fetch_assoc()) {
+                    $pid = (int) ($row['id'] ?? 0);
+                    if ($pid <= 0) continue;
+                    $nid = 710000000 + $pid;
+                    $items[$nid] = [
+                        'id' => $nid,
+                        'level' => 'info',
+                        'title' => trim((string) ($row['code'] ?? 'Project')) . ' - ' . trim((string) ($row['name'] ?? 'Project')),
+                        'message' => 'You were selected for this project.',
+                        'created_at' => (string) ($row['created_at'] ?? '')
+                    ];
+                    if ($nid > $latestId) $latestId = $nid;
+                }
+                $res->free();
+            }
+        }
+
+        // Compatibility with deployments using contractor_project_assignments for engineer selection.
+        if (engineer_table_exists($db, 'contractor_project_assignments')) {
+            $sql = "SELECT p.id, p.code, p.name, p.created_at
+                    FROM contractor_project_assignments cpa
+                    INNER JOIN projects p ON p.id = cpa.project_id
+                    WHERE cpa.contractor_id IN ({$idList})
+                    ORDER BY p.id DESC
+                    LIMIT 50";
+            $res = $db->query($sql);
+            if ($res) {
+                while ($row = $res->fetch_assoc()) {
+                    $pid = (int) ($row['id'] ?? 0);
+                    if ($pid <= 0) continue;
+                    $nid = 720000000 + $pid;
+                    $items[$nid] = [
+                        'id' => $nid,
+                        'level' => 'info',
+                        'title' => trim((string) ($row['code'] ?? 'Project')) . ' - ' . trim((string) ($row['name'] ?? 'Project')),
+                        'message' => 'You were selected for this project.',
+                        'created_at' => (string) ($row['created_at'] ?? '')
+                    ];
+                    if ($nid > $latestId) $latestId = $nid;
+                }
+                $res->free();
+            }
+        }
+    }
+
+    json_out(['success' => true, 'latest_id' => $latestId, 'items' => array_values($items)]);
 }
 
 if ($action === 'load_progress_submissions') {

@@ -93,6 +93,24 @@ function ensure_status_request_table(mysqli $db): void {
     )");
 }
 
+function contractor_table_exists(mysqli $db, string $table): bool {
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) return false;
+    $stmt->bind_param('s', $table);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $ok = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $ok;
+}
+
 function contractor_sync_projects_to_milestones(mysqli $db): void {
     $projects = [];
     $res = $db->query("SELECT name, COALESCE(budget, 0) AS budget FROM projects ORDER BY id DESC");
@@ -191,6 +209,70 @@ if ($action === 'load_projects') {
         $res->free();
     }
     json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_notifications') {
+    $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
+    $employeeEmail = '';
+    if ($employeeId > 0 && contractor_table_exists($db, 'employees')) {
+        $emp = $db->prepare("SELECT email FROM employees WHERE id = ? LIMIT 1");
+        if ($emp) {
+            $emp->bind_param('i', $employeeId);
+            $emp->execute();
+            $row = $emp->get_result()->fetch_assoc();
+            $employeeEmail = trim((string) ($row['email'] ?? ''));
+            $emp->close();
+        }
+    }
+
+    $contractorIds = [];
+    if ($employeeId > 0) {
+        $contractorIds[$employeeId] = true; // Backward compatibility for deployments using employee_id directly
+    }
+    if ($employeeEmail !== '' && contractor_table_exists($db, 'contractors')) {
+        $byEmail = $db->prepare("SELECT id FROM contractors WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))");
+        if ($byEmail) {
+            $byEmail->bind_param('s', $employeeEmail);
+            $byEmail->execute();
+            $res = $byEmail->get_result();
+            while ($res && ($r = $res->fetch_assoc())) {
+                $cid = (int) ($r['id'] ?? 0);
+                if ($cid > 0) $contractorIds[$cid] = true;
+            }
+            $byEmail->close();
+        }
+    }
+
+    $items = [];
+    $latestId = 0;
+    if (!empty($contractorIds) && contractor_table_exists($db, 'contractor_project_assignments') && contractor_table_exists($db, 'projects')) {
+        $idList = implode(',', array_map('intval', array_keys($contractorIds)));
+        $sql = "SELECT p.id, p.code, p.name, p.created_at
+                FROM contractor_project_assignments cpa
+                INNER JOIN projects p ON p.id = cpa.project_id
+                WHERE cpa.contractor_id IN ({$idList})
+                ORDER BY p.id DESC
+                LIMIT 50";
+        $res = $db->query($sql);
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $pid = (int) ($row['id'] ?? 0);
+                if ($pid <= 0) continue;
+                $nid = 700000000 + $pid;
+                $items[$nid] = [
+                    'id' => $nid,
+                    'level' => 'info',
+                    'title' => trim((string) ($row['code'] ?? 'Project')) . ' - ' . trim((string) ($row['name'] ?? 'Project')),
+                    'message' => 'You were selected for this project.',
+                    'created_at' => (string) ($row['created_at'] ?? '')
+                ];
+                if ($nid > $latestId) $latestId = $nid;
+            }
+            $res->free();
+        }
+    }
+
+    json_out(['success' => true, 'latest_id' => $latestId, 'items' => array_values($items)]);
 }
 
 if ($action === 'load_budget_state') {
