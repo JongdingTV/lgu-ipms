@@ -255,6 +255,11 @@
 .status-chip.on-hold { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
 .status-chip.completed { background: #dbeafe; color: #1e3a8a; border-color: #93c5fd; }
 .status-chip.default { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+.validation-status-chip.pending { background: #f8fafc; color: #334155; border-color: #cbd5e1; }
+.validation-status-chip.submitted { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+.validation-status-chip.approved { background: #dcfce7; color: #166534; border-color: #86efac; }
+.validation-status-chip.rejected { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.validation-status-chip.revision { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
 
 .module-grid {
     display: grid;

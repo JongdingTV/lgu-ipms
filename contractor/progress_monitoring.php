@@ -249,6 +249,15 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
     }
+    function statusClass(status) {
+        var key = String(status || '').trim().toLowerCase();
+        if (key === 'approved') return 'approved';
+        if (key === 'submitted' || key === 'for approval' || key === 'for_approval') return 'submitted';
+        if (key === 'rejected') return 'rejected';
+        if (key === 'needs revision' || key === 'needs_revision' || key === 'returned') return 'revision';
+        if (key === 'pending') return 'pending';
+        return 'default';
+    }
     function loadValidationItems() {
         var pid = document.getElementById('projectSelect').value;
         var tbody = document.getElementById('validationItemsBody');
@@ -275,9 +284,10 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
                 select.appendChild(option);
 
                 var tr = document.createElement('tr');
+                var currentStatus = r.current_status || 'Pending';
                 tr.innerHTML = '<td>' + escapeHtml(r.deliverable_name || '') + '</td>'
                     + '<td>' + escapeHtml(r.deliverable_type || '') + '</td>'
-                    + '<td>' + escapeHtml(r.current_status || 'Pending') + '</td>'
+                    + '<td><span class="status-chip validation-status-chip ' + statusClass(currentStatus) + '">' + escapeHtml(currentStatus) + '</span></td>'
                     + '<td>v' + Number(r.version_no || 0) + '</td>'
                     + '<td>' + Number(r.progress_percent || 0).toFixed(2) + '%</td>'
                     + '<td>' + escapeHtml(r.submitted_at || '-') + '</td>'
