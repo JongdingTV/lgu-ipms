@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    var csrfToken = String(window.DEPARTMENT_HEAD_CSRF || '');
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var csrfToken = String(window.DEPARTMENT_HEAD_CSRF || (csrfMeta ? csrfMeta.getAttribute('content') : '') || '');
     var state = { rows: [], mode: 'pending' };
 
     function esc(v) {
@@ -46,7 +47,10 @@ document.addEventListener('DOMContentLoaded', function () {
         return fetch('/department-head/api.php?action=' + encodeURIComponent(action), {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-Token': csrfToken
+            },
             body: body.toString()
         }).then(function (res) { return res.json().then(function (j) { return { ok: res.ok, json: j }; }); });
     }

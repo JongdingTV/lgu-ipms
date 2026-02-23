@@ -47,8 +47,12 @@ function ensure_department_head_table(mysqli $db): void
     )");
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
-    out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $sessionToken = (string) generate_csrf_token();
+    $requestToken = (string) ($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
+    if ($requestToken === '' || !hash_equals($sessionToken, $requestToken)) {
+        out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
+    }
 }
 
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
