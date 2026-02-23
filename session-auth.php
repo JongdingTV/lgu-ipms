@@ -290,9 +290,18 @@ function get_login_url() {
     
     // Determine if we're in a subdirectory
     $request_uri = $_SERVER['REQUEST_URI'];
+    if (strpos($request_uri, '/contractor/') !== false) {
+        return $protocol . $host . '/contractor/index.php';
+    }
+    if (strpos($request_uri, '/engineer/') !== false) {
+        return $protocol . $host . '/engineer/index.php';
+    }
+    if (strpos($request_uri, '/department-head/') !== false) {
+        return $protocol . $host . '/department-head/index.php';
+    }
     $employee_dirs = ['dashboard', 'contractors', 'project-registration', 'progress-monitoring',
                       'budget-resources', 'task-milestone', 'project-prioritization',
-                      'contractor', 'engineer'];
+                      'contractor', 'engineer', 'department-head'];
     $is_employee_route = false;
     foreach ($employee_dirs as $dir) {
         if (strpos($request_uri, '/' . $dir . '/') !== false) {
@@ -649,4 +658,3 @@ function check_suspicious_activity() {
     $_SESSION['user_agent'] = $currentUserAgent;
 }
 ?>
-

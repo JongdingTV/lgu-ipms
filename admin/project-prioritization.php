@@ -671,7 +671,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                             <tr>
                                 <td colspan="9">
                                     <div class="no-results">
-                                        <div class="no-results-icon">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹</div>
+                                        <div class="no-results-icon">!</div>
                                         <div class="no-results-title">No Feedback Found</div>
                                         <div class="no-results-text">No feedback submitted yet. Please check back later.</div>
                                     </div>
@@ -1031,7 +1031,6 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
     <script src="../assets/js/admin-project-prioritization.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-project-prioritization.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

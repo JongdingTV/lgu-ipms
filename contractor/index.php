@@ -1,7 +1,6 @@
 <?php
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/session-auth.php';
-require dirname(__DIR__) . '/config/email.php';
 
 set_no_cache_headers();
 
@@ -15,252 +14,52 @@ if (isset($_SESSION['employee_id'])) {
 
 $error = '';
 $emailInput = '';
-$otpMessage = '';
-$otpPending = isset(
-    $_SESSION['contractor_login_otp_employee_id'],
-    $_SESSION['contractor_login_otp_code'],
-    $_SESSION['contractor_login_otp_expires']
-);
-$otpEmail = (string)($_SESSION['contractor_login_otp_email'] ?? '');
-const CONTRACTOR_OTP_TRUST_HOURS = 12;
-const CONTRACTOR_OTP_TRUST_COOKIE = 'contractor_trusted_device';
-
-function contractor_cookie_secure(): bool
-{
-    return (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
-        || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443);
-}
-
-function contractor_set_cookie(string $name, string $value, int $expires): void
-{
-    setcookie($name, $value, [
-        'expires' => $expires,
-        'path' => '/',
-        'secure' => contractor_cookie_secure(),
-        'httponly' => true,
-        'samesite' => 'Lax'
-    ]);
-}
-
-function contractor_ensure_otp_trust_table(mysqli $db): void
-{
-    $db->query("CREATE TABLE IF NOT EXISTS otp_trusted_devices (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        employee_id INT NOT NULL,
-        role VARCHAR(32) NOT NULL,
-        selector VARCHAR(32) NOT NULL,
-        token_hash CHAR(64) NOT NULL,
-        expires_at DATETIME NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_emp_role_exp (employee_id, role, expires_at),
-        UNIQUE KEY uq_selector (selector)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-}
-
-function contractor_issue_otp_trust(mysqli $db, int $employeeId, string $role): void
-{
-    contractor_ensure_otp_trust_table($db);
-    $selector = bin2hex(random_bytes(8));
-    $token = bin2hex(random_bytes(32));
-    $tokenHash = hash('sha256', $token);
-    $hours = max(1, (int)CONTRACTOR_OTP_TRUST_HOURS);
-    $expiresTs = time() + ($hours * 3600);
-    $expiresAt = date('Y-m-d H:i:s', $expiresTs);
-
-    $stmt = $db->prepare("INSERT INTO otp_trusted_devices (employee_id, role, selector, token_hash, expires_at) VALUES (?, ?, ?, ?, ?)");
-    if ($stmt) {
-        $stmt->bind_param('issss', $employeeId, $role, $selector, $tokenHash, $expiresAt);
-        $stmt->execute();
-        $stmt->close();
-    }
-    contractor_set_cookie(CONTRACTOR_OTP_TRUST_COOKIE, $selector . ':' . $token, $expiresTs);
-}
-
-function contractor_has_valid_otp_trust(mysqli $db, int $employeeId, string $role): bool
-{
-    contractor_ensure_otp_trust_table($db);
-    $raw = (string)($_COOKIE[CONTRACTOR_OTP_TRUST_COOKIE] ?? '');
-    if ($raw === '' || strpos($raw, ':') === false) return false;
-    [$selector, $token] = explode(':', $raw, 2);
-    if ($selector === '' || $token === '') return false;
-
-    $stmt = $db->prepare("SELECT id, token_hash, expires_at
-                          FROM otp_trusted_devices
-                          WHERE employee_id = ? AND role = ? AND selector = ?
-                          ORDER BY id DESC LIMIT 1");
-    if (!$stmt) return false;
-    $stmt->bind_param('iss', $employeeId, $role, $selector);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $row = $res ? $res->fetch_assoc() : null;
-    if ($res) $res->free();
-    $stmt->close();
-    if (!$row) return false;
-
-    $expiresAt = strtotime((string)($row['expires_at'] ?? ''));
-    if ($expiresAt === false || $expiresAt < time()) return false;
-    $storedHash = (string)($row['token_hash'] ?? '');
-    return hash_equals($storedHash, hash('sha256', $token));
-}
-
-function clear_contractor_login_otp_session(): void
-{
-    unset(
-        $_SESSION['contractor_login_otp_employee_id'],
-        $_SESSION['contractor_login_otp_name'],
-        $_SESSION['contractor_login_otp_email'],
-        $_SESSION['contractor_login_otp_role'],
-        $_SESSION['contractor_login_otp_code'],
-        $_SESSION['contractor_login_otp_expires'],
-        $_SESSION['contractor_login_otp_attempts'],
-        $_SESSION['contractor_login_otp_sent_at']
-    );
-}
-
-function issue_contractor_login_otp(int $employeeId, string $name, string $email, string $role): bool
-{
-    $code = (string) random_int(100000, 999999);
-    if (!send_verification_code($email, $code, $name === '' ? 'Contractor' : $name)) {
-        return false;
-    }
-    $_SESSION['contractor_login_otp_employee_id'] = $employeeId;
-    $_SESSION['contractor_login_otp_name'] = $name;
-    $_SESSION['contractor_login_otp_email'] = $email;
-    $_SESSION['contractor_login_otp_role'] = $role;
-    $_SESSION['contractor_login_otp_code'] = $code;
-    $_SESSION['contractor_login_otp_expires'] = time() + (10 * 60);
-    $_SESSION['contractor_login_otp_attempts'] = 0;
-    $_SESSION['contractor_login_otp_sent_at'] = time();
-    return true;
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['verify_otp_submit'])) {
-        if (!$otpPending) {
-            $error = 'No OTP session found. Please sign in again.';
-        } elseif (is_rate_limited('contractor_login_otp', 10, 600)) {
-            $error = 'Too many OTP attempts. Please wait before trying again.';
-        } else {
-            $otpInput = trim((string)($_POST['otp_code'] ?? ''));
-            $storedCode = (string)($_SESSION['contractor_login_otp_code'] ?? '');
-            $expiresAt = (int)($_SESSION['contractor_login_otp_expires'] ?? 0);
-            $attempts = (int)($_SESSION['contractor_login_otp_attempts'] ?? 0);
+    $emailInput = trim((string) ($_POST['email'] ?? ''));
+    $password = (string) ($_POST['password'] ?? '');
 
-            if (time() > $expiresAt) {
-                clear_contractor_login_otp_session();
-                $otpPending = false;
-                $error = 'OTP expired. Please sign in again.';
-            } elseif (!preg_match('/^\d{6}$/', $otpInput)) {
-                $error = 'Please enter the 6-digit OTP.';
-            } elseif (!hash_equals($storedCode, $otpInput)) {
-                $_SESSION['contractor_login_otp_attempts'] = $attempts + 1;
-                if ($_SESSION['contractor_login_otp_attempts'] >= 5) {
-                    clear_contractor_login_otp_session();
-                    $otpPending = false;
-                    $error = 'Too many incorrect OTP attempts. Please sign in again.';
-                } else {
-                    $error = 'Invalid OTP code.';
-                }
-            } else {
-                $employeeId = (int)($_SESSION['contractor_login_otp_employee_id'] ?? 0);
-                $employeeName = (string)($_SESSION['contractor_login_otp_name'] ?? '');
-                $role = strtolower(trim((string)($_SESSION['contractor_login_otp_role'] ?? 'contractor')));
-                clear_contractor_login_otp_session();
-                session_regenerate_id(true);
-                $_SESSION['employee_id'] = $employeeId;
-                $_SESSION['employee_name'] = $employeeName;
-                $_SESSION['employee_role'] = $role;
-                $_SESSION['user_type'] = 'employee';
-                $_SESSION['last_activity'] = time();
-                $_SESSION['login_time'] = time();
-                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-                contractor_issue_otp_trust($db, $employeeId, $role);
-                header('Location: /contractor/dashboard_overview.php');
-                exit;
-            }
-        }
-    } elseif (isset($_POST['resend_otp_submit'])) {
-        if (!$otpPending) {
-            $error = 'No OTP session found. Please sign in again.';
-        } elseif (is_rate_limited('contractor_login_otp_resend', 4, 600)) {
-            $error = 'Too many OTP resend attempts. Please wait.';
-        } else {
-            $employeeId = (int)($_SESSION['contractor_login_otp_employee_id'] ?? 0);
-            $employeeName = (string)($_SESSION['contractor_login_otp_name'] ?? '');
-            $role = strtolower(trim((string)($_SESSION['contractor_login_otp_role'] ?? 'contractor')));
-            $email = (string)($_SESSION['contractor_login_otp_email'] ?? '');
-            $lastSent = (int)($_SESSION['contractor_login_otp_sent_at'] ?? 0);
-            if ($employeeId <= 0 || $email === '') {
-                clear_contractor_login_otp_session();
-                $otpPending = false;
-                $error = 'OTP session invalid. Please sign in again.';
-            } elseif ($lastSent > 0 && (time() - $lastSent) < 45) {
-                $error = 'Please wait before requesting another OTP.';
-            } elseif (issue_contractor_login_otp($employeeId, $employeeName, $email, $role)) {
-                $otpPending = true;
-                $otpEmail = $email;
-                $otpMessage = 'A new OTP was sent to your email.';
-            } else {
-                $error = 'Unable to resend OTP right now.';
-            }
-        }
+    if ($emailInput === '' || $password === '') {
+        $error = 'Please enter both email and password.';
+    } elseif (is_rate_limited('contractor_login', 6, 300)) {
+        $error = 'Too many login attempts. Please try again in a few minutes.';
     } else {
-        $emailInput = trim((string) ($_POST['email'] ?? ''));
-        $password = (string) ($_POST['password'] ?? '');
+        $stmt = $db->prepare("SELECT id, first_name, last_name, role, password FROM employees WHERE email = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param('s', $emailInput);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $employee = $result ? $result->fetch_assoc() : null;
+            $stmt->close();
 
-        if ($emailInput === '' || $password === '') {
-            $error = 'Please enter both email and password.';
-        } elseif (is_rate_limited('contractor_login', 6, 300)) {
-            $error = 'Too many login attempts. Please try again in a few minutes.';
-        } else {
-            $stmt = $db->prepare("SELECT id, first_name, last_name, role, password FROM employees WHERE email = ? LIMIT 1");
-            if ($stmt) {
-                $stmt->bind_param('s', $emailInput);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                $employee = $result ? $result->fetch_assoc() : null;
-                $stmt->close();
-
-                $validPassword = false;
-                if ($employee) {
-                    $validPassword = password_verify($password, (string) $employee['password']);
-                }
-
-                if (!$employee || !$validPassword) {
-                    record_attempt('contractor_login');
-                    $error = 'Invalid email or password.';
-                } else {
-                    $userRole = strtolower(trim((string) ($employee['role'] ?? '')));
-                    if (!in_array($userRole, ['contractor', 'admin', 'super_admin'], true)) {
-                        log_security_event('ROLE_DENIED', 'Contractor login blocked for non-contractor role');
-                        $error = 'Your account is not assigned to contractor access.';
-                    } else {
-                        if (contractor_has_valid_otp_trust($db, (int)$employee['id'], $userRole)) {
-                            session_regenerate_id(true);
-                            $_SESSION['employee_id'] = (int)$employee['id'];
-                            $_SESSION['employee_name'] = trim((string)$employee['first_name'] . ' ' . (string)$employee['last_name']);
-                            $_SESSION['employee_role'] = $userRole;
-                            $_SESSION['user_type'] = 'employee';
-                            $_SESSION['last_activity'] = time();
-                            $_SESSION['login_time'] = time();
-                            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-                            header('Location: /contractor/dashboard_overview.php');
-                            exit;
-                        }
-                        clear_contractor_login_otp_session();
-                        $fullName = trim((string)$employee['first_name'] . ' ' . (string)$employee['last_name']);
-                        if (issue_contractor_login_otp((int)$employee['id'], $fullName, $emailInput, $userRole)) {
-                            $otpPending = true;
-                            $otpEmail = $emailInput;
-                            $otpMessage = 'A verification code was sent to your email. Enter it below to continue.';
-                        } else {
-                            $error = 'Login validated, but OTP email could not be sent. Please try again.';
-                        }
-                    }
-                }
-            } else {
-                $error = 'Database error. Please try again.';
+            $validPassword = false;
+            if ($employee) {
+                $validPassword = password_verify($password, (string) $employee['password']);
             }
+
+            if (!$employee || !$validPassword) {
+                record_attempt('contractor_login');
+                $error = 'Invalid email or password.';
+            } else {
+                $userRole = strtolower(trim((string) ($employee['role'] ?? '')));
+                if (!in_array($userRole, ['contractor', 'admin', 'super_admin'], true)) {
+                    log_security_event('ROLE_DENIED', 'Contractor login blocked for non-contractor role');
+                    $error = 'Your account is not assigned to contractor access.';
+                } else {
+                    session_regenerate_id(true);
+                    $_SESSION['employee_id'] = (int)$employee['id'];
+                    $_SESSION['employee_name'] = trim((string)$employee['first_name'] . ' ' . (string)$employee['last_name']);
+                    $_SESSION['employee_role'] = $userRole;
+                    $_SESSION['user_type'] = 'employee';
+                    $_SESSION['last_activity'] = time();
+                    $_SESSION['login_time'] = time();
+                    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                    header('Location: /contractor/dashboard_overview.php');
+                    exit;
+                }
+            }
+        } else {
+            $error = 'Database error. Please try again.';
         }
     }
 }
@@ -286,51 +85,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="wrapper">
     <div class="card">
         <img src="../assets/images/icons/ipms-icon.png" class="icon-top" alt="LGU">
-        <h2 class="title"><?php echo $otpPending ? 'Verify OTP' : 'Contractor Login'; ?></h2>
-        <p class="subtitle"><?php echo $otpPending ? 'Enter the code sent to your email to continue.' : 'Use your employee account assigned as contractor.'; ?></p>
-        <?php if ($otpPending): ?>
-            <form method="post" autocomplete="off">
-                <div class="meta-links" style="margin-bottom:10px;font-size:.88rem;">
-                    Code sent to: <strong><?php echo htmlspecialchars($otpEmail, ENT_QUOTES, 'UTF-8'); ?></strong>
-                </div>
-                <div class="input-box">
-                    <label>One-Time Password (6 digits)</label>
-                    <input type="text" name="otp_code" maxlength="6" pattern="\d{6}" required placeholder="123456">
-                    <span class="icon">#</span>
-                </div>
-                <button class="btn-primary" type="submit" name="verify_otp_submit">Verify & Sign In</button>
-                <button class="btn-primary" type="submit" name="resend_otp_submit" style="margin-top:10px;background:linear-gradient(135deg,#475569,#64748b);">Resend OTP</button>
-                <?php if ($otpMessage !== ''): ?>
-                    <div class="meta-links" style="color:#166534;"><?php echo htmlspecialchars($otpMessage, ENT_QUOTES, 'UTF-8'); ?></div>
-                <?php endif; ?>
-                <?php if ($error !== ''): ?>
-                    <div class="ac-aabba7cf"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
-                <?php endif; ?>
-            </form>
-        <?php else: ?>
-            <form method="post" autocomplete="off">
-                <div class="input-box">
-                    <label>Email</label>
-                    <input type="email" name="email" required value="<?php echo htmlspecialchars($emailInput, ENT_QUOTES, 'UTF-8'); ?>">
-                    <span class="icon">@</span>
-                </div>
-                <div class="input-box">
-                    <label>Password</label>
-                    <input type="password" name="password" required>
-                    <span class="icon">*</span>
-                </div>
-                <button class="btn-primary" type="submit">Sign In</button>
-                <?php if ($error !== ''): ?>
-                    <div class="ac-aabba7cf"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
-                <?php endif; ?>
-                <div class="meta-links" style="margin-top:12px;font-size:.88rem;">
-                    No account yet? <a href="/contractor/create.php" style="color:#1d4e89;font-weight:600;text-decoration:none;">Create contractor account</a>
-                </div>
-            </form>
-        <?php endif; ?>
+        <h2 class="title">Contractor Login</h2>
+        <p class="subtitle">Use your employee account assigned as contractor.</p>
+        <form method="post" autocomplete="off">
+            <div class="input-box">
+                <label>Email</label>
+                <input type="email" name="email" required value="<?php echo htmlspecialchars($emailInput, ENT_QUOTES, 'UTF-8'); ?>">
+                <span class="icon">@</span>
+            </div>
+            <div class="input-box">
+                <label>Password</label>
+                <input type="password" name="password" required>
+                <span class="icon">*</span>
+            </div>
+            <button class="btn-primary" type="submit">Sign In</button>
+            <?php if ($error !== ''): ?>
+                <div class="ac-aabba7cf"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
+            <?php endif; ?>
+            <div class="meta-links" style="margin-top:12px;font-size:.88rem;">
+                No account yet? <a href="/contractor/create.php" style="color:#1d4e89;font-weight:600;text-decoration:none;">Create contractor account</a>
+            </div>
+        </form>
     </div>
 </div>
 <script src="login-security.js?v=<?php echo filemtime(__DIR__ . '/login-security.js'); ?>"></script>
 </body>
 </html>
-
