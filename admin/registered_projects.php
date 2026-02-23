@@ -12,7 +12,7 @@ set_no_cache_headers();
 // Check authentication
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['admin','department_admin','super_admin']);
+rbac_require_from_matrix('admin.projects.manage', ['admin','department_admin','super_admin']);
 $rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
 rbac_require_action_roles(
     $rbacAction,
@@ -21,6 +21,7 @@ rbac_require_action_roles(
         'update_project' => ['admin', 'department_admin', 'super_admin'],
         'get_project' => ['admin', 'department_admin', 'super_admin'],
         'load_projects' => ['admin', 'department_admin', 'super_admin'],
+        'export_projects_csv' => ['admin', 'department_admin', 'super_admin'],
         'load_project_timeline' => ['admin', 'department_admin', 'super_admin'],
     ],
     ['admin', 'department_admin', 'super_admin']
@@ -41,49 +42,220 @@ if ($db->connect_error) {
  *
  * @return array{projects: array<int, array<string, mixed>>, error: ?string}
  */
-function load_projects_data(mysqli $db): array
+function registered_projects_has_created_at(mysqli $db): bool
 {
-    $queries = [
-        "SELECT * FROM projects ORDER BY created_at DESC",
-        "SELECT * FROM projects ORDER BY id DESC",
-        "SELECT * FROM projects",
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'projects'
+           AND COLUMN_NAME = 'created_at'
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    if ($result) {
+        $result->free();
+    }
+    $stmt->close();
+    return $exists;
+}
+
+function registered_projects_bind_dynamic(mysqli_stmt $stmt, string $types, array &$params): bool
+{
+    if ($types === '' || empty($params)) {
+        return true;
+    }
+    $bindArgs = [$types];
+    foreach ($params as $key => $value) {
+        $bindArgs[] = &$params[$key];
+    }
+    return call_user_func_array([$stmt, 'bind_param'], $bindArgs);
+}
+
+function load_projects_data(mysqli $db, array $options = []): array
+{
+    $hasCreatedAt = registered_projects_has_created_at($db);
+    $page = max(1, (int) ($options['page'] ?? 1));
+    $perPage = (int) ($options['per_page'] ?? 20);
+    if ($perPage < 1) {
+        $perPage = 20;
+    }
+    if ($perPage > 100) {
+        $perPage = 100;
+    }
+    $offset = ($page - 1) * $perPage;
+    $q = strtolower(trim((string) ($options['q'] ?? '')));
+    $status = trim((string) ($options['status'] ?? ''));
+    $sort = trim((string) ($options['sort'] ?? 'createdAt_desc'));
+
+    $where = [];
+    $types = '';
+    $params = [];
+    if ($q !== '') {
+        $like = '%' . $q . '%';
+        $where[] = '(LOWER(COALESCE(code, \'\')) LIKE ? OR LOWER(COALESCE(name, \'\')) LIKE ? OR LOWER(COALESCE(location, \'\')) LIKE ? OR LOWER(COALESCE(sector, \'\')) LIKE ?)';
+        $types .= 'ssss';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+    if ($status !== '') {
+        $where[] = 'status = ?';
+        $types .= 's';
+        $params[] = $status;
+    }
+    $whereSql = '';
+    if (!empty($where)) {
+        $whereSql = 'WHERE ' . implode(' AND ', $where);
+    }
+
+    $sortMap = [
+        'createdAt_desc' => $hasCreatedAt ? 'created_at DESC' : 'id DESC',
+        'createdAt_asc' => $hasCreatedAt ? 'created_at ASC' : 'id ASC',
+        'name_asc' => 'name ASC',
+        'name_desc' => 'name DESC',
     ];
+    $orderBy = $sortMap[$sort] ?? ($hasCreatedAt ? 'created_at DESC' : 'id DESC');
 
-    $result = null;
-    $lastError = '';
-    foreach ($queries as $query) {
-        $result = $db->query($query);
-        if ($result) {
-            break;
+    try {
+        $countSql = "SELECT COUNT(*) AS total FROM projects {$whereSql}";
+        $countStmt = $db->prepare($countSql);
+        if (!$countStmt) {
+            return ['projects' => [], 'error' => 'Failed to prepare project count query', 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'total_pages' => 1];
         }
-        $lastError = $db->error;
-    }
+        if (!registered_projects_bind_dynamic($countStmt, $types, $params)) {
+            $countStmt->close();
+            return ['projects' => [], 'error' => 'Failed to bind project count query', 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'total_pages' => 1];
+        }
+        $countStmt->execute();
+        $countRes = $countStmt->get_result();
+        $total = 0;
+        if ($countRes) {
+            $countRow = $countRes->fetch_assoc();
+            $total = (int) ($countRow['total'] ?? 0);
+            $countRes->free();
+        }
+        $countStmt->close();
 
-    if (!$result) {
-        return ['projects' => [], 'error' => 'Failed to load projects: ' . $lastError];
-    }
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        if ($page > $totalPages) {
+            $page = $totalPages;
+        }
+        $offset = ($page - 1) * $perPage;
 
-    $projects = [];
-    while ($row = $result->fetch_assoc()) {
-        $projects[] = $row;
-    }
-    $result->free();
+        $dataSql = "SELECT * FROM projects {$whereSql} ORDER BY {$orderBy} LIMIT ? OFFSET ?";
+        $dataStmt = $db->prepare($dataSql);
+        if (!$dataStmt) {
+            return ['projects' => [], 'error' => 'Failed to prepare project data query', 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'total_pages' => $totalPages];
+        }
+        $dataTypes = $types . 'ii';
+        $dataParams = $params;
+        $dataParams[] = $perPage;
+        $dataParams[] = $offset;
+        if (!registered_projects_bind_dynamic($dataStmt, $dataTypes, $dataParams)) {
+            $dataStmt->close();
+            return ['projects' => [], 'error' => 'Failed to bind project data query', 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'total_pages' => $totalPages];
+        }
+        $dataStmt->execute();
+        $result = $dataStmt->get_result();
+        $projects = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $projects[] = $row;
+            }
+            $result->free();
+        }
+        $dataStmt->close();
 
-    return ['projects' => $projects, 'error' => null];
+        return [
+            'projects' => $projects,
+            'error' => null,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => $totalPages
+        ];
+    } catch (Throwable $e) {
+        return ['projects' => [], 'error' => 'Failed to load projects: ' . $e->getMessage(), 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'total_pages' => 1];
+    }
 }
 
 // Handle GET request for loading projects
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
 
-    $data = load_projects_data($db);
+    $data = load_projects_data($db, [
+        'page' => (int) ($_GET['page'] ?? 1),
+        'per_page' => (int) ($_GET['per_page'] ?? 20),
+        'q' => (string) ($_GET['q'] ?? ''),
+        'status' => (string) ($_GET['status'] ?? ''),
+        'sort' => (string) ($_GET['sort'] ?? 'createdAt_desc'),
+    ]);
     if (!empty($data['error'])) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $data['error']]);
         exit;
     }
 
-    echo json_encode($data['projects']);
+    if (isset($_GET['v2']) && $_GET['v2'] === '1') {
+        echo json_encode([
+            'success' => true,
+            'data' => $data['projects'],
+            'meta' => [
+                'page' => (int) ($data['page'] ?? 1),
+                'per_page' => (int) ($data['per_page'] ?? 20),
+                'total' => (int) ($data['total'] ?? count($data['projects'])),
+                'total_pages' => (int) ($data['total_pages'] ?? 1),
+                'has_prev' => ((int) ($data['page'] ?? 1)) > 1,
+                'has_next' => ((int) ($data['page'] ?? 1)) < ((int) ($data['total_pages'] ?? 1))
+            ]
+        ]);
+        exit;
+    }
+
+    echo json_encode($data['projects']); // legacy fallback
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'export_projects_csv') {
+    $data = load_projects_data($db, [
+        'page' => 1,
+        'per_page' => 100000,
+        'q' => (string) ($_GET['q'] ?? ''),
+        'status' => (string) ($_GET['status'] ?? ''),
+        'sort' => (string) ($_GET['sort'] ?? 'createdAt_desc'),
+    ]);
+
+    if (!empty($data['error'])) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => $data['error']]);
+        exit;
+    }
+
+    $filename = 'registered-projects-' . date('Y-m-d-His') . '.csv';
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Project Code', 'Project Name', 'Type', 'Sector', 'Priority', 'Status', 'Date Created']);
+    foreach ($data['projects'] as $p) {
+        $created = !empty($p['created_at']) ? date('Y-m-d H:i:s', strtotime((string) $p['created_at'])) : '';
+        fputcsv($out, [
+            (string) ($p['code'] ?? ''),
+            (string) ($p['name'] ?? ''),
+            (string) ($p['type'] ?? ''),
+            (string) ($p['sector'] ?? ''),
+            (string) ($p['priority'] ?? ''),
+            (string) ($p['status'] ?? ''),
+            $created
+        ]);
+    }
+    fclose($out);
     exit;
 }
 
@@ -575,1088 +747,13 @@ $db->close();
         </div>
     </div>
 
-    <style>
-        .edit-project-modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        .edit-project-modal.show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .edit-project-modal-content {
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: slideIn 0.3s ease-in-out;
-        }
-
-        .edit-project-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .edit-project-modal-header h2 {
-            margin: 0;
-            color: #1e3a8a;
-            font-size: 20px;
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 28px;
-            color: #666;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .close-modal:hover {
-            color: #000;
-        }
-
-        .edit-project-modal-body {
-            padding: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: #325071;
-            font-size: 14px;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d4e2f2;
-            border-radius: 8px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #3762c8;
-            box-shadow: 0 0 0 3px rgba(55, 98, 200, 0.1);
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        @media (max-width: 600px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .edit-project-modal-content {
-                width: 95%;
-            }
-        }
-
-        .edit-project-modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            padding: 16px 20px;
-            border-top: 1px solid #e2e8f0;
-            background-color: #f8fafc;
-        }
-
-        .btn-cancel,
-        .btn-save {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-cancel {
-            background-color: #e2e8f0;
-            color: #325071;
-        }
-
-        .btn-cancel:hover {
-            background-color: #cbd5e1;
-        }
-
-        .btn-save {
-            background: linear-gradient(135deg, #1e3a8a 0%, #2c5282 100%);
-            color: white;
-        }
-
-        .btn-save:hover {
-            box-shadow: 0 4px 12px rgba(30, 58, 130, 0.3);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .delete-confirm-modal {
-            display: none;
-            position: fixed;
-            z-index: 2100;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.55);
-            backdrop-filter: blur(2px);
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .delete-confirm-modal.show {
-            display: flex;
-            animation: fadeIn 0.2s ease-out;
-        }
-
-        .delete-confirm-content {
-            width: 100%;
-            max-width: 480px;
-            background: linear-gradient(180deg, #fff7f7 0%, #ffffff 100%);
-            border: 1px solid #fecaca;
-            border-radius: 14px;
-            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.32);
-            overflow: hidden;
-            transform: translateY(8px);
-            animation: deleteModalIn 0.2s ease-out forwards;
-        }
-
-        .delete-confirm-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 18px 20px 10px;
-        }
-
-        .delete-confirm-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: #fff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-        }
-
-        .delete-confirm-header h2 {
-            margin: 0;
-            color: #7f1d1d;
-            font-size: 20px;
-        }
-
-        .delete-confirm-body {
-            padding: 0 20px 14px;
-            color: #334155;
-        }
-
-        .delete-confirm-body p {
-            margin: 0 0 10px;
-            line-height: 1.5;
-        }
-
-        .delete-confirm-project {
-            padding: 10px 12px;
-            background: #fff;
-            border: 1px solid #fecaca;
-            border-radius: 10px;
-            color: #991b1b;
-            font-weight: 600;
-            word-break: break-word;
-        }
-
-        .delete-confirm-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            padding: 14px 20px 18px;
-            border-top: 1px solid #fee2e2;
-            background: #fff;
-        }
-
-        #deleteConfirmProceed {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: #fff;
-            border: 1px solid #b91c1c;
-            box-shadow: 0 8px 18px rgba(220, 38, 38, 0.28);
-        }
-
-        #deleteConfirmProceed:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 10px 22px rgba(185, 28, 28, 0.35);
-        }
-
-        #deleteConfirmProceed:active {
-            transform: translateY(0);
-            box-shadow: 0 4px 10px rgba(185, 28, 28, 0.3);
-        }
-
-        #deleteConfirmProceed:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(254, 202, 202, 0.95), 0 10px 22px rgba(185, 28, 28, 0.35);
-        }
-
-        @keyframes deleteModalIn {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .timeline-project-name {
-            margin: 0 0 12px;
-            padding: 10px 12px;
-            background: #f8fafc;
-            border: 1px solid #d4e2f2;
-            border-radius: 10px;
-            color: #1e3a8a;
-            font-weight: 600;
-        }
-
-        .timeline-summary {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(120px, 1fr));
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .timeline-summary-card {
-            border: 1px solid #dbe7f4;
-            border-radius: 10px;
-            background: #f8fbff;
-            padding: 8px 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            min-height: 58px;
-        }
-
-        .timeline-summary-label {
-            font-size: 11px;
-            color: #64748b;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-
-        .timeline-summary-value {
-            font-size: 14px;
-            color: #1e3a8a;
-            font-weight: 700;
-            line-height: 1.2;
-            word-break: break-word;
-        }
-
-        .timeline-toolbar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-        }
-
-        .timeline-toolbar label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #325071;
-        }
-
-        .timeline-range {
-            min-width: 170px;
-            padding: 8px 10px;
-            border: 1px solid #d4e2f2;
-            border-radius: 8px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 13px;
-            color: #1e3a8a;
-            background: #fff;
-        }
-
-        .timeline-search {
-            flex: 1;
-            min-width: 180px;
-            padding: 8px 10px;
-            border: 1px solid #d4e2f2;
-            border-radius: 8px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 13px;
-            color: #1e3a8a;
-            background: #fff;
-        }
-
-        .timeline-export-btn {
-            margin-left: auto;
-            padding: 8px 12px;
-            font-size: 13px;
-            line-height: 1.1;
-        }
-
-        .timeline-toggle {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: #325071;
-            user-select: none;
-            white-space: nowrap;
-        }
-
-        .timeline-count {
-            margin: 0 0 10px;
-            font-size: 12px;
-            color: #64748b;
-        }
-
-        .timeline-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-height: 420px;
-            overflow-y: auto;
-            padding-right: 6px;
-        }
-
-        .timeline-item {
-            border: 1px solid #dbe7f4;
-            border-radius: 10px;
-            padding: 10px 12px;
-            background: #ffffff;
-        }
-
-        .timeline-item .status-badge {
-            font-size: 12px;
-            padding: 3px 8px;
-        }
-
-        .timeline-item-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 6px;
-        }
-
-        .timeline-item-status {
-            font-weight: 700;
-            color: #1e3a8a;
-            font-size: 14px;
-        }
-
-        .timeline-item-date {
-            color: #64748b;
-            font-size: 12px;
-            white-space: nowrap;
-        }
-
-        .timeline-item-meta {
-            color: #334155;
-            font-size: 13px;
-            margin-bottom: 4px;
-        }
-
-        .timeline-item-transition {
-            margin-bottom: 6px;
-            font-size: 12px;
-            color: #1d4ed8;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 8px;
-            border-radius: 999px;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-        }
-
-        .timeline-item-notes {
-            color: #475569;
-            font-size: 13px;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
-        .timeline-empty {
-            padding: 18px 12px;
-            text-align: center;
-            color: #64748b;
-            border: 1px dashed #c9d8ee;
-            border-radius: 10px;
-            background: #f8fbff;
-        }
-
-        .timeline-loadmore-wrap {
-            padding-top: 12px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .timeline-loadmore-btn {
-            min-width: 160px;
-        }
-
-        @media (max-width: 540px) {
-            .timeline-summary {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .timeline-export-btn {
-                margin-left: 0;
-                width: 100%;
-            }
-
-            .timeline-search {
-                width: 100%;
-                min-width: 0;
-            }
-        }
-    </style>
-
+    <link rel="stylesheet" href="../assets/css/admin-registered-projects.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-registered-projects.css'); ?>">
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
-    
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
-    <script>
-    (function () {
-        const table = document.getElementById('projectsTable');
-        const tbody = table ? table.querySelector('tbody') : null;
-        const msg = document.getElementById('formMessage');
-        const searchInput = document.getElementById('searchProjects');
-        const statusFilter = document.getElementById('filterStatus');
-        const exportCsvBtn = document.getElementById('exportCsv');
-
-        const editModal = document.getElementById('editProjectModal');
-        const editForm = document.getElementById('editProjectForm');
-        const editSaveBtn = document.querySelector('.btn-save');
-        const deleteConfirmModal = document.getElementById('deleteConfirmModal');
-        const deleteConfirmProjectName = document.getElementById('deleteConfirmProjectName');
-        const deleteConfirmCancel = document.getElementById('deleteConfirmCancel');
-        const deleteConfirmProceed = document.getElementById('deleteConfirmProceed');
-        const timelineModal = document.getElementById('projectTimelineModal');
-        const timelineList = document.getElementById('timelineList');
-        const timelineProjectName = document.getElementById('timelineProjectName');
-        const closeTimelineModalBtn = document.getElementById('closeTimelineModalBtn');
-        const timelineCloseFooterBtn = document.getElementById('timelineCloseFooterBtn');
-        const timelineRange = document.getElementById('timelineRange');
-        const timelineExportCsvBtn = document.getElementById('timelineExportCsvBtn');
-        const timelineSearch = document.getElementById('timelineSearch');
-        const timelineCount = document.getElementById('timelineCount');
-        const timelineLoadMoreBtn = document.getElementById('timelineLoadMoreBtn');
-        const timelineShowDuplicates = document.getElementById('timelineShowDuplicates');
-        const timelineLatestStatus = document.getElementById('timelineLatestStatus');
-        const timelineTotalChanges = document.getElementById('timelineTotalChanges');
-        const timelineMostFrequent = document.getElementById('timelineMostFrequent');
-        const timelineReviewers = document.getElementById('timelineReviewers');
-
-        if (!table || !tbody) return;
-
-        let allProjects = [];
-        let pendingDeleteId = null;
-        let currentTimelineEntries = [];
-        let currentTimelineProjectId = null;
-        let currentTimelineProjectName = '';
-        let currentFilteredTimelineEntries = [];
-        let timelineVisibleCount = 30;
-        const timelinePageSize = 30;
-
-        function showMsg(text, ok) {
-            if (!msg) return;
-            msg.textContent = text || '';
-            msg.style.color = ok ? '#16a34a' : '#dc2626';
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; }, 3000);
-        }
-
-        function apiUrls(suffix) {
-            const urls = [];
-            if (typeof window.getApiUrl === 'function') {
-                urls.push(getApiUrl('admin/registered_projects.php' + suffix));
-            }
-            urls.push('registered_projects.php' + suffix);
-            urls.push('/admin/registered_projects.php' + suffix);
-            return urls;
-        }
-
-        function fetchJsonWithFallback(urls, options) {
-            const tryFetch = (idx) => {
-                if (idx >= urls.length) throw new Error('All API endpoints failed');
-                return fetch(urls[idx], options)
-                    .then((res) => {
-                        if (!res.ok) throw new Error('HTTP ' + res.status);
-                        return res.json();
-                    })
-                    .catch(() => tryFetch(idx + 1));
-            };
-            return tryFetch(0);
-        }
-
-        function esc(v) {
-            return String(v ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        function toKey(v) {
-            return String(v || 'draft').toLowerCase().replace(/\s+/g, '');
-        }
-
-        function renderProjects(projects) {
-            tbody.innerHTML = '';
-            if (!projects.length) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#6b7280;">No projects found.</td></tr>';
-                return;
-            }
-
-            projects.forEach((p) => {
-                const row = document.createElement('tr');
-                const createdDate = p.created_at ? new Date(p.created_at).toLocaleDateString() : 'N/A';
-                const priority = p.priority || 'Medium';
-                const priorityMap = { crucial: 100, high: 75, medium: 50, low: 25 };
-                const priorityPct = priorityMap[String(priority).toLowerCase()] || 50;
-                const status = p.status || 'Draft';
-                row.innerHTML = `
-                    <td>${esc(p.code)}</td>
-                    <td>${esc(p.name)}</td>
-                    <td>${esc(p.type)}</td>
-                    <td>${esc(p.sector)}</td>
-                    <td><span class="priority-badge ${toKey(priority)}">${esc(priority)} ${priorityPct}%</span></td>
-                    <td><span class="status-badge ${toKey(status)}">${esc(status)}</span></td>
-                    <td>${esc(createdDate)}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-timeline" data-id="${esc(p.id)}" type="button">Timeline</button>
-                            <button class="btn-edit" data-id="${esc(p.id)}" type="button">Edit</button>
-                            <button class="btn-delete" data-id="${esc(p.id)}" type="button">Delete</button>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function renderTimelineEntries(entries) {
-            if (!timelineList) return;
-            if (!entries.length) {
-                timelineList.innerHTML = '<div class="timeline-empty">No status history yet.</div>';
-                if (timelineCount) timelineCount.textContent = '0 entries';
-                if (timelineLoadMoreBtn) timelineLoadMoreBtn.style.display = 'none';
-                updateTimelineSummary(entries);
-                return;
-            }
-
-            const visible = entries.slice(0, timelineVisibleCount);
-            timelineList.innerHTML = visible.map((entry, index) => {
-                const changedAt = entry.changed_at ? new Date(entry.changed_at).toLocaleString() : 'N/A';
-                const badgeClass = toKey(entry.status || 'draft');
-                const previousEntry = entries[index + 1] || null;
-                const currentStatus = String(entry.status || 'Unknown');
-                const previousStatus = String(previousEntry ? (previousEntry.status || 'Unknown') : 'Initial');
-                const hasTransition = previousEntry && previousStatus !== currentStatus;
-                const transitionText = hasTransition
-                    ? `${previousStatus} -> ${currentStatus}`
-                    : `Set as ${currentStatus}`;
-                return `
-                    <div class="timeline-item">
-                        <div class="timeline-item-head">
-                            <span class="status-badge ${esc(badgeClass)}">${esc(entry.status || 'Unknown')}</span>
-                            <span class="timeline-item-date">${esc(changedAt)}</span>
-                        </div>
-                        <div class="timeline-item-transition">${esc(transitionText)}</div>
-                        <div class="timeline-item-meta">By: ${esc(entry.changed_by || 'System')}</div>
-                        <div class="timeline-item-notes">${esc(entry.notes || 'No notes provided.')}</div>
-                    </div>
-                `;
-            }).join('');
-
-            if (timelineCount) {
-                timelineCount.textContent = `${visible.length} of ${entries.length} entries`;
-            }
-
-            if (timelineLoadMoreBtn) {
-                timelineLoadMoreBtn.style.display = visible.length < entries.length ? 'inline-flex' : 'none';
-            }
-            updateTimelineSummary(entries);
-        }
-
-        function updateTimelineSummary(entries) {
-            const list = Array.isArray(entries) ? entries : [];
-            if (timelineTotalChanges) timelineTotalChanges.textContent = String(list.length);
-
-            if (timelineLatestStatus) {
-                timelineLatestStatus.textContent = list.length ? String(list[0].status || 'Unknown') : '-';
-            }
-
-            if (timelineReviewers) {
-                const reviewers = new Set(
-                    list
-                        .map((x) => String(x.changed_by || '').trim())
-                        .filter((x) => x.length > 0)
-                );
-                timelineReviewers.textContent = String(reviewers.size);
-            }
-
-            if (timelineMostFrequent) {
-                if (!list.length) {
-                    timelineMostFrequent.textContent = '-';
-                } else {
-                    const freq = {};
-                    list.forEach((x) => {
-                        const key = String(x.status || 'Unknown').trim() || 'Unknown';
-                        freq[key] = (freq[key] || 0) + 1;
-                    });
-                    let topStatus = '';
-                    let topCount = -1;
-                    Object.keys(freq).forEach((k) => {
-                        if (freq[k] > topCount) {
-                            topStatus = k;
-                            topCount = freq[k];
-                        }
-                    });
-                    timelineMostFrequent.textContent = topStatus ? `${topStatus} (${topCount})` : '-';
-                }
-            }
-        }
-
-        function filterTimelineEntries(entries, rangeValue) {
-            if (!Array.isArray(entries)) return [];
-            if (!rangeValue || rangeValue === 'all') return entries.slice();
-
-            const days = Number(rangeValue);
-            if (!Number.isFinite(days) || days <= 0) return entries.slice();
-
-            const now = Date.now();
-            const cutoff = now - (days * 24 * 60 * 60 * 1000);
-            return entries.filter((entry) => {
-                const dt = Date.parse(entry.changed_at || '');
-                return Number.isFinite(dt) && dt >= cutoff;
-            });
-        }
-
-        function removeConsecutiveDuplicateStatuses(entries) {
-            if (!Array.isArray(entries) || entries.length < 2) return Array.isArray(entries) ? entries.slice() : [];
-            const out = [];
-            let lastStatus = null;
-            entries.forEach((entry) => {
-                const statusKey = String(entry.status || '').trim().toLowerCase();
-                if (statusKey !== lastStatus) {
-                    out.push(entry);
-                    lastStatus = statusKey;
-                }
-            });
-            return out;
-        }
-
-        function applyTimelineFilter() {
-            const rangeValue = timelineRange ? timelineRange.value : 'all';
-            const searchTerm = (timelineSearch ? timelineSearch.value : '').trim().toLowerCase();
-            const ranged = filterTimelineEntries(currentTimelineEntries, rangeValue);
-            const searched = !searchTerm ? ranged : ranged.filter((entry) => {
-                const haystack = `${entry.status || ''} ${entry.notes || ''} ${entry.changed_by || ''}`.toLowerCase();
-                return haystack.includes(searchTerm);
-            });
-            const showDuplicates = timelineShowDuplicates ? !!timelineShowDuplicates.checked : false;
-            currentFilteredTimelineEntries = showDuplicates ? searched : removeConsecutiveDuplicateStatuses(searched);
-            renderTimelineEntries(currentFilteredTimelineEntries);
-        }
-
-        function closeTimelineModal() {
-            if (!timelineModal) return;
-            timelineModal.classList.remove('show');
-            timelineModal.setAttribute('aria-hidden', 'true');
-        }
-
-        function openTimelineModal(projectId, projectName) {
-            if (!timelineModal || !timelineList) return;
-
-            currentTimelineProjectId = Number(projectId) || null;
-            currentTimelineProjectName = projectName || '';
-            currentTimelineEntries = [];
-            currentFilteredTimelineEntries = [];
-            timelineVisibleCount = timelinePageSize;
-            if (timelineRange) timelineRange.value = 'all';
-            if (timelineSearch) timelineSearch.value = '';
-            if (timelineShowDuplicates) timelineShowDuplicates.checked = false;
-            timelineProjectName.textContent = projectName ? ('Project: ' + projectName) : 'Project timeline';
-            timelineList.innerHTML = '<div class="timeline-empty">Loading timeline...</div>';
-            timelineModal.classList.add('show');
-            timelineModal.setAttribute('aria-hidden', 'false');
-
-            const nonce = Date.now();
-            const url = '?action=load_project_timeline&project_id=' + encodeURIComponent(projectId) + '&_=' + nonce;
-            fetchJsonWithFallback(apiUrls(url), { credentials: 'same-origin' })
-                .then((data) => {
-                    if (!data || data.success === false) {
-                        throw new Error((data && data.message) ? data.message : 'Failed timeline request');
-                    }
-                    currentTimelineEntries = Array.isArray(data.history) ? data.history : [];
-                    applyTimelineFilter();
-                })
-                .catch(() => {
-                    timelineList.innerHTML = '<div class="timeline-empty">Unable to load status timeline.</div>';
-                });
-        }
-
-        function exportCurrentTimelineCsv() {
-            if (!currentTimelineEntries.length) {
-                showMsg('No timeline data to export.', false);
-                return;
-            }
-            const rowsData = currentFilteredTimelineEntries.length ? currentFilteredTimelineEntries : [];
-            if (!rowsData.length) {
-                showMsg('No timeline entries for selected range.', false);
-                return;
-            }
-
-            const headers = ['Project ID', 'Project Name', 'Status', 'Changed At', 'Changed By', 'Notes'];
-            const rows = rowsData.map((item) => ([
-                currentTimelineProjectId || '',
-                currentTimelineProjectName || '',
-                item.status || '',
-                item.changed_at || '',
-                item.changed_by || '',
-                item.notes || ''
-            ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')));
-
-            const csv = [headers.join(','), ...rows].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const dateTag = new Date().toISOString().slice(0, 10);
-            link.href = URL.createObjectURL(blob);
-            link.download = `project_timeline_${currentTimelineProjectId || 'unknown'}_${dateTag}.csv`;
-            link.click();
-        }
-
-        function fillEditModal(project) {
-            if (!editModal || !editForm) return;
-            const setVal = (selector, value) => {
-                const el = document.querySelector(selector);
-                if (el) el.value = value || '';
-            };
-            setVal('#projectId', project.id);
-            setVal('#projectCode', project.code);
-            setVal('#projectName', project.name);
-            setVal('#projectType', project.type);
-            setVal('#projectSector', project.sector);
-            setVal('#projectPriority', project.priority || 'Medium');
-            setVal('#projectStatus', project.status || 'Draft');
-            setVal('#projectDescription', project.description);
-            editModal.classList.add('show');
-        }
-
-        function openEditProjectModal(id) {
-            const project = allProjects.find((x) => Number(x.id) === Number(id));
-            if (project) {
-                fillEditModal(project);
-                return;
-            }
-
-            const nonce = Date.now();
-            const urls = apiUrls('?action=get_project&id=' + encodeURIComponent(id) + '&_=' + nonce);
-            fetchJsonWithFallback(urls, { credentials: 'same-origin' })
-                .then((data) => {
-                    if (!data || data.success === false) throw new Error('Project not found');
-                    fillEditModal(data);
-                })
-                .catch(() => showMsg('Project data not found. Please refresh.', false));
-        }
-
-        function closeEditProjectModal() {
-            if (editModal) editModal.classList.remove('show');
-        }
-
-        function saveEditedProject() {
-            if (!editForm) return;
-            const formData = new FormData(editForm);
-            formData.append('action', 'update_project');
-
-            if (editSaveBtn) {
-                editSaveBtn.disabled = true;
-                editSaveBtn.textContent = 'Saving...';
-            }
-
-            fetchJsonWithFallback(apiUrls(''), { method: 'POST', body: formData })
-                .then((data) => {
-                    showMsg(data.message || (data.success ? 'Project updated.' : 'Update failed.'), !!data.success);
-                    if (data.success) {
-                        closeEditProjectModal();
-                        loadProjects();
-                    }
-                })
-                .catch(() => showMsg('Error saving project.', false))
-                .finally(() => {
-                    if (editSaveBtn) {
-                        editSaveBtn.disabled = false;
-                        editSaveBtn.textContent = 'Save Changes';
-                    }
-                });
-        }
-
-        function performDelete(id) {
-            fetchJsonWithFallback(apiUrls(''), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'action=delete_project&id=' + encodeURIComponent(id)
-            })
-            .then((data) => {
-                showMsg(data.message || (data.success ? 'Project deleted.' : 'Delete failed.'), !!data.success);
-                if (data.success) loadProjects();
-            })
-            .catch(() => showMsg('Error deleting project.', false));
-        }
-
-        function confirmDeleteProject(id, projectName) {
-            const safeName = projectName || 'this project';
-
-            if (!deleteConfirmModal || !deleteConfirmProjectName) {
-                if (window.confirm(`Delete "${safeName}" permanently? This cannot be undone.`)) {
-                    performDelete(id);
-                }
-                return;
-            }
-
-            pendingDeleteId = id;
-            deleteConfirmProjectName.textContent = safeName;
-            deleteConfirmModal.classList.add('show');
-            deleteConfirmModal.setAttribute('aria-hidden', 'false');
-            if (deleteConfirmProceed) deleteConfirmProceed.focus();
-        }
-
-        function closeDeleteConfirmModal() {
-            pendingDeleteId = null;
-            if (!deleteConfirmModal) return;
-            deleteConfirmModal.classList.remove('show');
-            deleteConfirmModal.setAttribute('aria-hidden', 'true');
-        }
-
-        function filterProjects() {
-            const searchTerm = (searchInput ? searchInput.value : '').toLowerCase();
-            const statusTerm = statusFilter ? statusFilter.value : '';
-            const filtered = allProjects.filter((p) => {
-                const matchesSearch = !searchTerm ||
-                    (p.code || '').toLowerCase().includes(searchTerm) ||
-                    (p.name || '').toLowerCase().includes(searchTerm) ||
-                    (p.sector || '').toLowerCase().includes(searchTerm);
-                const matchesStatus = !statusTerm || p.status === statusTerm;
-                return matchesSearch && matchesStatus;
-            });
-            renderProjects(filtered);
-        }
-
-        function loadProjects() {
-            const nonce = Date.now();
-            fetchJsonWithFallback(apiUrls('?action=load_projects&_=' + nonce), { credentials: 'same-origin' })
-                .then((projects) => {
-                    if (!Array.isArray(projects)) throw new Error('Invalid payload');
-                    allProjects = projects;
-                    renderProjects(allProjects);
-                })
-                .catch(() => {
-                    if (!tbody.querySelector('tr')) {
-                        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#c00;">Error loading projects. Check console.</td></tr>';
-                    }
-                });
-        }
-
-        table.addEventListener('click', function (event) {
-            const timelineBtn = event.target.closest('.btn-timeline');
-            if (timelineBtn) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                const row = timelineBtn.closest('tr');
-                const projectName = row ? (row.querySelector('td:nth-child(2)')?.textContent || '').trim() : '';
-                openTimelineModal(timelineBtn.dataset.id, projectName);
-                return;
-            }
-
-            const editBtn = event.target.closest('.btn-edit');
-            if (editBtn) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                openEditProjectModal(editBtn.dataset.id);
-                return;
-            }
-
-            const deleteBtn = event.target.closest('.btn-delete');
-            if (deleteBtn) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                const row = deleteBtn.closest('tr');
-                const projectName = row ? (row.querySelector('td:nth-child(2)')?.textContent || '').trim() : '';
-                confirmDeleteProject(deleteBtn.dataset.id, projectName);
-            }
-        }, true);
-
-        if (searchInput) searchInput.addEventListener('input', filterProjects);
-        if (statusFilter) statusFilter.addEventListener('change', filterProjects);
-
-        if (exportCsvBtn) {
-            exportCsvBtn.addEventListener('click', function () {
-                if (!allProjects.length) {
-                    alert('No projects to export');
-                    return;
-                }
-                const keys = ['code', 'name', 'type', 'sector', 'priority', 'status'];
-                const headers = keys.map((k) => k.charAt(0).toUpperCase() + k.slice(1)).join(',');
-                const rows = allProjects.map((p) =>
-                    keys.map((k) => `"${String(p[k] || '').replace(/"/g, '""')}"`).join(',')
-                );
-                const csv = [headers, ...rows].join('\n');
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `projects_${new Date().toISOString().slice(0, 10)}.csv`;
-                link.click();
-            });
-        }
-
-        window.openEditModal = openEditProjectModal;
-        window.closeEditModal = closeEditProjectModal;
-        window.saveProject = saveEditedProject;
-        window.confirmDeleteProject = confirmDeleteProject;
-
-        if (editModal) {
-            window.addEventListener('click', function (event) {
-                if (event.target === editModal) closeEditProjectModal();
-            });
-        }
-
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && editModal && editModal.classList.contains('show')) {
-                closeEditProjectModal();
-            }
-            if (event.key === 'Escape' && deleteConfirmModal && deleteConfirmModal.classList.contains('show')) {
-                closeDeleteConfirmModal();
-            }
-            if (event.key === 'Escape' && timelineModal && timelineModal.classList.contains('show')) {
-                closeTimelineModal();
-            }
-        });
-
-        if (deleteConfirmCancel) {
-            deleteConfirmCancel.addEventListener('click', closeDeleteConfirmModal);
-        }
-
-        if (deleteConfirmProceed) {
-            deleteConfirmProceed.addEventListener('click', function () {
-                if (!pendingDeleteId) return;
-                const idToDelete = pendingDeleteId;
-                closeDeleteConfirmModal();
-                performDelete(idToDelete);
-            });
-        }
-
-        if (deleteConfirmModal) {
-            deleteConfirmModal.addEventListener('click', function (event) {
-                if (event.target === deleteConfirmModal) {
-                    closeDeleteConfirmModal();
-                }
-            });
-        }
-
-        if (closeTimelineModalBtn) {
-            closeTimelineModalBtn.addEventListener('click', closeTimelineModal);
-        }
-        if (timelineCloseFooterBtn) {
-            timelineCloseFooterBtn.addEventListener('click', closeTimelineModal);
-        }
-        if (timelineRange) {
-            timelineRange.addEventListener('change', function () {
-                timelineVisibleCount = timelinePageSize;
-                applyTimelineFilter();
-            });
-        }
-        if (timelineSearch) {
-            timelineSearch.addEventListener('input', function () {
-                timelineVisibleCount = timelinePageSize;
-                applyTimelineFilter();
-            });
-        }
-        if (timelineShowDuplicates) {
-            timelineShowDuplicates.addEventListener('change', function () {
-                timelineVisibleCount = timelinePageSize;
-                applyTimelineFilter();
-            });
-        }
-        if (timelineExportCsvBtn) {
-            timelineExportCsvBtn.addEventListener('click', exportCurrentTimelineCsv);
-        }
-        if (timelineLoadMoreBtn) {
-            timelineLoadMoreBtn.addEventListener('click', function () {
-                timelineVisibleCount += timelinePageSize;
-                renderTimelineEntries(currentFilteredTimelineEntries);
-            });
-        }
-        if (timelineModal) {
-            timelineModal.addEventListener('click', function (event) {
-                if (event.target === timelineModal) {
-                    closeTimelineModal();
-                }
-            });
-        }
-
-        loadProjects();
-    })();
-    </script>
+    <script src="../assets/js/admin-registered-projects.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-registered-projects.js'); ?>"></script>
 </body>
 </html>
+
 
 
 

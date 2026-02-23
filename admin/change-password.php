@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -6,7 +6,7 @@ require dirname(__DIR__) . '/includes/rbac.php';
 
 set_no_cache_headers();
 check_auth();
-rbac_require_roles(['admin', 'department_admin', 'super_admin']);
+rbac_require_from_matrix('admin.dashboard.view', ['admin','department_admin','super_admin']);
 
 $error = '';
 $success = '';
@@ -153,27 +153,27 @@ if (isset($db)) {
 
         <?php if (!empty($success)): ?>
         <div class="ac-eee71138">
-            âœ… <?php echo htmlspecialchars($success); ?>
+            ✅ <?php echo htmlspecialchars($success); ?>
         </div>
         <?php endif; ?>
 
         <form method="post">
             <div class="input-box">
                 <label>Current Password</label>
-                <input type="password" name="current_password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required autocomplete="current-password">
-                <span class="icon">ðŸ”’</span>
+                <input type="password" name="current_password" placeholder="••••••••" required autocomplete="current-password">
+                <span class="icon">🔒</span>
             </div>
 
             <div class="input-box">
                 <label>New Password</label>
-                <input type="password" name="new_password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required autocomplete="new-password">
-                <span class="icon">ðŸ”’</span>
+                <input type="password" name="new_password" placeholder="••••••••" required autocomplete="new-password">
+                <span class="icon">🔒</span>
             </div>
 
             <div class="input-box">
                 <label>Confirm New Password</label>
-                <input type="password" name="confirm_password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required autocomplete="new-password">
-                <span class="icon">ðŸ”’</span>
+                <input type="password" name="confirm_password" placeholder="••••••••" required autocomplete="new-password">
+                <span class="icon">🔒</span>
             </div>
 
             <div class="ac-97825712">

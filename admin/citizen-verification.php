@@ -6,7 +6,7 @@ require dirname(__DIR__) . '/config-path.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['admin','department_admin','super_admin']);
+rbac_require_from_matrix('admin.citizen_verification.manage', ['admin','department_admin','super_admin']);
 check_suspicious_activity();
 
 if (!isset($db) || $db->connect_error) {
@@ -93,43 +93,9 @@ $db->close();
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
-    <style>
-        body.citizen-verification-page,
-        body.citizen-verification-page *:not(svg):not(path) { font-family:'Poppins',sans-serif !important; }
-
-        .verify-toolbar { display:grid; grid-template-columns:minmax(220px,1.2fr) minmax(160px,.7fr); gap:10px; margin:8px 0 14px; }
-        .verify-input, .verify-select { border:1px solid #cbd5e1; border-radius:10px; padding:10px 12px; font-size:.92rem; }
-        .verify-layout { display:grid; grid-template-columns:minmax(320px,42%) minmax(460px,58%); gap:14px; min-height:70vh; }
-        .verify-list { border:1px solid #dbe7f3; border-radius:12px; background:#fff; overflow:auto; }
-        .verify-row { padding:12px; border-bottom:1px solid #eef2f7; cursor:pointer; }
-        .verify-row:hover { background:#f8fbff; }
-        .verify-row.active { background:#e8f0fe; border-left:4px solid #2563eb; padding-left:8px; }
-        .verify-row-top { display:flex; justify-content:space-between; gap:10px; margin-bottom:4px; }
-        .verify-name { font-weight:700; color:#0f172a; }
-        .verify-date { font-size:.82rem; color:#64748b; white-space:nowrap; }
-        .verify-meta { display:flex; gap:8px; align-items:center; color:#475569; font-size:.86rem; margin-bottom:3px; }
-        .verify-sub { font-size:.84rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-
-        .verify-detail { border:1px solid #dbe7f3; border-radius:12px; background:#fff; padding:14px; overflow:auto; }
-        .verify-detail-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:12px; }
-        .verify-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
-        .verify-field { border:1px solid #dbe7f3; border-radius:10px; background:#f8fbff; padding:10px; }
-        .verify-field label { display:block; font-size:.74rem; color:#475569; font-weight:700; text-transform:uppercase; margin-bottom:4px; }
-        .verify-field div { color:#0f172a; font-weight:600; word-break:break-word; }
-
-        .verify-id-preview { margin-top:12px; border:1px solid #dbe7f3; border-radius:10px; background:#fff; padding:8px; min-height:260px; }
-        .verify-id-preview img { max-width:100%; max-height:56vh; display:block; margin:0 auto; border-radius:8px; }
-        .verify-id-dual { display:grid; grid-template-columns:repeat(2,minmax(220px,1fr)); gap:10px; }
-        .verify-id-preview iframe { width:100%; height:56vh; border:0; border-radius:8px; }
-        .verify-actions { margin-top:12px; display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
-
-        .empty-state { padding:16px; color:#64748b; }
-
-        @media (max-width: 1100px) { .verify-layout { grid-template-columns:1fr; min-height:auto; } }
-        @media (max-width: 860px) { .verify-grid, .verify-toolbar { grid-template-columns:1fr; } }
-    </style>
+    <link rel="stylesheet" href="../assets/css/admin-citizen-verification.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-citizen-verification.css'); ?>">
 </head>
-<body class="citizen-verification-page">
+<body class="citizen-verification-page" data-selected-user="<?php echo (int) $selectedUserId; ?>">
 <header class="nav" id="navbar">
     <button class="navbar-menu-icon" id="navbarMenuIcon" title="Show sidebar">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
@@ -276,120 +242,7 @@ $db->close();
 
 <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
-<script>
-(function () {
-    var rows = Array.prototype.slice.call(document.querySelectorAll('[data-row]'));
-    var search = document.getElementById('verifySearch');
-    var filter = document.getElementById('verifyStatus');
-    var userIdInput = document.getElementById('vmUserId');
-    var idImg = document.getElementById('vmIdImage');
-    var idFrontImg = document.getElementById('vmIdFrontImage');
-    var idBackImg = document.getElementById('vmIdBackImage');
-    var idDual = document.getElementById('vmIdDual');
-    var idPdf = document.getElementById('vmIdPdf');
-    var idEmpty = document.getElementById('vmIdEmpty');
-
-    function setText(id, value) {
-        var el = document.getElementById(id);
-        if (el) el.textContent = value && value !== '' ? value : '-';
-    }
-
-    function openRow(row) {
-        if (!row) return;
-        rows.forEach(function (r) { r.classList.remove('active'); });
-        row.classList.add('active');
-
-        setText('vmName', row.getAttribute('data-name'));
-        setText('vmEmail', row.getAttribute('data-email'));
-        setText('vmMobile', row.getAttribute('data-mobile'));
-        setText('vmBirthdate', row.getAttribute('data-birthdate'));
-        setText('vmGender', row.getAttribute('data-gender'));
-        setText('vmCivilStatus', row.getAttribute('data-civil_status'));
-        setText('vmAddress', row.getAttribute('data-address'));
-        setText('vmIdType', row.getAttribute('data-id_type'));
-        setText('vmIdNumber', row.getAttribute('data-id_number'));
-        setText('vmCreated', row.getAttribute('data-created'));
-
-        var badge = document.getElementById('vmStatusBadge');
-        if (badge) {
-            badge.textContent = row.getAttribute('data-status') || 'Pending';
-            badge.className = 'status-badge ' + (row.getAttribute('data-status_class') || 'pending');
-        }
-        if (userIdInput) userIdInput.value = row.getAttribute('data-user_id') || '0';
-
-        if (idImg) { idImg.src = ''; idImg.style.display = 'none'; }
-        if (idFrontImg) { idFrontImg.src = ''; idFrontImg.style.display = 'none'; }
-        if (idBackImg) { idBackImg.src = ''; idBackImg.style.display = 'none'; }
-        if (idDual) idDual.style.display = 'none';
-        if (idPdf) { idPdf.src = ''; idPdf.style.display = 'none'; }
-
-        var file = row.getAttribute('data-id_upload') || '';
-        if (!file) {
-            if (idEmpty) idEmpty.style.display = 'block';
-            return;
-        }
-        if (idEmpty) idEmpty.style.display = 'none';
-
-        var lower = file.toLowerCase();
-        var parsed = null;
-        if (file && (file.charAt(0) === '{' || file.charAt(0) === '[')) {
-            try { parsed = JSON.parse(file); } catch (_) { parsed = null; }
-        }
-        if (parsed && typeof parsed === 'object' && (parsed.front || parsed.back)) {
-            if (idDual) idDual.style.display = 'grid';
-            if (idFrontImg) {
-                idFrontImg.src = parsed.front || parsed.back || '';
-                idFrontImg.style.display = 'block';
-            }
-            if (idBackImg) {
-                idBackImg.src = parsed.back || parsed.front || '';
-                idBackImg.style.display = 'block';
-            }
-            return;
-        }
-
-        if (lower.endsWith('.pdf')) {
-            if (idPdf) { idPdf.src = file; idPdf.style.display = 'block'; }
-        } else {
-            if (idImg) { idImg.src = file; idImg.style.display = 'block'; }
-        }
-    }
-
-    function applyFilter() {
-        var q = (search && search.value ? search.value : '').toLowerCase().trim();
-        var s = filter ? filter.value : 'all';
-
-        rows.forEach(function (row) {
-            var text = (row.textContent || '').toLowerCase();
-            var status = (row.getAttribute('data-status_key') || '').toLowerCase();
-            var okStatus = s === 'all' || status === s;
-            var okQuery = q === '' || text.indexOf(q) !== -1;
-            row.style.display = okStatus && okQuery ? '' : 'none';
-        });
-
-        var active = document.querySelector('.verify-row.active');
-        if (!active || active.style.display === 'none') {
-            var firstVisible = rows.find(function (r) { return r.style.display !== 'none'; });
-            if (firstVisible) openRow(firstVisible);
-        }
-    }
-
-    rows.forEach(function (row) {
-        row.addEventListener('click', function () { openRow(row); });
-    });
-    if (search) search.addEventListener('input', applyFilter);
-    if (filter) filter.addEventListener('change', applyFilter);
-
-    var selectedId = <?php echo (int) $selectedUserId; ?>;
-    if (selectedId > 0) {
-        var selected = document.querySelector('[data-row][data-user_id="' + String(selectedId) + '"]');
-        if (selected) openRow(selected);
-    } else {
-        var first = rows[0];
-        if (first) openRow(first);
-    }
-})();
-</script>
+<script src="../assets/js/admin-citizen-verification.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-citizen-verification.js'); ?>"></script>
 </body>
 </html>
 

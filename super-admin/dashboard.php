@@ -126,9 +126,9 @@ if (isset($db) && !$db->connect_error) {
             </article>
         </div>
 
-        <div class="recent-projects" style="margin-top:16px;">
+        <div class="recent-projects sa-section-spaced">
             <h3>Super Admin Actions</h3>
-            <p style="margin-bottom:14px;color:#456286;">Manage employee accounts, reset credentials, set roles, and oversee system security.</p>
+            <p class="sa-actions-intro">Manage employee accounts, reset credentials, set roles, and oversee system security.</p>
             <div class="sa-actions">
                 <a href="employee_accounts.php" class="view-btn">Open Employee Account Manager</a>
                 <a href="/super-admin/security_audit_logs.php" class="view-btn">Open Audit Logs</a>

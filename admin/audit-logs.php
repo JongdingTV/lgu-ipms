@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -6,7 +6,7 @@ require dirname(__DIR__) . '/includes/rbac.php';
 
 set_no_cache_headers();
 check_auth();
-rbac_require_roles(['admin', 'department_admin', 'super_admin']);
+rbac_require_from_matrix('admin.audit.view', ['admin','department_admin','super_admin']);
 
 $employee_id = $_SESSION['employee_id'];
 $employee_name = $_SESSION['employee_name'] ?? '';
@@ -135,7 +135,7 @@ if (isset($db)) {
                             </td>
                             <td><?php echo date('M d, Y H:i:s', strtotime($log['login_time'])); ?></td>
                             <td><code><?php echo htmlspecialchars($log['ip_address']); ?></code></td>
-                            <td><?php echo !empty($log['reason']) ? htmlspecialchars($log['reason']) : 'â€”'; ?></td>
+                            <td><?php echo !empty($log['reason']) ? htmlspecialchars($log['reason']) : '—'; ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -152,12 +152,12 @@ if (isset($db)) {
         </div>
         <div class="card-body">
             <ul class="ac-648149ce">
-                <li>âœ… Change your password regularly (at least every 90 days)</li>
-                <li>âœ… Use strong passwords with mixed characters</li>
-                <li>âœ… Never share your credentials with anyone</li>
-                <li>âœ… Log out when finished, especially on shared computers</li>
-                <li>âœ… Review login activity regularly for suspicious access</li>
-                <li>âœ… Report any unauthorized access immediately</li>
+                <li>✅ Change your password regularly (at least every 90 days)</li>
+                <li>✅ Use strong passwords with mixed characters</li>
+                <li>✅ Never share your credentials with anyone</li>
+                <li>✅ Log out when finished, especially on shared computers</li>
+                <li>✅ Review login activity regularly for suspicious access</li>
+                <li>✅ Report any unauthorized access immediately</li>
             </ul>
         </div>
     </div>

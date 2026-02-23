@@ -681,7 +681,7 @@ if ($searchQuery !== '' && $db) {
                                             <input type="hidden" name="csrf_token" value="<?php echo sa_escape($csrfToken); ?>">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="employee_id" value="<?php echo (int)$row['id']; ?>">
-                                            <button type="submit" class="edit-btn sa-mini-btn sa-delete-btn" onclick="return confirm('Delete this account?')">Delete</button>
+                                            <button type="submit" class="edit-btn sa-mini-btn sa-delete-btn" data-confirm-delete="Delete this account?">Delete</button>
                                         </form>
                                     </div>
                                 </td>
@@ -696,5 +696,6 @@ if ($searchQuery !== '' && $db) {
 
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
+    <script src="../assets/js/super-admin-employee-accounts.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/super-admin-employee-accounts.js'); ?>"></script>
 </body>
 </html>

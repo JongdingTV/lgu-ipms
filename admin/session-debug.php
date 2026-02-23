@@ -9,7 +9,7 @@ require dirname(__DIR__) . '/includes/rbac.php';
 
 set_no_cache_headers();
 check_auth();
-rbac_require_roles(['super_admin']);
+rbac_require_from_matrix('admin.db_health.run', ['super_admin']);
 
 ?>
 <!DOCTYPE html>

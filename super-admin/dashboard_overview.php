@@ -111,7 +111,7 @@ if (isset($db) && !$db->connect_error) {
             </article>
         </div>
 
-        <div class="recent-projects" style="margin-top:16px;">
+        <div class="recent-projects sa-section-spaced">
             <h3>Recent Projects</h3>
             <div class="table-wrap">
                 <table class="feedback-table">

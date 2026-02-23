@@ -4,6 +4,34 @@
  * Centralized permission checks for employee roles.
  */
 
+function rbac_permission_matrix(): array
+{
+    static $matrix = null;
+    if ($matrix !== null) {
+        return $matrix;
+    }
+
+    $path = __DIR__ . '/permission-matrix.php';
+    if (!is_file($path)) {
+        $matrix = [];
+        return $matrix;
+    }
+
+    $loaded = require $path;
+    $matrix = is_array($loaded) ? $loaded : [];
+    return $matrix;
+}
+
+function rbac_roles_for(string $permissionCode, array $default = []): array
+{
+    $matrix = rbac_permission_matrix();
+    $permissionCode = trim(strtolower($permissionCode));
+    if ($permissionCode !== '' && isset($matrix[$permissionCode]) && is_array($matrix[$permissionCode])) {
+        return array_values(array_unique(array_map('strtolower', $matrix[$permissionCode])));
+    }
+    return $default;
+}
+
 function rbac_get_employee_role(): string
 {
     return strtolower((string)($_SESSION['employee_role'] ?? ''));
@@ -60,6 +88,32 @@ function rbac_require_action_roles(string $action, array $actionRoleMap, array $
     }
 }
 
+/**
+ * Enforce action access by mapping action codes to permission codes.
+ * Example:
+ *  rbac_require_action_matrix('delete', ['delete' => 'admin.engineers.delete'], 'admin.engineers.manage');
+ */
+function rbac_require_action_matrix(string $action, array $actionPermissionMap, string $defaultPermissionCode = ''): void
+{
+    $action = strtolower(trim($action));
+    if ($action === '') {
+        return;
+    }
+
+    if (array_key_exists($action, $actionPermissionMap)) {
+        $permissionCode = (string)$actionPermissionMap[$action];
+        rbac_require_from_matrix($permissionCode, []);
+        return;
+    }
+
+    if ($defaultPermissionCode !== '') {
+        rbac_require_from_matrix($defaultPermissionCode, []);
+        return;
+    }
+
+    rbac_deny('Access denied.');
+}
+
 function rbac_has_permission(string $permission): bool
 {
     global $db;
@@ -92,6 +146,18 @@ function rbac_require_permission(string $permission): void
     if (!rbac_has_permission($permission)) {
         rbac_deny('Access denied.');
     }
+}
+
+/**
+ * Enforce role access using the in-code permission matrix.
+ */
+function rbac_require_from_matrix(string $permissionCode, array $defaultRoles = []): void
+{
+    $roles = rbac_roles_for($permissionCode, $defaultRoles);
+    if (empty($roles)) {
+        rbac_deny('Access denied.');
+    }
+    rbac_require_roles($roles);
 }
 
 function rbac_audit(string $action, string $entityType = '', ?int $entityId = null, array $details = []): void

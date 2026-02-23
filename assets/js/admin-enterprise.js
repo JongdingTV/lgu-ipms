@@ -891,39 +891,149 @@
     const exportBtn = document.getElementById('exportCsv');
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
-        const rows = Array.isArray(state.rows) ? state.rows : [];
-        if (!rows.length) {
-          if (isFn(window.showToast)) window.showToast('No Data', 'No projects to export on this page.', 'warning');
-          return;
-        }
-        const escapeCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-        const header = ['Code', 'Project Name', 'Status', 'Sector', 'Location', 'Budget', 'Progress', 'Engineers', 'Start Date', 'End Date'];
-        const csv = [
-          header.map(escapeCsv).join(','),
-          ...rows.map((p) => ([
-            p.code || '',
-            p.name || '',
-            p.status || '',
-            p.sector || '',
-            p.location || '',
-            Number(p.budget || 0),
-            `${Number(p.progress || 0)}%`,
-            Array.isArray(p.assigned_contractors) ? p.assigned_contractors.length : 0,
-            p.start_date || '',
-            p.end_date || ''
-          ]).map(escapeCsv).join(','))
-        ].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const href = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = href;
-        a.download = `progress-monitoring-${new Date().toISOString().slice(0, 10)}-p${state.page}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(href);
+        const params = new URLSearchParams({
+          action: 'export_projects_csv',
+          sort: state.filters.sort || 'createdAt_desc'
+        });
+        if (state.filters.q) params.set('q', state.filters.q);
+        if (state.filters.status) params.set('status', state.filters.status);
+        if (state.filters.sector) params.set('sector', state.filters.sector);
+        if (state.filters.progress_band) params.set('progress_band', state.filters.progress_band);
+        if (state.filters.contractor_mode) params.set('contractor_mode', state.filters.contractor_mode);
+        window.location.href = `progress_monitoring.php?${params.toString()}`;
       });
     }
+
+    load();
+  }
+
+  function initTasksMilestonesFix() {
+    const pagePath = (window.location.pathname || '').replace(/\\/g, '/');
+    if (!pagePath.endsWith('/admin/tasks_milestones.php')) return;
+
+    const table = document.getElementById('tasksTable');
+    const tbody = table ? table.querySelector('tbody') : null;
+    const progressBar = document.getElementById('validationProgress');
+    const progressText = document.getElementById('validationPercent');
+    const tableWrap = table ? table.closest('.table-wrap') : null;
+    if (!table || !tbody || !progressBar || !progressText || !tableWrap) return;
+
+    const state = {
+      page: 1,
+      perPage: 15,
+      meta: { page: 1, total: 0, total_pages: 1, has_prev: false, has_next: false }
+    };
+
+    const statusKey = (v) => String(v || 'draft').toLowerCase().replace(/\s+/g, '');
+    const isValidatedStatus = (v) => {
+      const key = statusKey(v);
+      return key === 'completed' || key === 'approved';
+    };
+
+    const ensurePager = () => {
+      let pager = document.getElementById('tmPaginationControls');
+      if (pager) return pager;
+      pager = document.createElement('div');
+      pager.id = 'tmPaginationControls';
+      pager.className = 'pm-pagination-controls';
+      tableWrap.insertAdjacentElement('afterend', pager);
+      return pager;
+    };
+
+    const renderPager = () => {
+      const pager = ensurePager();
+      const meta = state.meta || {};
+      const page = Number(meta.page || 1);
+      const totalPages = Number(meta.total_pages || 1);
+      pager.innerHTML = `
+        <button type="button" class="btn-clear-filters" data-page-dir="prev" ${meta.has_prev ? '' : 'disabled'}>Previous</button>
+        <span class="pm-result-summary">Page ${page} of ${totalPages}</span>
+        <button type="button" class="btn-clear-filters" data-page-dir="next" ${meta.has_next ? '' : 'disabled'}>Next</button>
+      `;
+    };
+
+    const renderTable = (rows) => {
+      if (!Array.isArray(rows) || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#64748b;padding:18px;">No deliverables found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map((p) => {
+        const deliverable = (p.code ? `${p.code} - ` : '') + (p.name || 'Untitled Project');
+        const status = p.status || 'Draft';
+        const validated = isValidatedStatus(status) ? 'Yes' : 'No';
+        const validatedClass = validated === 'Yes' ? 'badge approved' : 'badge pending';
+        return `
+          <tr>
+            <td>${deliverable}</td>
+            <td><span class="status-badge ${statusKey(status)}">${status}</span></td>
+            <td><span class="${validatedClass}">${validated}</span></td>
+          </tr>
+        `;
+      }).join('');
+    };
+
+    const renderProgress = (rows, total) => {
+      const list = Array.isArray(rows) ? rows : [];
+      const validatedCount = list.filter((x) => isValidatedStatus(x.status)).length;
+      const denominator = Math.max(1, Number(total || list.length || 0));
+      const percent = denominator > 0 ? Math.round((validatedCount / denominator) * 100) : 0;
+      progressBar.style.width = `${percent}%`;
+      progressText.textContent = `${percent}%`;
+    };
+
+    const buildUrl = () => {
+      const params = new URLSearchParams({
+        action: 'load_projects',
+        v2: '1',
+        page: String(state.page),
+        per_page: String(state.perPage),
+        _: String(Date.now())
+      });
+      return `tasks_milestones.php?${params.toString()}`;
+    };
+
+    const load = () => {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#64748b;padding:18px;">Loading...</td></tr>';
+      fetch(buildUrl(), { credentials: 'same-origin' })
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((payload) => {
+          const rows = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+          const meta = payload?.meta || {
+            page: 1,
+            total: rows.length,
+            total_pages: 1,
+            has_prev: false,
+            has_next: false
+          };
+          state.meta = meta;
+          state.page = Number(meta.page || 1);
+          renderTable(rows);
+          renderProgress(rows, meta.total);
+          renderPager();
+        })
+        .catch((err) => {
+          tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#b91c1c;padding:18px;">Unable to load projects: ${String(err.message || 'Unknown error')}</td></tr>`;
+          progressBar.style.width = '0%';
+          progressText.textContent = '0%';
+          state.meta = { page: 1, total: 0, total_pages: 1, has_prev: false, has_next: false };
+          renderPager();
+        });
+    };
+
+    ensurePager().addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-page-dir]');
+      if (!btn || btn.disabled) return;
+      if (btn.dataset.pageDir === 'prev' && state.meta.has_prev) {
+        state.page = Math.max(1, state.page - 1);
+        load();
+      } else if (btn.dataset.pageDir === 'next' && state.meta.has_next) {
+        state.page += 1;
+        load();
+      }
+    });
 
     load();
   }
@@ -935,6 +1045,7 @@
     initLogoutModal();
     initDashboardBudgetHoldReveal();
     initProgressMonitoringFix();
+    initTasksMilestonesFix();
   });
 })();
 

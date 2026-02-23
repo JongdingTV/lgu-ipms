@@ -9,7 +9,14 @@ require dirname(__DIR__) . '/config-path.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['admin','department_admin','super_admin']);
+rbac_require_from_matrix('admin.progress.view', ['admin','department_admin','super_admin']);
+rbac_require_action_roles(
+    strtolower(trim((string)($_REQUEST['action'] ?? ''))),
+    [
+        'load_projects' => ['admin', 'department_admin', 'super_admin'],
+    ],
+    ['admin', 'department_admin', 'super_admin']
+);
 check_suspicious_activity();
 
 if ($db->connect_error) {
@@ -19,20 +26,163 @@ if ($db->connect_error) {
 }
 
 // Handle GET request for loading projects
+function tasks_has_created_at(mysqli $db): bool
+{
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'projects'
+           AND COLUMN_NAME = 'created_at'
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = $res && $res->num_rows > 0;
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+    return $exists;
+}
+
+function tasks_bind_dynamic(mysqli_stmt $stmt, string $types, array &$params): bool
+{
+    if ($types === '' || empty($params)) {
+        return true;
+    }
+    $args = [$types];
+    foreach ($params as $k => $v) {
+        $args[] = &$params[$k];
+    }
+    return call_user_func_array([$stmt, 'bind_param'], $args);
+}
+
+function tasks_load_projects(mysqli $db, array $options = []): array
+{
+    $hasCreatedAt = tasks_has_created_at($db);
+    $page = max(1, (int)($options['page'] ?? 1));
+    $perPage = (int)($options['per_page'] ?? 20);
+    if ($perPage < 1) $perPage = 20;
+    if ($perPage > 100) $perPage = 100;
+    $offset = ($page - 1) * $perPage;
+    $q = strtolower(trim((string)($options['q'] ?? '')));
+    $status = trim((string)($options['status'] ?? ''));
+
+    $where = [];
+    $types = '';
+    $params = [];
+    if ($q !== '') {
+        $like = '%' . $q . '%';
+        $where[] = '(LOWER(COALESCE(code, \'\')) LIKE ? OR LOWER(COALESCE(name, \'\')) LIKE ? OR LOWER(COALESCE(sector, \'\')) LIKE ? OR LOWER(COALESCE(location, \'\')) LIKE ?)';
+        $types .= 'ssss';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+    if ($status !== '') {
+        $where[] = 'status = ?';
+        $types .= 's';
+        $params[] = $status;
+    }
+    $whereSql = empty($where) ? '' : (' WHERE ' . implode(' AND ', $where));
+    $orderBy = $hasCreatedAt ? 'created_at DESC' : 'id DESC';
+
+    try {
+        $countSql = "SELECT COUNT(*) AS total FROM projects{$whereSql}";
+        $countStmt = $db->prepare($countSql);
+        if (!$countStmt) {
+            return ['projects' => [], 'error' => 'Failed to prepare project count', 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'total_pages' => 1];
+        }
+        if (!tasks_bind_dynamic($countStmt, $types, $params)) {
+            $countStmt->close();
+            return ['projects' => [], 'error' => 'Failed to bind count parameters', 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'total_pages' => 1];
+        }
+        $countStmt->execute();
+        $countRes = $countStmt->get_result();
+        $total = 0;
+        if ($countRes) {
+            $row = $countRes->fetch_assoc();
+            $total = (int)($row['total'] ?? 0);
+            $countRes->free();
+        }
+        $countStmt->close();
+
+        $totalPages = max(1, (int)ceil($total / $perPage));
+        if ($page > $totalPages) $page = $totalPages;
+        $offset = ($page - 1) * $perPage;
+
+        $dataSql = "SELECT * FROM projects{$whereSql} ORDER BY {$orderBy} LIMIT ? OFFSET ?";
+        $dataStmt = $db->prepare($dataSql);
+        if (!$dataStmt) {
+            return ['projects' => [], 'error' => 'Failed to prepare project list', 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'total_pages' => $totalPages];
+        }
+        $dataTypes = $types . 'ii';
+        $dataParams = $params;
+        $dataParams[] = $perPage;
+        $dataParams[] = $offset;
+        if (!tasks_bind_dynamic($dataStmt, $dataTypes, $dataParams)) {
+            $dataStmt->close();
+            return ['projects' => [], 'error' => 'Failed to bind list parameters', 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'total_pages' => $totalPages];
+        }
+        $dataStmt->execute();
+        $result = $dataStmt->get_result();
+        $projects = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $projects[] = $row;
+            }
+            $result->free();
+        }
+        $dataStmt->close();
+
+        return [
+            'projects' => $projects,
+            'error' => null,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => $totalPages,
+        ];
+    } catch (Throwable $e) {
+        return ['projects' => [], 'error' => 'Failed to load projects: ' . $e->getMessage(), 'total' => 0, 'page' => 1, 'per_page' => $perPage, 'total_pages' => 1];
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
-    
-    $result = $db->query("SELECT * FROM projects ORDER BY created_at DESC");
-    $projects = [];
-    
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $projects[] = $row;
-        }
-        $result->free();
+    $data = tasks_load_projects($db, [
+        'page' => (int)($_GET['page'] ?? 1),
+        'per_page' => (int)($_GET['per_page'] ?? 20),
+        'q' => (string)($_GET['q'] ?? ''),
+        'status' => (string)($_GET['status'] ?? ''),
+    ]);
+    if (!empty($data['error'])) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $data['error']]);
+        $db->close();
+        exit;
     }
-    
-    echo json_encode($projects);
+    if (isset($_GET['v2']) && $_GET['v2'] === '1') {
+        echo json_encode([
+            'success' => true,
+            'data' => $data['projects'],
+            'meta' => [
+                'page' => (int)($data['page'] ?? 1),
+                'per_page' => (int)($data['per_page'] ?? 20),
+                'total' => (int)($data['total'] ?? count($data['projects'])),
+                'total_pages' => (int)($data['total_pages'] ?? 1),
+                'has_prev' => ((int)($data['page'] ?? 1)) > 1,
+                'has_next' => ((int)($data['page'] ?? 1)) < ((int)($data['total_pages'] ?? 1)),
+            ]
+        ]);
+    } else {
+        echo json_encode($data['projects']);
+    }
     $db->close();
     exit;
 }

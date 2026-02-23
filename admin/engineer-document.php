@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/database.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['admin','department_admin','super_admin']);
+rbac_require_from_matrix('admin.engineers.manage', ['admin','department_admin','super_admin']);
 check_suspicious_activity();
 
 if (!($db instanceof mysqli) || $db->connect_error) {

@@ -12,7 +12,7 @@ set_no_cache_headers();
 // Check authentication
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['admin','department_admin','super_admin']);
+rbac_require_from_matrix('admin.progress.view', ['admin','department_admin','super_admin']);
 $rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
 rbac_require_action_roles(
     $rbacAction,
@@ -20,6 +20,7 @@ rbac_require_action_roles(
         'load_status_requests' => ['admin', 'department_admin', 'super_admin'],
         'admin_decide_status_request' => ['admin', 'department_admin', 'super_admin'],
         'load_projects' => ['admin', 'department_admin', 'super_admin'],
+        'export_projects_csv' => ['admin', 'department_admin', 'super_admin'],
     ],
     ['admin', 'department_admin', 'super_admin']
 );
@@ -274,7 +275,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
 
-    // Build schema-safe SELECT (no fatal error if migration is not yet applied).
     $hasCreatedAt = progress_projects_has_created_at($db);
     $hasPriorityPercent = progress_project_has_column($db, 'priority_percent');
     $hasDurationMonths = progress_project_has_column($db, 'duration_months');
@@ -294,6 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     if ($perPage > 50) {
         $perPage = 50;
     }
+    $offset = ($page - 1) * $perPage;
     $query = strtolower(trim((string) ($_GET['q'] ?? '')));
     $statusFilter = trim((string) ($_GET['status'] ?? ''));
     $sectorFilter = trim((string) ($_GET['sector'] ?? ''));
@@ -302,55 +303,177 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $sort = trim((string) ($_GET['sort'] ?? 'createdAt_desc'));
 
     $selectFields = [
-        'id',
-        'code',
-        'name',
-        'description',
-        'location',
-        'province',
-        'sector',
-        'budget',
-        'status',
-        'priority'
+        'p.id',
+        'p.code',
+        'p.name',
+        'p.description',
+        'p.location',
+        'p.province',
+        'p.sector',
+        'p.budget',
+        'p.status',
+        'p.priority'
     ];
-    $selectFields[] = $hasPriorityPercent ? 'priority_percent' : '0 AS priority_percent';
-    $selectFields[] = $hasStartDate ? 'start_date' : 'NULL AS start_date';
-    $selectFields[] = $hasEndDate ? 'end_date' : 'NULL AS end_date';
-    $selectFields[] = $hasDurationMonths ? 'duration_months' : 'NULL AS duration_months';
-    if ($hasCreatedAt) {
-        $selectFields[] = 'created_at';
+    $selectFields[] = $hasPriorityPercent ? 'p.priority_percent' : '0 AS priority_percent';
+    $selectFields[] = $hasStartDate ? 'p.start_date' : 'NULL AS start_date';
+    $selectFields[] = $hasEndDate ? 'p.end_date' : 'NULL AS end_date';
+    $selectFields[] = $hasDurationMonths ? 'p.duration_months' : 'NULL AS duration_months';
+    $selectFields[] = $hasCreatedAt ? 'p.created_at' : 'NULL AS created_at';
+    $selectFields[] = 'COALESCE(lp.progress_percent, 0) AS progress_calc';
+    $selectFields[] = 'lp.created_at AS progress_updated_at';
+
+    $progressJoin = '';
+    if ($hasProgressUpdatesTable) {
+        $progressJoin = "LEFT JOIN (
+            SELECT p1.project_id, p1.progress_percent, p1.created_at
+            FROM project_progress_updates p1
+            INNER JOIN (
+                SELECT project_id, MAX(created_at) AS max_created
+                FROM project_progress_updates
+                GROUP BY project_id
+            ) p2 ON p1.project_id = p2.project_id AND p1.created_at = p2.max_created
+        ) lp ON lp.project_id = p.id";
+    } else {
+        $progressJoin = "LEFT JOIN (SELECT NULL AS project_id, 0 AS progress_percent, NULL AS created_at) lp ON lp.project_id = p.id";
     }
 
-    $orderBy = $hasCreatedAt ? "created_at DESC" : "id DESC";
-    $projects = [];
-    $latestProgressByProject = [];
-    if ($hasProgressUpdatesTable) {
-        $progressRes = $db->query("SELECT p1.project_id, p1.progress_percent, p1.created_at
-                                   FROM project_progress_updates p1
-                                   INNER JOIN (
-                                       SELECT project_id, MAX(created_at) AS max_created
-                                       FROM project_progress_updates
-                                       GROUP BY project_id
-                                   ) p2 ON p1.project_id = p2.project_id AND p1.created_at = p2.max_created");
-        if ($progressRes) {
-            while ($p = $progressRes->fetch_assoc()) {
-                $latestProgressByProject[(int) ($p['project_id'] ?? 0)] = [
-                    'progress_percent' => (float) ($p['progress_percent'] ?? 0),
-                    'created_at' => (string) ($p['created_at'] ?? '')
-                ];
+    $whereClauses = [];
+    $bindTypes = '';
+    $bindParams = [];
+
+    if ($query !== '') {
+        $like = '%' . $query . '%';
+        $whereClauses[] = '(LOWER(COALESCE(p.code, \'\')) LIKE ? OR LOWER(COALESCE(p.name, \'\')) LIKE ? OR LOWER(COALESCE(p.location, \'\')) LIKE ?)';
+        $bindTypes .= 'sss';
+        $bindParams[] = $like;
+        $bindParams[] = $like;
+        $bindParams[] = $like;
+    }
+    if ($statusFilter !== '') {
+        $whereClauses[] = 'p.status = ?';
+        $bindTypes .= 's';
+        $bindParams[] = $statusFilter;
+    }
+    if ($sectorFilter !== '') {
+        $whereClauses[] = 'p.sector = ?';
+        $bindTypes .= 's';
+        $bindParams[] = $sectorFilter;
+    }
+    if ($progressBand !== '') {
+        $parts = explode('-', $progressBand);
+        if (count($parts) === 2) {
+            $min = max(0, min(100, (float) $parts[0]));
+            $max = max(0, min(100, (float) $parts[1]));
+            if ($min > $max) {
+                $tmp = $min;
+                $min = $max;
+                $max = $tmp;
             }
-            $progressRes->free();
+            $whereClauses[] = 'COALESCE(lp.progress_percent, 0) BETWEEN ? AND ?';
+            $bindTypes .= 'dd';
+            $bindParams[] = $min;
+            $bindParams[] = $max;
         }
     }
+    if ($contractorMode === 'assigned') {
+        $whereClauses[] = $hasAssignmentsTable
+            ? 'EXISTS (SELECT 1 FROM contractor_project_assignments cpa WHERE cpa.project_id = p.id)'
+            : '1 = 0';
+    } elseif ($contractorMode === 'unassigned') {
+        $whereClauses[] = $hasAssignmentsTable
+            ? 'NOT EXISTS (SELECT 1 FROM contractor_project_assignments cpa WHERE cpa.project_id = p.id)'
+            : '1 = 1';
+    }
+
+    $whereSql = '';
+    if (!empty($whereClauses)) {
+        $whereSql = 'WHERE ' . implode(' AND ', $whereClauses);
+    }
+    $fromSql = "FROM projects p {$progressJoin} {$whereSql}";
+
+    $sortMap = [
+        'createdAt_desc' => $hasCreatedAt ? 'p.created_at DESC' : 'p.id DESC',
+        'createdAt_asc' => $hasCreatedAt ? 'p.created_at ASC' : 'p.id ASC',
+        'progress_desc' => 'progress_calc DESC',
+        'progress_asc' => 'progress_calc ASC'
+    ];
+    $orderBy = $sortMap[$sort] ?? ($hasCreatedAt ? 'p.created_at DESC' : 'p.id DESC');
+
+    $totalFiltered = 0;
+    $stats = [
+        'total' => 0,
+        'approved' => 0,
+        'in_progress' => 0,
+        'completed' => 0,
+        'assigned_engineers' => 0
+    ];
+    $projects = [];
 
     try {
-        $result = $db->query("SELECT " . implode(', ', $selectFields) . " FROM projects ORDER BY {$orderBy} LIMIT 500");
+        $countStmt = $db->prepare("SELECT COUNT(*) AS total {$fromSql}");
+        if (!$countStmt) {
+            throw new RuntimeException('Failed to prepare project count query');
+        }
+        if (!progress_bind_dynamic($countStmt, $bindTypes, $bindParams)) {
+            throw new RuntimeException('Failed to bind project count query');
+        }
+        $countStmt->execute();
+        $countRes = $countStmt->get_result();
+        if ($countRes) {
+            $countRow = $countRes->fetch_assoc();
+            $totalFiltered = (int) ($countRow['total'] ?? 0);
+            $countRes->free();
+        }
+        $countStmt->close();
+
+        $assignedExpr = $hasAssignmentsTable
+            ? 'SUM(CASE WHEN EXISTS (SELECT 1 FROM contractor_project_assignments cpa WHERE cpa.project_id = p.id) THEN 1 ELSE 0 END)'
+            : '0';
+        $statsStmt = $db->prepare("SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN p.status = 'Approved' THEN 1 ELSE 0 END) AS approved,
+                SUM(CASE WHEN COALESCE(lp.progress_percent, 0) > 0 AND COALESCE(lp.progress_percent, 0) < 100 THEN 1 ELSE 0 END) AS in_progress,
+                SUM(CASE WHEN COALESCE(lp.progress_percent, 0) >= 100 OR p.status = 'Completed' THEN 1 ELSE 0 END) AS completed,
+                {$assignedExpr} AS assigned_engineers
+            {$fromSql}");
+        if ($statsStmt && progress_bind_dynamic($statsStmt, $bindTypes, $bindParams)) {
+            $statsStmt->execute();
+            $statsRes = $statsStmt->get_result();
+            if ($statsRes) {
+                $statsRow = $statsRes->fetch_assoc();
+                if ($statsRow) {
+                    $stats = [
+                        'total' => (int) ($statsRow['total'] ?? 0),
+                        'approved' => (int) ($statsRow['approved'] ?? 0),
+                        'in_progress' => (int) ($statsRow['in_progress'] ?? 0),
+                        'completed' => (int) ($statsRow['completed'] ?? 0),
+                        'assigned_engineers' => (int) ($statsRow['assigned_engineers'] ?? 0)
+                    ];
+                }
+                $statsRes->free();
+            }
+            $statsStmt->close();
+        }
+
+        $dataSql = "SELECT " . implode(', ', $selectFields) . " {$fromSql} ORDER BY {$orderBy} LIMIT ? OFFSET ?";
+        $dataStmt = $db->prepare($dataSql);
+        if (!$dataStmt) {
+            throw new RuntimeException('Failed to prepare project data query');
+        }
+        $dataTypes = $bindTypes . 'ii';
+        $dataParams = $bindParams;
+        $dataParams[] = $perPage;
+        $dataParams[] = $offset;
+        if (!progress_bind_dynamic($dataStmt, $dataTypes, $dataParams)) {
+            throw new RuntimeException('Failed to bind project data query');
+        }
+        $dataStmt->execute();
+        $result = $dataStmt->get_result();
         if ($result) {
             while ($row = $result->fetch_assoc()) {
-            $pid = (int) ($row['id'] ?? 0);
-            $progressMeta = $latestProgressByProject[$pid] ?? null;
-            $row['progress'] = $progressMeta ? (float) ($progressMeta['progress_percent'] ?? 0) : (isset($row['progress']) ? (float) $row['progress'] : 0);
-            $updateDate = $progressMeta['created_at'] ?? ($row['created_at'] ?? $row['start_date'] ?? null);
+            $row['progress'] = (float) ($row['progress_calc'] ?? 0);
+            unset($row['progress_calc']);
+            $updateDate = $row['progress_updated_at'] ?? ($row['created_at'] ?? $row['start_date'] ?? null);
             $status = (string)($row['status'] ?? 'Draft');
             $row['process_update'] = $status . ($updateDate ? ' (' . date('M d, Y', strtotime((string)$updateDate)) . ')' : '');
             
@@ -423,106 +546,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         }
             $result->free();
         }
+        $dataStmt->close();
     } catch (Throwable $e) {
         error_log('progress_monitoring load_projects error: ' . $e->getMessage());
-        echo json_encode([]);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Unable to load projects',
+            'data' => [],
+            'meta' => ['page' => 1, 'per_page' => $perPage, 'total' => 0, 'total_pages' => 1, 'has_prev' => false, 'has_next' => false],
+            'stats' => $stats
+        ]);
         exit;
     }
 
-    $filteredProjects = array_values(array_filter($projects, static function (array $project) use ($query, $statusFilter, $sectorFilter, $progressBand, $contractorMode): bool {
-        $statusValue = trim((string) ($project['status'] ?? ''));
-        $sectorValue = trim((string) ($project['sector'] ?? ''));
-        $progressValue = (float) ($project['progress'] ?? 0);
-        $assignedCount = is_array($project['assigned_contractors'] ?? null) ? count($project['assigned_contractors']) : 0;
-
-        if ($statusFilter !== '' && strcasecmp($statusValue, $statusFilter) !== 0) {
-            return false;
-        }
-        if ($sectorFilter !== '' && strcasecmp($sectorValue, $sectorFilter) !== 0) {
-            return false;
-        }
-        if ($progressBand !== '') {
-            $parts = explode('-', $progressBand);
-            if (count($parts) === 2) {
-                $min = (float) $parts[0];
-                $max = (float) $parts[1];
-                if ($progressValue < $min || $progressValue > $max) {
-                    return false;
-                }
-            }
-        }
-        if ($contractorMode === 'assigned' && $assignedCount === 0) {
-            return false;
-        }
-        if ($contractorMode === 'unassigned' && $assignedCount > 0) {
-            return false;
-        }
-        if ($query !== '') {
-            $haystack = strtolower(trim(
-                (string) ($project['code'] ?? '') . ' ' .
-                (string) ($project['name'] ?? '') . ' ' .
-                (string) ($project['location'] ?? '')
-            ));
-            if (strpos($haystack, $query) === false) {
-                return false;
-            }
-        }
-        return true;
-    }));
-
-    usort($filteredProjects, static function (array $a, array $b) use ($sort): int {
-        $aProgress = (float) ($a['progress'] ?? 0);
-        $bProgress = (float) ($b['progress'] ?? 0);
-        $aTime = strtotime((string) ($a['created_at'] ?? $a['start_date'] ?? '')) ?: 0;
-        $bTime = strtotime((string) ($b['created_at'] ?? $b['start_date'] ?? '')) ?: 0;
-        if ($sort === 'progress_desc') {
-            return $bProgress <=> $aProgress;
-        }
-        if ($sort === 'progress_asc') {
-            return $aProgress <=> $bProgress;
-        }
-        if ($sort === 'createdAt_asc') {
-            return $aTime <=> $bTime;
-        }
-        return $bTime <=> $aTime;
-    });
-
-    $totalFiltered = count($filteredProjects);
     $totalPages = max(1, (int) ceil($totalFiltered / $perPage));
     if ($page > $totalPages) {
         $page = $totalPages;
     }
-    $offset = ($page - 1) * $perPage;
-    $pagedProjects = array_slice($filteredProjects, $offset, $perPage);
-
-    $stats = [
-        'total' => $totalFiltered,
-        'approved' => 0,
-        'in_progress' => 0,
-        'completed' => 0,
-        'assigned_engineers' => 0
-    ];
-    foreach ($filteredProjects as $project) {
-        $status = (string) ($project['status'] ?? '');
-        $progressValue = (float) ($project['progress'] ?? 0);
-        $assignedCount = is_array($project['assigned_contractors'] ?? null) ? count($project['assigned_contractors']) : 0;
-        if (strcasecmp($status, 'Approved') === 0) {
-            $stats['approved']++;
-        }
-        if ($progressValue > 0 && $progressValue < 100) {
-            $stats['in_progress']++;
-        }
-        if ($progressValue >= 100 || strcasecmp($status, 'Completed') === 0) {
-            $stats['completed']++;
-        }
-        if ($assignedCount > 0) {
-            $stats['assigned_engineers']++;
-        }
-    }
 
     echo json_encode([
         'success' => true,
-        'data' => $pagedProjects,
+        'data' => $projects,
         'meta' => [
             'page' => $page,
             'per_page' => $perPage,
@@ -533,6 +577,154 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         ],
         'stats' => $stats
     ]);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'export_projects_csv') {
+    $hasCreatedAt = progress_projects_has_created_at($db);
+    $hasAssignmentsTable = progress_table_exists($db, 'contractor_project_assignments');
+    $hasProgressUpdatesTable = progress_table_exists($db, 'project_progress_updates');
+
+    $query = strtolower(trim((string) ($_GET['q'] ?? '')));
+    $statusFilter = trim((string) ($_GET['status'] ?? ''));
+    $sectorFilter = trim((string) ($_GET['sector'] ?? ''));
+    $progressBand = trim((string) ($_GET['progress_band'] ?? ''));
+    $contractorMode = trim((string) ($_GET['contractor_mode'] ?? ''));
+    $sort = trim((string) ($_GET['sort'] ?? 'createdAt_desc'));
+
+    $progressJoin = '';
+    if ($hasProgressUpdatesTable) {
+        $progressJoin = "LEFT JOIN (
+            SELECT p1.project_id, p1.progress_percent, p1.created_at
+            FROM project_progress_updates p1
+            INNER JOIN (
+                SELECT project_id, MAX(created_at) AS max_created
+                FROM project_progress_updates
+                GROUP BY project_id
+            ) p2 ON p1.project_id = p2.project_id AND p1.created_at = p2.max_created
+        ) lp ON lp.project_id = p.id";
+    } else {
+        $progressJoin = "LEFT JOIN (SELECT NULL AS project_id, 0 AS progress_percent, NULL AS created_at) lp ON lp.project_id = p.id";
+    }
+
+    $whereClauses = [];
+    $bindTypes = '';
+    $bindParams = [];
+
+    if ($query !== '') {
+        $like = '%' . $query . '%';
+        $whereClauses[] = '(LOWER(COALESCE(p.code, \'\')) LIKE ? OR LOWER(COALESCE(p.name, \'\')) LIKE ? OR LOWER(COALESCE(p.location, \'\')) LIKE ?)';
+        $bindTypes .= 'sss';
+        $bindParams[] = $like;
+        $bindParams[] = $like;
+        $bindParams[] = $like;
+    }
+    if ($statusFilter !== '') {
+        $whereClauses[] = 'p.status = ?';
+        $bindTypes .= 's';
+        $bindParams[] = $statusFilter;
+    }
+    if ($sectorFilter !== '') {
+        $whereClauses[] = 'p.sector = ?';
+        $bindTypes .= 's';
+        $bindParams[] = $sectorFilter;
+    }
+    if ($progressBand !== '') {
+        $parts = explode('-', $progressBand);
+        if (count($parts) === 2) {
+            $min = max(0, min(100, (float) $parts[0]));
+            $max = max(0, min(100, (float) $parts[1]));
+            if ($min > $max) {
+                $tmp = $min;
+                $min = $max;
+                $max = $tmp;
+            }
+            $whereClauses[] = 'COALESCE(lp.progress_percent, 0) BETWEEN ? AND ?';
+            $bindTypes .= 'dd';
+            $bindParams[] = $min;
+            $bindParams[] = $max;
+        }
+    }
+    if ($contractorMode === 'assigned') {
+        $whereClauses[] = $hasAssignmentsTable
+            ? 'EXISTS (SELECT 1 FROM contractor_project_assignments cpa WHERE cpa.project_id = p.id)'
+            : '1 = 0';
+    } elseif ($contractorMode === 'unassigned') {
+        $whereClauses[] = $hasAssignmentsTable
+            ? 'NOT EXISTS (SELECT 1 FROM contractor_project_assignments cpa WHERE cpa.project_id = p.id)'
+            : '1 = 1';
+    }
+
+    $whereSql = '';
+    if (!empty($whereClauses)) {
+        $whereSql = 'WHERE ' . implode(' AND ', $whereClauses);
+    }
+
+    $sortMap = [
+        'createdAt_desc' => $hasCreatedAt ? 'p.created_at DESC' : 'p.id DESC',
+        'createdAt_asc' => $hasCreatedAt ? 'p.created_at ASC' : 'p.id ASC',
+        'progress_desc' => 'progress_calc DESC',
+        'progress_asc' => 'progress_calc ASC'
+    ];
+    $orderBy = $sortMap[$sort] ?? ($hasCreatedAt ? 'p.created_at DESC' : 'p.id DESC');
+
+    $fromSql = "FROM projects p {$progressJoin} {$whereSql}";
+    $sql = "SELECT p.code, p.name, p.status, p.sector, p.location, p.budget,
+                   COALESCE(lp.progress_percent, 0) AS progress_calc,
+                   p.start_date, p.end_date,
+                   (
+                     SELECT COUNT(*)
+                     FROM contractor_project_assignments cpa
+                     WHERE cpa.project_id = p.id
+                   ) AS engineers_count
+            {$fromSql}
+            ORDER BY {$orderBy}";
+
+    $rows = [];
+    try {
+        $stmt = $db->prepare($sql);
+        if (!$stmt) {
+            throw new RuntimeException('Failed to prepare export query');
+        }
+        if (!progress_bind_dynamic($stmt, $bindTypes, $bindParams)) {
+            throw new RuntimeException('Failed to bind export query');
+        }
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $rows[] = $row;
+            }
+            $res->free();
+        }
+        $stmt->close();
+    } catch (Throwable $e) {
+        error_log('progress_monitoring export_projects_csv error: ' . $e->getMessage());
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Failed to export CSV']);
+        exit;
+    }
+
+    $filename = 'progress-monitoring-' . date('Y-m-d-His') . '.csv';
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Code', 'Project Name', 'Status', 'Sector', 'Location', 'Budget', 'Progress', 'Engineers', 'Start Date', 'End Date']);
+    foreach ($rows as $r) {
+        fputcsv($out, [
+            (string) ($r['code'] ?? ''),
+            (string) ($r['name'] ?? ''),
+            (string) ($r['status'] ?? ''),
+            (string) ($r['sector'] ?? ''),
+            (string) ($r['location'] ?? ''),
+            (float) ($r['budget'] ?? 0),
+            (string) ((float) ($r['progress_calc'] ?? 0)) . '%',
+            (int) ($r['engineers_count'] ?? 0),
+            (string) ($r['start_date'] ?? ''),
+            (string) ($r['end_date'] ?? '')
+        ]);
+    }
+    fclose($out);
     exit;
 }
 

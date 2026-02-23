@@ -11,7 +11,7 @@ require dirname(__DIR__) . '/includes/project-workflow.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['admin','department_admin','super_admin']);
+rbac_require_from_matrix('admin.projects.manage', ['admin','department_admin','super_admin']);
 $rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
 rbac_require_action_roles(
     $rbacAction,
