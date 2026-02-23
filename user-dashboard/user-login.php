@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
@@ -405,7 +405,7 @@ body.user-login-page .error-box {
                 <div class="input-box" style="margin-top:-4px;margin-bottom:8px;">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                         <input type="checkbox" name="remember_device" value="1" style="width:16px;height:16px;">
-                        <span style="font-size:0.86rem;color:#334155;">Remember this device for 10 days</span>
+                        <span style="font-size:0.86rem;color:#334155;">Remember this device for 7 days</span>
                     </label>
                 </div>
 

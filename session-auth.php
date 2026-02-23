@@ -16,9 +16,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Session timeout configuration (30 minutes of inactivity)
-define('SESSION_TIMEOUT', 30 * 60); // 30 minutes in seconds
-define('REMEMBER_DEVICE_DAYS', 10);
+// Session timeout configuration (10 minutes of inactivity)
+define('SESSION_TIMEOUT', 10 * 60); // 10 minutes in seconds
+define('REMEMBER_DEVICE_DAYS', 7);
 define('REMEMBER_COOKIE_NAME', 'lgu_remember_device');
 
 function set_auth_cookie(string $name, string $value, int $expiresAt): void
@@ -212,10 +212,10 @@ function check_auth() {
     }
 
     // Session timeout
-    if (!isset($_SESSION['remember_until']) && isset($_SESSION['last_activity'])) {
+    if (isset($_SESSION['last_activity'])) {
         $idle_time = time() - $_SESSION['last_activity'];
         if ($idle_time > SESSION_TIMEOUT) {
-            destroy_session();
+            destroy_session(true);
             header('Location: ' . get_login_url() . '?expired=1');
             exit();
         }
@@ -262,8 +262,10 @@ function get_login_url() {
 /**
  * Destroy session completely
  */
-function destroy_session() {
-    clear_remember_device_token_for_current_user();
+function destroy_session(bool $preserveRememberDevice = false) {
+    if (!$preserveRememberDevice) {
+        clear_remember_device_token_for_current_user();
+    }
 
     // Clear all session variables
     $_SESSION = array();
