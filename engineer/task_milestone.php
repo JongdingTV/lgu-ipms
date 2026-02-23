@@ -39,6 +39,131 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <style>
+        .tm-shell { display: grid; gap: 18px; }
+        .tm-header-card {
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            border-radius: 14px;
+            background: linear-gradient(140deg, rgba(255,255,255,0.95), rgba(241,248,255,0.92));
+            padding: 14px 16px;
+        }
+        .tm-project-select {
+            display: grid;
+            grid-template-columns: minmax(190px, 240px) minmax(260px, 520px);
+            align-items: end;
+            gap: 12px;
+        }
+        .tm-project-select .filter-group { margin: 0; }
+        .tm-grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
+        .tm-card {
+            border: 1px solid rgba(148, 163, 184, 0.32);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+        .tm-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px 10px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+            background: linear-gradient(180deg, rgba(248, 251, 255, 0.95), rgba(255, 255, 255, 0.95));
+        }
+        .tm-card-head h3 { margin: 0; color: #0f172a; font-size: 1rem; }
+        .tm-chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1e3a8a;
+            background: #dbeafe;
+            border: 1px solid #bfdbfe;
+        }
+        .tm-form {
+            display: grid;
+            grid-template-columns: 1.35fr 0.95fr 0.95fr 1.15fr auto;
+            gap: 10px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            background: #fcfdff;
+        }
+        .tm-form input,
+        .tm-form select {
+            width: 100%;
+            min-height: 42px;
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            color: #0f172a;
+            background: #fff;
+        }
+        .tm-form input:focus,
+        .tm-form select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.13);
+        }
+        .tm-btn {
+            min-height: 42px;
+            border: 0;
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, #1d4e89, #2563eb);
+            cursor: pointer;
+            transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+            white-space: nowrap;
+        }
+        .tm-btn:hover { filter: brightness(1.04); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25); }
+        .tm-btn:active { transform: translateY(1px); }
+        .tm-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+        .tm-table-wrap { padding: 12px 16px 16px; }
+        .tm-table-wrap .table thead th {
+            font-size: 0.8rem;
+            letter-spacing: .02em;
+            text-transform: uppercase;
+            color: #334155;
+            background: #f8fafc;
+        }
+        .tm-table-wrap .table tbody td { vertical-align: middle; }
+        .tm-table-wrap .table tbody tr:hover { background: #f8fbff; }
+        .tm-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+            min-width: 92px;
+        }
+        .tm-status.pending { color: #92400e; background: #fef3c7; border-color: #fde68a; }
+        .tm-status.in-progress { color: #1d4ed8; background: #dbeafe; border-color: #bfdbfe; }
+        .tm-status.completed { color: #166534; background: #dcfce7; border-color: #bbf7d0; }
+        .tm-status.on-hold { color: #6b21a8; background: #f3e8ff; border-color: #e9d5ff; }
+        .tm-empty-row td {
+            text-align: center;
+            color: #64748b;
+            font-style: italic;
+            padding: 16px 12px;
+        }
+        @media (max-width: 1200px) {
+            .tm-form { grid-template-columns: 1fr 1fr; }
+            .tm-form .tm-btn { grid-column: 1 / -1; }
+            .tm-project-select { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .tm-table-wrap { overflow-x: auto; }
+            .tm-table-wrap .table { min-width: 680px; }
+        }
+    </style>
 </head>
 <body>
 <div class="sidebar-toggle-wrapper">
@@ -88,12 +213,14 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
         <p>Engineer-managed task execution and milestone validation per project.</p>
     </div>
 
-    <div class="pm-section card">
-        <div class="pm-controls-wrapper">
-            <div class="pm-controls">
+    <div class="pm-section card tm-shell">
+        <div class="tm-header-card">
+            <div class="pm-controls tm-project-select">
                 <div class="filter-group">
                     <label for="projectSelect">Project</label>
-                    <select id="projectSelect"></select>
+                    <select id="projectSelect">
+                        <option value="">Select project</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -102,33 +229,46 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
         <?php endif; ?>
         <div id="feedback" class="ac-c8be1ccb"></div>
 
-        <div class="table-wrap">
-            <h3>Tasks</h3>
-            <div class="pm-controls">
+        <div class="tm-grid">
+        <div class="tm-card">
+            <div class="tm-card-head">
+                <h3>Tasks</h3>
+                <span class="tm-chip" id="taskCountChip">0 items</span>
+            </div>
+            <div class="tm-form">
                 <input id="taskTitle" type="text" placeholder="Task title">
                 <input id="taskStart" type="date">
                 <input id="taskEnd" type="date">
                 <input id="taskNotes" type="text" placeholder="Notes (optional)">
-                <button id="addTaskBtn" class="btn-export" type="button" <?php echo $canTaskManage ? '' : 'disabled'; ?>>Add Task</button>
+                <button id="addTaskBtn" class="tm-btn" type="button" <?php echo $canTaskManage ? '' : 'disabled'; ?>>Add Task</button>
             </div>
+            <div class="table-wrap tm-table-wrap">
             <table class="table">
                 <thead><tr><th>Title</th><th>Status</th><th>Planned</th><th>Actual</th><th>Action</th></tr></thead>
-                <tbody id="taskBody"></tbody>
+                <tbody id="taskBody"><tr class="tm-empty-row"><td colspan="5">Select a project to view tasks.</td></tr></tbody>
             </table>
+            </div>
         </div>
 
-        <div class="table-wrap">
-            <h3>Milestones</h3>
-            <div class="pm-controls">
+        <div class="tm-card">
+            <div class="tm-card-head">
+                <h3>Milestones</h3>
+                <span class="tm-chip" id="mileCountChip">0 items</span>
+            </div>
+            <div class="tm-form">
                 <input id="mileTitle" type="text" placeholder="Milestone title">
                 <input id="mileDate" type="date">
                 <input id="mileNotes" type="text" placeholder="Notes (optional)">
-                <button id="addMileBtn" class="btn-export" type="button" <?php echo $canTaskManage ? '' : 'disabled'; ?>>Add Milestone</button>
+                <button id="addMileBtn" class="tm-btn" type="button" <?php echo $canTaskManage ? '' : 'disabled'; ?>>Add Milestone</button>
             </div>
+            <div class="table-wrap tm-table-wrap">
             <table class="table">
                 <thead><tr><th>Title</th><th>Status</th><th>Planned</th><th>Actual</th><th>Action</th></tr></thead>
-                <tbody id="mileBody"></tbody>
+                <tbody id="mileBody"><tr class="tm-empty-row"><td colspan="5">Select a project to view milestones.</td></tr></tbody>
             </table>
+            </div>
+        </div>
+        </div>
         </div>
     </div>
 </section>
@@ -159,10 +299,26 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
         box.className = ok ? 'ac-0b2b14a3' : 'ac-aabba7cf';
         box.textContent = t;
     }
+    function esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, function (ch) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch] || ch;
+        });
+    }
+    function statusBadge(status) {
+        var raw = String(status || 'Pending');
+        var cls = raw.toLowerCase().replace(/\s+/g, '-');
+        return '<span class="tm-status ' + esc(cls) + '">' + esc(raw) + '</span>';
+    }
+    function setEmptyRows(message) {
+        document.getElementById('taskBody').innerHTML = '<tr class="tm-empty-row"><td colspan="5">' + esc(message) + '</td></tr>';
+        document.getElementById('mileBody').innerHTML = '<tr class="tm-empty-row"><td colspan="5">' + esc(message) + '</td></tr>';
+        document.getElementById('taskCountChip').textContent = '0 items';
+        document.getElementById('mileCountChip').textContent = '0 items';
+    }
     function projectId() { return document.getElementById('projectSelect').value; }
     function statusSelect(type, id, current) {
         if (!canTaskManage) {
-            return '<span>' + String(current || 'Pending') + '</span>';
+            return statusBadge(current || 'Pending');
         }
         var all = ['Pending', 'In Progress', 'Completed', 'On-hold'];
         return '<select data-type="' + type + '" data-id="' + id + '">' + all.map(function (s) {
@@ -205,28 +361,44 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
     }
     function loadData() {
         var pid = projectId();
-        document.getElementById('taskBody').innerHTML = '';
-        document.getElementById('mileBody').innerHTML = '';
-        if (!pid) return;
+        if (!pid) {
+            setEmptyRows('Select a project to view records.');
+            return;
+        }
+        document.getElementById('taskBody').innerHTML = '<tr class="tm-empty-row"><td colspan="5">Loading tasks...</td></tr>';
+        document.getElementById('mileBody').innerHTML = '<tr class="tm-empty-row"><td colspan="5">Loading milestones...</td></tr>';
         apiGet('load_task_milestone', '&project_id=' + encodeURIComponent(pid)).then(function (j) {
             var d = j.data || {};
             var tasks = Array.isArray(d.tasks) ? d.tasks : [];
             var milestones = Array.isArray(d.milestones) ? d.milestones : [];
             var taskBody = document.getElementById('taskBody');
             var mileBody = document.getElementById('mileBody');
+            document.getElementById('taskCountChip').textContent = String(tasks.length) + (tasks.length === 1 ? ' item' : ' items');
+            document.getElementById('mileCountChip').textContent = String(milestones.length) + (milestones.length === 1 ? ' item' : ' items');
+            taskBody.innerHTML = '';
+            mileBody.innerHTML = '';
 
             tasks.forEach(function (t) {
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + t.title + '</td><td>' + (t.status || '') + '</td><td>' + (t.planned_start || '') + ' - ' + (t.planned_end || '') + '</td><td>' + (t.actual_start || '') + ' - ' + (t.actual_end || '') + '</td><td>' + statusSelect('task-status', t.id, t.status || 'Pending') + '</td>';
+                tr.innerHTML = '<td>' + esc(t.title) + '</td><td>' + statusBadge(t.status || 'Pending') + '</td><td>' + esc((t.planned_start || '') + ' - ' + (t.planned_end || '')) + '</td><td>' + esc((t.actual_start || '') + ' - ' + (t.actual_end || '')) + '</td><td>' + statusSelect('task-status', t.id, t.status || 'Pending') + '</td>';
                 taskBody.appendChild(tr);
             });
+            if (!tasks.length) {
+                taskBody.innerHTML = '<tr class="tm-empty-row"><td colspan="5">No tasks yet for this project.</td></tr>';
+            }
 
             milestones.forEach(function (m) {
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + m.title + '</td><td>' + (m.status || '') + '</td><td>' + (m.planned_date || '') + '</td><td>' + (m.actual_date || '') + '</td><td>' + statusSelect('mile-status', m.id, m.status || 'Pending') + '</td>';
+                tr.innerHTML = '<td>' + esc(m.title) + '</td><td>' + statusBadge(m.status || 'Pending') + '</td><td>' + esc(m.planned_date || '') + '</td><td>' + esc(m.actual_date || '') + '</td><td>' + statusSelect('mile-status', m.id, m.status || 'Pending') + '</td>';
                 mileBody.appendChild(tr);
             });
+            if (!milestones.length) {
+                mileBody.innerHTML = '<tr class="tm-empty-row"><td colspan="5">No milestones yet for this project.</td></tr>';
+            }
             bindStatusActions();
+        }).catch(function () {
+            setEmptyRows('Failed to load task and milestone records.');
+            msg(false, 'Unable to load data right now. Please try again.');
         });
     }
 
@@ -283,4 +455,3 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
 <script src="engineer-enterprise.js?v=<?php echo filemtime(__DIR__ . '/engineer-enterprise.js'); ?>"></script>
 </body>
 </html>
-

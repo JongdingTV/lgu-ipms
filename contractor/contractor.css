@@ -7028,3 +7028,54 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) textarea:focus-vi
         grid-template-columns: 1fr;
     }
 }
+
+/* Contractor sidebar consistency overrides */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links {
+    gap: 8px;
+    padding: 14px 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item {
+    min-height: 44px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    margin: 0;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item:hover {
+    padding-left: 18px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-icon {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    object-fit: contain;
+    margin-right: 0;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-action-footer {
+    padding: 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-logout,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-logout.nav-logout {
+    min-height: 44px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-logout.nav-logout svg {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    stroke-width: 2;
+}
