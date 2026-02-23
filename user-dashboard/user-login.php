@@ -6,7 +6,9 @@ require dirname(__DIR__) . '/config/email.php';
 
 set_no_cache_headers();
 
-if (!isset($_SESSION['user_id'])) {
+// After explicit logout, do not auto-login immediately from remember cookie.
+$isExplicitLogout = isset($_GET['logout']) && $_GET['logout'] === '1';
+if (!$isExplicitLogout && !isset($_SESSION['user_id'])) {
     try_auto_login_from_remember_cookie();
 }
 
@@ -96,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
                         } else {
                             clear_user_login_otp_session();
                             if (issue_user_login_otp($userId, $fullName, $email)) {
-                                $_SESSION['user_login_otp_remember'] = !empty($_POST['remember_device']) ? 1 : 0;
+                                $_SESSION['user_login_otp_remember'] = 1;
                                 $otpPending = true;
                                 $otpEmail = $email;
                                 $otpMessage = 'A verification code was sent to your email. Enter it below to finish login.';
@@ -419,7 +421,8 @@ body.user-login-page .error-box {
                 </div>
                 <div class="input-box" style="margin-top:-4px;margin-bottom:8px;">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                        <input type="checkbox" name="remember_device" value="1" checked style="width:16px;height:16px;">
+                        <input type="hidden" name="remember_device" value="1">
+                        <input type="checkbox" value="1" checked disabled style="width:16px;height:16px;">
                         <span style="font-size:0.86rem;color:#334155;">Remember this device for 7 days</span>
                     </label>
                 </div>
@@ -448,4 +451,3 @@ body.user-login-page .error-box {
 <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
-
