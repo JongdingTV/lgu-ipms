@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/config-path.php';
 require __DIR__ . '/user-profile-helper.php';
 
 set_no_cache_headers();
-check_auth();
+check_auth(false);
 check_suspicious_activity();
 
 header('Content-Type: application/json');

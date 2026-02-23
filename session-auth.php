@@ -239,9 +239,10 @@ function is_valid_remember_device_for_user(int $userId): bool
 
 /**
  * Check if user is authenticated
- * Validates session, checks timeout, and verifies user exists
+ * Validates session, checks timeout, and verifies user exists.
+ * When $refreshLastActivity is false, it does not extend idle timeout.
  */
-function check_auth() {
+function check_auth(bool $refreshLastActivity = true) {
     // Check if session has a user_id (for citizen) or employee_id (for admin/employee)
     if (!isset($_SESSION['user_id']) && !isset($_SESSION['employee_id'])) {
         try_auto_login_from_remember_cookie();
@@ -270,7 +271,9 @@ function check_auth() {
             exit();
         }
     }
-    $_SESSION['last_activity'] = time();
+    if ($refreshLastActivity) {
+        $_SESSION['last_activity'] = time();
+    }
 
     // Hydrate employee role/status if available.
     if (isset($_SESSION['employee_id'])) {
@@ -646,5 +649,4 @@ function check_suspicious_activity() {
     $_SESSION['user_agent'] = $currentUserAgent;
 }
 ?>
-
 
