@@ -389,6 +389,13 @@ if ($action === 'decide_progress') {
         $db->rollback();
         json_out(['success' => false, 'message' => $e->getMessage()], 500);
     }
+    if (function_exists('rbac_audit')) {
+        rbac_audit('engineer.progress_decision', 'project_progress_submission', $submissionId, [
+            'project_id' => $projectId,
+            'decision_status' => $decision,
+            'decision_note' => $note,
+        ]);
+    }
     json_out(['success' => true]);
 }
 
@@ -429,6 +436,12 @@ if ($action === 'engineer_decide_status_request') {
     $stmt->bind_param('ssii', $decision, $note, $engineerId, $requestId);
     $stmt->execute();
     $stmt->close();
+    if (function_exists('rbac_audit')) {
+        rbac_audit('engineer.status_request_decision', 'project_status_request', $requestId, [
+            'decision_status' => $decision,
+            'decision_note' => $note,
+        ]);
+    }
     json_out(['success' => true]);
 }
 
@@ -483,7 +496,14 @@ if ($action === 'add_task') {
     }
     $stmt->bind_param('issss', $projectId, $title, $plannedStart, $plannedEnd, $notes);
     $stmt->execute();
+    $taskId = (int) $db->insert_id;
     $stmt->close();
+    if (function_exists('rbac_audit')) {
+        rbac_audit('engineer.task_create', 'project_task', $taskId, [
+            'project_id' => $projectId,
+            'title' => $title,
+        ]);
+    }
     json_out(['success' => true]);
 }
 
@@ -506,6 +526,11 @@ if ($action === 'update_task_status') {
     $stmt->bind_param('sssi', $status, $status, $status, $taskId);
     $stmt->execute();
     $stmt->close();
+    if (function_exists('rbac_audit')) {
+        rbac_audit('engineer.task_status_update', 'project_task', $taskId, [
+            'status' => $status,
+        ]);
+    }
     json_out(['success' => true]);
 }
 
@@ -524,7 +549,14 @@ if ($action === 'add_milestone') {
     }
     $stmt->bind_param('isss', $projectId, $title, $plannedDate, $notes);
     $stmt->execute();
+    $milestoneId = (int) $db->insert_id;
     $stmt->close();
+    if (function_exists('rbac_audit')) {
+        rbac_audit('engineer.milestone_create', 'project_milestone', $milestoneId, [
+            'project_id' => $projectId,
+            'title' => $title,
+        ]);
+    }
     json_out(['success' => true]);
 }
 
@@ -546,6 +578,11 @@ if ($action === 'update_milestone_status') {
     $stmt->bind_param('ssi', $status, $status, $milestoneId);
     $stmt->execute();
     $stmt->close();
+    if (function_exists('rbac_audit')) {
+        rbac_audit('engineer.milestone_status_update', 'project_milestone', $milestoneId, [
+            'status' => $status,
+        ]);
+    }
     json_out(['success' => true]);
 }
 

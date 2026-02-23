@@ -412,7 +412,15 @@ if ($action === 'submit_status_request') {
     }
     $stmt->bind_param('issi', $projectId, $status, $note, $requestedBy);
     $stmt->execute();
+    $requestId = (int) $db->insert_id;
     $stmt->close();
+    if (function_exists('rbac_audit')) {
+        rbac_audit('contractor.status_request_submit', 'project_status_request', $requestId, [
+            'project_id' => $projectId,
+            'requested_status' => $status,
+            'note' => $note,
+        ]);
+    }
     json_out(['success' => true]);
 }
 
@@ -452,6 +460,11 @@ if ($action === 'update_budget') {
     $stmt->close();
 
     contractor_sync_projects_to_milestones($db);
+    if (function_exists('rbac_audit')) {
+        rbac_audit('project.budget_update', 'project', $projectId, [
+            'budget' => $budget,
+        ]);
+    }
     json_out(['success' => true]);
 }
 
@@ -489,6 +502,7 @@ if ($action === 'update_expense') {
     }
     $stmt->bind_param('ids', $milestoneId, $amount, $description);
     $stmt->execute();
+    $expenseId = (int) $db->insert_id;
     $stmt->close();
 
     $db->query("UPDATE milestones m
@@ -498,6 +512,13 @@ if ($action === 'update_expense') {
                     GROUP BY milestoneId
                 ) e ON e.milestoneId = m.id
                 SET m.spent = COALESCE(e.total_spent,0)");
+    if (function_exists('rbac_audit')) {
+        rbac_audit('contractor.expense_update', 'expense', $expenseId, [
+            'milestone_id' => $milestoneId,
+            'amount' => $amount,
+            'description' => $description,
+        ]);
+    }
     json_out(['success' => true]);
 }
 
@@ -549,7 +570,15 @@ if ($action === 'update_progress') {
     }
     $stmt->bind_param('idsssisi', $projectId, $progress, $workDetails, $validationNotes, $proofPath, $discrepancyFlag, $discrepancyNote, $employeeId);
     $stmt->execute();
+    $submissionId = (int) $db->insert_id;
     $stmt->close();
+    if (function_exists('rbac_audit')) {
+        rbac_audit('contractor.progress_submit', 'project_progress_submission', $submissionId, [
+            'project_id' => $projectId,
+            'progress_percent' => $progress,
+            'discrepancy_flag' => $discrepancyFlag,
+        ]);
+    }
     json_out(['success' => true, 'message' => 'Progress submission sent to engineer for review.']);
 }
 

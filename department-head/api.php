@@ -220,6 +220,13 @@ if ($action === 'decide_project') {
         $up->execute();
         $up->close();
     }
+    if (function_exists('rbac_audit')) {
+        rbac_audit('department_head.project_decision', 'project', $projectId, [
+            'decision_status' => $decision,
+            'decision_note' => $note,
+            'budget_amount' => $decision === 'Approved' ? $budgetAmount : 0,
+        ]);
+    }
 
     out(['success' => true]);
 }
