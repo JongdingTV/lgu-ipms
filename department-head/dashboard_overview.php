@@ -11,7 +11,7 @@ set_no_cache_headers();
 // Check authentication - redirect to login if not authenticated
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['department_head','department_admin','admin','super_admin']);
+rbac_require_from_matrix('department_head.approvals.view', ['department_head','department_admin','admin','super_admin']);
 
 // Check for suspicious activity (user-agent changes, etc.)
 check_suspicious_activity();
@@ -421,7 +421,6 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

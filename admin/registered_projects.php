@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Import security functions
 require dirname(__DIR__) . '/session-auth.php';
 // Database connection
@@ -533,7 +533,7 @@ $db->close();
                     <input 
                         type="search" 
                         id="searchProjects" 
-                        placeholder="Ã°Å¸â€Â Search projects by code, name or location..." 
+                        placeholder="ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Search projects by code, name or location..." 
                         class="ac-54b56ade"
                     >
                     <select 
@@ -547,7 +547,7 @@ $db->close();
                         <option>On-hold</option>
                         <option>Cancelled</option>
                     </select>
-                    <button id="exportCsv" class="ac-1974716d">Ã°Å¸â€œÂ¥ Export CSV</button>
+                    <button id="exportCsv" class="ac-1974716d">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ Export CSV</button>
                 </div>
             </div>
 
@@ -784,8 +784,5 @@ $db->close();
 
 
 
-<<<<<<< Updated upstream
 
 
-=======
->>>>>>> Stashed changes

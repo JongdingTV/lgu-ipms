@@ -36,4 +36,16 @@ return [
     'super_admin.audit.view' => ['super_admin'],
     'super_admin.progress.view' => ['super_admin'],
     'super_admin.projects.view' => ['super_admin'],
+
+    // Department Head workspace
+    'department_head.approvals.view' => ['department_head', 'department_admin', 'admin', 'super_admin'],
+    'department_head.approvals.manage' => ['department_head', 'department_admin', 'admin', 'super_admin'],
+
+    // Engineer workspace
+    'engineer.workspace.view' => ['engineer', 'admin', 'super_admin'],
+    'engineer.workspace.manage' => ['engineer', 'admin', 'super_admin'],
+
+    // Contractor workspace
+    'contractor.workspace.view' => ['contractor', 'admin', 'super_admin'],
+    'contractor.workspace.manage' => ['contractor', 'admin', 'super_admin'],
 ];

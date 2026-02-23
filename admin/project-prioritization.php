@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Import security functions
 require dirname(__DIR__) . '/session-auth.php';
 // Database connection
@@ -671,7 +671,7 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
                             <tr>
                                 <td colspan="9">
                                     <div class="no-results">
-                                        <div class="no-results-icon">Ã°Å¸â€œâ€¹</div>
+                                        <div class="no-results-icon">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹</div>
                                         <div class="no-results-title">No Feedback Found</div>
                                         <div class="no-results-text">No feedback submitted yet. Please check back later.</div>
                                     </div>
@@ -1052,8 +1052,5 @@ $status_flash = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : '';
 
 
 
-<<<<<<< Updated upstream
 
 
-=======
->>>>>>> Stashed changes
