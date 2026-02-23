@@ -58,8 +58,13 @@ $csrfToken = (string) generate_csrf_token();
         <span class="logo-text">IPMS Department Head</span>
     </div>
     <div class="nav-links">
-        <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
+        <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard</a>
         <a href="dashboard.php" class="active"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">Project Approval</a>
+        <a href="project_monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Monitoring</a>
+        <a href="priority_control.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon" alt="">Priority Control</a>
+        <a href="risk_alerts.php"><img src="../assets/images/admin/checking.png" class="nav-icon" alt="">Risk Alerts</a>
+        <a href="reports.php"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">Reports</a>
+        <a href="decision_logs.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Decision Logs</a>
     </div>
     <div class="nav-divider"></div>
     <div class="nav-action-footer">

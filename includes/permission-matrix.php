@@ -41,6 +41,12 @@ return [
     'department_head.approvals.view' => ['department_head', 'department_admin', 'admin', 'super_admin'],
     'department_head.approvals.manage' => ['department_head', 'department_admin', 'admin', 'super_admin'],
     'department_head.notifications.read' => ['department_head', 'department_admin', 'admin', 'super_admin'],
+    'department_head.monitoring.view' => ['department_head', 'department_admin', 'admin', 'super_admin'],
+    'department_head.priority.manage' => ['department_head', 'department_admin', 'admin', 'super_admin'],
+    'department_head.risk.view' => ['department_head', 'department_admin', 'admin', 'super_admin'],
+    'department_head.reports.view' => ['department_head', 'department_admin', 'admin', 'super_admin'],
+    'department_head.reports.export' => ['department_head', 'department_admin', 'admin', 'super_admin'],
+    'department_head.decisions.view' => ['department_head', 'department_admin', 'admin', 'super_admin'],
 
     // Engineer workspace
     'engineer.workspace.view' => ['engineer', 'admin', 'super_admin'],

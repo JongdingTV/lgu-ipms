@@ -357,6 +357,71 @@ body.dept-modal-open {
     margin: 8px 0 12px;
 }
 
+.dept-module-filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 10px 12px;
+    align-items: end;
+}
+
+.dept-module-filters .filter-group {
+    min-width: 0;
+}
+
+.dept-module-filters .filter-actions {
+    display: flex;
+    align-items: end;
+}
+
+.dept-module-filters .filter-actions .dept-btn {
+    min-width: 140px;
+}
+
+.dept-project-item-full {
+    grid-column: 1 / -1;
+}
+
+.table-empty {
+    text-align: center;
+    color: #526b8d;
+    padding: 18px 10px;
+}
+
+.dept-report-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.dept-report-card {
+    border: 1px solid #dbe7f3;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dept-report-card strong {
+    color: #153b66;
+    font-size: 1rem;
+}
+
+.dept-report-card span {
+    color: #587391;
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.dept-report-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 @media (max-width: 992px) {
     .dept-stats {
         grid-template-columns: repeat(2, minmax(170px, 1fr));
@@ -364,6 +429,14 @@ body.dept-modal-open {
 
     #projectsTable td:last-child {
         min-width: 220px;
+    }
+
+    .dept-module-filters {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+    }
+
+    .dept-report-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -383,5 +456,9 @@ body.dept-modal-open {
 
     .dept-btn {
         width: 100%;
+    }
+
+    .dept-module-filters {
+        grid-template-columns: 1fr;
     }
 }
