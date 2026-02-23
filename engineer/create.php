@@ -27,8 +27,7 @@ $form = [
     'email' => '',
     'contact_number' => '',
     'position_title' => '',
-    'specialization' => '',
-    'availability_status' => 'Available'
+    'specialization' => ''
 ];
 
 function ec_table_has_column(mysqli $db, string $table, string $column): bool
@@ -64,14 +63,11 @@ function ec_validate(array $input): array
 {
     $errors = [];
     $data = [];
-    foreach (['first_name','last_name','email','contact_number','position_title','specialization','availability_status'] as $k) {
+    foreach (['first_name','last_name','email','contact_number','position_title','specialization'] as $k) {
         $data[$k] = trim((string)($input[$k] ?? ''));
     }
 
     $data['email'] = strtolower($data['email']);
-    if ($data['availability_status'] === '' || !in_array($data['availability_status'], ['Available', 'Assigned', 'On Leave'], true)) {
-        $data['availability_status'] = 'Available';
-    }
 
     $password = (string)($input['password'] ?? '');
     $confirm = (string)($input['confirm_password'] ?? '');
@@ -113,7 +109,7 @@ function ec_create_account(mysqli $db, array $data): void
 
         if (ec_table_has_column($db, 'engineers', 'contact_number')) { $columns[] = 'contact_number'; $types .= 's'; $values[] = $data['contact_number']; }
         if (ec_table_has_column($db, 'engineers', 'position_title')) { $columns[] = 'position_title'; $types .= 's'; $values[] = $data['position_title']; }
-        if (ec_table_has_column($db, 'engineers', 'availability_status')) { $columns[] = 'availability_status'; $types .= 's'; $values[] = $data['availability_status']; }
+        if (ec_table_has_column($db, 'engineers', 'availability_status')) { $columns[] = 'availability_status'; $types .= 's'; $values[] = 'Available'; }
         if (ec_table_has_column($db, 'engineers', 'employee_id')) { $columns[] = 'employee_id'; $types .= 'i'; $values[] = $employeeId; }
 
         $sql = 'INSERT INTO engineers (' . implode(', ', $columns) . ') VALUES (' . implode(', ', array_fill(0, count($columns), '?')) . ')';
@@ -147,9 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = 'Engineer account created successfully. Sign in to continue.';
                 $_SESSION['engineer_create_token'] = bin2hex(random_bytes(32));
                 $csrfToken = $_SESSION['engineer_create_token'];
-                foreach ($form as $k => $v) {
-                    $form[$k] = ($k === 'availability_status') ? 'Available' : '';
-                }
+                foreach ($form as $k => $v) $form[$k] = '';
             } catch (Throwable $e) {
                 $errors[] = $e->getMessage();
             }
@@ -225,7 +219,6 @@ body.user-signup-page .subtitle{margin:0;color:var(--page-muted)}
 <div class="input-box"><label>Mobile Number</label><input type="text" name="contact_number" required placeholder="09XXXXXXXXX or +639XXXXXXXXX" value="<?php echo htmlspecialchars($form['contact_number'], ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="input-box"><label>Position/Title</label><input type="text" name="position_title" value="<?php echo htmlspecialchars($form['position_title'], ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="input-box"><label>Specialization</label><select name="specialization" required><option value="">-- Select --</option><?php foreach (['Civil Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Structural Engineering', 'Geotechnical Engineering'] as $spec): ?><option value="<?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $form['specialization'] === $spec ? 'selected' : ''; ?>><?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
-<div class="input-box"><label>Availability Status</label><select name="availability_status"><option value="Available" <?php echo $form['availability_status'] === 'Available' ? 'selected' : ''; ?>>Available</option><option value="Assigned" <?php echo $form['availability_status'] === 'Assigned' ? 'selected' : ''; ?>>Assigned</option><option value="On Leave" <?php echo $form['availability_status'] === 'On Leave' ? 'selected' : ''; ?>>On Leave</option></select></div>
 <div class="input-box"></div>
 <div class="input-box"><label>Password</label><input type="password" name="password" required></div>
 <div class="input-box"><label>Confirm Password</label><input type="password" name="confirm_password" required></div>
