@@ -330,3 +330,98 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ===== Professional polish layer for Contractor Progress page ===== */
+body.contractor-progress-page .main-content > .dash-header {
+    background: linear-gradient(135deg, rgba(255,255,255,0.97), rgba(245,250,255,0.96));
+    border: 1px solid #d6e6f7;
+    border-radius: 16px;
+    padding: 18px 22px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+    margin-bottom: 14px;
+}
+
+body.contractor-progress-page .pm-section.card {
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+body.contractor-progress-page .pm-controls-wrapper {
+    border: 1px solid #d9e7f6;
+    border-radius: 12px;
+    background: #ffffff;
+    padding: 12px;
+}
+
+body.contractor-progress-page .pm-controls .filter-group label,
+body.contractor-progress-page .validation-submit-grid .filter-group label {
+    font-size: 0.75rem;
+    letter-spacing: 0.35px;
+}
+
+body.contractor-progress-page .pm-controls .filter-group textarea,
+body.contractor-progress-page .validation-submit-grid .filter-group textarea {
+    min-height: 72px;
+}
+
+body.contractor-progress-page .table-wrap.module-grid {
+    margin-top: 14px;
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+
+body.contractor-progress-page .table-wrap.module-grid .contractor-table-title {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+    line-height: 1.2;
+}
+
+body.contractor-progress-page .table-wrap.module-grid .contractor-subtle {
+    margin-bottom: 10px;
+    font-size: 0.86rem;
+}
+
+body.contractor-progress-page .table-wrap .table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fbff;
+    border-bottom: 1px solid #d7e4f3;
+}
+
+body.contractor-progress-page #saveProgress,
+body.contractor-progress-page #submitValidationItem {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+body.contractor-progress-page #saveProgress {
+    background: linear-gradient(135deg, #155e75, #0284c7);
+}
+
+body.contractor-progress-page .validation-submit-grid {
+    margin-bottom: 10px;
+}
+
+@media (max-width: 1200px) {
+    body.contractor-progress-page .pm-controls > .filter-group:nth-child(1),
+    body.contractor-progress-page .pm-controls > .filter-group:nth-child(2),
+    body.contractor-progress-page .pm-controls > .filter-group:nth-child(3) {
+        grid-column: span 6;
+    }
+
+    body.contractor-progress-page .pm-controls > .filter-group:nth-child(4),
+    body.contractor-progress-page .pm-controls > .filter-group:nth-child(5),
+    body.contractor-progress-page .pm-controls > #saveProgress {
+        grid-column: span 4;
+    }
+
+    body.contractor-progress-page .validation-submit-grid > .filter-group:nth-child(1),
+    body.contractor-progress-page .validation-submit-grid > .filter-group:nth-child(2),
+    body.contractor-progress-page .validation-submit-grid > .filter-group:nth-child(3),
+    body.contractor-progress-page .validation-submit-grid > .filter-group:nth-child(4),
+    body.contractor-progress-page .validation-submit-grid > #submitValidationItem {
+        grid-column: span 6;
+    }
+}

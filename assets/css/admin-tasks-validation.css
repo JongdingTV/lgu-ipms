@@ -372,3 +372,106 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) .tv-muted {
         grid-column: span 1;
     }
 }
+
+/* ===== Professional polish layer for Tasks & Milestones ===== */
+body.tasks-validation-page .validation-workflow-page {
+    gap: 16px !important;
+}
+
+body.tasks-validation-page .validation-workflow-page .dash-header {
+    background: linear-gradient(135deg, rgba(255,255,255,0.97), rgba(245,250,255,0.96)) !important;
+    border: 1px solid #d6e6f7 !important;
+    border-radius: 16px !important;
+    padding: 18px 22px !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1) !important;
+}
+
+body.tasks-validation-page .validation-summary-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+}
+
+body.tasks-validation-page .validation-summary-card {
+    min-height: 92px !important;
+    border-radius: 14px !important;
+    padding: 14px !important;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;
+}
+
+body.tasks-validation-page .validation-summary-card span {
+    font-size: 0.76rem !important;
+    letter-spacing: 0.3px !important;
+    text-transform: uppercase !important;
+}
+
+body.tasks-validation-page .validation-summary-card strong {
+    font-size: 1.7rem !important;
+    line-height: 1.05 !important;
+    margin-top: 8px !important;
+}
+
+body.tasks-validation-page .validation-summary-card.progress {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb) !important;
+    border: none !important;
+}
+
+body.tasks-validation-page .validation-summary-card.progress span,
+body.tasks-validation-page .validation-summary-card.progress strong {
+    color: #ffffff !important;
+}
+
+body.tasks-validation-page .validation-progress-rail {
+    margin-top: -2px !important;
+    height: 10px !important;
+}
+
+body.tasks-validation-page .validation-controls {
+    border-radius: 14px !important;
+    padding: 14px !important;
+}
+
+body.tasks-validation-page .validation-control-grid {
+    gap: 12px !important;
+}
+
+body.tasks-validation-page .validation-controls-actions {
+    justify-content: flex-start !important;
+    gap: 10px !important;
+}
+
+body.tasks-validation-page .validation-project-accordion .admin-empty-state {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+    padding: 16px !important;
+    border: 1px dashed #bfd4ea !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    color: #2f4f73 !important;
+}
+
+body.tasks-validation-page .pm-pagination-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-top: 4px !important;
+}
+
+@media (max-width: 1300px) {
+    body.tasks-validation-page .validation-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 900px) {
+    body.tasks-validation-page .validation-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    body.tasks-validation-page .validation-summary-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
