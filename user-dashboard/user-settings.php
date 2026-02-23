@@ -22,7 +22,7 @@ $stmt->close();
 
 if (!$user) {
     $db->close();
-    destroy_session();
+    destroy_session(true);
     header('Location: /user-dashboard/user-login.php');
     exit;
 }
