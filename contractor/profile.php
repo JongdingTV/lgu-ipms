@@ -163,6 +163,16 @@ if ($hasAccountEmployeeId) {
 }
 
 $csrf = generate_csrf_token();
+$activeTab = (string)($_GET['tab'] ?? 'profile');
+if (!in_array($activeTab, ['profile', 'password'], true)) {
+    $activeTab = 'profile';
+}
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') === 'change_password') {
+    $activeTab = 'password';
+}
+$fullName = trim((string)($employee['first_name'] ?? '') . ' ' . (string)($employee['last_name'] ?? ''));
+$sidebarInitial = strtoupper(substr($fullName !== '' ? $fullName : 'Contractor', 0, 1));
+$sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($employee['role'] ?? 'contractor')));
 ?>
 <!doctype html>
 <html lang="en">
@@ -189,11 +199,9 @@ $csrf = generate_csrf_token();
 <header class="nav" id="navbar">
     <div class="nav-logo"><img src="../assets/images/icons/ipms-icon.png" alt="City Hall Logo" class="logo-img"><span class="logo-text">IPMS Contractor</span></div>
     <div class="nav-user-profile">
-        <div class="nav-user-badge"><?php echo htmlspecialchars(strtoupper(substr((string)($employee['first_name'] ?? 'C'), 0, 1)), ENT_QUOTES, 'UTF-8'); ?></div>
-        <div class="nav-user-meta">
-            <div class="nav-user-name"><?php echo htmlspecialchars(trim((string)($employee['first_name'] ?? '') . ' ' . (string)($employee['last_name'] ?? '')), ENT_QUOTES, 'UTF-8'); ?></div>
-            <div class="nav-user-email"><?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div>
-        </div>
+        <div class="user-initial-badge"><?php echo htmlspecialchars($sidebarInitial, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="nav-user-name"><?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="nav-user-email"><?php echo htmlspecialchars($sidebarRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
     </div>
     <div class="nav-links">
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
@@ -207,7 +215,7 @@ $csrf = generate_csrf_token();
 </header>
 <div class="toggle-btn" id="showSidebarBtn"><a href="#" id="toggleSidebarShow" title="Show sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></a></div>
 
-<section class="main-content">
+<section class="main-content settings-page">
     <div class="dash-header">
         <h1>My Profile</h1>
         <p>Manage your contractor account details and security settings.</p>
@@ -215,53 +223,64 @@ $csrf = generate_csrf_token();
     <?php if (!empty($errors)): ?><div class="ac-aabba7cf"><?php foreach ($errors as $e): ?><div><?php echo htmlspecialchars($e, ENT_QUOTES, 'UTF-8'); ?></div><?php endforeach; ?></div><?php endif; ?>
     <?php if ($success !== ''): ?><div class="ac-0b2b14a3"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
 
-    <div class="profile-layout">
-        <aside class="profile-side">
-            <div class="profile-avatar"><?php echo htmlspecialchars(strtoupper(substr((string)($employee['first_name'] ?? 'C'), 0, 1)), ENT_QUOTES, 'UTF-8'); ?></div>
-            <h3 class="profile-name"><?php echo htmlspecialchars(trim((string)($employee['first_name'] ?? '') . ' ' . (string)($employee['last_name'] ?? '')), ENT_QUOTES, 'UTF-8'); ?></h3>
-            <p class="profile-role"><?php echo htmlspecialchars(ucfirst((string)($employee['role'] ?? 'contractor')), ENT_QUOTES, 'UTF-8'); ?> Account</p>
-            <div class="profile-meta">
-                <div class="profile-meta-item"><label>Email</label><div><?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                <div class="profile-meta-item"><label>Mobile</label><div><?php echo htmlspecialchars((string)($contractor['phone'] ?? 'N/A'), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                <div class="profile-meta-item"><label>Company</label><div><?php echo htmlspecialchars((string)($contractor['company'] ?? 'N/A'), ENT_QUOTES, 'UTF-8'); ?></div></div>
+    <div class="settings-layout">
+        <div class="card ac-e9b6d4ca settings-card">
+            <div class="settings-tabs settings-switcher">
+                <a href="profile.php?tab=profile" class="tab-btn <?php echo $activeTab === 'profile' ? 'active' : ''; ?>">Profile</a>
+                <a href="profile.php?tab=password" class="tab-btn <?php echo $activeTab === 'password' ? 'active' : ''; ?>">Change Password</a>
             </div>
-        </aside>
 
-        <div class="profile-main">
-            <div class="settings-card">
-                <h3>Account and Company Profile</h3>
-                <p class="profile-muted-note">Registration details are view-only and cannot be edited.</p>
-                <div class="settings-info-form">
-                    <div class="settings-info-field"><label>First Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($employee['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                    <div class="settings-info-field"><label>Last Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($employee['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                    <div class="settings-info-field"><label>Contractor Type</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['contractor_type'] ?? 'company'), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                    <div class="settings-info-field"><label>Company / Contractor Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['company'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                    <div class="settings-info-field"><label>License Number</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['license'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                    <?php if ($hasLicenseExp): ?><div class="settings-info-field"><label>License Expiry</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['license_expiration_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
-                    <?php if ($hasTin): ?><div class="settings-info-field"><label>TIN</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['tin'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
-                    <div class="settings-info-field"><label>Specialization</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['specialization'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                    <div class="settings-info-field"><label>Experience</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['experience'] ?? '0'), ENT_QUOTES, 'UTF-8'); ?> years</div></div>
-                    <div class="settings-info-field"><label>Email</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                    <div class="settings-info-field"><label>Mobile Number</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['phone'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                    <?php if ($hasContactFirst): ?><div class="settings-info-field"><label>Contact First Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['contact_person_first_name'] ?? $employee['first_name']), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
-                    <?php if ($hasContactLast): ?><div class="settings-info-field"><label>Contact Last Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['contact_person_last_name'] ?? $employee['last_name']), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
-                    <?php if ($hasContactRole): ?><div class="settings-info-field"><label>Contact Role</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['contact_person_role'] ?? 'Owner'), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
-                    <div class="settings-info-field settings-info-field-full"><label>Business Address</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
-                </div>
-            </div>
-            <div class="settings-card">
-                <h3>Change Password</h3>
-                <form method="post">
-                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
-                    <input type="hidden" name="action" value="change_password">
-                    <div class="password-grid">
-                        <input type="password" name="current_password" placeholder="Current Password" required>
-                        <input type="password" name="new_password" placeholder="New Password" required>
-                        <input type="password" name="confirm_password" placeholder="Confirm New Password" required>
+            <?php if ($activeTab === 'profile'): ?>
+                <div class="settings-view">
+                    <div class="settings-panel">
+                        <h3 class="ac-b75fad00">Account and Company Profile</h3>
+                        <p class="settings-subtitle">Registration details are view-only and cannot be edited.</p>
+                        <div class="settings-info-form">
+                            <div class="settings-info-field"><label>First Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($employee['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                            <div class="settings-info-field"><label>Last Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($employee['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                            <div class="settings-info-field"><label>Contractor Type</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['contractor_type'] ?? 'company'), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                            <div class="settings-info-field"><label>Company / Contractor Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['company'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                            <div class="settings-info-field"><label>License Number</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['license'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                            <?php if ($hasLicenseExp): ?><div class="settings-info-field"><label>License Expiry</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['license_expiration_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
+                            <?php if ($hasTin): ?><div class="settings-info-field"><label>TIN</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['tin'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
+                            <div class="settings-info-field"><label>Specialization</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['specialization'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                            <div class="settings-info-field"><label>Experience</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['experience'] ?? '0'), ENT_QUOTES, 'UTF-8'); ?> years</div></div>
+                            <div class="settings-info-field"><label>Email</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                            <div class="settings-info-field"><label>Mobile Number</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['phone'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                            <?php if ($hasContactFirst): ?><div class="settings-info-field"><label>Contact First Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['contact_person_first_name'] ?? $employee['first_name']), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
+                            <?php if ($hasContactLast): ?><div class="settings-info-field"><label>Contact Last Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['contact_person_last_name'] ?? $employee['last_name']), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
+                            <?php if ($hasContactRole): ?><div class="settings-info-field"><label>Contact Role</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['contact_person_role'] ?? 'Owner'), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
+                            <div class="settings-info-field settings-info-field-full"><label>Business Address</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($contractor['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                        </div>
                     </div>
-                    <button type="submit" class="profile-btn">Update Password</button>
-                </form>
-            </div>
+                </div>
+            <?php else: ?>
+                <div class="settings-view">
+                    <div class="settings-panel settings-password-panel">
+                        <h3 class="ac-b75fad00">Change Password</h3>
+                        <p class="settings-subtitle">Use a strong password with uppercase, lowercase, number, and symbol.</p>
+                        <form method="post" class="settings-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="action" value="change_password">
+                            <div class="ac-37c29296">
+                                <div class="ac-6f762f4a">
+                                    <label>Current Password</label>
+                                    <input type="password" name="current_password" required>
+                                </div>
+                                <div class="ac-6f762f4a">
+                                    <label>New Password</label>
+                                    <input type="password" name="new_password" required>
+                                </div>
+                                <div class="ac-6f762f4a">
+                                    <label>Confirm New Password</label>
+                                    <input type="password" name="confirm_password" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="ac-f84d9680">Update Password</button>
+                        </form>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </section>

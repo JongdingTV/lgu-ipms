@@ -335,6 +335,7 @@ if ($action === 'decide_progress') {
     $decision = trim((string) ($_POST['decision_status'] ?? ''));
     $note = trim((string) ($_POST['decision_note'] ?? ''));
     $allowed = ['Approved', 'Rejected'];
+    $inspectedProgressRaw = trim((string)($_POST['inspected_progress'] ?? ''));
 
     if ($submissionId <= 0 || $projectId <= 0 || !in_array($decision, $allowed, true)) {
         json_out(['success' => false, 'message' => 'Invalid decision payload.'], 422);
@@ -345,7 +346,7 @@ if ($action === 'decide_progress') {
         json_out(['success' => false, 'message' => 'Invalid session.'], 403);
     }
 
-    $pick = $db->prepare("SELECT submitted_progress_percent, review_status
+    $pick = $db->prepare("SELECT submitted_progress_percent, review_status, discrepancy_flag, discrepancy_note
                           FROM project_progress_submissions
                           WHERE id = ? AND project_id = ?
                           LIMIT 1");
@@ -362,20 +363,51 @@ if ($action === 'decide_progress') {
         json_out(['success' => false, 'message' => 'Submission not found.'], 404);
     }
 
+    $submittedProgress = (float)($submission['submitted_progress_percent'] ?? 0);
+    $officialProgress = $submittedProgress;
+    if ($decision === 'Approved') {
+        if ($inspectedProgressRaw === '' || !is_numeric($inspectedProgressRaw)) {
+            json_out(['success' => false, 'message' => 'Engineer inspected progress is required for approval.'], 422);
+        }
+        $officialProgress = (float)$inspectedProgressRaw;
+        if ($officialProgress < 0 || $officialProgress > 100) {
+            json_out(['success' => false, 'message' => 'Engineer inspected progress must be between 0 and 100.'], 422);
+        }
+    }
+
+    $mismatchDetected = false;
+    $mismatchNote = '';
+    if ($decision === 'Approved' && abs($officialProgress - $submittedProgress) >= 0.01) {
+        $mismatchDetected = true;
+        $mismatchNote = 'Progress mismatch detected (Contractor: ' . number_format($submittedProgress, 2) . '%, Engineer: ' . number_format($officialProgress, 2) . '%).';
+    }
+
     $db->begin_transaction();
     try {
+        $noteToSave = $note;
+        $discrepancyFlagToSave = (int)($submission['discrepancy_flag'] ?? 0);
+        $discrepancyNoteToSave = (string)($submission['discrepancy_note'] ?? '');
+        if ($mismatchDetected) {
+            $discrepancyFlagToSave = 1;
+            $discrepancyNoteToSave = $mismatchNote;
+            if ($noteToSave === '') {
+                $noteToSave = $mismatchNote;
+            } else {
+                $noteToSave .= ' | ' . $mismatchNote;
+            }
+        }
+
         $up = $db->prepare("UPDATE project_progress_submissions
-                            SET review_status = ?, review_note = ?, reviewed_by = ?, reviewed_at = NOW()
+                            SET review_status = ?, review_note = ?, discrepancy_flag = ?, discrepancy_note = ?, reviewed_by = ?, reviewed_at = NOW()
                             WHERE id = ? AND project_id = ?");
         if (!$up) {
             throw new RuntimeException('Database error.');
         }
-        $up->bind_param('ssiii', $decision, $note, $decidedBy, $submissionId, $projectId);
+        $up->bind_param('ssisiii', $decision, $noteToSave, $discrepancyFlagToSave, $discrepancyNoteToSave, $decidedBy, $submissionId, $projectId);
         $up->execute();
         $up->close();
 
         if ($decision === 'Approved') {
-            $officialProgress = (float)($submission['submitted_progress_percent'] ?? 0);
             $ins = $db->prepare("INSERT INTO project_progress_updates (project_id, progress_percent, updated_by) VALUES (?, ?, ?)");
             if (!$ins) {
                 throw new RuntimeException('Unable to write official progress.');
@@ -394,9 +426,16 @@ if ($action === 'decide_progress') {
             'project_id' => $projectId,
             'decision_status' => $decision,
             'decision_note' => $note,
+            'inspected_progress' => $officialProgress,
+            'mismatch_detected' => $mismatchDetected ? 1 : 0,
         ]);
     }
-    json_out(['success' => true]);
+    json_out([
+        'success' => true,
+        'message' => $mismatchDetected ? 'Progress mismatch detected. Official progress updated to engineer-inspected value.' : 'Progress review saved successfully.',
+        'mismatch_detected' => $mismatchDetected,
+        'official_progress' => $officialProgress
+    ]);
 }
 
 if ($action === 'load_status_requests') {
