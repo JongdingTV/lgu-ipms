@@ -20,7 +20,7 @@ if (!in_array($role, ['department_head', 'department_admin', 'admin', 'super_adm
 }
 
 $employeeName = (string) ($_SESSION['employee_name'] ?? 'Department Head');
-$csrfToken = (string) ($_SESSION['csrf_token'] ?? '');
+$csrfToken = (string) generate_csrf_token();
 ?>
 <!doctype html>
 <html lang="en">
