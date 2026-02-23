@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 record_attempt('engineer_login');
                 $error = 'Invalid email or password.';
             } else {
-                $userRole = strtolower(trim((string) ($employee['role'] ?? '')));
+                $userRole = normalize_employee_role((string) ($employee['role'] ?? ''));
                 if (!in_array($userRole, ['engineer', 'admin', 'super_admin'], true)) {
                     log_security_event('ROLE_DENIED', 'Engineer login blocked for non-engineer role');
                     $error = 'Your account is not assigned to engineer access.';

@@ -371,6 +371,30 @@ function db_has_employee_columns(mysqli $db, string $column): bool
     return $exists;
 }
 
+function normalize_employee_role(string $role): string
+{
+    $normalized = strtolower(trim($role));
+    if ($normalized === '') {
+        return '';
+    }
+
+    $map = [
+        'superadmin' => 'super_admin',
+        'super admin' => 'super_admin',
+        'department head' => 'department_head',
+        'department-head' => 'department_head',
+        'dept_head' => 'department_head',
+        'dept head' => 'department_head',
+        'project_engineer' => 'engineer',
+        'municipal_engineer' => 'engineer',
+        'city_engineer' => 'engineer',
+        'accredited_contractor' => 'contractor',
+        'private_contractor' => 'contractor'
+    ];
+
+    return $map[$normalized] ?? $normalized;
+}
+
 function hydrate_employee_role_status(): void
 {
     global $db;
@@ -405,7 +429,7 @@ function hydrate_employee_role_status(): void
         return;
     }
     if ($hasRole) {
-        $_SESSION['employee_role'] = strtolower(trim((string)($row['role'] ?? '')));
+        $_SESSION['employee_role'] = normalize_employee_role((string)($row['role'] ?? ''));
     }
     if ($hasStatus) {
         $_SESSION['employee_status'] = strtolower(trim((string)($row['account_status'] ?? 'active')));

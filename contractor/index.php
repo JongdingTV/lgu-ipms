@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 record_attempt('contractor_login');
                 $error = 'Invalid email or password.';
             } else {
-                $userRole = strtolower(trim((string) ($employee['role'] ?? '')));
+                $userRole = normalize_employee_role((string) ($employee['role'] ?? ''));
                 if (!in_array($userRole, ['contractor', 'admin', 'super_admin'], true)) {
                     log_security_event('ROLE_DENIED', 'Contractor login blocked for non-contractor role');
                     $error = 'Your account is not assigned to contractor access.';
