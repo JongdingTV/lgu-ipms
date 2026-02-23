@@ -244,9 +244,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $isUpdate = isset($_POST['id']) && !empty($_POST['id']);
 
         // Workflow rule: every newly registered project must pass Department Head approval first.
+        // Budget must stay blank (NULL) until Department Head approval.
         if (!$isUpdate) {
             $status = 'For Approval';
-            $budget = 0.0;
+            $budget = null;
         }
         
         if ($budget !== null && $budget > MAX_PROJECT_BUDGET) {
@@ -603,6 +604,7 @@ $db->close();
                         <option>Rehabilitation</option>
                         <option>Expansion</option>
                         <option>Maintenance</option>
+                        <option>Infrastructure</option>
                     </select>
 
                     <label for="projSector">Sector</label>
@@ -613,6 +615,10 @@ $db->close();
                         <option>Building</option>
                         <option>Water</option>
                         <option>Sanitation</option>
+                        <option>Community Development</option>
+                        <option>Health</option>
+                        <option>Public Works</option>
+                        <option>Transportation</option>
                         <option>Other</option>
                     </select>
 
@@ -658,8 +664,8 @@ $db->close();
                 <fieldset>
                     <legend>Budget</legend>
                     <label for="projBudget">Total Estimated Cost</label>
-                    <input type="number" id="projBudget" name="budget" min="0" step="0.01" required>
-                    <small>Maximum allowed budget: PHP <?php echo number_format((float) MAX_PROJECT_BUDGET, 2); ?></small>
+                    <input type="number" id="projBudget" name="budget" min="0" step="0.01" placeholder="Set by Department Head after approval" disabled>
+                    <small>Budget is intentionally left blank during registration and will be set after Department Head approval.</small>
                 </fieldset>
 
                 <!-- Status -->
@@ -694,7 +700,6 @@ $db->close();
     <script src="../assets/js/admin-project-registration.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-project-registration.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

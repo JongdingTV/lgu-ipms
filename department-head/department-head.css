@@ -237,6 +237,73 @@
     word-break: break-word;
 }
 
+.dept-modal[hidden] {
+    display: none;
+}
+
+.dept-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+}
+
+.dept-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.dept-modal-dialog {
+    position: relative;
+    width: min(1020px, calc(100vw - 32px));
+    max-height: calc(100vh - 40px);
+    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid #dbe7f3;
+    box-shadow: 0 20px 50px rgba(2, 6, 23, 0.3);
+    overflow: hidden;
+}
+
+.dept-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #dbe7f3;
+    background: #f7fbff;
+}
+
+.dept-modal-head h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #1d3553;
+}
+
+.dept-modal-close {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #cddbeb;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.dept-modal-body {
+    padding: 14px;
+    overflow: auto;
+}
+
+body.dept-modal-open {
+    overflow: hidden;
+}
+
 #projectsTable thead th {
     background: #f0f6ff;
     color: #274467;

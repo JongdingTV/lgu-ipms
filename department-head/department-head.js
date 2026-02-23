@@ -66,6 +66,60 @@ document.addEventListener('DOMContentLoaded', function () {
         set('statReviewed', reviewed);
     }
 
+    function getDetailsModal() {
+        var existing = document.getElementById('deptDetailsModal');
+        if (existing) {
+            return existing;
+        }
+        var modal = document.createElement('div');
+        modal.id = 'deptDetailsModal';
+        modal.className = 'dept-modal';
+        modal.setAttribute('hidden', 'hidden');
+        modal.innerHTML = [
+            '<div class="dept-modal-backdrop" data-role="close"></div>',
+            '<div class="dept-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="deptDetailsTitle">',
+            '<div class="dept-modal-head">',
+            '<h3 id="deptDetailsTitle">Project Details</h3>',
+            '<button type="button" class="dept-modal-close" aria-label="Close" data-role="close">&times;</button>',
+            '</div>',
+            '<div id="deptDetailsBody" class="dept-modal-body"></div>',
+            '</div>'
+        ].join('');
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', function (e) {
+            var target = e.target;
+            if (target && target.getAttribute('data-role') === 'close') {
+                closeDetailsModal();
+            }
+        });
+
+        return modal;
+    }
+
+    function openDetailsModal(html) {
+        var modal = getDetailsModal();
+        var body = document.getElementById('deptDetailsBody');
+        if (body) {
+            body.innerHTML = html;
+        }
+        modal.removeAttribute('hidden');
+        document.body.classList.add('dept-modal-open');
+    }
+
+    function closeDetailsModal() {
+        var modal = document.getElementById('deptDetailsModal');
+        if (!modal) return;
+        modal.setAttribute('hidden', 'hidden');
+        document.body.classList.remove('dept-modal-open');
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeDetailsModal();
+        }
+    });
+
     function bindActionButtons() {
         var tbody = document.querySelector('#projectsTable tbody');
         if (!tbody) return;
@@ -73,11 +127,15 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody.querySelectorAll('button[data-action="toggle-details"]').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var id = this.getAttribute('data-id');
-                var row = tbody.querySelector('tr[data-details-for="' + id + '"]');
+                var row = null;
+                for (var i = 0; i < state.rows.length; i += 1) {
+                    if (String(state.rows[i].id) === String(id)) {
+                        row = state.rows[i];
+                        break;
+                    }
+                }
                 if (!row) return;
-                var showing = row.style.display !== 'none';
-                row.style.display = showing ? 'none' : 'table-row';
-                this.textContent = showing ? 'View Details' : 'Hide Details';
+                openDetailsModal(buildProjectDetails(row));
             });
         });
 
@@ -166,12 +224,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     : '<span class="ac-a004b216 dept-finalized-badge">Finalized</span>') + '</div></td>'
             ].join('');
             tbody.appendChild(tr);
-
-            var detailsTr = document.createElement('tr');
-            detailsTr.setAttribute('data-details-for', String(row.id || ''));
-            detailsTr.style.display = 'none';
-            detailsTr.innerHTML = '<td colspan="6"><div class="dept-project-details">' + buildProjectDetails(row) + '</div></td>';
-            tbody.appendChild(detailsTr);
         });
 
         bindActionButtons();
