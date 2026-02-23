@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/auth.php';
+rbac_require_from_matrix('super_admin.progress.view', ['super_admin']);
 
 $projects = [];
 if (isset($db) && !$db->connect_error) {
@@ -73,4 +74,3 @@ if (isset($db) && !$db->connect_error) {
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
-

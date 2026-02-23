@@ -30,4 +30,5 @@ return [
     'super_admin.employee_accounts.manage' => ['super_admin'],
     'super_admin.audit.view' => ['super_admin'],
     'super_admin.progress.view' => ['super_admin'],
+    'super_admin.projects.view' => ['super_admin'],
 ];

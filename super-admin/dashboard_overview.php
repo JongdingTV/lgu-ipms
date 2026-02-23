@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/auth.php';
+rbac_require_from_matrix('super_admin.dashboard.view', ['super_admin']);
 
 $totalProjects = 0;
 $inProgress = 0;
