@@ -343,7 +343,7 @@ body.contractor-progress-page .main-content > .dash-header {
 
 body.contractor-progress-page .pm-section.card {
     border-radius: 16px;
-    padding: 8px;
+    padding: 10px;
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
 }
 
@@ -351,7 +351,8 @@ body.contractor-progress-page .pm-controls-wrapper {
     border: 1px solid #d9e7f6;
     border-radius: 12px;
     background: #ffffff;
-    padding: 12px;
+    padding: 14px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 body.contractor-progress-page .pm-controls .filter-group label,
@@ -362,13 +363,34 @@ body.contractor-progress-page .validation-submit-grid .filter-group label {
 
 body.contractor-progress-page .pm-controls .filter-group textarea,
 body.contractor-progress-page .validation-submit-grid .filter-group textarea {
-    min-height: 72px;
+    min-height: 74px;
+}
+
+body.contractor-progress-page .validation-submit-grid .filter-group input,
+body.contractor-progress-page .validation-submit-grid .filter-group select,
+body.contractor-progress-page .validation-submit-grid .filter-group textarea {
+    width: 100%;
+    border: 1px solid #c8d8ea;
+    border-radius: 10px;
+    background: #fff;
+    padding: 10px 12px;
+    color: #0f172a;
+    min-height: 44px;
+}
+
+body.contractor-progress-page .validation-submit-grid .filter-group textarea:focus,
+body.contractor-progress-page .validation-submit-grid .filter-group input:focus,
+body.contractor-progress-page .validation-submit-grid .filter-group select:focus {
+    outline: none;
+    border-color: #2f73b5;
+    box-shadow: 0 0 0 3px rgba(47, 115, 181, 0.16);
 }
 
 body.contractor-progress-page .table-wrap.module-grid {
     margin-top: 14px;
     border-radius: 14px;
-    padding: 12px 14px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 body.contractor-progress-page .table-wrap.module-grid .contractor-table-title {
@@ -388,12 +410,17 @@ body.contractor-progress-page .table-wrap .table thead th {
     z-index: 1;
     background: #f8fbff;
     border-bottom: 1px solid #d7e4f3;
+    font-size: 0.78rem;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: #29486a;
 }
 
 body.contractor-progress-page #saveProgress,
 body.contractor-progress-page #submitValidationItem {
     font-size: 0.9rem;
     font-weight: 700;
+    min-height: 46px;
 }
 
 body.contractor-progress-page #saveProgress {
@@ -402,6 +429,20 @@ body.contractor-progress-page #saveProgress {
 
 body.contractor-progress-page .validation-submit-grid {
     margin-bottom: 10px;
+}
+
+body.contractor-progress-page .validation-submit-grid > .filter-group:nth-child(1) { grid-column: span 4; }
+body.contractor-progress-page .validation-submit-grid > .filter-group:nth-child(2) { grid-column: span 2; }
+body.contractor-progress-page .validation-submit-grid > .filter-group:nth-child(3) { grid-column: span 6; }
+body.contractor-progress-page .validation-submit-grid > .filter-group:nth-child(4) { grid-column: span 6; }
+body.contractor-progress-page .validation-submit-grid > #submitValidationItem { grid-column: span 6; }
+
+body.contractor-progress-page .validation-items-section .table td {
+    vertical-align: top;
+}
+
+body.contractor-progress-page .validation-items-section .table tbody tr:hover {
+    background: #f8fbff;
 }
 
 @media (max-width: 1200px) {
