@@ -140,14 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $employee = $result ? $result->fetch_assoc() : null;
                 $stmt->close();
 
-                $isAdminAccount = strtolower($emailInput) === 'admin@lgu.gov.ph';
                 $validPassword = false;
                 if ($employee) {
-                    if ($isAdminAccount) {
-                        $validPassword = ($password === 'admin123' || password_verify($password, (string) $employee['password']));
-                    } else {
-                        $validPassword = password_verify($password, (string) $employee['password']);
-                    }
+                    $validPassword = password_verify($password, (string) $employee['password']);
                 }
 
                 if (!$employee || !$validPassword) {
@@ -197,10 +192,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </header>
 <div class="wrapper">
     <div class="card">
-        <div class="step-header" style="display:flex;gap:8px;align-items:center;justify-content:center;margin:0 0 12px;">
-            <span class="step-dot active" style="width:28px;height:28px;border-radius:999px;border:1px solid #cbd5e1;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:.84rem;background:linear-gradient(135deg,#1d4e89,#3f83c9);">1</span>
-            <span class="step-dot" style="width:28px;height:28px;border-radius:999px;border:1px solid #cbd5e1;color:<?php echo $otpPending ? '#fff' : '#64748b'; ?>;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:.84rem;background:<?php echo $otpPending ? 'linear-gradient(135deg,#1d4e89,#3f83c9)' : '#fff'; ?>;">2</span>
-        </div>
         <img src="../assets/images/icons/ipms-icon.png" class="icon-top" alt="LGU">
         <h2 class="title"><?php echo $otpPending ? 'Verify OTP' : 'Contractor Login'; ?></h2>
         <p class="subtitle"><?php echo $otpPending ? 'Enter the code sent to your email to continue.' : 'Use your employee account assigned as contractor.'; ?></p>

@@ -88,108 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Invalid request token. Please refresh and try again.';
     } else {
         $action = (string)($_POST['action'] ?? '');
-        if ($action === 'update_profile') {
-            if (is_rate_limited('contractor_profile_update', 8, 600)) {
-                $errors[] = 'Too many profile update attempts. Please wait.';
-            } else {
-                $firstName = trim((string)($_POST['first_name'] ?? ''));
-                $lastName = trim((string)($_POST['last_name'] ?? ''));
-                $email = strtolower(trim((string)($_POST['email'] ?? '')));
-                $phone = trim((string)($_POST['phone'] ?? ''));
-                $address = trim((string)($_POST['address'] ?? ''));
-                $company = trim((string)($_POST['company'] ?? ''));
-                $license = trim((string)($_POST['license'] ?? ''));
-                $licenseExp = trim((string)($_POST['license_expiration_date'] ?? ''));
-                $spec = trim((string)($_POST['specialization'] ?? ''));
-                $years = max(0, (int)($_POST['experience'] ?? 0));
-                $contractorType = strtolower(trim((string)($_POST['contractor_type'] ?? 'company')));
-                $tin = trim((string)($_POST['tin'] ?? ''));
-                $contactFirst = trim((string)($_POST['contact_person_first_name'] ?? ''));
-                $contactLast = trim((string)($_POST['contact_person_last_name'] ?? ''));
-                $contactRole = trim((string)($_POST['contact_person_role'] ?? 'Owner'));
-
-                if ($firstName === '' || $lastName === '') $errors[] = 'First and last name are required.';
-                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Valid email is required.';
-                if (!preg_match('/^(09\d{9}|\+639\d{9})$/', str_replace([' ', '-'], '', $phone))) $errors[] = 'Mobile format must be 09XXXXXXXXX or +639XXXXXXXXX.';
-                if ($company === '') $errors[] = 'Company name is required.';
-                if ($license === '') $errors[] = 'License number is required.';
-                if ($hasLicenseExp && ($licenseExp === '' || strtotime($licenseExp) === false || strtotime($licenseExp) <= strtotime(date('Y-m-d')))) $errors[] = 'License expiry must be a valid future date.';
-                if ($spec === '') $errors[] = 'Specialization is required.';
-                if ($address === '') $errors[] = 'Address is required.';
-                if ($hasTin && $tin !== '' && !preg_match('/^\d{3}-\d{3}-\d{3}(-\d{3})?$/', $tin)) $errors[] = 'TIN format must be 000-000-000 or 000-000-000-000.';
-                if (!in_array($contractorType, ['company', 'individual'], true)) $contractorType = 'company';
-
-                if (!$errors) {
-                    $dupEmp = $db->prepare("SELECT id FROM employees WHERE email = ? AND id <> ? LIMIT 1");
-                    if ($dupEmp) {
-                        $dupEmp->bind_param('si', $email, $employeeId);
-                        $dupEmp->execute();
-                        $dupRes = $dupEmp->get_result();
-                        $exists = $dupRes && $dupRes->num_rows > 0;
-                        if ($dupRes) $dupRes->free();
-                        $dupEmp->close();
-                        if ($exists) $errors[] = 'Email already used by another account.';
-                    }
-                }
-
-                if (!$errors) {
-                    $dupLic = $db->prepare("SELECT id FROM contractors WHERE license = ? AND id <> ? LIMIT 1");
-                    if ($dupLic) {
-                        $ctrId = (int)($contractor['id'] ?? 0);
-                        $dupLic->bind_param('si', $license, $ctrId);
-                        $dupLic->execute();
-                        $dupRes = $dupLic->get_result();
-                        $exists = $dupRes && $dupRes->num_rows > 0;
-                        if ($dupRes) $dupRes->free();
-                        $dupLic->close();
-                        if ($exists) $errors[] = 'License number already used by another contractor.';
-                    }
-                }
-
-                if (!$errors) {
-                    $db->begin_transaction();
-                    try {
-                        $upEmp = $db->prepare("UPDATE employees SET first_name = ?, last_name = ?, email = ? WHERE id = ?");
-                        if (!$upEmp) throw new RuntimeException('Unable to prepare employee update.');
-                        $upEmp->bind_param('sssi', $firstName, $lastName, $email, $employeeId);
-                        if (!$upEmp->execute()) throw new RuntimeException('Unable to update employee account.');
-                        $upEmp->close();
-
-                        if ($contractor) {
-                            $sql = "UPDATE contractors SET company = ?, owner = ?, license = ?, email = ?, phone = ?, address = ?, specialization = ?, experience = ?";
-                            $types = 'sssssssi';
-                            $owner = trim($firstName . ' ' . $lastName);
-                            $params = [$company, $owner, $license, $email, $phone, $address, $spec, $years];
-                            if ($hasContractorType) { $sql .= ", contractor_type = ?"; $types .= 's'; $params[] = $contractorType; }
-                            if ($hasLicenseExp) { $sql .= ", license_expiration_date = ?"; $types .= 's'; $params[] = $licenseExp; }
-                            if ($hasTin) { $sql .= ", tin = ?"; $types .= 's'; $params[] = $tin; }
-                            if ($hasContactFirst) { $sql .= ", contact_person_first_name = ?"; $types .= 's'; $params[] = $contactFirst === '' ? $firstName : $contactFirst; }
-                            if ($hasContactLast) { $sql .= ", contact_person_last_name = ?"; $types .= 's'; $params[] = $contactLast === '' ? $lastName : $contactLast; }
-                            if ($hasContactRole) { $sql .= ", contact_person_role = ?"; $types .= 's'; $params[] = $contactRole; }
-                            if ($hasAccountEmployeeId) { $sql .= ", account_employee_id = ?"; $types .= 'i'; $params[] = $employeeId; }
-                            $sql .= " WHERE id = ?";
-                            $types .= 'i';
-                            $params[] = (int)$contractor['id'];
-
-                            $upCtr = $db->prepare($sql);
-                            if (!$upCtr) throw new RuntimeException('Unable to prepare contractor profile update.');
-                            $bind = [$types];
-                            foreach ($params as $k => $v) $bind[] = &$params[$k];
-                            call_user_func_array([$upCtr, 'bind_param'], $bind);
-                            if (!$upCtr->execute()) throw new RuntimeException('Unable to update contractor profile.');
-                            $upCtr->close();
-                        }
-
-                        $db->commit();
-                        $_SESSION['employee_name'] = trim($firstName . ' ' . $lastName);
-                        $success = 'Profile updated successfully.';
-                    } catch (Throwable $e) {
-                        $db->rollback();
-                        $errors[] = $e->getMessage();
-                    }
-                }
-            }
-        } elseif ($action === 'change_password') {
+        if ($action === 'change_password') {
             if (is_rate_limited('contractor_change_password', 6, 900)) {
                 $errors[] = 'Too many password change attempts. Please wait.';
             } else {
@@ -270,6 +169,53 @@ $csrf = generate_csrf_token();
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <style>
+        .profile-layout { display:grid; grid-template-columns: 320px 1fr; gap:18px; align-items:start; }
+        .profile-side {
+            border-radius:16px;
+            border:1px solid #dbe7f3;
+            background:#fff;
+            padding:18px;
+            position:sticky;
+            top:14px;
+        }
+        .profile-avatar { width:72px; height:72px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:linear-gradient(135deg,#1d4e89,#3f83c9); margin-bottom:10px; font-size:1.15rem; }
+        .profile-name { margin:0; color:#0f2a4a; font-size:1.25rem; line-height:1.2; }
+        .profile-role { margin:4px 0 0; color:#64748b; font-size:.92rem; }
+        .profile-meta { margin-top:14px; display:grid; gap:10px; }
+        .profile-meta-item { padding:10px 12px; border:1px solid #e2e8f0; border-radius:10px; background:#f8fbff; }
+        .profile-meta-item label { display:block; color:#64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+        .profile-meta-item div { color:#0f2a4a; font-weight:600; font-size:.92rem; word-break:break-word; }
+        .profile-main { display:grid; gap:16px; }
+        .profile-card { border-radius:16px; border:1px solid #dbe7f3; background:#fff; padding:16px; }
+        .readonly-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px; }
+        .readonly-item { border:1px solid #e2e8f0; border-radius:10px; background:#f8fbff; padding:10px 12px; min-height:64px; }
+        .readonly-item label { display:block; color:#64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+        .readonly-item div { color:#0f2a4a; font-size:.92rem; font-weight:600; word-break:break-word; }
+        .readonly-item.full { grid-column:1 / -1; }
+        .profile-btn {
+            height:44px;
+            border:none;
+            border-radius:11px;
+            padding:0 16px;
+            font-weight:700;
+            color:#fff;
+            background:linear-gradient(135deg,#16416f,#2f73b5);
+            cursor:pointer;
+            box-shadow:0 6px 16px rgba(22,65,111,.26);
+            transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
+        }
+        .profile-btn:hover { transform:translateY(-1px); filter:brightness(1.03); box-shadow:0 8px 18px rgba(22,65,111,.30); }
+        .profile-btn:active { transform:translateY(0); box-shadow:0 4px 12px rgba(22,65,111,.24); }
+        .password-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:10px 0 12px; }
+        .password-grid input { width:100%; height:44px; border:1px solid #c8d8ea; border-radius:10px; padding:0 12px; }
+        .password-grid input:focus { outline:none; border-color:#2f73b5; box-shadow:0 0 0 3px rgba(47,115,181,.15); }
+        @media (max-width: 1000px) {
+            .profile-layout { grid-template-columns:1fr; }
+            .profile-side { position:static; }
+            .readonly-grid, .password-grid { grid-template-columns:1fr; }
+        }
+    </style>
 </head>
 <body>
 <div class="sidebar-toggle-wrapper"><button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
@@ -295,44 +241,51 @@ $csrf = generate_csrf_token();
     <?php if (!empty($errors)): ?><div class="ac-aabba7cf"><?php foreach ($errors as $e): ?><div><?php echo htmlspecialchars($e, ENT_QUOTES, 'UTF-8'); ?></div><?php endforeach; ?></div><?php endif; ?>
     <?php if ($success !== ''): ?><div class="ac-0b2b14a3"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
 
-    <div class="recent-projects card">
-        <h3>Account and Company Profile</h3>
-        <form method="post">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
-            <input type="hidden" name="action" value="update_profile">
-            <div class="inline-form">
-                <input type="text" name="first_name" placeholder="First Name" value="<?php echo htmlspecialchars((string)($employee['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
-                <input type="text" name="last_name" placeholder="Last Name" value="<?php echo htmlspecialchars((string)($employee['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
-                <input type="email" name="email" placeholder="Email" value="<?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
-                <input type="text" name="phone" placeholder="Mobile (09XXXXXXXXX)" value="<?php echo htmlspecialchars((string)($contractor['phone'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
-                <input type="text" name="company" placeholder="Company Name" value="<?php echo htmlspecialchars((string)($contractor['company'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
-                <?php if ($hasContractorType): ?><select name="contractor_type"><option value="company" <?php echo strtolower((string)($contractor['contractor_type'] ?? 'company')) === 'company' ? 'selected' : ''; ?>>Company</option><option value="individual" <?php echo strtolower((string)($contractor['contractor_type'] ?? '')) === 'individual' ? 'selected' : ''; ?>>Individual</option></select><?php endif; ?>
-                <input type="text" name="license" placeholder="License Number" value="<?php echo htmlspecialchars((string)($contractor['license'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
-                <?php if ($hasLicenseExp): ?><input type="date" name="license_expiration_date" value="<?php echo htmlspecialchars((string)($contractor['license_expiration_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
-                <?php if ($hasTin): ?><input type="text" name="tin" placeholder="TIN" value="<?php echo htmlspecialchars((string)($contractor['tin'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
-                <input type="text" name="specialization" placeholder="Specialization" value="<?php echo htmlspecialchars((string)($contractor['specialization'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
-                <input type="number" name="experience" min="0" placeholder="Years of Experience" value="<?php echo htmlspecialchars((string)($contractor['experience'] ?? '0'), ENT_QUOTES, 'UTF-8'); ?>">
-                <?php if ($hasContactFirst): ?><input type="text" name="contact_person_first_name" placeholder="Contact First Name" value="<?php echo htmlspecialchars((string)($contractor['contact_person_first_name'] ?? $employee['first_name']), ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
-                <?php if ($hasContactLast): ?><input type="text" name="contact_person_last_name" placeholder="Contact Last Name" value="<?php echo htmlspecialchars((string)($contractor['contact_person_last_name'] ?? $employee['last_name']), ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
-                <?php if ($hasContactRole): ?><input type="text" name="contact_person_role" placeholder="Contact Role" value="<?php echo htmlspecialchars((string)($contractor['contact_person_role'] ?? 'Owner'), ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
-                <textarea name="address" placeholder="Business Address" required><?php echo htmlspecialchars((string)($contractor['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea>
+    <div class="profile-layout">
+        <aside class="profile-side">
+            <div class="profile-avatar"><?php echo htmlspecialchars(strtoupper(substr((string)($employee['first_name'] ?? 'C'), 0, 1)), ENT_QUOTES, 'UTF-8'); ?></div>
+            <h3 class="profile-name"><?php echo htmlspecialchars(trim((string)($employee['first_name'] ?? '') . ' ' . (string)($employee['last_name'] ?? '')), ENT_QUOTES, 'UTF-8'); ?></h3>
+            <p class="profile-role"><?php echo htmlspecialchars(ucfirst((string)($employee['role'] ?? 'contractor')), ENT_QUOTES, 'UTF-8'); ?> Account</p>
+            <div class="profile-meta">
+                <div class="profile-meta-item"><label>Email</label><div><?php echo htmlspecialchars((string)($employee['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                <div class="profile-meta-item"><label>Mobile</label><div><?php echo htmlspecialchars((string)($contractor['phone'] ?? 'N/A'), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                <div class="profile-meta-item"><label>Company</label><div><?php echo htmlspecialchars((string)($contractor['company'] ?? 'N/A'), ENT_QUOTES, 'UTF-8'); ?></div></div>
             </div>
-            <button type="submit" class="ac-eef2e445">Save Profile</button>
-        </form>
-    </div>
+        </aside>
 
-    <div class="recent-projects card">
-        <h3>Change Password</h3>
-        <form method="post">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
-            <input type="hidden" name="action" value="change_password">
-            <div class="inline-form">
-                <input type="password" name="current_password" placeholder="Current Password" required>
-                <input type="password" name="new_password" placeholder="New Password" required>
-                <input type="password" name="confirm_password" placeholder="Confirm New Password" required>
+        <div class="profile-main">
+            <div class="profile-card">
+                <h3>Account and Company Profile</h3>
+                <p style="margin:6px 0 0;color:#64748b;">Registration details are view-only and cannot be edited.</p>
+                <div class="readonly-grid">
+                    <div class="readonly-item"><label>First Name</label><div><?php echo htmlspecialchars((string)($employee['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Last Name</label><div><?php echo htmlspecialchars((string)($employee['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Contractor Type</label><div><?php echo htmlspecialchars((string)($contractor['contractor_type'] ?? 'company'), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>License Number</label><div><?php echo htmlspecialchars((string)($contractor['license'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <?php if ($hasLicenseExp): ?><div class="readonly-item"><label>License Expiry</label><div><?php echo htmlspecialchars((string)($contractor['license_expiration_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
+                    <?php if ($hasTin): ?><div class="readonly-item"><label>TIN</label><div><?php echo htmlspecialchars((string)($contractor['tin'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
+                    <div class="readonly-item"><label>Specialization</label><div><?php echo htmlspecialchars((string)($contractor['specialization'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                    <div class="readonly-item"><label>Experience</label><div><?php echo htmlspecialchars((string)($contractor['experience'] ?? '0'), ENT_QUOTES, 'UTF-8'); ?> years</div></div>
+                    <?php if ($hasContactFirst): ?><div class="readonly-item"><label>Contact First Name</label><div><?php echo htmlspecialchars((string)($contractor['contact_person_first_name'] ?? $employee['first_name']), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
+                    <?php if ($hasContactLast): ?><div class="readonly-item"><label>Contact Last Name</label><div><?php echo htmlspecialchars((string)($contractor['contact_person_last_name'] ?? $employee['last_name']), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
+                    <?php if ($hasContactRole): ?><div class="readonly-item"><label>Contact Role</label><div><?php echo htmlspecialchars((string)($contractor['contact_person_role'] ?? 'Owner'), ENT_QUOTES, 'UTF-8'); ?></div></div><?php endif; ?>
+                    <div class="readonly-item full"><label>Business Address</label><div><?php echo htmlspecialchars((string)($contractor['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>
+                </div>
             </div>
-            <button type="submit" class="ac-eef2e445">Update Password</button>
-        </form>
+            <div class="profile-card">
+                <h3>Change Password</h3>
+                <form method="post">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="action" value="change_password">
+                    <div class="password-grid">
+                        <input type="password" name="current_password" placeholder="Current Password" required>
+                        <input type="password" name="new_password" placeholder="New Password" required>
+                        <input type="password" name="confirm_password" placeholder="Confirm New Password" required>
+                    </div>
+                    <button type="submit" class="profile-btn">Update Password</button>
+                </form>
+            </div>
+        </div>
     </div>
 </section>
 

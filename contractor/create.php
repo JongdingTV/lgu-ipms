@@ -2,7 +2,6 @@
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/config-path.php';
-require dirname(__DIR__) . '/config/email.php';
 
 set_no_cache_headers();
 
@@ -16,7 +15,6 @@ if (isset($_SESSION['employee_id'])) {
 
 $errors = [];
 $success = '';
-$info = '';
 
 if (empty($_SESSION['contractor_create_token'])) {
     $_SESSION['contractor_create_token'] = bin2hex(random_bytes(32));
@@ -52,18 +50,6 @@ function cc_table_has_column(mysqli $db, string $table, string $column): bool
     return $ok;
 }
 
-function cc_clear_pending(): void
-{
-    unset(
-        $_SESSION['contractor_create_pending'],
-        $_SESSION['contractor_create_otp_code'],
-        $_SESSION['contractor_create_otp_expires'],
-        $_SESSION['contractor_create_otp_attempts'],
-        $_SESSION['contractor_create_otp_email'],
-        $_SESSION['contractor_create_otp_sent_at']
-    );
-}
-
 function cc_check_duplicates(mysqli $db, string $email, string $license): array
 {
     $errors = [];
@@ -89,20 +75,6 @@ function cc_check_duplicates(mysqli $db, string $email, string $license): array
         if ($exists) $errors[] = 'License number already exists.';
     }
     return $errors;
-}
-
-function cc_send_otp(string $email, string $name): bool
-{
-    $code = (string) random_int(100000, 999999);
-    if (!send_verification_code($email, $code, $name === '' ? 'Contractor' : $name)) {
-        return false;
-    }
-    $_SESSION['contractor_create_otp_code'] = $code;
-    $_SESSION['contractor_create_otp_expires'] = time() + 600;
-    $_SESSION['contractor_create_otp_attempts'] = 0;
-    $_SESSION['contractor_create_otp_email'] = $email;
-    $_SESSION['contractor_create_otp_sent_at'] = time();
-    return true;
 }
 
 function cc_validate(array $input): array
@@ -143,7 +115,7 @@ function cc_validate(array $input): array
 function cc_create_account(mysqli $db, array $data): int
 {
     $owner = trim($data['contact_first_name'] . ' ' . $data['contact_last_name']);
-    $notes = 'Self-registered contractor account with OTP (' . date('Y-m-d H:i:s') . ')';
+    $notes = 'Self-registered contractor account (' . date('Y-m-d H:i:s') . ')';
 
     $db->begin_transaction();
     try {
@@ -182,107 +154,29 @@ function cc_create_account(mysqli $db, array $data): int
     }
 }
 
-$otpPending = isset($_SESSION['contractor_create_pending'], $_SESSION['contractor_create_otp_code'], $_SESSION['contractor_create_otp_expires'], $_SESSION['contractor_create_otp_email']);
-if ($otpPending && is_array($_SESSION['contractor_create_pending'])) {
-    foreach ($form as $k => $v) {
-        if (isset($_SESSION['contractor_create_pending'][$k])) $form[$k] = (string)$_SESSION['contractor_create_pending'][$k];
-    }
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!hash_equals($csrfToken, (string)($_POST['csrf_token'] ?? ''))) {
         $errors[] = 'Invalid request token. Please refresh and try again.';
+    } elseif (is_rate_limited('contractor_create', 5, 600)) {
+        $errors[] = 'Too many registration attempts. Try again later.';
     } else {
-        $action = (string)($_POST['action'] ?? '');
+        $validated = cc_validate($_POST);
+        $errors = array_merge($errors, $validated['errors']);
+        $data = $validated['data'];
+        foreach ($form as $k => $v) if (isset($data[$k])) $form[$k] = (string)$data[$k];
+        if (!$errors) $errors = array_merge($errors, cc_check_duplicates($db, $data['email'], $data['license_number']));
 
-        if ($action === 'start_registration') {
-            if (is_rate_limited('contractor_create', 5, 600)) {
-                $errors[] = 'Too many registration attempts. Try again later.';
-            } else {
-                $validated = cc_validate($_POST);
-                $errors = array_merge($errors, $validated['errors']);
-                $data = $validated['data'];
-                foreach ($form as $k => $v) if (isset($data[$k])) $form[$k] = (string)$data[$k];
-                if (!$errors) $errors = array_merge($errors, cc_check_duplicates($db, $data['email'], $data['license_number']));
-
-                if (!$errors) {
-                    $_SESSION['contractor_create_pending'] = $data;
-                    $fullName = trim($data['contact_first_name'] . ' ' . $data['contact_last_name']);
-                    if (cc_send_otp($data['email'], $fullName)) {
-                        $otpPending = true;
-                        $info = 'OTP sent to ' . $data['email'] . '. Enter it below to complete registration.';
-                    } else {
-                        cc_clear_pending();
-                        $otpPending = false;
-                        $errors[] = 'Unable to send OTP email right now.';
-                    }
+        if (!$errors) {
+            try {
+                cc_create_account($db, $data);
+                $success = 'Account created successfully. Sign in to continue.';
+                $_SESSION['contractor_create_token'] = bin2hex(random_bytes(32));
+                $csrfToken = $_SESSION['contractor_create_token'];
+                foreach ($form as $k => $v) {
+                    $form[$k] = $k === 'contractor_type' ? 'company' : ($k === 'contact_role' ? 'Owner' : ($k === 'years_experience' ? '0' : ''));
                 }
-            }
-        }
-
-        if ($action === 'verify_otp') {
-            if (!$otpPending) {
-                $errors[] = 'No pending registration found.';
-            } elseif (is_rate_limited('contractor_create_otp', 10, 600)) {
-                $errors[] = 'Too many OTP attempts. Please wait and retry.';
-            } else {
-                $otpInput = trim((string)($_POST['otp_code'] ?? ''));
-                $stored = (string)($_SESSION['contractor_create_otp_code'] ?? '');
-                $expires = (int)($_SESSION['contractor_create_otp_expires'] ?? 0);
-                $attempts = (int)($_SESSION['contractor_create_otp_attempts'] ?? 0);
-
-                if (time() > $expires) {
-                    cc_clear_pending();
-                    $otpPending = false;
-                    $errors[] = 'OTP expired. Register again.';
-                } elseif (!preg_match('/^\d{6}$/', $otpInput)) {
-                    $errors[] = 'Enter the 6-digit OTP.';
-                } elseif (!hash_equals($stored, $otpInput)) {
-                    $_SESSION['contractor_create_otp_attempts'] = $attempts + 1;
-                    if ($_SESSION['contractor_create_otp_attempts'] >= 5) {
-                        cc_clear_pending();
-                        $otpPending = false;
-                        $errors[] = 'Too many incorrect OTP attempts. Register again.';
-                    } else {
-                        $errors[] = 'Invalid OTP code.';
-                    }
-                } else {
-                    $data = $_SESSION['contractor_create_pending'];
-                    $errors = array_merge($errors, cc_check_duplicates($db, (string)$data['email'], (string)$data['license_number']));
-                    if (!$errors) {
-                        try {
-                            cc_create_account($db, $data);
-                            cc_clear_pending();
-                            $otpPending = false;
-                            $_SESSION['contractor_create_token'] = bin2hex(random_bytes(32));
-                            $csrfToken = $_SESSION['contractor_create_token'];
-                            $success = 'Account created successfully. You can now sign in.';
-                        } catch (Throwable $e) {
-                            $errors[] = $e->getMessage();
-                        }
-                    }
-                }
-            }
-        }
-
-        if ($action === 'resend_otp') {
-            if (!$otpPending || !isset($_SESSION['contractor_create_pending'])) {
-                $errors[] = 'No pending OTP to resend.';
-            } elseif (is_rate_limited('contractor_create_resend', 4, 600)) {
-                $errors[] = 'Too many OTP resend attempts. Please wait.';
-            } else {
-                $lastSent = (int)($_SESSION['contractor_create_otp_sent_at'] ?? 0);
-                if ($lastSent > 0 && (time() - $lastSent) < 45) {
-                    $errors[] = 'Please wait before requesting another OTP.';
-                } else {
-                    $data = $_SESSION['contractor_create_pending'];
-                    $name = trim((string)$data['contact_first_name'] . ' ' . (string)$data['contact_last_name']);
-                    if (cc_send_otp((string)$data['email'], $name)) {
-                        $info = 'A new OTP was sent to ' . (string)$data['email'] . '.';
-                    } else {
-                        $errors[] = 'Unable to resend OTP right now.';
-                    }
-                }
+            } catch (Throwable $e) {
+                $errors[] = $e->getMessage();
             }
         }
     }
@@ -313,8 +207,7 @@ body.user-signup-page .card-header{text-align:center;margin-bottom:18px}
 body.user-signup-page .icon-top{width:72px;height:72px;object-fit:contain;margin:2px auto 10px;display:block}
 body.user-signup-page .title{margin:0 0 6px;font-size:1.7rem;line-height:1.2;color:var(--page-navy)}
 body.user-signup-page .subtitle{margin:0;color:var(--page-muted)}
-.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.form-grid .full{grid-column:1 / -1}.input-box{text-align:left}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.form-grid .full{grid-column:1 / -1}.input-box{text-align:left}
 .input-box label{display:block;font-size:.86rem;color:#1e293b;margin-bottom:6px}
 .input-box input,.input-box select,.input-box textarea{width:100%;min-height:46px;border-radius:11px;border:1px solid rgba(148,163,184,.45);background:#fff;padding:10px 12px;font-size:.95rem;color:#0f172a;outline:none}
 .input-box textarea{min-height:88px;resize:vertical}
@@ -322,86 +215,38 @@ body.user-signup-page .subtitle{margin:0;color:var(--page-muted)}
 .actions{margin-top:18px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .btn-primary{min-width:170px;height:46px;border:0;border-radius:11px;background:linear-gradient(135deg,#1d4e89,#3f83c9);color:#fff;font-size:.98rem;font-weight:600;cursor:pointer}
 .btn-secondary{min-width:130px;height:46px;border:1px solid rgba(148,163,184,.55);border-radius:11px;background:#fff;color:#0f172a;font-size:.95rem;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
-.step-header{display:flex;gap:8px;align-items:center;justify-content:center;margin:10px 0 16px}
-.step-dot{width:28px;height:28px;border-radius:999px;border:1px solid #cbd5e1;color:#64748b;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:.84rem;background:#fff}
-.step-dot.active{background:linear-gradient(135deg,#1d4e89,#3f83c9);color:#fff;border-color:transparent}
 .error-box{margin-top:14px;padding:10px 12px;border-radius:10px;text-align:left;background:var(--page-danger-bg);color:var(--page-danger);font-size:.89rem;border:1px solid rgba(185,28,28,.2)}
-.info-box{margin-top:12px;padding:10px 12px;border-radius:10px;background:#eff6ff;color:#1d4ed8;font-size:.89rem;border:1px solid rgba(59,130,246,.24)}
 .ok-box{margin-top:12px;padding:10px 12px;border-radius:10px;background:#dcfce7;color:#166534;font-size:.89rem;border:1px solid #bbf7d0}
 @media (max-width:860px){.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}}
 </style>
 </head>
 <body class="user-signup-page">
-<header class="nav">
-    <div class="nav-logo"><img src="/assets/images/icons/ipms-icon.png" alt="LGU Logo"> Local Government Unit Portal</div>
-    <a href="/contractor/index.php" class="home-btn">Back to Login</a>
-</header>
-<div class="wrapper">
-    <div class="card">
-        <div class="card-header">
-            <img src="/assets/images/icons/ipms-icon.png" class="icon-top" alt="LGU Logo">
-            <h2 class="title"><?php echo $otpPending ? 'Verify OTP' : 'Create Contractor Account'; ?></h2>
-            <p class="subtitle"><?php echo $otpPending ? 'Enter the OTP sent to your email to activate account.' : 'Register your contractor profile and secure your login.'; ?></p>
-        </div>
-        <div class="step-header"><span class="step-dot active">1</span><span class="step-dot <?php echo $otpPending ? 'active' : ''; ?>">2</span></div>
-
-        <?php if (!empty($errors)): ?><div class="error-box"><?php foreach ($errors as $error): ?><div><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div><?php endforeach; ?></div><?php endif; ?>
-        <?php if ($info !== ''): ?><div class="info-box"><?php echo htmlspecialchars($info, ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
-        <?php if ($success !== ''): ?><div class="ok-box"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
-
-        <?php if ($otpPending): ?>
-            <form method="post" autocomplete="off">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
-                <input type="hidden" name="action" value="verify_otp">
-                <div class="form-grid">
-                    <div class="input-box full">
-                        <label>Email</label>
-                        <input type="text" value="<?php echo htmlspecialchars((string)($_SESSION['contractor_create_otp_email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" readonly>
-                    </div>
-                    <div class="input-box">
-                        <label for="otp_code">One-Time Password (6 digits)</label>
-                        <input type="text" id="otp_code" name="otp_code" maxlength="6" pattern="\d{6}" required placeholder="123456">
-                    </div>
-                    <div class="input-box">
-                        <label>Expires In</label>
-                        <input type="text" readonly value="<?php echo max(0, ((int)($_SESSION['contractor_create_otp_expires'] ?? 0) - time())); ?> seconds">
-                    </div>
-                </div>
-                <div class="actions"><button type="submit" class="btn-primary">Verify & Create Account</button></div>
-            </form>
-            <form method="post" style="margin-top:10px;">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
-                <input type="hidden" name="action" value="resend_otp">
-                <button type="submit" class="btn-secondary">Resend OTP</button>
-            </form>
-        <?php else: ?>
-            <form method="post" autocomplete="off">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
-                <input type="hidden" name="action" value="start_registration">
-                <div class="form-grid">
-                    <div class="input-box"><label>Contractor Type</label><select name="contractor_type" required><option value="company" <?php echo $form['contractor_type'] === 'company' ? 'selected' : ''; ?>>Company</option><option value="individual" <?php echo $form['contractor_type'] === 'individual' ? 'selected' : ''; ?>>Individual</option></select></div>
-                    <div class="input-box"><label>Company / Contractor Name</label><input type="text" name="company_name" required value="<?php echo htmlspecialchars($form['company_name'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-                    <div class="input-box"><label>Contact First Name</label><input type="text" name="contact_first_name" required value="<?php echo htmlspecialchars($form['contact_first_name'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-                    <div class="input-box"><label>Contact Last Name</label><input type="text" name="contact_last_name" required value="<?php echo htmlspecialchars($form['contact_last_name'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-                    <div class="input-box"><label>Contact Role</label><input type="text" name="contact_role" value="<?php echo htmlspecialchars($form['contact_role'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-                    <div class="input-box"><label>License Number</label><input type="text" name="license_number" required value="<?php echo htmlspecialchars($form['license_number'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-                    <div class="input-box"><label>License Expiry Date</label><input type="date" name="license_expiry_date" required value="<?php echo htmlspecialchars($form['license_expiry_date'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-                    <div class="input-box"><label>TIN (optional)</label><input type="text" name="tin" placeholder="000-000-000" value="<?php echo htmlspecialchars($form['tin'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-                    <div class="input-box"><label>Email</label><input type="email" name="email" required value="<?php echo htmlspecialchars($form['email'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-                    <div class="input-box"><label>Mobile Number</label><input type="text" name="phone" required placeholder="09XXXXXXXXX or +639XXXXXXXXX" value="<?php echo htmlspecialchars($form['phone'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-                    <div class="input-box"><label>Specialization</label><select name="specialization" required><option value="">-- Select --</option><?php foreach (['Civil Works', 'Road Works', 'Drainage', 'Electrical', 'Water System', 'Building Construction', 'Maintenance'] as $spec): ?><option value="<?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $form['specialization'] === $spec ? 'selected' : ''; ?>><?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
-                    <div class="input-box"><label>Years of Experience</label><input type="number" name="years_experience" min="0" value="<?php echo htmlspecialchars($form['years_experience'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-                    <div class="input-box full"><label>Business Address</label><textarea name="address" rows="3" required><?php echo htmlspecialchars($form['address'], ENT_QUOTES, 'UTF-8'); ?></textarea></div>
-                    <div class="input-box"><label>Password</label><input type="password" name="password" required></div>
-                    <div class="input-box"><label>Confirm Password</label><input type="password" name="confirm_password" required></div>
-                </div>
-                <div class="actions">
-                    <button type="submit" class="btn-primary">Send OTP</button>
-                    <a href="/contractor/index.php" class="btn-secondary">Back to Login</a>
-                </div>
-            </form>
-        <?php endif; ?>
-    </div>
+<header class="nav"><div class="nav-logo"><img src="/assets/images/icons/ipms-icon.png" alt="LGU Logo"> Local Government Unit Portal</div><a href="/contractor/index.php" class="home-btn">Back to Login</a></header>
+<div class="wrapper"><div class="card">
+<div class="card-header"><img src="/assets/images/icons/ipms-icon.png" class="icon-top" alt="LGU Logo"><h2 class="title">Create Contractor Account</h2><p class="subtitle">Register your contractor profile and secure your login.</p></div>
+<?php if (!empty($errors)): ?><div class="error-box"><?php foreach ($errors as $error): ?><div><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div><?php endforeach; ?></div><?php endif; ?>
+<?php if ($success !== ''): ?><div class="ok-box"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
+<form method="post" autocomplete="off">
+<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+<div class="form-grid">
+<div class="input-box"><label>Contractor Type</label><select name="contractor_type" required><option value="company" <?php echo $form['contractor_type'] === 'company' ? 'selected' : ''; ?>>Company</option><option value="individual" <?php echo $form['contractor_type'] === 'individual' ? 'selected' : ''; ?>>Individual</option></select></div>
+<div class="input-box"><label>Company / Contractor Name</label><input type="text" name="company_name" required value="<?php echo htmlspecialchars($form['company_name'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Contact First Name</label><input type="text" name="contact_first_name" required value="<?php echo htmlspecialchars($form['contact_first_name'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Contact Last Name</label><input type="text" name="contact_last_name" required value="<?php echo htmlspecialchars($form['contact_last_name'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Contact Role</label><input type="text" name="contact_role" value="<?php echo htmlspecialchars($form['contact_role'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>License Number</label><input type="text" name="license_number" required value="<?php echo htmlspecialchars($form['license_number'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>License Expiry Date</label><input type="date" name="license_expiry_date" required value="<?php echo htmlspecialchars($form['license_expiry_date'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>TIN (optional)</label><input type="text" name="tin" placeholder="000-000-000" value="<?php echo htmlspecialchars($form['tin'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Email</label><input type="email" name="email" required value="<?php echo htmlspecialchars($form['email'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Mobile Number</label><input type="text" name="phone" required placeholder="09XXXXXXXXX or +639XXXXXXXXX" value="<?php echo htmlspecialchars($form['phone'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Specialization</label><select name="specialization" required><option value="">-- Select --</option><?php foreach (['Civil Works', 'Road Works', 'Drainage', 'Electrical', 'Water System', 'Building Construction', 'Maintenance'] as $spec): ?><option value="<?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $form['specialization'] === $spec ? 'selected' : ''; ?>><?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
+<div class="input-box"><label>Years of Experience</label><input type="number" name="years_experience" min="0" value="<?php echo htmlspecialchars($form['years_experience'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box full"><label>Business Address</label><textarea name="address" rows="3" required><?php echo htmlspecialchars($form['address'], ENT_QUOTES, 'UTF-8'); ?></textarea></div>
+<div class="input-box"><label>Password</label><input type="password" name="password" required></div>
+<div class="input-box"><label>Confirm Password</label><input type="password" name="confirm_password" required></div>
 </div>
+<div class="actions"><button type="submit" class="btn-primary">Create Account</button><a href="/contractor/index.php" class="btn-secondary">Back to Login</a></div>
+</form>
+</div></div>
 </body>
 </html>
