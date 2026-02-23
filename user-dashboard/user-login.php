@@ -20,6 +20,7 @@ if (isset($_SESSION['user_id'])) {
 $error = '';
 $email = '';
 $otpMessage = '';
+$sessionTimeoutNotice = isset($_GET['expired']) && $_GET['expired'] === '1';
 $otpPending = isset($_SESSION['user_login_otp_user_id'], $_SESSION['user_login_otp_code'], $_SESSION['user_login_otp_expires']);
 $otpEmail = (string) ($_SESSION['user_login_otp_email'] ?? '');
 
@@ -373,6 +374,55 @@ body.user-login-page .error-box {
     font-size: 0.89rem;
     border: 1px solid rgba(185, 28, 28, 0.2);
 }
+.session-timeout-modal[hidden] {
+    display: none;
+}
+.session-timeout-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 7000;
+}
+.session-timeout-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.55);
+}
+.session-timeout-dialog {
+    position: relative;
+    width: min(440px, calc(100vw - 28px));
+    margin: 12vh auto 0;
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    box-shadow: 0 24px 52px rgba(2, 6, 23, 0.32);
+    padding: 18px 18px 16px;
+    text-align: left;
+}
+.session-timeout-dialog h3 {
+    margin: 0 0 8px;
+    color: #0f2a4a;
+    font-size: 1.05rem;
+}
+.session-timeout-dialog p {
+    margin: 0 0 14px;
+    color: #334155;
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+.session-timeout-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+.session-timeout-actions button {
+    border: 0;
+    border-radius: 10px;
+    height: 38px;
+    padding: 0 14px;
+    background: linear-gradient(135deg, #1d4e89, #3f83c9);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
 </style>
 </head>
 <body class="user-login-page">
@@ -447,6 +497,37 @@ body.user-login-page .error-box {
     </div>
 </div>
 
+<?php if ($sessionTimeoutNotice): ?>
+<div id="sessionTimeoutModal" class="session-timeout-modal">
+    <div class="session-timeout-backdrop"></div>
+    <div class="session-timeout-dialog" role="dialog" aria-modal="true" aria-labelledby="sessionTimeoutTitle">
+        <h3 id="sessionTimeoutTitle">Session Timed Out</h3>
+        <p>Your session ended due to 10 minutes of inactivity. Please log in again to continue.</p>
+        <div class="session-timeout-actions">
+            <button type="button" id="sessionTimeoutOkBtn">OK</button>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
+<?php if ($sessionTimeoutNotice): ?>
+<script>
+(function () {
+    var modal = document.getElementById('sessionTimeoutModal');
+    var okBtn = document.getElementById('sessionTimeoutOkBtn');
+    if (!modal || !okBtn) return;
+    function closeModal() {
+        window.location.href = '/user-dashboard/user-login.php';
+    }
+    okBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) {
+        if (e.target && e.target.classList.contains('session-timeout-backdrop')) {
+            closeModal();
+        }
+    });
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>
