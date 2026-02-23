@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_from_matrix('contractor.workspace.manage', ['contractor','admin','super_admin']);
+rbac_require_from_matrix('contractor.workspace.view', ['contractor','admin','super_admin']);
 check_suspicious_activity();
 
 header('Content-Type: application/json');
@@ -246,14 +246,14 @@ rbac_require_action_matrix(
         'update_budget' => 'contractor.budget.manage',
         'update_expense' => 'contractor.workspace.manage',
         'update_progress' => 'contractor.progress.submit',
-        'load_progress_history' => 'contractor.progress.submit',
+        'load_progress_history' => 'contractor.workspace.view',
         'load_task_milestone' => 'contractor.workspace.manage',
         'add_task' => 'contractor.workspace.manage',
         'update_task_status' => 'contractor.workspace.manage',
         'add_milestone' => 'contractor.workspace.manage',
         'update_milestone_status' => 'contractor.workspace.manage',
     ],
-    'contractor.workspace.manage'
+    'contractor.workspace.view'
 );
 
 $engineerOwnedActions = [

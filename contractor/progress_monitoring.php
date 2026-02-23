@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['contractor','admin','super_admin']);
+rbac_require_from_matrix('contractor.workspace.view', ['contractor','admin','super_admin']);
 check_suspicious_activity();
 
 if (!isset($_SESSION['employee_id'])) {
@@ -17,6 +17,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     header('Location: /contractor/index.php');
     exit;
 }
+$canProgressSubmit = in_array($role, rbac_roles_for('contractor.progress.submit', ['contractor', 'admin', 'super_admin']), true);
 ?>
 <!doctype html>
 <html lang="en">
@@ -136,27 +137,30 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
             <div class="pm-controls">
                 <div class="filter-group">
                     <label for="projectSelect">Project</label>
-                    <select id="projectSelect"></select>
+                    <select id="projectSelect" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>></select>
                 </div>
                 <div class="filter-group">
                     <label for="progressInput">Progress %</label>
-                    <input id="progressInput" type="number" min="0" max="100" step="1" placeholder="0-100">
+                    <input id="progressInput" type="number" min="0" max="100" step="1" placeholder="0-100" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>>
                 </div>
                 <div class="filter-group" style="min-width:260px;">
                     <label for="workDetails">Work Details</label>
-                    <textarea id="workDetails" rows="2" placeholder="What work was completed today?"></textarea>
+                    <textarea id="workDetails" rows="2" placeholder="What work was completed today?" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>></textarea>
                 </div>
                 <div class="filter-group" style="min-width:260px;">
                     <label for="validationNotes">Validation Information</label>
-                    <textarea id="validationNotes" rows="2" placeholder="Site notes, manpower, materials, milestones..."></textarea>
+                    <textarea id="validationNotes" rows="2" placeholder="Site notes, manpower, materials, milestones..." <?php echo $canProgressSubmit ? '' : 'disabled'; ?>></textarea>
                 </div>
                 <div class="filter-group">
                     <label for="proofImage">Proof Photo</label>
-                    <input id="proofImage" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                    <input id="proofImage" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>>
                 </div>
-                <button id="saveProgress" class="contractor-btn btn-success" type="button">Submit for Engineer Review</button>
+                <button id="saveProgress" class="contractor-btn btn-success" type="button" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>>Submit for Engineer Review</button>
             </div>
         </div>
+        <?php if (!$canProgressSubmit): ?>
+            <div class="flow-note"><strong>Read-only mode:</strong> Your role can view this page but cannot submit progress updates.</div>
+        <?php endif; ?>
         <div id="feedback" class="ac-c8be1ccb"></div>
         <div class="table-wrap module-grid">
             <h3 class="contractor-table-title">Progress History</h3>
@@ -173,6 +177,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
 (function () {
     'use strict';
     var csrf = <?php echo json_encode((string) ($_SESSION['csrf_token'] ?? '')); ?>;
+    var canProgressSubmit = <?php echo json_encode($canProgressSubmit); ?>;
     var preselectProjectId = <?php echo json_encode((string) ($_GET['project_id'] ?? '')); ?>;
     var projects = [];
 
@@ -240,6 +245,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     }
     document.getElementById('projectSelect').addEventListener('change', loadHistory);
     document.getElementById('saveProgress').addEventListener('click', function () {
+        if (!canProgressSubmit) return msg(false, 'You are not allowed to submit progress updates.');
         var pid = document.getElementById('projectSelect').value;
         var progress = document.getElementById('progressInput').value;
         var details = document.getElementById('workDetails').value.trim();
@@ -272,4 +278,3 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
 <script src="contractor-enterprise.js?v=<?php echo filemtime(__DIR__ . '/contractor-enterprise.js'); ?>"></script>
 </body>
 </html>
-

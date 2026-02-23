@@ -18,6 +18,10 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     exit;
 }
 
+$canWorkspaceManage = in_array($role, rbac_roles_for('contractor.workspace.manage', ['contractor', 'admin', 'super_admin']), true);
+$canProgressSubmit = in_array($role, rbac_roles_for('contractor.progress.submit', ['contractor', 'admin', 'super_admin']), true);
+$canBudgetRead = in_array($role, rbac_roles_for('contractor.budget.read', ['contractor', 'admin', 'super_admin']), true);
+
 $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
 ?>
 <!doctype html>
@@ -147,6 +151,9 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
 (function () {
     'use strict';
     const csrfToken = <?php echo json_encode((string) ($_SESSION['csrf_token'] ?? '')); ?>;
+    const canWorkspaceManage = <?php echo json_encode($canWorkspaceManage); ?>;
+    const canProgressSubmit = <?php echo json_encode($canProgressSubmit); ?>;
+    const canBudgetRead = <?php echo json_encode($canBudgetRead); ?>;
     const state = { projects: [], milestones: [], totalSpent: 0 };
 
     function esc(v) {
@@ -233,20 +240,28 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
                 '<td><strong>' + esc(p.name) + '</strong><br><small>' + esc(p.location || 'N/A') + '</small></td>',
                 '<td>' + statusChip(p.status || 'Draft') + '</td>',
                 '<td>',
-                '  <div class="section-title">Log Expense</div>',
-                '  <input class="contractor-input" data-type="amount" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="Amount">',
-                '  <input class="contractor-input" data-type="desc" data-id="' + p.id + '" type="text" placeholder="Description">',
-                '  <button class="contractor-btn btn-neutral" type="button" data-action="expense" data-id="' + p.id + '">Save Expense</button>',
+                (canWorkspaceManage
+                    ? '  <div class="section-title">Log Expense</div>'
+                        + '  <input class="contractor-input" data-type="amount" data-id="' + p.id + '" type="number" min="0" step="0.01" placeholder="Amount">'
+                        + '  <input class="contractor-input" data-type="desc" data-id="' + p.id + '" type="text" placeholder="Description">'
+                        + '  <button class="contractor-btn btn-neutral" type="button" data-action="expense" data-id="' + p.id + '">Save Expense</button>'
+                    : '  <small>Expense updates are not available for your role.</small>'),
                 '</td>',
                 '<td>',
                 '  <div class="section-title">Current</div>',
                 '  <div>Current: ' + Number(p.progress_percent || 0).toFixed(2) + '%</div>',
                 '  <small>' + esc(p.progress_updated_at || 'No updates yet') + '</small><br>',
-                '  <a class="contractor-link-btn" href="progress_monitoring.php?project_id=' + encodeURIComponent(String(p.id)) + '">Open Progress Monitoring</a>',
+                (canProgressSubmit
+                    ? '  <a class="contractor-link-btn" href="progress_monitoring.php?project_id=' + encodeURIComponent(String(p.id)) + '">Open Progress Monitoring</a>'
+                    : '  <small>Progress submission is not available for your role.</small>'),
                 '</td>'
             ].join('');
             tbody.appendChild(tr);
         });
+
+        if (!canWorkspaceManage) {
+            return;
+        }
 
         tbody.querySelectorAll('button[data-action="expense"]').forEach(function (btn) {
             btn.addEventListener('click', async function () {
@@ -274,10 +289,13 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Contractor');
     }
 
     async function load() {
-        const [projectsJson, budgetJson] = await Promise.all([
-            apiGet('load_projects'),
-            apiGet('load_budget_state')
-        ]);
+        const requests = [apiGet('load_projects')];
+        if (canBudgetRead || canWorkspaceManage) {
+            requests.push(apiGet('load_budget_state'));
+        }
+        const results = await Promise.all(requests);
+        const projectsJson = results[0] || {};
+        const budgetJson = results[1] || {};
         state.projects = Array.isArray(projectsJson.data) ? projectsJson.data : [];
         state.milestones = Array.isArray((budgetJson.data || {}).milestones) ? budgetJson.data.milestones : [];
         state.totalSpent = Number((budgetJson.data || {}).total_spent || 0);
