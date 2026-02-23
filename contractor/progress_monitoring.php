@@ -131,9 +131,6 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
         <h1>Progress Monitoring</h1>
         <p>Update and review validated project progress history.</p>
     </div>
-    <div class="flow-note">
-        Contractor updates progress with details + validation info + proof photo -> Engineer reviews -> Engineer approves -> System updates official progress percentage.
-    </div>
     <div class="pm-section card">
         <div class="pm-controls-wrapper">
             <div class="pm-controls">

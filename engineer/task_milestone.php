@@ -53,6 +53,7 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
         <a href="monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Monitoring</a>
         <a href="task_milestone.php" class="active"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
+        <a href="profile.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Profile</a>
     </div>
     <div class="nav-divider"></div>
     <div class="nav-action-footer"><a href="/engineer/logout.php" class="btn-logout nav-logout"><span>Logout</span></a></div>
@@ -257,5 +258,6 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
 <script src="engineer-enterprise.js?v=<?php echo filemtime(__DIR__ . '/engineer-enterprise.js'); ?>"></script>
 </body>
 </html>
+
 
 

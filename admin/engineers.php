@@ -435,10 +435,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="dropdown-arrow">&#9662;</span>
                 </a>
                 <div class="nav-submenu show" id="contractorsSubmenu">
-                    <a href="/engineer/create.php" class="nav-submenu-item">
-                        <span class="submenu-icon">&#10133;</span>
-                        <span>Engineer Account Creation</span>
-                    </a>
                     <a href="registered_engineers.php" class="nav-submenu-item">
                         <span class="submenu-icon">&#128203;</span>
                         <span>Registered Engineers</span>
@@ -624,4 +620,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="../assets/js/admin-engineers-add.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-engineers-add.js'); ?>"></script>
 </body>
 </html>
+
 

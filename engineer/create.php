@@ -23,14 +23,29 @@ $csrfToken = $_SESSION['engineer_create_token'];
 
 $form = [
     'first_name' => '',
+    'middle_name' => '',
     'last_name' => '',
+    'suffix' => '',
+    'dob' => '',
+    'gender' => '',
+    'civil_status' => '',
     'email' => '',
     'contact_number' => '',
     'address' => '',
     'prc_license_number' => '',
     'license_expiry_date' => '',
     'specialization' => '',
-    'years_experience' => '0'
+    'years_experience' => '0',
+    'position_title' => '',
+    'availability_status' => 'Available',
+    'highest_education' => '',
+    'school_university' => '',
+    'certifications_trainings' => '',
+    'past_projects_count' => '0',
+    'notes' => '',
+    'emergency_contact_name' => '',
+    'emergency_contact_number' => '',
+    'emergency_contact_relationship' => ''
 ];
 
 function ec_table_has_column(mysqli $db, string $table, string $column): bool
@@ -79,11 +94,21 @@ function ec_validate(array $input): array
 {
     $errors = [];
     $data = [];
-    foreach (['first_name','last_name','email','contact_number','address','prc_license_number','license_expiry_date','specialization'] as $k) {
+    foreach ([
+        'first_name','middle_name','last_name','suffix','dob','gender','civil_status',
+        'email','contact_number','address','prc_license_number','license_expiry_date','specialization',
+        'position_title','availability_status','highest_education','school_university',
+        'certifications_trainings','notes','emergency_contact_name','emergency_contact_number','emergency_contact_relationship'
+    ] as $k) {
         $data[$k] = trim((string)($input[$k] ?? ''));
     }
+    $skills = $input['skills'] ?? [];
+    if (!is_array($skills)) $skills = [];
+    $skills = array_values(array_filter(array_map('trim', $skills), static function ($v) { return $v !== ''; }));
+    $data['skills'] = $skills;
     $data['email'] = strtolower($data['email']);
     $data['years_experience'] = max(0, (int)($input['years_experience'] ?? 0));
+    $data['past_projects_count'] = max(0, (int)($input['past_projects_count'] ?? 0));
 
     $password = (string)($input['password'] ?? '');
     $confirm = (string)($input['confirm_password'] ?? '');
@@ -95,6 +120,10 @@ function ec_validate(array $input): array
     if ($data['prc_license_number'] === '') $errors[] = 'PRC license number is required.';
     if ($data['license_expiry_date'] === '' || strtotime($data['license_expiry_date']) === false || strtotime($data['license_expiry_date']) <= strtotime(date('Y-m-d'))) $errors[] = 'License expiry date must be in the future.';
     if ($data['specialization'] === '') $errors[] = 'Specialization is required.';
+    if ($data['highest_education'] === '') $errors[] = 'Highest educational attainment is required.';
+    if ($data['availability_status'] === '' || !in_array($data['availability_status'], ['Available', 'Assigned', 'On Leave'], true)) {
+        $data['availability_status'] = 'Available';
+    }
 
     if (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[^A-Za-z0-9]/', $password)) {
         $errors[] = 'Password must be at least 8 chars and include uppercase, lowercase, number, and symbol.';
@@ -116,12 +145,18 @@ function ec_create_account(mysqli $db, array $data): void
         $employeeId = (int)$db->insert_id;
         $emp->close();
 
+        $fullName = trim($data['first_name'] . ' ' . $data['middle_name'] . ' ' . $data['last_name'] . ' ' . $data['suffix']);
+        if ($fullName === '') {
+            $fullName = trim($data['first_name'] . ' ' . $data['last_name']);
+        }
+        $skillsJson = json_encode($data['skills'], JSON_UNESCAPED_SLASHES);
+
         $columns = ['first_name', 'last_name', 'full_name', 'email', 'prc_license_number', 'license_expiry_date', 'specialization', 'years_experience'];
         $types = 'sssssssi';
         $values = [
             $data['first_name'],
             $data['last_name'],
-            trim($data['first_name'] . ' ' . $data['last_name']),
+            $fullName,
             $data['email'],
             $data['prc_license_number'],
             $data['license_expiry_date'],
@@ -129,9 +164,24 @@ function ec_create_account(mysqli $db, array $data): void
             $data['years_experience']
         ];
 
+        if (ec_table_has_column($db, 'engineers', 'middle_name')) { $columns[] = 'middle_name'; $types .= 's'; $values[] = $data['middle_name']; }
+        if (ec_table_has_column($db, 'engineers', 'suffix')) { $columns[] = 'suffix'; $types .= 's'; $values[] = $data['suffix']; }
+        if (ec_table_has_column($db, 'engineers', 'date_of_birth')) { $columns[] = 'date_of_birth'; $types .= 's'; $values[] = $data['dob']; }
+        if (ec_table_has_column($db, 'engineers', 'gender')) { $columns[] = 'gender'; $types .= 's'; $values[] = $data['gender']; }
+        if (ec_table_has_column($db, 'engineers', 'civil_status')) { $columns[] = 'civil_status'; $types .= 's'; $values[] = $data['civil_status']; }
         if (ec_table_has_column($db, 'engineers', 'contact_number')) { $columns[] = 'contact_number'; $types .= 's'; $values[] = $data['contact_number']; }
         if (ec_table_has_column($db, 'engineers', 'address')) { $columns[] = 'address'; $types .= 's'; $values[] = $data['address']; }
-        if (ec_table_has_column($db, 'engineers', 'availability_status')) { $columns[] = 'availability_status'; $types .= 's'; $values[] = 'Available'; }
+        if (ec_table_has_column($db, 'engineers', 'position_title')) { $columns[] = 'position_title'; $types .= 's'; $values[] = $data['position_title']; }
+        if (ec_table_has_column($db, 'engineers', 'skills_json')) { $columns[] = 'skills_json'; $types .= 's'; $values[] = $skillsJson; }
+        if (ec_table_has_column($db, 'engineers', 'availability_status')) { $columns[] = 'availability_status'; $types .= 's'; $values[] = $data['availability_status']; }
+        if (ec_table_has_column($db, 'engineers', 'highest_education')) { $columns[] = 'highest_education'; $types .= 's'; $values[] = $data['highest_education']; }
+        if (ec_table_has_column($db, 'engineers', 'school_university')) { $columns[] = 'school_university'; $types .= 's'; $values[] = $data['school_university']; }
+        if (ec_table_has_column($db, 'engineers', 'certifications_trainings')) { $columns[] = 'certifications_trainings'; $types .= 's'; $values[] = $data['certifications_trainings']; }
+        if (ec_table_has_column($db, 'engineers', 'past_projects_count')) { $columns[] = 'past_projects_count'; $types .= 'i'; $values[] = $data['past_projects_count']; }
+        if (ec_table_has_column($db, 'engineers', 'notes')) { $columns[] = 'notes'; $types .= 's'; $values[] = $data['notes']; }
+        if (ec_table_has_column($db, 'engineers', 'emergency_contact_name')) { $columns[] = 'emergency_contact_name'; $types .= 's'; $values[] = $data['emergency_contact_name']; }
+        if (ec_table_has_column($db, 'engineers', 'emergency_contact_number')) { $columns[] = 'emergency_contact_number'; $types .= 's'; $values[] = $data['emergency_contact_number']; }
+        if (ec_table_has_column($db, 'engineers', 'emergency_contact_relationship')) { $columns[] = 'emergency_contact_relationship'; $types .= 's'; $values[] = $data['emergency_contact_relationship']; }
         if (ec_table_has_column($db, 'engineers', 'employee_id')) { $columns[] = 'employee_id'; $types .= 'i'; $values[] = $employeeId; }
 
         $sql = 'INSERT INTO engineers (' . implode(', ', $columns) . ') VALUES (' . implode(', ', array_fill(0, count($columns), '?')) . ')';
@@ -165,7 +215,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = 'Engineer account created successfully. Sign in to continue.';
                 $_SESSION['engineer_create_token'] = bin2hex(random_bytes(32));
                 $csrfToken = $_SESSION['engineer_create_token'];
-                foreach ($form as $k => $v) $form[$k] = ($k === 'years_experience' ? '0' : '');
+                foreach ($form as $k => $v) {
+                    if ($k === 'years_experience' || $k === 'past_projects_count') {
+                        $form[$k] = '0';
+                    } elseif ($k === 'availability_status') {
+                        $form[$k] = 'Available';
+                    } else {
+                        $form[$k] = '';
+                    }
+                }
             } catch (Throwable $e) {
                 $errors[] = $e->getMessage();
             }
@@ -199,6 +257,8 @@ body.user-signup-page .icon-top{width:72px;height:72px;object-fit:contain;margin
 body.user-signup-page .title{margin:0 0 6px;font-size:1.7rem;line-height:1.2;color:var(--page-navy)}
 body.user-signup-page .subtitle{margin:0;color:var(--page-muted)}
 .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.form-grid .full{grid-column:1 / -1}.input-box{text-align:left}
+.form-section{margin-top:16px;padding:14px;border:1px solid rgba(148,163,184,.3);border-radius:12px;background:rgba(248,251,255,.7)}
+.form-section h3{margin:0 0 10px;color:#0f2a4a;font-size:1rem}
 .input-box label{display:block;font-size:.86rem;color:#1e293b;margin-bottom:6px}
 .input-box input,.input-box select,.input-box textarea{width:100%;min-height:46px;border-radius:11px;border:1px solid rgba(148,163,184,.45);background:#fff;padding:10px 12px;font-size:.95rem;color:#0f172a;outline:none}
 .input-box textarea{min-height:88px;resize:vertical}
@@ -206,9 +266,30 @@ body.user-signup-page .subtitle{margin:0;color:var(--page-muted)}
 .actions{margin-top:18px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .btn-primary{min-width:170px;height:46px;border:0;border-radius:11px;background:linear-gradient(135deg,#1d4e89,#3f83c9);color:#fff;font-size:.98rem;font-weight:600;cursor:pointer}
 .btn-secondary{min-width:130px;height:46px;border:1px solid rgba(148,163,184,.55);border-radius:11px;background:#fff;color:#0f172a;font-size:.95rem;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn-primary:hover,.btn-secondary:hover{filter:brightness(1.02)}
+.btn-primary:active,.btn-secondary:active{transform:translateY(1px)}
 .error-box{margin-top:14px;padding:10px 12px;border-radius:10px;text-align:left;background:var(--page-danger-bg);color:var(--page-danger);font-size:.89rem;border:1px solid rgba(185,28,28,.2)}
 .ok-box{margin-top:12px;padding:10px 12px;border-radius:10px;background:#dcfce7;color:#166534;font-size:.89rem;border:1px solid #bbf7d0}
-@media (max-width:860px){.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}}
+@media (max-width:860px){
+    body.user-signup-page{padding-top:78px}
+    body.user-signup-page .nav{height:70px;padding:10px 14px}
+    body.user-signup-page .nav-logo{font-size:.9rem}
+    body.user-signup-page .nav-logo img{width:38px;height:38px}
+    body.user-signup-page .home-btn{padding:8px 12px;min-height:40px}
+    body.user-signup-page .wrapper{padding:16px 10px 20px}
+    body.user-signup-page .card{padding:18px 14px;border-radius:14px}
+    body.user-signup-page .icon-top{width:58px;height:58px}
+    body.user-signup-page .title{font-size:1.34rem}
+    body.user-signup-page .subtitle{font-size:.9rem}
+    .form-section{margin-top:12px;padding:11px}
+    .form-grid{grid-template-columns:1fr;gap:10px}
+    .form-grid .full{grid-column:auto}
+    .input-box label{font-size:.83rem}
+    .input-box input,.input-box select,.input-box textarea{min-height:44px;font-size:.94rem;padding:9px 11px}
+    .input-box select[multiple]{min-height:120px}
+    .actions{margin-top:14px;gap:8px;justify-content:stretch}
+    .btn-primary,.btn-secondary{width:100%;min-width:0;min-height:44px}
+}
 </style>
 </head>
 <body class="user-signup-page">
@@ -219,19 +300,39 @@ body.user-signup-page .subtitle{margin:0;color:var(--page-muted)}
 <?php if ($success !== ''): ?><div class="ok-box"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
 <form method="post" autocomplete="off">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
-<div class="form-grid">
+<div class="form-section"><h3>Personal Information</h3><div class="form-grid">
 <div class="input-box"><label>First Name</label><input type="text" name="first_name" required value="<?php echo htmlspecialchars($form['first_name'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Middle Name</label><input type="text" name="middle_name" value="<?php echo htmlspecialchars($form['middle_name'], ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="input-box"><label>Last Name</label><input type="text" name="last_name" required value="<?php echo htmlspecialchars($form['last_name'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Suffix</label><input type="text" name="suffix" placeholder="Jr., Sr., III" value="<?php echo htmlspecialchars($form['suffix'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Date of Birth</label><input type="date" name="dob" value="<?php echo htmlspecialchars($form['dob'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Gender</label><select name="gender"><option value="">Select</option><option value="male" <?php echo $form['gender'] === 'male' ? 'selected' : ''; ?>>Male</option><option value="female" <?php echo $form['gender'] === 'female' ? 'selected' : ''; ?>>Female</option><option value="other" <?php echo $form['gender'] === 'other' ? 'selected' : ''; ?>>Other</option></select></div>
+<div class="input-box"><label>Civil Status</label><select name="civil_status"><option value="">Select</option><option value="single" <?php echo $form['civil_status'] === 'single' ? 'selected' : ''; ?>>Single</option><option value="married" <?php echo $form['civil_status'] === 'married' ? 'selected' : ''; ?>>Married</option><option value="widowed" <?php echo $form['civil_status'] === 'widowed' ? 'selected' : ''; ?>>Widowed</option><option value="separated" <?php echo $form['civil_status'] === 'separated' ? 'selected' : ''; ?>>Separated</option></select></div>
 <div class="input-box"><label>Email</label><input type="email" name="email" required value="<?php echo htmlspecialchars($form['email'], ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="input-box"><label>Mobile Number</label><input type="text" name="contact_number" required placeholder="09XXXXXXXXX or +639XXXXXXXXX" value="<?php echo htmlspecialchars($form['contact_number'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box full"><label>Address</label><textarea name="address" rows="3" required><?php echo htmlspecialchars($form['address'], ENT_QUOTES, 'UTF-8'); ?></textarea></div>
+</div></div>
+<div class="form-section"><h3>Professional Information</h3><div class="form-grid">
 <div class="input-box"><label>PRC License Number</label><input type="text" name="prc_license_number" required value="<?php echo htmlspecialchars($form['prc_license_number'], ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="input-box"><label>License Expiry Date</label><input type="date" name="license_expiry_date" required value="<?php echo htmlspecialchars($form['license_expiry_date'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-<div class="input-box"><label>Specialization</label><select name="specialization" required><option value="">-- Select --</option><?php foreach (['Civil Engineering', 'Structural Engineering', 'Geotechnical Engineering', 'Transportation Engineering', 'Water Resources Engineering', 'Construction Management', 'Project Management'] as $spec): ?><option value="<?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $form['specialization'] === $spec ? 'selected' : ''; ?>><?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
+<div class="input-box"><label>Specialization</label><select name="specialization" required><option value="">-- Select --</option><?php foreach (['Civil Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Structural Engineering', 'Geotechnical Engineering'] as $spec): ?><option value="<?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $form['specialization'] === $spec ? 'selected' : ''; ?>><?php echo htmlspecialchars($spec, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
 <div class="input-box"><label>Years of Experience</label><input type="number" name="years_experience" min="0" value="<?php echo htmlspecialchars($form['years_experience'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-<div class="input-box full"><label>Address</label><textarea name="address" rows="3" required><?php echo htmlspecialchars($form['address'], ENT_QUOTES, 'UTF-8'); ?></textarea></div>
+<div class="input-box"><label>Current Position/Title</label><input type="text" name="position_title" value="<?php echo htmlspecialchars($form['position_title'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Availability Status</label><select name="availability_status"><option value="Available" <?php echo $form['availability_status'] === 'Available' ? 'selected' : ''; ?>>Available</option><option value="Assigned" <?php echo $form['availability_status'] === 'Assigned' ? 'selected' : ''; ?>>Assigned</option><option value="On Leave" <?php echo $form['availability_status'] === 'On Leave' ? 'selected' : ''; ?>>On Leave</option></select></div>
+</div></div>
+<div class="form-section"><h3>Credentials and Emergency Contact</h3><div class="form-grid">
+<div class="input-box"><label>Highest Educational Attainment</label><input type="text" name="highest_education" required value="<?php echo htmlspecialchars($form['highest_education'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>School/University</label><input type="text" name="school_university" value="<?php echo htmlspecialchars($form['school_university'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Past Projects Count</label><input type="number" name="past_projects_count" min="0" value="<?php echo htmlspecialchars($form['past_projects_count'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box full"><label>Skills (hold Ctrl/Cmd for multiple)</label><select name="skills[]" multiple size="5"><?php foreach (['AutoCAD', 'Project Management', 'Site Supervision', 'Cost Estimation', 'Structural Analysis', 'Safety Management'] as $skill): ?><option value="<?php echo htmlspecialchars($skill, ENT_QUOTES, 'UTF-8'); ?>" <?php echo in_array($skill, (array)($_POST['skills'] ?? []), true) ? 'selected' : ''; ?>><?php echo htmlspecialchars($skill, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
+<div class="input-box full"><label>Certifications/Trainings</label><textarea name="certifications_trainings" rows="3"><?php echo htmlspecialchars($form['certifications_trainings'], ENT_QUOTES, 'UTF-8'); ?></textarea></div>
+<div class="input-box full"><label>Notes</label><textarea name="notes" rows="2"><?php echo htmlspecialchars($form['notes'], ENT_QUOTES, 'UTF-8'); ?></textarea></div>
+<div class="input-box"><label>Emergency Contact Name</label><input type="text" name="emergency_contact_name" value="<?php echo htmlspecialchars($form['emergency_contact_name'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Emergency Contact Number</label><input type="text" name="emergency_contact_number" value="<?php echo htmlspecialchars($form['emergency_contact_number'], ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="input-box"><label>Emergency Contact Relationship</label><input type="text" name="emergency_contact_relationship" value="<?php echo htmlspecialchars($form['emergency_contact_relationship'], ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="input-box"><label>Password</label><input type="password" name="password" required></div>
 <div class="input-box"><label>Confirm Password</label><input type="password" name="confirm_password" required></div>
-</div>
+</div></div>
 <div class="actions"><button type="submit" class="btn-primary">Create Account</button><a href="/engineer/index.php" class="btn-secondary">Back to Login</a></div>
 </form>
 </div></div>
