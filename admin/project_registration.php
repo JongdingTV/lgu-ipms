@@ -13,14 +13,14 @@ check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.projects.manage', ['admin','department_admin','super_admin']);
 $rbacAction = strtolower(trim((string)($_REQUEST['action'] ?? '')));
-rbac_require_action_roles(
+rbac_require_action_matrix(
     $rbacAction,
     [
-        'save_project' => ['admin', 'department_admin', 'super_admin'],
-        'delete_project' => ['admin', 'super_admin'],
-        'load_projects' => ['admin', 'department_admin', 'super_admin'],
+        'save_project' => 'admin.projects.manage',
+        'delete_project' => 'admin.projects.delete',
+        'load_projects' => 'admin.projects.read',
     ],
-    ['admin', 'department_admin', 'super_admin']
+    'admin.projects.manage'
 );
 check_suspicious_activity();
 if ($db->connect_error) {
@@ -700,7 +700,6 @@ $db->close();
     <script src="../assets/js/admin-project-registration.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-project-registration.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

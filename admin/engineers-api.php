@@ -31,16 +31,16 @@ if ($method === 'GET') {
     $rbacAction = 'delete_engineer';
 }
 
-rbac_require_action_roles(
+rbac_require_action_matrix(
     $rbacAction,
     [
-        'list_engineers' => ['admin', 'department_admin', 'super_admin'],
-        'create_with_docs' => ['admin', 'department_admin', 'super_admin'],
-        'create_engineer' => ['admin', 'department_admin', 'super_admin'],
-        'update_engineer' => ['admin', 'department_admin', 'super_admin'],
-        'delete_engineer' => ['admin', 'super_admin'],
+        'list_engineers' => 'admin.engineers.manage',
+        'create_with_docs' => 'admin.engineers.manage',
+        'create_engineer' => 'admin.engineers.manage',
+        'update_engineer' => 'admin.engineers.manage',
+        'delete_engineer' => 'admin.engineers.delete',
     ],
-    ['admin', 'department_admin', 'super_admin']
+    'admin.engineers.manage'
 );
 
 function capi_table_exists(mysqli $db, string $table): bool
