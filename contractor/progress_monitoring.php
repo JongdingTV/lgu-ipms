@@ -36,6 +36,58 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
+    <style>
+        .flow-note {
+            margin: 0 0 14px;
+            border: 1px solid #dbe7f3;
+            background: #f8fbff;
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: #0f2a4a;
+            font-size: .92rem;
+            line-height: 1.5;
+        }
+        .pm-controls {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(220px, 1fr));
+            gap: 12px;
+            align-items: end;
+        }
+        .filter-group textarea,
+        .filter-group input[type="file"] {
+            width: 100%;
+            border: 1px solid #c8d8ea;
+            border-radius: 10px;
+            background: #fff;
+            padding: 10px 12px;
+            font: inherit;
+            color: #0f172a;
+        }
+        .filter-group textarea { min-height: 86px; resize: vertical; }
+        .filter-group textarea:focus,
+        .filter-group input[type="file"]:focus,
+        .filter-group input[type="number"]:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #2f73b5;
+            box-shadow: 0 0 0 3px rgba(47,115,181,.16);
+        }
+        .contractor-btn.btn-success {
+            height: 44px;
+            border-radius: 10px;
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            background: linear-gradient(135deg,#16416f,#2f73b5);
+            box-shadow: 0 7px 16px rgba(22,65,111,.25);
+            transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+        }
+        .contractor-btn.btn-success:hover { transform: translateY(-1px); filter: brightness(1.03); }
+        .contractor-btn.btn-success:active { transform: translateY(0); box-shadow: 0 4px 11px rgba(22,65,111,.2); }
+        @media (max-width: 1100px) {
+            .pm-controls { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
 <div class="sidebar-toggle-wrapper">
@@ -54,6 +106,7 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
         <a href="dashboard.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Validation & Budget</a>
         <a href="progress_monitoring.php" class="active"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Progress Monitoring</a>
+        <a href="profile.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Profile</a>
     </div>
     <div class="nav-divider"></div>
     <div class="nav-action-footer"><a href="/contractor/logout.php" class="btn-logout nav-logout"><span>Logout</span></a></div>
@@ -78,6 +131,9 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
         <h1>Progress Monitoring</h1>
         <p>Update and review validated project progress history.</p>
     </div>
+    <div class="flow-note">
+        Contractor updates progress with details + validation info + proof photo -> Engineer reviews -> Engineer approves -> System updates official progress percentage.
+    </div>
     <div class="pm-section card">
         <div class="pm-controls-wrapper">
             <div class="pm-controls">
@@ -89,15 +145,27 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
                     <label for="progressInput">Progress %</label>
                     <input id="progressInput" type="number" min="0" max="100" step="1" placeholder="0-100">
                 </div>
-                <button id="saveProgress" class="contractor-btn btn-success" type="button">Validate & Save Progress</button>
+                <div class="filter-group" style="min-width:260px;">
+                    <label for="workDetails">Work Details</label>
+                    <textarea id="workDetails" rows="2" placeholder="What work was completed today?"></textarea>
+                </div>
+                <div class="filter-group" style="min-width:260px;">
+                    <label for="validationNotes">Validation Information</label>
+                    <textarea id="validationNotes" rows="2" placeholder="Site notes, manpower, materials, milestones..."></textarea>
+                </div>
+                <div class="filter-group">
+                    <label for="proofImage">Proof Photo</label>
+                    <input id="proofImage" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                </div>
+                <button id="saveProgress" class="contractor-btn btn-success" type="button">Submit for Engineer Review</button>
             </div>
         </div>
         <div id="feedback" class="ac-c8be1ccb"></div>
         <div class="table-wrap module-grid">
             <h3 class="contractor-table-title">Progress History</h3>
-            <p class="contractor-subtle">Track all validated progress updates per project.</p>
+            <p class="contractor-subtle">Flow: Contractor submits update with proof -> Engineer reviews -> Engineer approves -> Official progress is updated.</p>
             <table class="table">
-                <thead><tr><th>Date</th><th>Progress</th><th>Updated By</th></tr></thead>
+                <thead><tr><th>Date</th><th>Progress</th><th>Status</th><th>Discrepancy</th><th>Updated By</th></tr></thead>
                 <tbody id="historyBody"></tbody>
             </table>
         </div>
@@ -124,6 +192,14 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body.toString()
+        }).then(function (r) { return r.json(); });
+    }
+    function apiPostForm(action, formData) {
+        formData.append('csrf_token', csrf);
+        return fetch('/contractor/api.php?action=' + encodeURIComponent(action), {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: formData
         }).then(function (r) { return r.json(); });
     }
     function msg(ok, t) {
@@ -158,7 +234,9 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
             var rows = Array.isArray(j.data) ? j.data : [];
             rows.forEach(function (r) {
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + (r.created_at || '') + '</td><td>' + Number(r.progress_percent || 0).toFixed(2) + '%</td><td>' + (r.updated_by || '') + '</td>';
+                var status = r.review_status || 'Pending';
+                var discrepancy = Number(r.discrepancy_flag || 0) === 1 ? ('Flagged: ' + (r.discrepancy_note || 'Needs review')) : 'None';
+                tr.innerHTML = '<td>' + (r.created_at || '') + '</td><td>' + Number(r.progress_percent || 0).toFixed(2) + '%</td><td>' + status + '</td><td>' + discrepancy + '</td><td>' + (r.updated_by || '') + '</td>';
                 tbody.appendChild(tr);
             });
         });
@@ -167,11 +245,26 @@ if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     document.getElementById('saveProgress').addEventListener('click', function () {
         var pid = document.getElementById('projectSelect').value;
         var progress = document.getElementById('progressInput').value;
+        var details = document.getElementById('workDetails').value.trim();
+        var info = document.getElementById('validationNotes').value.trim();
+        var proof = document.getElementById('proofImage').files[0];
         if (!pid) return msg(false, 'Select a project first.');
-        apiPost('update_progress', { project_id: pid, progress: progress }).then(function (j) {
+        if (!details || details.length < 10) return msg(false, 'Add work details (at least 10 characters).');
+        if (!info || info.length < 10) return msg(false, 'Add validation information (at least 10 characters).');
+        if (!proof) return msg(false, 'Attach a proof photo.');
+        var fd = new FormData();
+        fd.append('project_id', pid);
+        fd.append('progress', progress);
+        fd.append('work_details', details);
+        fd.append('validation_notes', info);
+        fd.append('proof_image', proof);
+        apiPostForm('update_progress', fd).then(function (j) {
             if (!j || j.success === false) return msg(false, (j && j.message) || 'Failed to save progress.');
-            msg(true, 'Progress saved.');
+            msg(true, (j && j.message) || 'Progress submitted for engineer review.');
             document.getElementById('progressInput').value = '';
+            document.getElementById('workDetails').value = '';
+            document.getElementById('validationNotes').value = '';
+            document.getElementById('proofImage').value = '';
             loadHistory();
         });
     });

@@ -14,57 +14,160 @@ if (isset($_SESSION['employee_id'])) {
 
 $error = '';
 $emailInput = '';
+$otpMessage = '';
+$otpPending = isset(
+    $_SESSION['engineer_login_otp_employee_id'],
+    $_SESSION['engineer_login_otp_code'],
+    $_SESSION['engineer_login_otp_expires']
+);
+$otpEmail = (string)($_SESSION['engineer_login_otp_email'] ?? '');
+
+function clear_engineer_login_otp_session(): void
+{
+    unset(
+        $_SESSION['engineer_login_otp_employee_id'],
+        $_SESSION['engineer_login_otp_name'],
+        $_SESSION['engineer_login_otp_email'],
+        $_SESSION['engineer_login_otp_role'],
+        $_SESSION['engineer_login_otp_code'],
+        $_SESSION['engineer_login_otp_expires'],
+        $_SESSION['engineer_login_otp_attempts'],
+        $_SESSION['engineer_login_otp_sent_at']
+    );
+}
+
+function issue_engineer_login_otp(int $employeeId, string $name, string $email, string $role): bool
+{
+    if (!function_exists('send_verification_code')) {
+        require_once dirname(__DIR__) . '/config/email.php';
+    }
+    $code = (string) random_int(100000, 999999);
+    if (!send_verification_code($email, $code, $name === '' ? 'Engineer' : $name)) {
+        return false;
+    }
+    $_SESSION['engineer_login_otp_employee_id'] = $employeeId;
+    $_SESSION['engineer_login_otp_name'] = $name;
+    $_SESSION['engineer_login_otp_email'] = $email;
+    $_SESSION['engineer_login_otp_role'] = $role;
+    $_SESSION['engineer_login_otp_code'] = $code;
+    $_SESSION['engineer_login_otp_expires'] = time() + (10 * 60);
+    $_SESSION['engineer_login_otp_attempts'] = 0;
+    $_SESSION['engineer_login_otp_sent_at'] = time();
+    return true;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $emailInput = trim((string) ($_POST['email'] ?? ''));
-    $password = (string) ($_POST['password'] ?? '');
-
-    if ($emailInput === '' || $password === '') {
-        $error = 'Please enter both email and password.';
-    } elseif (is_rate_limited('engineer_login', 6, 300)) {
-        $error = 'Too many login attempts. Please try again in a few minutes.';
-    } else {
-        $stmt = $db->prepare("SELECT id, first_name, last_name, role, password FROM employees WHERE email = ? LIMIT 1");
-        if ($stmt) {
-            $stmt->bind_param('s', $emailInput);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $employee = $result ? $result->fetch_assoc() : null;
-            $stmt->close();
-
-            $isAdminAccount = strtolower($emailInput) === 'admin@lgu.gov.ph';
-            $validPassword = false;
-            if ($employee) {
-                if ($isAdminAccount) {
-                    $validPassword = ($password === 'admin123' || password_verify($password, (string) $employee['password']));
+    if (isset($_POST['verify_otp_submit'])) {
+        if (!$otpPending) {
+            $error = 'No OTP session found. Please sign in again.';
+        } elseif (is_rate_limited('engineer_login_otp', 10, 600)) {
+            $error = 'Too many OTP attempts. Please wait before trying again.';
+        } else {
+            $otpInput = trim((string)($_POST['otp_code'] ?? ''));
+            $storedCode = (string)($_SESSION['engineer_login_otp_code'] ?? '');
+            $expiresAt = (int)($_SESSION['engineer_login_otp_expires'] ?? 0);
+            $attempts = (int)($_SESSION['engineer_login_otp_attempts'] ?? 0);
+            if (time() > $expiresAt) {
+                clear_engineer_login_otp_session();
+                $otpPending = false;
+                $error = 'OTP expired. Please sign in again.';
+            } elseif (!preg_match('/^\d{6}$/', $otpInput)) {
+                $error = 'Please enter the 6-digit OTP.';
+            } elseif (!hash_equals($storedCode, $otpInput)) {
+                $_SESSION['engineer_login_otp_attempts'] = $attempts + 1;
+                if ($_SESSION['engineer_login_otp_attempts'] >= 5) {
+                    clear_engineer_login_otp_session();
+                    $otpPending = false;
+                    $error = 'Too many incorrect OTP attempts. Please sign in again.';
                 } else {
-                    $validPassword = password_verify($password, (string) $employee['password']);
+                    $error = 'Invalid OTP code.';
                 }
-            }
-
-            if (!$employee || !$validPassword) {
-                record_attempt('engineer_login');
-                $error = 'Invalid email or password.';
             } else {
-                $userRole = strtolower(trim((string) ($employee['role'] ?? '')));
-                if (!in_array($userRole, ['engineer', 'admin', 'super_admin'], true)) {
-                log_security_event('ROLE_DENIED', 'Engineer login blocked for non-engineer role');
-                $error = 'Your account is not assigned to engineer access.';
-                } else {
+                $employeeId = (int)($_SESSION['engineer_login_otp_employee_id'] ?? 0);
+                $employeeName = (string)($_SESSION['engineer_login_otp_name'] ?? '');
+                $role = strtolower(trim((string)($_SESSION['engineer_login_otp_role'] ?? 'engineer')));
+                clear_engineer_login_otp_session();
                 session_regenerate_id(true);
-                $_SESSION['employee_id'] = (int) $employee['id'];
-                $_SESSION['employee_name'] = trim((string) $employee['first_name'] . ' ' . (string) $employee['last_name']);
-                $_SESSION['employee_role'] = $userRole;
+                $_SESSION['employee_id'] = $employeeId;
+                $_SESSION['employee_name'] = $employeeName;
+                $_SESSION['employee_role'] = $role;
                 $_SESSION['user_type'] = 'employee';
                 $_SESSION['last_activity'] = time();
                 $_SESSION['login_time'] = time();
                 $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                 header('Location: /engineer/dashboard_overview.php');
                 exit;
-                }
             }
+        }
+    } elseif (isset($_POST['resend_otp_submit'])) {
+        if (!$otpPending) {
+            $error = 'No OTP session found. Please sign in again.';
+        } elseif (is_rate_limited('engineer_login_otp_resend', 4, 600)) {
+            $error = 'Too many OTP resend attempts. Please wait.';
         } else {
-            $error = 'Database error. Please try again.';
+            $employeeId = (int)($_SESSION['engineer_login_otp_employee_id'] ?? 0);
+            $employeeName = (string)($_SESSION['engineer_login_otp_name'] ?? '');
+            $role = strtolower(trim((string)($_SESSION['engineer_login_otp_role'] ?? 'engineer')));
+            $email = (string)($_SESSION['engineer_login_otp_email'] ?? '');
+            $lastSent = (int)($_SESSION['engineer_login_otp_sent_at'] ?? 0);
+            if ($employeeId <= 0 || $email === '') {
+                clear_engineer_login_otp_session();
+                $otpPending = false;
+                $error = 'OTP session invalid. Please sign in again.';
+            } elseif ($lastSent > 0 && (time() - $lastSent) < 45) {
+                $error = 'Please wait before requesting another OTP.';
+            } elseif (issue_engineer_login_otp($employeeId, $employeeName, $email, $role)) {
+                $otpPending = true;
+                $otpEmail = $email;
+                $otpMessage = 'A new OTP was sent to your email.';
+            } else {
+                $error = 'Unable to resend OTP right now.';
+            }
+        }
+    } else {
+        $emailInput = trim((string) ($_POST['email'] ?? ''));
+        $password = (string) ($_POST['password'] ?? '');
+        if ($emailInput === '' || $password === '') {
+            $error = 'Please enter both email and password.';
+        } elseif (is_rate_limited('engineer_login', 6, 300)) {
+            $error = 'Too many login attempts. Please try again in a few minutes.';
+        } else {
+            $stmt = $db->prepare("SELECT id, first_name, last_name, role, password FROM employees WHERE email = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param('s', $emailInput);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $employee = $result ? $result->fetch_assoc() : null;
+                $stmt->close();
+
+                $validPassword = false;
+                if ($employee) {
+                    $validPassword = password_verify($password, (string) $employee['password']);
+                }
+
+                if (!$employee || !$validPassword) {
+                    record_attempt('engineer_login');
+                    $error = 'Invalid email or password.';
+                } else {
+                    $userRole = strtolower(trim((string) ($employee['role'] ?? '')));
+                    if (!in_array($userRole, ['engineer', 'admin', 'super_admin'], true)) {
+                        log_security_event('ROLE_DENIED', 'Engineer login blocked for non-engineer role');
+                        $error = 'Your account is not assigned to engineer access.';
+                    } else {
+                        clear_engineer_login_otp_session();
+                        $fullName = trim((string)$employee['first_name'] . ' ' . (string)$employee['last_name']);
+                        if (issue_engineer_login_otp((int)$employee['id'], $fullName, $emailInput, $userRole)) {
+                            $otpPending = true;
+                            $otpEmail = $emailInput;
+                            $otpMessage = 'A verification code was sent to your email. Enter it below to continue.';
+                        } else {
+                            $error = 'Login validated, but OTP email could not be sent. Please try again.';
+                        }
+                    }
+                }
+            } else {
+                $error = 'Database error. Please try again.';
+            }
         }
     }
 }
@@ -90,24 +193,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="wrapper">
     <div class="card">
         <img src="../assets/images/icons/ipms-icon.png" class="icon-top" alt="LGU">
-        <h2 class="title">Engineer Login</h2>
-        <p class="subtitle">Use your employee account assigned as engineer.</p>
-        <form method="post" autocomplete="off">
-            <div class="input-box">
-                <label>Email</label>
-                <input type="email" name="email" required value="<?php echo htmlspecialchars($emailInput, ENT_QUOTES, 'UTF-8'); ?>">
-                <span class="icon">@</span>
-            </div>
-            <div class="input-box">
-                <label>Password</label>
-                <input type="password" name="password" required>
-                <span class="icon">*</span>
-            </div>
-            <button class="btn-primary" type="submit">Sign In</button>
-            <?php if ($error !== ''): ?>
-                <div class="ac-aabba7cf"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
-            <?php endif; ?>
-        </form>
+        <h2 class="title"><?php echo $otpPending ? 'Verify OTP' : 'Engineer Login'; ?></h2>
+        <p class="subtitle"><?php echo $otpPending ? 'Enter the code sent to your email to continue.' : 'Use your employee account assigned as engineer.'; ?></p>
+        <?php if ($otpPending): ?>
+            <form method="post" autocomplete="off">
+                <div class="meta-links" style="margin-bottom:10px;font-size:.88rem;">
+                    Code sent to: <strong><?php echo htmlspecialchars($otpEmail, ENT_QUOTES, 'UTF-8'); ?></strong>
+                </div>
+                <div class="input-box">
+                    <label>One-Time Password (6 digits)</label>
+                    <input type="text" name="otp_code" maxlength="6" pattern="\d{6}" required placeholder="123456">
+                    <span class="icon">#</span>
+                </div>
+                <button class="btn-primary" type="submit" name="verify_otp_submit">Verify & Sign In</button>
+                <button class="btn-primary" type="submit" name="resend_otp_submit" style="margin-top:10px;background:linear-gradient(135deg,#475569,#64748b);">Resend OTP</button>
+                <?php if ($otpMessage !== ''): ?>
+                    <div class="meta-links" style="color:#166534;"><?php echo htmlspecialchars($otpMessage, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+                <?php if ($error !== ''): ?>
+                    <div class="ac-aabba7cf"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+            </form>
+        <?php else: ?>
+            <form method="post" autocomplete="off">
+                <div class="input-box">
+                    <label>Email</label>
+                    <input type="email" name="email" required value="<?php echo htmlspecialchars($emailInput, ENT_QUOTES, 'UTF-8'); ?>">
+                    <span class="icon">@</span>
+                </div>
+                <div class="input-box">
+                    <label>Password</label>
+                    <input type="password" name="password" required>
+                    <span class="icon">*</span>
+                </div>
+                <button class="btn-primary" type="submit">Sign In</button>
+                <?php if ($error !== ''): ?>
+                    <div class="ac-aabba7cf"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+                <div class="meta-links" style="margin-top:12px;font-size:.88rem;">
+                    No account yet? <a href="/engineer/create.php" style="color:#1d4e89;font-weight:600;text-decoration:none;">Create engineer account</a>
+                </div>
+            </form>
+        <?php endif; ?>
     </div>
 </div>
 <script src="login-security.js?v=<?php echo filemtime(__DIR__ . '/login-security.js'); ?>"></script>

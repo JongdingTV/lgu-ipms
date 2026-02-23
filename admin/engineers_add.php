@@ -1,3 +1,3 @@
 <?php
-header('Location: engineers.php');
+header('Location: /engineer/create.php');
 exit;
