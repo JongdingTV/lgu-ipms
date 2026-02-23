@@ -37,58 +37,6 @@ $canProgressSubmit = in_array($role, rbac_roles_for('contractor.progress.submit'
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
-    <style>
-        .flow-note {
-            margin: 0 0 14px;
-            border: 1px solid #dbe7f3;
-            background: #f8fbff;
-            border-radius: 12px;
-            padding: 12px 14px;
-            color: #0f2a4a;
-            font-size: .92rem;
-            line-height: 1.5;
-        }
-        .pm-controls {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(220px, 1fr));
-            gap: 12px;
-            align-items: end;
-        }
-        .filter-group textarea,
-        .filter-group input[type="file"] {
-            width: 100%;
-            border: 1px solid #c8d8ea;
-            border-radius: 10px;
-            background: #fff;
-            padding: 10px 12px;
-            font: inherit;
-            color: #0f172a;
-        }
-        .filter-group textarea { min-height: 86px; resize: vertical; }
-        .filter-group textarea:focus,
-        .filter-group input[type="file"]:focus,
-        .filter-group input[type="number"]:focus,
-        .filter-group select:focus {
-            outline: none;
-            border-color: #2f73b5;
-            box-shadow: 0 0 0 3px rgba(47,115,181,.16);
-        }
-        .contractor-btn.btn-success {
-            height: 44px;
-            border-radius: 10px;
-            border: none;
-            color: #fff;
-            font-weight: 700;
-            background: linear-gradient(135deg,#16416f,#2f73b5);
-            box-shadow: 0 7px 16px rgba(22,65,111,.25);
-            transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
-        }
-        .contractor-btn.btn-success:hover { transform: translateY(-1px); filter: brightness(1.03); }
-        .contractor-btn.btn-success:active { transform: translateY(0); box-shadow: 0 4px 11px rgba(22,65,111,.2); }
-        @media (max-width: 1100px) {
-            .pm-controls { grid-template-columns: 1fr; }
-        }
-    </style>
 </head>
 <body>
 <div class="sidebar-toggle-wrapper">
@@ -143,11 +91,11 @@ $canProgressSubmit = in_array($role, rbac_roles_for('contractor.progress.submit'
                     <label for="progressInput">Progress %</label>
                     <input id="progressInput" type="number" min="0" max="100" step="1" placeholder="0-100" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>>
                 </div>
-                <div class="filter-group" style="min-width:260px;">
+                <div class="filter-group filter-group-wide">
                     <label for="workDetails">Work Details</label>
                     <textarea id="workDetails" rows="2" placeholder="What work was completed today?" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>></textarea>
                 </div>
-                <div class="filter-group" style="min-width:260px;">
+                <div class="filter-group filter-group-wide">
                     <label for="validationNotes">Validation Information</label>
                     <textarea id="validationNotes" rows="2" placeholder="Site notes, manpower, materials, milestones..." <?php echo $canProgressSubmit ? '' : 'disabled'; ?>></textarea>
                 </div>

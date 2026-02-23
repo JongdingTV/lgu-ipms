@@ -167,34 +167,6 @@ if ($engineer && isset($engineer['skills_json'])) {
     <link rel="stylesheet" href="/assets/css/form-redesign-base.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
     <link rel="stylesheet" href="/user-dashboard/user-shell.css?v=<?php echo filemtime(dirname(__DIR__) . '/user-dashboard/user-shell.css'); ?>">
-    <style>
-        .nav-user-profile { display:flex; align-items:center; gap:10px; margin:8px 12px 14px; padding:10px; border:1px solid rgba(148,163,184,.22); border-radius:12px; background:rgba(248,251,255,.8); }
-        .nav-user-badge { width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:linear-gradient(135deg,#1d4e89,#3f83c9); flex:0 0 36px; }
-        .nav-user-meta { min-width:0; }
-        .nav-user-name { color:#0f2a4a; font-weight:700; font-size:.9rem; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .nav-user-email { color:#64748b; font-size:.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .profile-layout { display:grid; grid-template-columns:320px 1fr; gap:18px; align-items:start; }
-        .profile-side { border-radius:16px; border:1px solid #dbe7f3; background:#fff; padding:18px; position:sticky; top:14px; }
-        .profile-avatar { width:72px; height:72px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:linear-gradient(135deg,#1d4e89,#3f83c9); margin-bottom:10px; font-size:1.15rem; }
-        .profile-name { margin:0; color:#0f2a4a; font-size:1.25rem; line-height:1.2; }
-        .profile-role { margin:4px 0 0; color:#64748b; font-size:.92rem; }
-        .profile-meta { margin-top:14px; display:grid; gap:10px; }
-        .profile-meta-item { padding:10px 12px; border:1px solid #e2e8f0; border-radius:10px; background:#f8fbff; }
-        .profile-meta-item label { display:block; color:#64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
-        .profile-meta-item div { color:#0f2a4a; font-weight:600; font-size:.92rem; word-break:break-word; }
-        .profile-main { display:grid; gap:16px; }
-        .settings-card { border-radius:14px; border:1px solid #dbe7f3; background:#fff; padding:16px; box-shadow:0 4px 14px rgba(15,23,42,.06); }
-        .settings-info-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:10px; }
-        .settings-info-field { border:1px solid #dbe7f3; border-radius:10px; background:#fff; padding:10px 12px; min-height:64px; }
-        .settings-info-field label { display:block; color:#64748b; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
-        .settings-info-value { color:#0f2a4a; font-size:.92rem; font-weight:600; word-break:break-word; }
-        .settings-info-field-full { grid-column:1 / -1; }
-        .settings-card h3 { color:#0f172a; margin-bottom:6px; font-size:1.02rem; }
-        .profile-btn { height:44px; border:none; border-radius:11px; padding:0 16px; font-weight:700; color:#fff; background:linear-gradient(135deg,#16416f,#2f73b5); cursor:pointer; box-shadow:0 6px 16px rgba(22,65,111,.26); }
-        .password-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:10px 0 12px; }
-        .password-grid input { width:100%; height:44px; border:1px solid #c8d8ea; border-radius:10px; padding:0 12px; }
-        @media (max-width: 1000px) { .profile-layout { grid-template-columns:1fr; } .profile-side { position:static; } .settings-info-form, .password-grid { grid-template-columns:1fr; } }
-    </style>
 </head>
 <body>
 <div class="sidebar-toggle-wrapper"><button class="sidebar-toggle-btn" title="Show Sidebar (Ctrl+S)" aria-label="Show Sidebar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
@@ -242,7 +214,7 @@ if ($engineer && isset($engineer['skills_json'])) {
         <div class="profile-main">
             <div class="settings-card">
                 <h3>Engineer Profile</h3>
-                <p style="margin:6px 0 0;color:#64748b;">Registration details are view-only and cannot be edited.</p>
+                <p class="profile-muted-note">Registration details are view-only and cannot be edited.</p>
                 <div class="settings-info-form">
                     <div class="settings-info-field"><label>First Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($engineer['first_name'] ?? $employee['first_name']), ENT_QUOTES, 'UTF-8'); ?></div></div>
                     <div class="settings-info-field"><label>Middle Name</label><div class="settings-info-value"><?php echo htmlspecialchars((string)($engineer['middle_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div></div>

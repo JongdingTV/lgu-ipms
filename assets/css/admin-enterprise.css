@@ -4121,3 +4121,33 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page).theme-dark .engin
         flex-direction: column;
     }
 }
+
+/* Final UX polish: responsive tables/cards across admin workspaces */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .table-wrap table {
+    width: 100%;
+    min-width: 980px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .pm-section.card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .dashboard-card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .section-card {
+    min-width: 0;
+}
+
+@media (max-width: 1200px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .table-wrap table {
+        min-width: 860px;
+    }
+}
+
+@media (max-width: 900px) {
+    body:not(.admin-login-page):not(.login-page):not(.signup-page) .table-wrap table {
+        min-width: 720px;
+    }
+}

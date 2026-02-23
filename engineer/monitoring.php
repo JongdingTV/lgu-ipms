@@ -38,40 +38,6 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
     <link rel="stylesheet" href="../assets/css/admin-unified.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-unified.css'); ?>">
     <link rel="stylesheet" href="../assets/css/admin-component-overrides.css">
     <link rel="stylesheet" href="../assets/css/admin-enterprise.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/admin-enterprise.css'); ?>">
-    <style>
-        #reviewFeedback { margin-bottom: 10px; }
-        #submissionsTable td { vertical-align: top; }
-        #submissionsTable td:nth-child(4),
-        #submissionsTable td:nth-child(5) {
-            max-width: 260px;
-            white-space: normal;
-            line-height: 1.4;
-        }
-        .approve-btn,
-        .reject-btn {
-            height: 34px;
-            border: none;
-            border-radius: 9px;
-            padding: 0 12px;
-            font-weight: 700;
-            color: #fff;
-            cursor: pointer;
-            margin: 2px 0;
-            transition: filter .18s ease, transform .12s ease;
-        }
-        .approve-btn {
-            background: linear-gradient(135deg,#166534,#22c55e);
-            box-shadow: 0 5px 12px rgba(22,101,52,.24);
-        }
-        .reject-btn {
-            background: linear-gradient(135deg,#991b1b,#ef4444);
-            box-shadow: 0 5px 12px rgba(153,27,27,.24);
-        }
-        .approve-btn:hover,
-        .reject-btn:hover { filter: brightness(1.03); transform: translateY(-1px); }
-        .approve-btn:active,
-        .reject-btn:active { transform: translateY(0); }
-    </style>
 </head>
 <body>
 <div class="sidebar-toggle-wrapper">
@@ -146,10 +112,10 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
         </div>
     </div>
 
-    <div class="pm-section card" style="margin-top:16px;">
-        <div class="dash-header" style="padding:0 0 10px;">
-            <h2 style="margin:0;font-size:1.12rem;">Contractor Progress Submissions</h2>
-            <p style="margin:4px 0 0;color:#64748b;">Review contractor details, validation info, and proof photo before approval. Official progress updates only after approval.</p>
+    <div class="pm-section card engineer-submissions-section">
+        <div class="dash-header engineer-submissions-header">
+            <h2 class="engineer-submissions-title">Contractor Progress Submissions</h2>
+            <p class="engineer-submissions-subtitle">Review contractor details, validation info, and proof photo before approval. Official progress updates only after approval.</p>
         </div>
         <div id="reviewFeedback" class="ac-c8be1ccb"></div>
         <div class="table-wrap">
@@ -309,4 +275,3 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
 <script src="engineer-enterprise.js?v=<?php echo filemtime(__DIR__ . '/engineer-enterprise.js'); ?>"></script>
 </body>
 </html>
-
