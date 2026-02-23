@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
                         } else {
                             clear_user_login_otp_session();
                             if (issue_user_login_otp($userId, $fullName, $email)) {
-                                $_SESSION['user_login_otp_remember'] = 1;
+                                $_SESSION['user_login_otp_remember'] = !empty($_POST['remember_device']) ? 1 : 0;
                                 $otpPending = true;
                                 $otpEmail = $email;
                                 $otpMessage = 'A verification code was sent to your email. Enter it below to finish login.';
@@ -421,8 +421,7 @@ body.user-login-page .error-box {
                 </div>
                 <div class="input-box" style="margin-top:-4px;margin-bottom:8px;">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                        <input type="hidden" name="remember_device" value="1">
-                        <input type="checkbox" value="1" checked disabled style="width:16px;height:16px;">
+                        <input type="checkbox" name="remember_device" value="1" checked style="width:16px;height:16px;">
                         <span style="font-size:0.86rem;color:#334155;">Remember this device for 7 days</span>
                     </label>
                 </div>
