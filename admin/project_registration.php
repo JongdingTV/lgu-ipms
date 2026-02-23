@@ -471,16 +471,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     header('Content-Type: application/json');
 
     $orderBy = $projectsHasCreatedAt ? 'created_at DESC' : 'id DESC';
-    $result = $db->query("SELECT * FROM projects ORDER BY {$orderBy}");
-    $projects = [];
-    
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $projects[] = $row;
-        }
-        $result->free();
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $perPage = (int) ($_GET['per_page'] ?? 200);
+    if ($perPage < 1) $perPage = 200;
+    if ($perPage > 1000) $perPage = 1000;
+    $offset = ($page - 1) * $perPage;
+    $q = strtolower(trim((string) ($_GET['q'] ?? '')));
+    $status = trim((string) ($_GET['status'] ?? ''));
+
+    $where = [];
+    $types = '';
+    $params = [];
+    if ($q !== '') {
+        $like = '%' . $q . '%';
+        $where[] = "(LOWER(COALESCE(code, '')) LIKE ? OR LOWER(COALESCE(name, '')) LIKE ? OR LOWER(COALESCE(location, '')) LIKE ? OR LOWER(COALESCE(sector, '')) LIKE ?)";
+        $types .= 'ssss';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
     }
-    
+    if ($status !== '') {
+        $where[] = "status = ?";
+        $types .= 's';
+        $params[] = $status;
+    }
+    $whereSql = empty($where) ? '' : (' WHERE ' . implode(' AND ', $where));
+    $sql = "SELECT * FROM projects{$whereSql} ORDER BY {$orderBy} LIMIT ? OFFSET ?";
+    $stmt = $db->prepare($sql);
+    $projects = [];
+
+    if ($stmt) {
+        $params[] = $perPage;
+        $params[] = $offset;
+        $bindTypes = $types . 'ii';
+        $bindArgs = [$bindTypes];
+        foreach ($params as $k => $v) {
+            $bindArgs[] = &$params[$k];
+        }
+        call_user_func_array([$stmt, 'bind_param'], $bindArgs);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $projects[] = $row;
+            }
+            $result->free();
+        }
+        $stmt->close();
+    } else {
+        $result = $db->query("SELECT * FROM projects ORDER BY {$orderBy} LIMIT " . (int)$perPage . " OFFSET " . (int)$offset);
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $projects[] = $row;
+            }
+            $result->free();
+        }
+    }
+
+    if (isset($_GET['v2']) && $_GET['v2'] === '1') {
+        echo json_encode([
+            'success' => true,
+            'data' => $projects,
+            'meta' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'has_next' => count($projects) === $perPage
+            ]
+        ]);
+        exit;
+    }
+
     echo json_encode($projects);
     exit;
 }
@@ -704,7 +765,6 @@ $db->close();
     <script src="../assets/js/admin-project-registration.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-project-registration.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

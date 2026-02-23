@@ -7,6 +7,7 @@ require dirname(__DIR__) . '/includes/rbac.php';
 set_no_cache_headers();
 check_auth();
 rbac_require_from_matrix('admin.audit.view', ['admin','department_admin','super_admin']);
+check_suspicious_activity();
 
 $employee_id = $_SESSION['employee_id'];
 $employee_name = $_SESSION['employee_name'] ?? '';
@@ -166,7 +167,6 @@ if (isset($db)) {
 <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

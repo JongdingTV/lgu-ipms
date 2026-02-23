@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['engineer','admin','super_admin']);
+rbac_require_from_matrix('engineer.workspace.view', ['engineer','admin','super_admin']);
 check_suspicious_activity();
 
 if (!isset($_SESSION['employee_id'])) {
@@ -17,6 +17,7 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
     header('Location: /engineer/index.php');
     exit;
 }
+$canProgressReview = in_array($role, rbac_roles_for('engineer.progress.review', ['engineer', 'admin', 'super_admin']), true);
 
 $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
 ?>
@@ -178,6 +179,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
     'use strict';
     const state = { projects: [], submissions: [] };
     const csrf = <?php echo json_encode((string) ($_SESSION['csrf_token'] ?? '')); ?>;
+    const canProgressReview = <?php echo json_encode($canProgressReview); ?>;
 
     function esc(v) {
         return String(v == null ? '' : v)
@@ -194,10 +196,12 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
             const json = await monitoringRes.json();
             state.projects = Array.isArray(json.data) ? json.data : [];
         }
-        const subRes = await fetch('/engineer/api.php?action=load_progress_submissions', { credentials: 'same-origin' });
-        if (subRes.ok) {
-            const json = await subRes.json();
-            state.submissions = Array.isArray(json.data) ? json.data : [];
+        if (canProgressReview) {
+            const subRes = await fetch('/engineer/api.php?action=load_progress_submissions', { credentials: 'same-origin' });
+            if (subRes.ok) {
+                const json = await subRes.json();
+                state.submissions = Array.isArray(json.data) ? json.data : [];
+            }
         }
         render();
         renderSubmissions();
@@ -240,7 +244,7 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
             const tr = document.createElement('tr');
             const flagged = Number(s.discrepancy_flag || 0) === 1;
             const status = s.decision_status || 'Pending';
-            const canDecide = status === 'Pending';
+            const canDecide = canProgressReview && status === 'Pending';
             const proofPath = String(s.proof_image_path || '').replace(/^\/+/, '');
             const proofHref = proofPath ? ('/' + proofPath) : '';
             tr.innerHTML = [
@@ -262,6 +266,10 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
     }
 
     async function decideSubmission(submissionId, projectId, decision) {
+        if (!canProgressReview) {
+            reviewMsg(false, 'You are not allowed to review progress submissions.');
+            return;
+        }
         const note = window.prompt(decision + ' note (required for rejection, optional for approval):', '') || '';
         if (decision === 'Rejected' && note.trim() === '') {
             reviewMsg(false, 'Rejection note is required.');
@@ -301,5 +309,4 @@ $employeeName = (string) ($_SESSION['employee_name'] ?? 'Engineer');
 <script src="engineer-enterprise.js?v=<?php echo filemtime(__DIR__ . '/engineer-enterprise.js'); ?>"></script>
 </body>
 </html>
-
 

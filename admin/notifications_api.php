@@ -21,7 +21,6 @@ header('Content-Type: application/json');
 if ($db->connect_error) {
     echo json_encode([
         'success' => false,
-        'message' => 'Database connection failed'
     ]);
     exit;
 }
@@ -72,7 +71,6 @@ try {
                 'id' => $id,
                 'level' => $level,
                 'title' => $subject,
-                'message' => $location !== '' ? ($user . ' • ' . $location) : $user,
                 'status' => $row['status'] ?? 'Pending',
                 'created_at' => $row['date_submitted'] ?? null,
                 'created_at_ts' => !empty($row['date_submitted']) ? strtotime((string) $row['date_submitted']) : null
@@ -83,7 +81,6 @@ try {
 } catch (Throwable $e) {
     echo json_encode([
         'success' => false,
-        'message' => 'Failed to load notifications'
     ]);
     exit;
 }
@@ -103,3 +100,4 @@ echo json_encode([
     'pending_count' => $pendingCount,
     'items' => $items
 ]);
+

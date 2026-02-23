@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_from_matrix('department_head.approvals.manage', ['department_head', 'department_admin', 'admin', 'super_admin']);
+rbac_require_from_matrix('department_head.approvals.view', ['department_head', 'department_admin', 'admin', 'super_admin']);
 check_suspicious_activity();
 
 header('Content-Type: application/json');
@@ -70,6 +70,18 @@ function dept_table_exists(mysqli $db, string $table): bool
     return $ok;
 }
 
+function dept_bind_dynamic(mysqli_stmt $stmt, string $types, array &$params): bool
+{
+    if ($types === '' || empty($params)) {
+        return true;
+    }
+    $args = [$types];
+    foreach ($params as $k => $v) {
+        $args[] = &$params[$k];
+    }
+    return call_user_func_array([$stmt, 'bind_param'], $args);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sessionToken = (string) generate_csrf_token();
     $requestToken = (string) ($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
@@ -86,7 +98,7 @@ rbac_require_action_matrix(
         'load_projects' => 'department_head.approvals.view',
         'decide_project' => 'department_head.approvals.manage',
     ],
-    'department_head.approvals.manage'
+    'department_head.approvals.view'
 );
 ensure_department_head_table($db);
 
@@ -137,7 +149,29 @@ if ($action === 'load_notifications') {
 
 if ($action === 'load_projects') {
     $mode = strtolower(trim((string) ($_GET['mode'] ?? 'pending')));
+    $q = strtolower(trim((string) ($_GET['q'] ?? '')));
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $perPage = (int) ($_GET['per_page'] ?? 25);
+    if ($perPage < 1) $perPage = 25;
+    if ($perPage > 100) $perPage = 100;
+    $offset = ($page - 1) * $perPage;
     $rows = [];
+
+    $searchSql = '';
+    $types = '';
+    $params = [];
+    if ($q !== '') {
+        $searchSql = " AND (
+            LOWER(COALESCE(p.code, '')) LIKE ?
+            OR LOWER(COALESCE(p.name, '')) LIKE ?
+            OR LOWER(COALESCE(p.location, '')) LIKE ?
+        )";
+        $like = '%' . $q . '%';
+        $types .= 'sss';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
 
     $sqlPending = "SELECT
             p.*,
@@ -150,8 +184,9 @@ if ($action === 'load_projects') {
         LEFT JOIN employees e ON e.id = r.decided_by
         WHERE (r.project_id IS NULL OR r.decision_status = 'Pending')
           AND LOWER(COALESCE(p.status, '')) IN ('for approval', 'pending', 'draft')
+          {$searchSql}
         ORDER BY p.id DESC
-        LIMIT 500";
+        LIMIT ? OFFSET ?";
 
     $sqlReviewed = "SELECT
             p.*,
@@ -163,18 +198,42 @@ if ($action === 'load_projects') {
         JOIN project_department_head_reviews r ON r.project_id = p.id
         LEFT JOIN employees e ON e.id = r.decided_by
         WHERE r.decision_status IN ('Approved', 'Rejected')
+          {$searchSql}
         ORDER BY r.decided_at DESC, p.id DESC
-        LIMIT 500";
+        LIMIT ? OFFSET ?";
 
-    $res = $db->query($mode === 'reviewed' ? $sqlReviewed : $sqlPending);
+    $sql = $mode === 'reviewed' ? $sqlReviewed : $sqlPending;
+    $stmt = $db->prepare($sql);
+    if (!$stmt) {
+        out(['success' => false, 'message' => 'Unable to prepare project queue query.'], 500);
+    }
+    $typesData = $types . 'ii';
+    $paramsData = $params;
+    $paramsData[] = $perPage;
+    $paramsData[] = $offset;
+    if (!dept_bind_dynamic($stmt, $typesData, $paramsData)) {
+        $stmt->close();
+        out(['success' => false, 'message' => 'Unable to bind project queue query.'], 500);
+    }
+    $stmt->execute();
+    $res = $stmt->get_result();
     if ($res) {
         while ($row = $res->fetch_assoc()) {
             $rows[] = $row;
         }
         $res->free();
     }
+    $stmt->close();
 
-    out(['success' => true, 'data' => $rows]);
+    out([
+        'success' => true,
+        'data' => $rows,
+        'meta' => [
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_next' => count($rows) === $perPage
+        ]
+    ]);
 }
 
 if ($action === 'decide_project') {

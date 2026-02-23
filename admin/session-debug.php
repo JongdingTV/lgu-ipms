@@ -10,6 +10,7 @@ require dirname(__DIR__) . '/includes/rbac.php';
 set_no_cache_headers();
 check_auth();
 rbac_require_from_matrix('admin.db_health.run', ['super_admin']);
+check_suspicious_activity();
 
 ?>
 <!DOCTYPE html>
@@ -110,7 +111,6 @@ rbac_require_from_matrix('admin.db_health.run', ['super_admin']);
     <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

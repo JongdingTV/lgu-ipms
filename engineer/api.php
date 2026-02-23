@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_from_matrix('engineer.workspace.manage', ['engineer','admin','super_admin']);
+rbac_require_from_matrix('engineer.workspace.view', ['engineer','admin','super_admin']);
 check_suspicious_activity();
 
 header('Content-Type: application/json');
@@ -131,13 +131,13 @@ rbac_require_action_matrix(
         'decide_progress' => 'engineer.progress.review',
         'load_status_requests' => 'engineer.status.review',
         'engineer_decide_status_request' => 'engineer.status.review',
-        'load_task_milestone' => 'engineer.tasks.manage',
+        'load_task_milestone' => 'engineer.workspace.view',
         'add_task' => 'engineer.tasks.manage',
         'update_task_status' => 'engineer.tasks.manage',
         'add_milestone' => 'engineer.tasks.manage',
         'update_milestone_status' => 'engineer.tasks.manage',
     ],
-    'engineer.workspace.manage'
+    'engineer.workspace.view'
 );
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
     json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);

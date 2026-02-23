@@ -12,6 +12,7 @@ require_once dirname(__DIR__) . '/includes/rbac.php';
 set_no_cache_headers();
 check_auth();
 rbac_require_from_matrix('super_admin.employee_accounts.view', ['super_admin']);
+check_suspicious_activity();
 
 $rbacAction = 'view_employee_accounts';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -401,7 +402,6 @@ if ($result) {
 <script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

@@ -7,6 +7,7 @@ require dirname(__DIR__) . '/includes/rbac.php';
 set_no_cache_headers();
 check_auth();
 rbac_require_from_matrix('admin.account.security.view', ['admin','department_admin','super_admin']);
+check_suspicious_activity();
 $rbacAction = $_SERVER['REQUEST_METHOD'] === 'POST'
     ? 'update_own_password'
     : 'view_change_password';
@@ -220,7 +221,6 @@ if (isset($db)) {
     <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

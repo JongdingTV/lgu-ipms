@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_roles(['engineer','admin','super_admin']);
+rbac_require_from_matrix('engineer.workspace.view', ['engineer','admin','super_admin']);
 check_suspicious_activity();
 
 if (!isset($_SESSION['employee_id'])) {
@@ -17,6 +17,7 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
     header('Location: /engineer/index.php');
     exit;
 }
+$canTaskManage = in_array($role, rbac_roles_for('engineer.tasks.manage', ['engineer', 'admin', 'super_admin']), true);
 ?>
 <!doctype html>
 <html lang="en">
@@ -88,6 +89,9 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
                 </div>
             </div>
         </div>
+        <?php if (!$canTaskManage): ?>
+            <div class="ac-c8be1ccb">Read-only mode: You can view tasks/milestones but cannot add or update status.</div>
+        <?php endif; ?>
         <div id="feedback" class="ac-c8be1ccb"></div>
 
         <div class="table-wrap">
@@ -97,7 +101,7 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
                 <input id="taskStart" type="date">
                 <input id="taskEnd" type="date">
                 <input id="taskNotes" type="text" placeholder="Notes (optional)">
-                <button id="addTaskBtn" class="btn-export" type="button">Add Task</button>
+                <button id="addTaskBtn" class="btn-export" type="button" <?php echo $canTaskManage ? '' : 'disabled'; ?>>Add Task</button>
             </div>
             <table class="table">
                 <thead><tr><th>Title</th><th>Status</th><th>Planned</th><th>Actual</th><th>Action</th></tr></thead>
@@ -111,7 +115,7 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
                 <input id="mileTitle" type="text" placeholder="Milestone title">
                 <input id="mileDate" type="date">
                 <input id="mileNotes" type="text" placeholder="Notes (optional)">
-                <button id="addMileBtn" class="btn-export" type="button">Add Milestone</button>
+                <button id="addMileBtn" class="btn-export" type="button" <?php echo $canTaskManage ? '' : 'disabled'; ?>>Add Milestone</button>
             </div>
             <table class="table">
                 <thead><tr><th>Title</th><th>Status</th><th>Planned</th><th>Actual</th><th>Action</th></tr></thead>
@@ -125,6 +129,7 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
 (function () {
     'use strict';
     var csrf = <?php echo json_encode((string) ($_SESSION['csrf_token'] ?? '')); ?>;
+    var canTaskManage = <?php echo json_encode($canTaskManage); ?>;
 
     function apiGet(action, extra) {
         var q = '/engineer/api.php?action=' + encodeURIComponent(action) + (extra || '');
@@ -148,6 +153,9 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
     }
     function projectId() { return document.getElementById('projectSelect').value; }
     function statusSelect(type, id, current) {
+        if (!canTaskManage) {
+            return '<span>' + String(current || 'Pending') + '</span>';
+        }
         var all = ['Pending', 'In Progress', 'Completed', 'On-hold'];
         return '<select data-type="' + type + '" data-id="' + id + '">' + all.map(function (s) {
             return '<option value="' + s + '"' + (s === current ? ' selected' : '') + '>' + s + '</option>';
@@ -167,6 +175,7 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
         });
     }
     function bindStatusActions() {
+        if (!canTaskManage) return;
         document.querySelectorAll('select[data-type="task-status"]').forEach(function (el) {
             el.addEventListener('change', function () {
                 apiPost('update_task_status', { task_id: this.getAttribute('data-id'), status: this.value }).then(function (j) {
@@ -215,6 +224,7 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
 
     document.getElementById('projectSelect').addEventListener('change', loadData);
     document.getElementById('addTaskBtn').addEventListener('click', function () {
+        if (!canTaskManage) return msg(false, 'You are not allowed to add tasks.');
         var pid = projectId();
         if (!pid) return msg(false, 'Select a project first.');
         apiPost('add_task', {
@@ -234,6 +244,7 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
         });
     });
     document.getElementById('addMileBtn').addEventListener('click', function () {
+        if (!canTaskManage) return msg(false, 'You are not allowed to add milestones.');
         var pid = projectId();
         if (!pid) return msg(false, 'Select a project first.');
         apiPost('add_milestone', {
@@ -251,6 +262,12 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
         });
     });
 
+    if (!canTaskManage) {
+        ['taskTitle', 'taskStart', 'taskEnd', 'taskNotes', 'mileTitle', 'mileDate', 'mileNotes'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.disabled = true;
+        });
+    }
     loadProjects();
 })();
 </script>
@@ -258,6 +275,5 @@ if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
 <script src="engineer-enterprise.js?v=<?php echo filemtime(__DIR__ . '/engineer-enterprise.js'); ?>"></script>
 </body>
 </html>
-
 
 

@@ -163,6 +163,15 @@ function budget_sync_projects_to_milestones(mysqli $db): void {
 // Handle API requests first (before rendering HTML)
 $action = $_REQUEST['action'] ?? null;
 if ($action) {
+    $readOnlyActions = ['load_projects', 'load_budget_state', 'load_milestones', 'load_expenses'];
+    if (!in_array((string)$action, $readOnlyActions, true)) {
+        $csrfToken = (string)($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
+        if (!verify_csrf_token($csrfToken)) {
+            budget_json_response(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
+            $db->close();
+            exit;
+        }
+    }
     try {
         if ($action === 'load_projects') {
             $orderBy = budget_projects_order_sql($db);
@@ -755,7 +764,6 @@ $db->close();
     <script src="../assets/js/admin-budget-resources.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-budget-resources.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var csrfMeta = document.querySelector('meta[name="csrf-token"]');
     var csrfToken = String(window.DEPARTMENT_HEAD_CSRF || (csrfMeta ? csrfMeta.getAttribute('content') : '') || '');
+    var permissionFlags = window.DEPARTMENT_HEAD_PERMISSIONS || {};
+    var canManage = Boolean(permissionFlags.approvalsManage);
+    var canReadNotifications = Boolean(permissionFlags.notificationsRead);
     var state = { rows: [], mode: 'pending' };
 
     function esc(v) {
@@ -155,6 +158,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         window.departmentHeadRefreshTopNotifications = function () {
+            if (!canReadNotifications) {
+                notifications = [{ id: 0, level: 'info', title: 'Notifications unavailable', message: 'Your role does not have notification access.', created_at: '' }];
+                renderNotifications();
+                return;
+            }
             fetch('/department-head/api.php?action=load_notifications', { credentials: 'same-origin' })
                 .then(function (res) { return res.json(); })
                 .then(function (data) {
@@ -326,6 +334,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         tbody.querySelectorAll('button[data-action="approve"]').forEach(function (btn) {
             btn.addEventListener('click', function () {
+                if (!canManage) {
+                    showMessage('err', 'You are not allowed to approve projects.');
+                    return;
+                }
                 var id = this.getAttribute('data-id');
                 var noteEl = document.querySelector('textarea[data-type="note"][data-id="' + id + '"]');
                 var budgetEl = document.querySelector('input[data-type="budget"][data-id="' + id + '"]');
@@ -354,6 +366,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         tbody.querySelectorAll('button[data-action="reject"]').forEach(function (btn) {
             btn.addEventListener('click', function () {
+                if (!canManage) {
+                    showMessage('err', 'You are not allowed to reject projects.');
+                    return;
+                }
                 var id = this.getAttribute('data-id');
                 var noteEl = document.querySelector('textarea[data-type="note"][data-id="' + id + '"]');
                 var note = noteEl ? noteEl.value.trim() : '';
@@ -403,9 +419,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<td><strong>' + esc(row.name || '-') + '</strong><br><small>' + esc(row.location || '-') + '</small></td>',
                 '<td>' + statusChip(row.status || 'For Approval') + '</td>',
                 '<td>' + statusChip(row.decision_status || 'Pending') + '<br><small>' + esc(row.decided_by_name || '') + (row.decided_at ? (' | ' + esc(row.decided_at)) : '') + '</small></td>',
-                '<td><div class="dept-budget-wrap"><label class="dept-input-label">Project Budget (PHP)</label><input class="dept-budget-input" data-type="budget" data-id="' + esc(row.id) + '" type="number" min="0" step="0.01" placeholder="Enter project budget" value="' + esc(Number(row.budget || 0) > 0 ? row.budget : '') + '"></div><textarea class="dept-note" data-type="note" data-id="' + esc(row.id) + '" placeholder="Decision note for admin and audit trail">' + esc(row.decision_note || '') + '</textarea></td>',
+                '<td><div class="dept-budget-wrap"><label class="dept-input-label">Project Budget (PHP)</label><input class="dept-budget-input" data-type="budget" data-id="' + esc(row.id) + '" type="number" min="0" step="0.01" placeholder="Enter project budget" value="' + esc(Number(row.budget || 0) > 0 ? row.budget : '') + '"' + (canManage ? '' : ' disabled') + '></div><textarea class="dept-note" data-type="note" data-id="' + esc(row.id) + '" placeholder="Decision note for admin and audit trail"' + (canManage ? '' : ' disabled') + '>' + esc(row.decision_note || '') + '</textarea></td>',
                 '<td><div class="dept-action-group"><button type="button" class="dept-btn details" data-action="toggle-details" data-id="' + esc(row.id) + '">View Details</button>' + (pending
-                    ? '<button type="button" class="dept-btn approve" data-action="approve" data-id="' + esc(row.id) + '">Approve</button><button type="button" class="dept-btn reject" data-action="reject" data-id="' + esc(row.id) + '">Reject</button>'
+                    ? (canManage
+                        ? '<button type="button" class="dept-btn approve" data-action="approve" data-id="' + esc(row.id) + '">Approve</button><button type="button" class="dept-btn reject" data-action="reject" data-id="' + esc(row.id) + '">Reject</button>'
+                        : '<span class="ac-a004b216 dept-finalized-badge">Read-only</span>')
                     : '<span class="ac-a004b216 dept-finalized-badge">Finalized</span>') + '</div></td>'
             ].join('');
             tbody.appendChild(tr);

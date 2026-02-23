@@ -5,7 +5,19 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_from_matrix('contractor.workspace.manage', ['contractor','admin','super_admin']);
+rbac_require_from_matrix('contractor.workspace.view', ['contractor','admin','super_admin']);
+$rbacAction = 'view_profile';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') === 'change_password') {
+    $rbacAction = 'change_password';
+}
+rbac_require_action_matrix(
+    $rbacAction,
+    [
+        'view_profile' => 'contractor.workspace.view',
+        'change_password' => 'contractor.workspace.manage',
+    ],
+    'contractor.workspace.view'
+);
 check_suspicious_activity();
 
 if (!isset($_SESSION['employee_id'])) {

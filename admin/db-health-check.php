@@ -6,6 +6,7 @@ set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('admin.db_health.run', ['super_admin']);
+check_suspicious_activity();
 
 header('Content-Type: application/json');
 

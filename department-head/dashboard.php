@@ -18,6 +18,8 @@ if (!in_array($role, ['department_head', 'department_admin', 'admin', 'super_adm
     header('Location: /department-head/index.php');
     exit;
 }
+$canApprovalsManage = in_array($role, rbac_roles_for('department_head.approvals.manage', ['department_head', 'department_admin', 'admin', 'super_admin']), true);
+$canNotificationsRead = in_array($role, rbac_roles_for('department_head.notifications.read', ['department_head', 'department_admin', 'admin', 'super_admin']), true);
 
 $employeeName = (string) ($_SESSION['employee_name'] ?? 'Department Head');
 $csrfToken = (string) generate_csrf_token();
@@ -134,6 +136,10 @@ $csrfToken = (string) generate_csrf_token();
 
 <script>
 window.DEPARTMENT_HEAD_CSRF = <?php echo json_encode($csrfToken); ?>;
+window.DEPARTMENT_HEAD_PERMISSIONS = <?php echo json_encode([
+    'approvalsManage' => $canApprovalsManage,
+    'notificationsRead' => $canNotificationsRead
+]); ?>;
 </script>
 <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 <script src="department-head.js?v=<?php echo filemtime(__DIR__ . '/department-head.js'); ?>"></script>
