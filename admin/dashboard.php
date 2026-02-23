@@ -247,7 +247,6 @@ $db->close();
             <h1>Dashboard Overview</h1>
             <p>Infrastructure Project Management System</p>
             <?php if (!empty($_SESSION['is_super_admin']) || strtolower((string)($_SESSION['employee_role'] ?? '')) === 'super_admin'): ?>
-                <p><a href="/super-admin/dashboard.php" class="view-btn">Open Super Admin Control Center</a></p>
             <?php endif; ?>
         </div>
 
