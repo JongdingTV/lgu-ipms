@@ -138,6 +138,35 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
                 <tbody id="historyBody"></tbody>
             </table>
         </div>
+        <div class="table-wrap module-grid validation-items-section">
+            <h3 class="contractor-table-title">Deliverable Validation</h3>
+            <p class="contractor-subtle">Select a deliverable and submit or resubmit revision details for engineer validation.</p>
+            <div class="validation-submit-grid">
+                <div class="filter-group filter-group-wide">
+                    <label for="validationItemSelect">Deliverable</label>
+                    <select id="validationItemSelect" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>>
+                        <option value="">Select deliverable</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="validationProgressInput">Progress %</label>
+                    <input id="validationProgressInput" type="number" min="0" max="100" step="1" placeholder="0-100" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>>
+                </div>
+                <div class="filter-group filter-group-wide">
+                    <label for="validationSummary">Change Summary</label>
+                    <textarea id="validationSummary" rows="2" placeholder="Describe what changed for this deliverable..." <?php echo $canProgressSubmit ? '' : 'disabled'; ?>></textarea>
+                </div>
+                <div class="filter-group">
+                    <label for="validationProofImage">Proof Photo (Optional)</label>
+                    <input id="validationProofImage" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>>
+                </div>
+                <button id="submitValidationItem" class="contractor-btn btn-primary" type="button" <?php echo $canProgressSubmit ? '' : 'disabled'; ?>>Submit Deliverable Update</button>
+            </div>
+            <table class="table">
+                <thead><tr><th>Deliverable</th><th>Type</th><th>Status</th><th>Version</th><th>Progress</th><th>Last Submitted</th><th>Validator Remarks</th></tr></thead>
+                <tbody id="validationItemsBody"></tbody>
+            </table>
+        </div>
     </div>
 </section>
 
@@ -148,6 +177,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
     var canProgressSubmit = <?php echo json_encode($canProgressSubmit); ?>;
     var preselectProjectId = <?php echo json_encode((string) ($_GET['project_id'] ?? '')); ?>;
     var projects = [];
+    var validationItems = [];
 
     function apiGet(action, extra) {
         var q = '/contractor/api.php?action=' + encodeURIComponent(action) + (extra || '');
@@ -211,7 +241,60 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
             });
         });
     }
-    document.getElementById('projectSelect').addEventListener('change', loadHistory);
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+    function loadValidationItems() {
+        var pid = document.getElementById('projectSelect').value;
+        var tbody = document.getElementById('validationItemsBody');
+        var select = document.getElementById('validationItemSelect');
+        tbody.innerHTML = '';
+        select.innerHTML = '<option value="">Select deliverable</option>';
+        validationItems = [];
+        if (!pid) {
+            return;
+        }
+        apiGet('load_validation_items', '&project_id=' + encodeURIComponent(pid)).then(function (j) {
+            var rows = Array.isArray(j.data) ? j.data : [];
+            validationItems = rows;
+            if (!rows.length) {
+                var trEmpty = document.createElement('tr');
+                trEmpty.innerHTML = '<td colspan="7">No deliverables available for this project yet.</td>';
+                tbody.appendChild(trEmpty);
+                return;
+            }
+            rows.forEach(function (r) {
+                var option = document.createElement('option');
+                option.value = r.id;
+                option.textContent = (r.deliverable_name || 'Deliverable') + ' (' + (r.deliverable_type || 'Item') + ')';
+                select.appendChild(option);
+
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + escapeHtml(r.deliverable_name || '') + '</td>'
+                    + '<td>' + escapeHtml(r.deliverable_type || '') + '</td>'
+                    + '<td>' + escapeHtml(r.current_status || 'Pending') + '</td>'
+                    + '<td>v' + Number(r.version_no || 0) + '</td>'
+                    + '<td>' + Number(r.progress_percent || 0).toFixed(2) + '%</td>'
+                    + '<td>' + escapeHtml(r.submitted_at || '-') + '</td>'
+                    + '<td>' + escapeHtml(r.validator_remarks || '-') + '</td>';
+                tbody.appendChild(tr);
+            });
+        }).catch(function () {
+            var trErr = document.createElement('tr');
+            trErr.innerHTML = '<td colspan="7">Failed to load validation items.</td>';
+            tbody.appendChild(trErr);
+        });
+    }
+    function loadProjectViews() {
+        loadHistory();
+        loadValidationItems();
+    }
+    document.getElementById('projectSelect').addEventListener('change', loadProjectViews);
     document.getElementById('saveProgress').addEventListener('click', function () {
         if (!canProgressSubmit) return msg(false, 'You are not allowed to submit progress updates.');
         var pid = document.getElementById('projectSelect').value;
@@ -236,6 +319,34 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
             document.getElementById('workDetails').value = '';
             document.getElementById('validationNotes').value = '';
             document.getElementById('proofImage').value = '';
+            loadHistory();
+        });
+    });
+    document.getElementById('submitValidationItem').addEventListener('click', function () {
+        if (!canProgressSubmit) return msg(false, 'You are not allowed to submit deliverable updates.');
+        var pid = document.getElementById('projectSelect').value;
+        var itemId = document.getElementById('validationItemSelect').value;
+        var progress = document.getElementById('validationProgressInput').value;
+        var summary = document.getElementById('validationSummary').value.trim();
+        var proof = document.getElementById('validationProofImage').files[0];
+        if (!pid) return msg(false, 'Select a project first.');
+        if (!itemId) return msg(false, 'Select a deliverable first.');
+        if (progress === '') return msg(false, 'Enter progress percentage.');
+        if (!summary || summary.length < 5) return msg(false, 'Add change summary (at least 5 characters).');
+        var fd = new FormData();
+        fd.append('item_id', itemId);
+        fd.append('progress_percent', progress);
+        fd.append('change_summary', summary);
+        if (proof) {
+            fd.append('proof_image', proof);
+        }
+        apiPostForm('submit_validation_item', fd).then(function (j) {
+            if (!j || j.success === false) return msg(false, (j && j.message) || 'Failed to submit deliverable update.');
+            msg(true, (j && j.message) || 'Deliverable update submitted for validation.');
+            document.getElementById('validationProgressInput').value = '';
+            document.getElementById('validationSummary').value = '';
+            document.getElementById('validationProofImage').value = '';
+            loadValidationItems();
             loadHistory();
         });
     });

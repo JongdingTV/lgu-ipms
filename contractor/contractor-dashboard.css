@@ -64,6 +64,27 @@
     transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
 }
 
+#submitValidationItem {
+    height: 44px;
+    border-radius: 10px;
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    box-shadow: 0 7px 16px rgba(30, 58, 138, 0.24);
+    transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+}
+
+#submitValidationItem:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+}
+
+#submitValidationItem:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 11px rgba(30, 58, 138, 0.2);
+}
+
 #saveProgress:hover {
     transform: translateY(-1px);
     filter: brightness(1.03);
@@ -198,6 +219,22 @@
     margin-top: 12px;
 }
 
+.validation-items-section .table {
+    table-layout: fixed;
+}
+
+.validation-items-section .table th,
+.validation-items-section .table td {
+    word-wrap: break-word;
+}
+
+.validation-submit-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    gap: 12px;
+    align-items: end;
+}
+
 #projectsTable td,
 .table td {
     padding: 10px 10px;
@@ -231,6 +268,10 @@
     }
 
     .pm-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .validation-submit-grid {
         grid-template-columns: 1fr;
     }
 }
