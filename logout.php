@@ -6,8 +6,8 @@ require __DIR__ . '/database.php';
 // Log the logout event
 log_security_event('USER_LOGOUT', 'User successfully logged out');
 
-// Destroy session using our secure function
-destroy_session();
+// Destroy session but keep remembered device token so OTP is only requested again after expiry
+destroy_session(true);
 
 // Add no-cache headers to ensure page isn't cached
 set_no_cache_headers();

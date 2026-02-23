@@ -187,6 +187,56 @@ function try_auto_login_from_remember_cookie(): bool
     return true;
 }
 
+function is_valid_remember_device_for_user(int $userId): bool
+{
+    global $db;
+    if ($userId <= 0 || empty($_COOKIE[REMEMBER_COOKIE_NAME])) {
+        return false;
+    }
+    if (!isset($db) || !($db instanceof mysqli)) {
+        return false;
+    }
+
+    $parts = explode(':', (string) $_COOKIE[REMEMBER_COOKIE_NAME], 2);
+    $selector = $parts[0] ?? '';
+    $validator = $parts[1] ?? '';
+    if ($selector === '' || $validator === '') {
+        clear_remember_device_cookie();
+        return false;
+    }
+
+    ensure_remember_device_table();
+
+    $stmt = $db->prepare("SELECT token_hash, expires_at FROM user_remember_tokens WHERE selector = ? AND user_id = ? LIMIT 1");
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('si', $selector, $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    if (!$row) {
+        return false;
+    }
+
+    $expiresTs = strtotime((string) $row['expires_at']);
+    $validHash = hash_equals((string) $row['token_hash'], hash('sha256', $validator));
+    if ($expiresTs === false || $expiresTs < time() || !$validHash) {
+        $cleanup = $db->prepare("DELETE FROM user_remember_tokens WHERE selector = ? AND user_id = ?");
+        if ($cleanup) {
+            $cleanup->bind_param('si', $selector, $userId);
+            $cleanup->execute();
+            $cleanup->close();
+        }
+        clear_remember_device_cookie();
+        return false;
+    }
+
+    return true;
+}
+
 /**
  * Check if user is authenticated
  * Validates session, checks timeout, and verifies user exists
@@ -596,6 +646,5 @@ function check_suspicious_activity() {
     $_SESSION['user_agent'] = $currentUserAgent;
 }
 ?>
-
 
 

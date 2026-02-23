@@ -74,21 +74,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
                 if ($result && $result->num_rows === 1) {
                     $user = $result->fetch_assoc();
                     if (password_verify($password, $user['password'])) {
+                        $userId = (int) ($user['id'] ?? 0);
                         if (is_user_rate_limited('user_login', 8, 900, (int) $user['id'])) {
                             $error = 'Too many login attempts for this account. Please wait a few minutes and try again.';
                             $stmt->close();
                             goto user_login_after_query;
                         }
                         $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
-                        clear_user_login_otp_session();
-                        if (issue_user_login_otp((int) $user['id'], $fullName, $email)) {
-                            $_SESSION['user_login_otp_remember'] = !empty($_POST['remember_device']) ? 1 : 0;
-                            $otpPending = true;
-                            $otpEmail = $email;
-                            $otpMessage = 'A verification code was sent to your email. Enter it below to finish login.';
-                            record_user_attempt('user_login', (int) $user['id']);
+                        if (is_valid_remember_device_for_user($userId)) {
+                            clear_user_login_otp_session();
+                            session_regenerate_id(true);
+                            $_SESSION['user_id'] = $userId;
+                            $_SESSION['user_name'] = $fullName;
+                            $_SESSION['user_type'] = 'citizen';
+                            $_SESSION['last_activity'] = time();
+                            $_SESSION['login_time'] = time();
+                            $_SESSION['remember_until'] = time() + (REMEMBER_DEVICE_DAYS * 86400);
+                            log_security_event('USER_LOGIN_SUCCESS', 'Citizen account login via remembered device');
+                            header('Location: /user-dashboard/user-dashboard.php');
+                            exit;
                         } else {
-                            $error = 'Login verified, but OTP email could not be sent. Please try again.';
+                            clear_user_login_otp_session();
+                            if (issue_user_login_otp($userId, $fullName, $email)) {
+                                $_SESSION['user_login_otp_remember'] = !empty($_POST['remember_device']) ? 1 : 0;
+                                $otpPending = true;
+                                $otpEmail = $email;
+                                $otpMessage = 'A verification code was sent to your email. Enter it below to finish login.';
+                                record_user_attempt('user_login', $userId);
+                            } else {
+                                $error = 'Login verified, but OTP email could not be sent. Please try again.';
+                            }
                         }
                     } else {
                         record_attempt('user_login');
@@ -404,7 +419,7 @@ body.user-login-page .error-box {
                 </div>
                 <div class="input-box" style="margin-top:-4px;margin-bottom:8px;">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                        <input type="checkbox" name="remember_device" value="1" style="width:16px;height:16px;">
+                        <input type="checkbox" name="remember_device" value="1" checked style="width:16px;height:16px;">
                         <span style="font-size:0.86rem;color:#334155;">Remember this device for 7 days</span>
                     </label>
                 </div>
@@ -433,5 +448,4 @@ body.user-login-page .error-box {
 <script src="/assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
 </body>
 </html>
-
 
