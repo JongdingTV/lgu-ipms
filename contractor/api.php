@@ -642,8 +642,11 @@ if (in_array($action, $engineerOwnedActions, true)) {
     json_out(['success' => false, 'message' => 'Task and Milestone are managed by Engineer module.'], 403);
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
-    json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrfExemptActions = ['send_direct_message', 'delete_direct_conversation'];
+    if (!in_array($action, $csrfExemptActions, true) && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
+        json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
+    }
 }
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
