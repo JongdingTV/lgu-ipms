@@ -371,17 +371,25 @@ function contractor_identity(mysqli $db): array {
         $ids[$employeeId] = true;
     }
     if (contractor_table_exists($db, 'contractors')) {
-        $stmtByEmp = $db->prepare("SELECT id FROM contractors WHERE account_employee_id = ?");
-        if ($stmtByEmp && $employeeId > 0) {
-            $stmtByEmp->bind_param('i', $employeeId);
-            $stmtByEmp->execute();
-            $resEmp = $stmtByEmp->get_result();
-            while ($resEmp && ($r = $resEmp->fetch_assoc())) {
-                $cid = (int)($r['id'] ?? 0);
-                if ($cid > 0) $ids[$cid] = true;
+        $employeeLinkColumn = null;
+        if (contractor_column_exists($db, 'contractors', 'account_employee_id')) {
+            $employeeLinkColumn = 'account_employee_id';
+        } elseif (contractor_column_exists($db, 'contractors', 'employee_id')) {
+            $employeeLinkColumn = 'employee_id';
+        }
+        if ($employeeLinkColumn !== null && $employeeId > 0) {
+            $stmtByEmp = $db->prepare("SELECT id FROM contractors WHERE {$employeeLinkColumn} = ?");
+            if ($stmtByEmp) {
+                $stmtByEmp->bind_param('i', $employeeId);
+                $stmtByEmp->execute();
+                $resEmp = $stmtByEmp->get_result();
+                while ($resEmp && ($r = $resEmp->fetch_assoc())) {
+                    $cid = (int)($r['id'] ?? 0);
+                    if ($cid > 0) $ids[$cid] = true;
+                }
+                if ($resEmp) $resEmp->free();
+                $stmtByEmp->close();
             }
-            if ($resEmp) $resEmp->free();
-            $stmtByEmp->close();
         }
     }
     if ($email !== '' && contractor_table_exists($db, 'contractors')) {
