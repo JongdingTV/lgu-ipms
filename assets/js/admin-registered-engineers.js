@@ -722,6 +722,12 @@
                         </div>
                     </div>`;
                 }).join('');
+                contractorDocsList.insertAdjacentHTML(
+                    'beforeend',
+                    '<div class="engineer-project-card"><div class="engineer-project-full">' +
+                    '<button type="button" class="btn-contractor-primary btn-mark-profile-verified">Mark Profile Verified</button>' +
+                    '</div></div>'
+                );
             } catch (_) {
                 contractorDocsList.innerHTML = '<p class="engineer-modal-message error">Failed to load documents.</p>';
             }
@@ -975,6 +981,20 @@
         contractorDocsModal?.addEventListener('click', (e) => { if (e.target === contractorDocsModal) closeDocsModal(); });
         contractorDocsList?.addEventListener('click', async (e) => {
             const btn = e.target.closest('.btn-verify-doc');
+            const verifyProfileBtn = e.target.closest('.btn-mark-profile-verified');
+            if (verifyProfileBtn && currentDocsContractorId) {
+                try {
+                    const resp = await postJsonWithFallback(
+                        `action=update_contractor_approval&contractor_id=${encodeURIComponent(currentDocsContractorId)}&status=verified&note=${encodeURIComponent('Verified from documents modal')}`
+                    );
+                    if (!resp || resp.success === false) throw new Error((resp && resp.message) || 'Unable to mark profile as verified.');
+                    await loadContractorsData(Number(contractorsMeta.page || 1));
+                    setMessage('Profile marked as verified.', false);
+                } catch (err) {
+                    setMessage(err.message || 'Failed to mark profile as verified.', true);
+                }
+                return;
+            }
             if (!btn || !currentDocsContractorId) return;
             const docId = btn.getAttribute('data-doc-id');
             const verifyValue = btn.getAttribute('data-verify') || '1';

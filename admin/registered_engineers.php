@@ -800,7 +800,7 @@ function registered_sync_application_status_from_entity(mysqli $db, int $entityI
         if ($logStmt) {
             $action = $status;
             $remarks = $note !== '' ? $note : ('Status updated to ' . $status);
-            $logStmt->bind_param('sisiss', $appType, $appId, $action, $employeeId, $remarks);
+            $logStmt->bind_param('sisis', $appType, $appId, $action, $employeeId, $remarks);
             $logStmt->execute();
             $logStmt->close();
         }
@@ -873,7 +873,7 @@ function registered_get_profile_verification_details(mysqli $db, int $entityId, 
         ? "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('prc_license','license','prc id','prc_id') THEN 1 ELSE 0 END)"
         : "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('license','pcab','pcab_license') THEN 1 ELSE 0 END)";
     $resumeDocExpr = $isEngineer
-        ? "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('resume_cv','resume','cv') THEN 1 ELSE 0 END)"
+        ? "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('resume_cv','resume','cv','government_id','gov_id','id') THEN 1 ELSE 0 END)"
         : "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('company_profile','profile','resume') THEN 1 ELSE 0 END)";
     $certificateDocExpr = "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('certificate','certification','certifications') THEN 1 ELSE 0 END)";
     $verifiedExpr = "SUM(CASE WHEN {$verifiedCol} = 1 THEN 1 ELSE 0 END)";
@@ -917,7 +917,7 @@ function registered_get_profile_verification_details(mysqli $db, int $entityId, 
                     ? "SUM(CASE WHEN LOWER(COALESCE({$appDocTypeCol},'')) IN ('prc_id','prc','prc_license','license') THEN 1 ELSE 0 END)"
                     : "SUM(CASE WHEN LOWER(COALESCE({$appDocTypeCol},'')) IN ('pcab','pcab_license','license') THEN 1 ELSE 0 END)";
                 $appResumeExpr = $isEngineer
-                    ? "SUM(CASE WHEN LOWER(COALESCE({$appDocTypeCol},'')) IN ('resume','resume_cv','cv') THEN 1 ELSE 0 END)"
+                    ? "SUM(CASE WHEN LOWER(COALESCE({$appDocTypeCol},'')) IN ('resume','resume_cv','cv','government_id','gov_id','id') THEN 1 ELSE 0 END)"
                     : "SUM(CASE WHEN LOWER(COALESCE({$appDocTypeCol},'')) IN ('company_profile','profile','resume') THEN 1 ELSE 0 END)";
                 $appStmt = $db->prepare(
                     "SELECT
@@ -960,7 +960,7 @@ function registered_get_profile_verification_details(mysqli $db, int $entityId, 
         $result['missing_requirements'][] = $isEngineer ? 'Missing PRC/license document' : 'Missing contractor license document';
     }
     if ((int)($docsRow['resume_docs'] ?? 0) <= 0) {
-        $result['missing_requirements'][] = $isEngineer ? 'Missing resume/CV document' : 'Missing profile/resume document';
+        $result['missing_requirements'][] = $isEngineer ? 'Missing resume/CV or government ID document' : 'Missing profile/resume document';
     }
     if ((int)($docsRow['certificate_docs'] ?? 0) <= 0) {
         $result['missing_requirements'][] = 'Missing certificate document';
@@ -1711,6 +1711,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $statusRes->free();
         }
         $statusStmt->close();
+    }
+    if ($currentStatus === $status) {
+        echo json_encode(['success' => true, 'message' => 'Status is already ' . $status . '. No changes were applied.']);
+        exit;
     }
 
     if ($status === 'approved') {

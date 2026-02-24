@@ -186,6 +186,33 @@ function app_bind(mysqli_stmt $stmt, string $types, array &$params): bool
     return call_user_func_array([$stmt, 'bind_param'], $args);
 }
 
+function app_normalize_status_value(string $status): string
+{
+    $s = strtolower(trim($status));
+    if ($s === 'active') return 'approved';
+    if ($s === 'inactive') return 'rejected';
+    return $s;
+}
+
+function app_format_log_action(string $action, string $remarks): string
+{
+    $raw = trim($action);
+    if ($raw === '' || $raw === '0' || ctype_digit($raw)) {
+        if (preg_match('/Status:\s*([a-z_ ]+)\s*->\s*([a-z_ ]+)/i', $remarks, $m)) {
+            $from = strtolower(trim((string)$m[1]));
+            $to = strtolower(trim((string)$m[2]));
+            if ($to !== '') {
+                return $to;
+            }
+            if ($from !== '') {
+                return $from;
+            }
+        }
+        return 'status_update';
+    }
+    return strtolower(str_replace(' ', '_', $raw));
+}
+
 function app_require_post_csrf(): void
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
@@ -924,12 +951,13 @@ if ($action === 'get_application') {
 
     $logs = [];
     if (app_table_exists($db, 'application_logs')) {
-        $l = $db->prepare("SELECT l.id, l.action, l.remarks, l.created_at, TRIM(CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,''))) performed_by FROM application_logs l LEFT JOIN employees e ON e.id = l.performed_by_user_id WHERE l.application_type = ? AND l.application_id = ? ORDER BY l.created_at DESC, l.id DESC");
+        $l = $db->prepare("SELECT l.id, l.action, l.remarks, l.created_at, COALESCE(NULLIF(TRIM(CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,''))), ''), 'Admin User') AS performed_by FROM application_logs l LEFT JOIN employees e ON e.id = l.performed_by_user_id WHERE l.application_type = ? AND l.application_id = ? ORDER BY l.created_at DESC, l.id DESC");
         if ($l) {
             $l->bind_param('si', $type, $id);
             $l->execute();
             $lr = $l->get_result();
             while ($lr && ($row = $lr->fetch_assoc())) {
+                $row['action'] = app_format_log_action((string)($row['action'] ?? ''), (string)($row['remarks'] ?? ''));
                 $logs[] = $row;
             }
             if ($lr) $lr->free();
@@ -947,12 +975,15 @@ if ($action === 'load_logs') {
     $id = (int)($_GET['id'] ?? 0);
     if ($id <= 0) app_json(['success' => false, 'message' => 'Invalid application id.'], 422);
     $rows = [];
-    $l = $db->prepare("SELECT l.id, l.action, l.remarks, l.created_at, TRIM(CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,''))) performed_by FROM application_logs l LEFT JOIN employees e ON e.id = l.performed_by_user_id WHERE l.application_type = ? AND l.application_id = ? ORDER BY l.created_at DESC, l.id DESC");
+    $l = $db->prepare("SELECT l.id, l.action, l.remarks, l.created_at, COALESCE(NULLIF(TRIM(CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,''))), ''), 'Admin User') AS performed_by FROM application_logs l LEFT JOIN employees e ON e.id = l.performed_by_user_id WHERE l.application_type = ? AND l.application_id = ? ORDER BY l.created_at DESC, l.id DESC");
     if ($l) {
         $l->bind_param('si', $type, $id);
         $l->execute();
         $lr = $l->get_result();
-        while ($lr && ($row = $lr->fetch_assoc())) $rows[] = $row;
+        while ($lr && ($row = $lr->fetch_assoc())) {
+            $row['action'] = app_format_log_action((string)($row['action'] ?? ''), (string)($row['remarks'] ?? ''));
+            $rows[] = $row;
+        }
         if ($lr) $lr->free();
         $l->close();
     }
@@ -1054,7 +1085,12 @@ if ($action === 'update_status') {
     }
 
     $oldStatus = strtolower((string)($app['status'] ?? 'pending'));
+    $oldStatusNormalized = app_normalize_status_value($oldStatus);
     $actorId = (int)($_SESSION['employee_id'] ?? 0);
+
+    if ($oldStatusNormalized === $newStatus) {
+        app_json(['success' => true, 'message' => 'Status is already ' . $newStatus . '. No changes were applied.']);
+    }
 
     $db->begin_transaction();
     try {

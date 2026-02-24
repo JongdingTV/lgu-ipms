@@ -81,6 +81,16 @@
         return d.toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
 
+    function formatLogAction(action, remarks) {
+        var a = String(action || '').trim();
+        if (!a || a === '0' || /^\d+$/.test(a)) {
+            var m = String(remarks || '').match(/Status:\s*([a-z_ ]+)\s*->\s*([a-z_ ]+)/i);
+            if (m && m[2]) return String(m[2]).trim().replace(/_/g, ' ');
+            return 'status update';
+        }
+        return a.replace(/_/g, ' ');
+    }
+
     function setFeedback(msg, isErr) {
         var el = document.getElementById('appFeedback');
         if (!el) return;
@@ -390,7 +400,7 @@
             }).join('') : '<div class="app-doc-item">No uploaded documents.</div>';
 
             var logHtml = logs.length ? logs.map(function (l) {
-                return '<div class="app-log-item"><strong>' + esc(l.action || '-') + '</strong><div>' + esc(l.remarks || '-') + '</div><small>' + esc((l.performed_by || 'System') + ' - ' + fmtDate(l.created_at)) + '</small></div>';
+                return '<div class="app-log-item"><strong>' + esc(formatLogAction(l.action, l.remarks)) + '</strong><div>' + esc(l.remarks || '-') + '</div><small>' + esc((l.performed_by || 'Admin User') + ' - ' + fmtDate(l.created_at)) + '</small></div>';
             }).join('') : '<div class="app-log-item">No history entries.</div>';
 
             var statusEditor = [
