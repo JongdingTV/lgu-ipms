@@ -78,8 +78,28 @@ function rc_ensure_assignment_table(mysqli $db): bool
 
 if (isset($_GET['action']) && $_GET['action'] === 'load_projects') {
     header('Content-Type: application/json');
+    $typeCol = rc_table_has_column($db, 'projects', 'type') ? 'type' : null;
+    $sectorCol = rc_table_has_column($db, 'projects', 'sector') ? 'sector' : null;
+    $locationCol = rc_table_has_column($db, 'projects', 'location') ? 'location' : null;
+    $priorityCol = rc_table_has_column($db, 'projects', 'priority') ? 'priority' : null;
+    $budgetCol = rc_table_has_column($db, 'projects', 'budget') ? 'budget' : null;
+    $startDateCol = rc_table_has_column($db, 'projects', 'start_date') ? 'start_date' : null;
+    $endDateCol = rc_table_has_column($db, 'projects', 'end_date') ? 'end_date' : null;
     $rows = [];
-    $res = $db->query("SELECT id, code, name, status FROM projects ORDER BY id DESC");
+    $res = $db->query("SELECT
+            id,
+            code,
+            name,
+            " . ($typeCol ? "{$typeCol}" : "''") . " AS type,
+            " . ($sectorCol ? "{$sectorCol}" : "''") . " AS sector,
+            " . ($locationCol ? "{$locationCol}" : "''") . " AS location,
+            " . ($priorityCol ? "{$priorityCol}" : "''") . " AS priority,
+            " . ($budgetCol ? "COALESCE({$budgetCol},0)" : "0") . " AS budget,
+            " . ($startDateCol ? "{$startDateCol}" : "NULL") . " AS start_date,
+            " . ($endDateCol ? "{$endDateCol}" : "NULL") . " AS end_date,
+            status
+        FROM projects
+        ORDER BY id DESC");
     if ($res) {
         while ($row = $res->fetch_assoc()) {
             $rows[] = $row;
@@ -100,7 +120,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_assigned_projects') {
         exit;
     }
     $rows = [];
-    $stmt = $db->prepare("SELECT p.id, p.code, p.name, p.status
+    $typeCol = rc_table_has_column($db, 'projects', 'type') ? 'p.type' : "''";
+    $sectorCol = rc_table_has_column($db, 'projects', 'sector') ? 'p.sector' : "''";
+    $locationCol = rc_table_has_column($db, 'projects', 'location') ? 'p.location' : "''";
+    $priorityCol = rc_table_has_column($db, 'projects', 'priority') ? 'p.priority' : "''";
+    $budgetCol = rc_table_has_column($db, 'projects', 'budget') ? 'COALESCE(p.budget,0)' : "0";
+    $startDateCol = rc_table_has_column($db, 'projects', 'start_date') ? 'p.start_date' : "NULL";
+    $endDateCol = rc_table_has_column($db, 'projects', 'end_date') ? 'p.end_date' : "NULL";
+    $stmt = $db->prepare("SELECT p.id, p.code, p.name, p.status,
+                                 {$typeCol} AS type,
+                                 {$sectorCol} AS sector,
+                                 {$locationCol} AS location,
+                                 {$priorityCol} AS priority,
+                                 {$budgetCol} AS budget,
+                                 {$startDateCol} AS start_date,
+                                 {$endDateCol} AS end_date
                           FROM projects p
                           INNER JOIN contractor_project_assignments cpa ON cpa.project_id = p.id
                           WHERE cpa.contractor_id = ?
@@ -131,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 
     $action = (string)$_POST['action'];
-    if ($action === 'assign_project') {
+    if ($action === 'assign_project' || $action === 'assign_contractor') {
         $contractorId = (int)($_POST['contractor_id'] ?? 0);
         $projectId = (int)($_POST['project_id'] ?? 0);
         if ($contractorId <= 0 || $projectId <= 0 || !rc_ensure_assignment_table($db)) {
@@ -160,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         exit;
     }
 
-    if ($action === 'unassign_project') {
+    if ($action === 'unassign_project' || $action === 'unassign_contractor') {
         $contractorId = (int)($_POST['contractor_id'] ?? 0);
         $projectId = (int)($_POST['project_id'] ?? 0);
         if ($contractorId <= 0 || $projectId <= 0 || !rc_ensure_assignment_table($db)) {
@@ -255,6 +289,20 @@ if ($res) {
             font: inherit;
         }
         .rc-count { font-size: .9rem; color: #475569; font-weight: 600; }
+        .rc-page-shell { gap: 18px; }
+        .rc-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .rc-head p {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-size: .9rem;
+        }
         .rc-tag {
             display: inline-flex;
             align-items: center;
@@ -278,6 +326,7 @@ if ($res) {
             background: linear-gradient(135deg, #1d4e89, #2563eb);
             cursor: pointer;
         }
+        .rc-assign-btn:hover { filter: brightness(1.05); }
         .rc-modal {
             position: fixed;
             inset: 0;
@@ -318,6 +367,57 @@ if ($res) {
             cursor: pointer;
             font-size: .76rem;
             font-weight: 700;
+        }
+        .rc-project-list { display: grid; gap: 10px; }
+        .rc-project-card {
+            border: 1px solid #dbe4f0;
+            border-radius: 10px;
+            background: #f8fbff;
+            padding: 10px 12px;
+        }
+        .rc-project-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .rc-project-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px 12px;
+        }
+        .rc-project-label {
+            display: block;
+            font-size: .72rem;
+            color: #64748b;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+        }
+        .rc-project-value {
+            display: block;
+            color: #0f172a;
+            font-size: .86rem;
+            font-weight: 600;
+        }
+        .rc-project-actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        @media (max-width: 880px) {
+            .rc-project-grid { grid-template-columns: 1fr; }
+        }
+        .rc-close-btn {
+            min-height: 34px;
+            border-radius: 8px;
+            border: 1px solid #c8d8ea;
+            background: #fff;
+            color: #0f172a;
+            padding: 7px 12px;
+            cursor: pointer;
+            font-weight: 600;
         }
     </style>
 </head>
@@ -376,13 +476,19 @@ if ($res) {
 <section class="main-content">
     <div class="dash-header">
         <h1>Registered Contractors</h1>
-        <p>Showing real contractor accounts registered in the system database.</p>
+        <p>Review contractor records and assign projects using the same workflow as registered engineers.</p>
     </div>
 
-    <div class="pm-section card">
-        <div class="rc-toolbar">
+    <div class="recent-projects contractor-page contractor-registry-shell rc-page-shell">
+        <div class="rc-head">
+            <div>
+                <h3>Contractor Registry</h3>
+                <p>Search, review, and assign project workloads to contractors.</p>
+            </div>
+            <div class="rc-count">Total Contractors: <span id="rcTotal"><?php echo count($rows); ?></span></div>
+        </div>
+        <div class="contractors-filter contractor-toolbar rc-toolbar">
             <input id="rcSearch" class="rc-search" type="search" placeholder="Search by company, contact, email, specialization, license...">
-            <div class="rc-count">Total: <span id="rcTotal"><?php echo count($rows); ?></span></div>
         </div>
         <div class="table-wrap">
             <table class="table" id="rcTable">
@@ -425,7 +531,7 @@ if ($res) {
                         <td><span class="rc-tag <?php echo $statusClass; ?>"><?php echo htmlspecialchars((string)($r['status'] ?? 'Pending'), ENT_QUOTES, 'UTF-8'); ?></span></td>
                         <td><?php echo htmlspecialchars((string)($r['account_role'] ?? 'contractor'), ENT_QUOTES, 'UTF-8'); ?><br><small><?php echo htmlspecialchars($accountStatus !== '' ? $accountStatus : '-', ENT_QUOTES, 'UTF-8'); ?></small></td>
                         <td>
-                            <button class="rc-assign-btn" data-contractor-id="<?php echo (int)($r['id'] ?? 0); ?>" data-contractor-name="<?php echo htmlspecialchars($company !== '' ? $company : ($owner !== '' ? $owner : 'N/A'), ENT_QUOTES, 'UTF-8'); ?>">
+                            <button class="rc-assign-btn" data-contractor-id="<?php echo (int)($r['id'] ?? 0); ?>" data-contractor-name="<?php echo htmlspecialchars($company !== '' ? $company : ($owner !== '' ? $owner : 'N/A'), ENT_QUOTES, 'UTF-8'); ?>" data-manage-btn="1">
                                 Manage (<?php echo (int)($r['assigned_projects'] ?? 0); ?>)
                             </button>
                         </td>
@@ -434,6 +540,25 @@ if ($res) {
                 </tbody>
             </table>
         </div>
+
+        <div class="projects-section contractor-project-bank" id="available-projects">
+            <h3>Available Projects</h3>
+            <p class="contractor-subtext">Projects listed below are available for assignment to selected contractors.</p>
+            <div class="table-wrap">
+                <table id="projectsTable" class="table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Sector</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -441,7 +566,7 @@ if ($res) {
     <div class="rc-modal-card">
         <div class="rc-modal-head">
             <h3 id="rcAssignTitle">Assign Projects to Contractor</h3>
-            <button class="rc-mini-btn" id="rcCloseModal" type="button">Close</button>
+            <button class="rc-close-btn" id="rcCloseModal" type="button">Close</button>
         </div>
         <div class="rc-modal-message" id="rcAssignTarget"></div>
         <div class="rc-modal-actions">
@@ -450,15 +575,8 @@ if ($res) {
             </select>
             <button class="rc-assign-btn" id="rcAssignBtn" type="button">Assign</button>
         </div>
-        <div class="table-wrap">
-            <table class="table">
-                <thead>
-                    <tr><th>Project Code</th><th>Project Name</th><th>Status</th><th>Action</th></tr>
-                </thead>
-                <tbody id="rcAssignedBody">
-                    <tr><td colspan="4">No assigned projects.</td></tr>
-                </tbody>
-            </table>
+        <div id="rcAssignedBody" class="rc-project-list">
+            <p class="engineer-modal-message">No assigned projects.</p>
         </div>
     </div>
 </div>
@@ -490,6 +608,7 @@ if ($res) {
     const assignBtn = document.getElementById('rcAssignBtn');
     const projectSelect = document.getElementById('rcProjectSelect');
     const assignedBody = document.getElementById('rcAssignedBody');
+    const projectsTbody = document.querySelector('#projectsTable tbody');
     const targetText = document.getElementById('rcAssignTarget');
     const csrf = <?php echo json_encode((string)$csrfToken); ?>;
     let currentContractorId = 0;
@@ -521,33 +640,61 @@ if ($res) {
             .then(j => {
                 const rows = Array.isArray(j.data) ? j.data : [];
                 projectSelect.innerHTML = '<option value="">Select project</option>';
+                if (projectsTbody) projectsTbody.innerHTML = '';
                 rows.forEach(p => {
                     const o = document.createElement('option');
                     o.value = String(p.id || '');
                     o.textContent = String((p.code || 'PRJ') + ' - ' + (p.name || 'Project'));
                     projectSelect.appendChild(o);
+
+                    if (projectsTbody) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = '<td>' + (p.code || '') + '</td><td>' + (p.name || '') + '</td><td>' + (p.type || '-') + '</td><td>' + (p.sector || '-') + '</td><td>' + (p.status || '-') + '</td>';
+                        projectsTbody.appendChild(tr);
+                    }
                 });
+                if (projectsTbody && !rows.length) {
+                    projectsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:#6b7280;">No projects available.</td></tr>';
+                }
             });
     }
 
     function loadAssigned() {
         if (!currentContractorId) return;
-        assignedBody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+        assignedBody.innerHTML = '<p class="engineer-modal-message">Loading...</p>';
         fetch('registered_contractors.php?action=get_assigned_projects&contractor_id=' + encodeURIComponent(currentContractorId), { credentials: 'same-origin' })
             .then(r => r.json())
             .then(j => {
                 const rows = Array.isArray(j.data) ? j.data : [];
+                updateManageButtonCount(currentContractorId, rows.length);
                 assignedBody.innerHTML = '';
                 if (!rows.length) {
-                    assignedBody.innerHTML = '<tr><td colspan="4">No assigned projects.</td></tr>';
+                    assignedBody.innerHTML = '<p class="engineer-modal-message">No assigned projects.</p>';
                     return;
                 }
                 rows.forEach(p => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = '<td>' + (p.code || '') + '</td><td>' + (p.name || '') + '</td><td>' + (p.status || '') + '</td><td><button type="button" class="rc-mini-btn" data-unassign-project="' + Number(p.id || 0) + '">Unassign</button></td>';
-                    assignedBody.appendChild(tr);
+                    const card = document.createElement('article');
+                    card.className = 'rc-project-card';
+                    card.innerHTML =
+                        '<div class="rc-project-head"><strong>' + (p.code || 'PRJ') + ' - ' + (p.name || 'Project') + '</strong><span class="rc-tag pending">' + (p.status || '-') + '</span></div>' +
+                        '<div class="rc-project-grid">' +
+                            '<div><span class="rc-project-label">Type</span><span class="rc-project-value">' + (p.type || '-') + '</span></div>' +
+                            '<div><span class="rc-project-label">Sector</span><span class="rc-project-value">' + (p.sector || '-') + '</span></div>' +
+                            '<div><span class="rc-project-label">Location</span><span class="rc-project-value">' + (p.location || '-') + '</span></div>' +
+                            '<div><span class="rc-project-label">Priority</span><span class="rc-project-value">' + (p.priority || '-') + '</span></div>' +
+                            '<div><span class="rc-project-label">Budget</span><span class="rc-project-value">PHP ' + Number(p.budget || 0).toLocaleString() + '</span></div>' +
+                            '<div><span class="rc-project-label">Schedule</span><span class="rc-project-value">' + ((p.start_date || '-') + ' to ' + (p.end_date || '-')) + '</span></div>' +
+                        '</div>' +
+                        '<div class="rc-project-actions"><button type="button" class="rc-mini-btn" data-unassign-project="' + Number(p.id || 0) + '">Unassign</button></div>';
+                    assignedBody.appendChild(card);
                 });
             });
+    }
+
+    function updateManageButtonCount(contractorId, count) {
+        const btn = document.querySelector('.rc-assign-btn[data-contractor-id="' + String(contractorId) + '"]');
+        if (!btn) return;
+        btn.textContent = 'Manage (' + String(count) + ')';
     }
 
     function postAction(action, payload) {
@@ -596,9 +743,12 @@ if ($res) {
             if (j && j.success) loadAssigned();
         });
     });
+
+    loadProjects();
 })();
 </script>
 <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
+<script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 <script src="../assets/js/admin-nav-fix.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-nav-fix.js'); ?>"></script>
 </body>
 </html>
