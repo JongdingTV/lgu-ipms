@@ -32,26 +32,18 @@
     const applyResponsiveSidebarMode = () => {
       const mobile = isMobileViewport();
       document.body.classList.toggle('mobile-sidebar-mode', mobile);
-      if (mobile) {
-        document.body.classList.remove('sidebar-hidden');
-        document.body.classList.remove('mobile-nav-open');
-      } else {
-        const saved = localStorage.getItem('ipms_contractor_sidebar_hidden');
-        document.body.classList.toggle('sidebar-hidden', saved === '1');
-      }
+      // Force sidebar to stay visible on all contractor submodules.
+      document.body.classList.remove('sidebar-hidden');
+      document.body.classList.remove('mobile-nav-open');
+      localStorage.removeItem('ipms_contractor_sidebar_hidden');
     };
     applyResponsiveSidebarMode();
 
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      if (isMobileViewport()) {
-        const open = document.body.classList.toggle('mobile-nav-open');
-        if (!open) $$('.nav-item-group.open').forEach((g) => g.classList.remove('open'));
-      } else {
-        const hidden = document.body.classList.toggle('sidebar-hidden');
-        localStorage.setItem('ipms_contractor_sidebar_hidden', hidden ? '1' : '0');
-        $$('.nav-item-group.open').forEach((g) => g.classList.remove('open'));
-      }
+      document.body.classList.remove('sidebar-hidden');
+      document.body.classList.remove('mobile-nav-open');
+      localStorage.removeItem('ipms_contractor_sidebar_hidden');
     });
 
     window.addEventListener('resize', applyResponsiveSidebarMode);

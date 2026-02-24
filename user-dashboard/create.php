@@ -676,7 +676,7 @@ body.user-signup-page .subtitle {
             <h2 class="title">Create Account</h2>
             <p class="subtitle">Set up your citizen account to access project updates and submit feedback.</p>
             <div style="margin-top:12px;">
-                <a href="/user-dashboard/user-login.php" class="btn-link-back">Back to Login</a>
+                <a href="/user-dashboard/user-login.php?logout=1" class="btn-link-back">Back to Login</a>
             </div>
         </div>
 
@@ -833,7 +833,7 @@ body.user-signup-page .subtitle {
             </div>
 
             <div class="meta-links">
-                Already have an account? <a href="/user-dashboard/user-login.php">Sign in</a>
+                Already have an account? <a href="/user-dashboard/user-login.php?logout=1">Sign in</a>
             </div>
 
             <?php if (!empty($errors)): ?>
