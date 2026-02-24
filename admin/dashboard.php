@@ -8,6 +8,7 @@ require __DIR__ . '/engineer-evaluation-service.php';
 
 // Set no-cache headers to prevent back button access to protected pages
 set_no_cache_headers();
+header('X-Robots-Tag: noindex, nofollow, noarchive', true);
 
 // Check authentication - redirect to login if not authenticated
 check_auth();
@@ -182,6 +183,7 @@ $db->close();
         
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noarchive">
     <title>LGU Dashboard</title>
     <link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -513,7 +515,6 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
-
 
 
 
