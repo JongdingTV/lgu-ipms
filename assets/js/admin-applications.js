@@ -97,7 +97,17 @@
 
     function apiGet(type, action, params) {
         return fetch(getUrl(type, action, params), { credentials: 'same-origin' })
-            .then(function (res) { return res.json().then(function (json) { return { ok: res.ok, json: json }; }); });
+            .then(function (res) {
+                return res.text().then(function (text) {
+                    var json;
+                    try {
+                        json = JSON.parse(text || '{}');
+                    } catch (e) {
+                        throw new Error('Server returned invalid JSON response.');
+                    }
+                    return { ok: res.ok, json: json };
+                });
+            });
     }
 
     function apiPost(type, action, payload) {
@@ -114,7 +124,17 @@
                 'X-CSRF-Token': csrfToken
             },
             body: body.toString()
-        }).then(function (res) { return res.json().then(function (json) { return { ok: res.ok, json: json }; }); });
+        }).then(function (res) {
+            return res.text().then(function (text) {
+                var json;
+                try {
+                    json = JSON.parse(text || '{}');
+                } catch (e) {
+                    throw new Error('Server returned invalid JSON response.');
+                }
+                return { ok: res.ok, json: json };
+            });
+        });
     }
 
     function getType() {

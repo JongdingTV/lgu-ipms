@@ -599,5 +599,6 @@ if ($res) {
 })();
 </script>
 <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
+<script src="../assets/js/admin-nav-fix.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-nav-fix.js'); ?>"></script>
 </body>
 </html>

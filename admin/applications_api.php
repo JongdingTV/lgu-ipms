@@ -687,32 +687,37 @@ if ($action === 'load_applications') {
 }
 
 if ($action === 'get_application') {
-    if ($fallbackLegacy) {
-        $id = (int)($_GET['id'] ?? 0);
-        if ($id <= 0) app_json(['success' => false, 'message' => 'Invalid application id.'], 422);
-        $rows = app_legacy_rows($db, $type);
-        $found = null;
-        foreach ($rows as $row) {
-            if ((int)($row['id'] ?? 0) === $id) {
-                $found = $row;
-                break;
-            }
-        }
-        if (!$found) app_json(['success' => false, 'message' => 'Record not found.'], 404);
-        app_json(['success' => true, 'data' => $found, 'documents' => [], 'logs' => [], 'legacy' => true]);
-    }
     $id = (int)($_GET['id'] ?? 0);
     if ($id <= 0) app_json(['success' => false, 'message' => 'Invalid application id.'], 422);
 
+    $legacyLookup = static function () use ($db, $type, $id): void {
+        $rows = app_legacy_rows($db, $type);
+        foreach ($rows as $row) {
+            if ((int)($row['id'] ?? 0) === $id) {
+                app_json(['success' => true, 'data' => $row, 'documents' => [], 'logs' => [], 'legacy' => true]);
+            }
+        }
+        app_json(['success' => false, 'message' => 'Record not found.'], 404);
+    };
+
+    if ($fallbackLegacy) {
+        $legacyLookup();
+    }
+
     $stmt = $db->prepare("SELECT * FROM {$appTable} WHERE id = ? LIMIT 1");
-    if (!$stmt) app_json(['success' => false, 'message' => 'Unable to load application details.'], 500);
+    if (!$stmt) {
+        $legacyLookup();
+    }
     $stmt->bind_param('i', $id);
     $stmt->execute();
     $res = $stmt->get_result();
     $app = $res ? $res->fetch_assoc() : null;
     if ($res) $res->free();
     $stmt->close();
-    if (!$app) app_json(['success' => false, 'message' => 'Application not found.'], 404);
+    if (!$app) {
+        // Applications table may exist but UI could be in legacy data mode.
+        $legacyLookup();
+    }
 
     $docs = [];
     if (app_table_exists($db, 'application_documents')) {

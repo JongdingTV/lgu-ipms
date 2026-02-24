@@ -181,6 +181,13 @@ body.sidebar-hidden .sidebar-toggle-wrapper {
     opacity: 1 !important;
 }
 
+/* Some pages mark submenu with .show instead of parent .open */
+.nav-submenu.show,
+.nav-dropdown-menu.show {
+    max-height: 500px !important;
+    opacity: 1 !important;
+}
+
 .nav-dropdown-item,
 .nav-submenu-item {
     display: flex !important;

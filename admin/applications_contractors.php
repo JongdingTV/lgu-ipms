@@ -98,6 +98,7 @@ $csrfToken = generate_csrf_token();
 
 <script>window.ADMIN_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;</script>
 <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
+<script src="../assets/js/admin-nav-fix.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-nav-fix.js'); ?>"></script>
 <script src="../assets/js/admin-applications.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-applications.js'); ?>"></script>
 </body>
 </html>
