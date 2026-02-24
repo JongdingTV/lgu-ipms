@@ -64,13 +64,13 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
 
 <section class="main-content" data-messages-root data-api-base="/contractor/api.php" data-role="contractor" data-user-id="<?php echo (int)($_SESSION['employee_id'] ?? 0); ?>" data-csrf="<?php echo htmlspecialchars((string)($csrfToken), ENT_QUOTES, 'UTF-8'); ?>">
     <div class="dash-header">
-        <h1>Project Messages</h1>
-        <p>Communicate with your assigned engineer per project.</p>
+        <h1>Direct Messages</h1>
+        <p>Chat directly with registered engineers.</p>
     </div>
     <div class="messages-layout">
         <aside class="messages-panel">
             <div class="messages-sidebar-head">
-                <input id="messageProjectSearch" class="messages-search" type="search" placeholder="Search assigned projects...">
+                <input id="messageProjectSearch" class="messages-search" type="search" placeholder="Search engineers...">
             </div>
             <div id="messageProjectList" class="messages-project-list"></div>
         </aside>
@@ -79,7 +79,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
                 <strong id="messageThreadTitle">Select a project</strong>
                 <input id="messageThreadSearch" class="messages-search" type="search" placeholder="Search in conversation...">
             </div>
-            <div id="messageFeed" class="messages-feed"><div class="messages-empty">Pick a project to open messages.</div></div>
+            <div id="messageFeed" class="messages-feed"><div class="messages-empty">Pick an engineer to start chatting.</div></div>
             <div class="messages-composer">
                 <input id="messageText" class="messages-text" type="text" placeholder="Type a message...">
                 <input id="messageFile" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
@@ -90,7 +90,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
 </section>
 <script src="contractor.js?v=<?php echo filemtime(__DIR__ . '/contractor.js'); ?>"></script>
 <script src="contractor-enterprise.js?v=<?php echo filemtime(__DIR__ . '/contractor-enterprise.js'); ?>"></script>
-<script src="../assets/js/project-messages.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/project-messages.js'); ?>"></script>
+<script src="../assets/js/direct-messages.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/direct-messages.js'); ?>"></script>
 </body>
 </html>
 
