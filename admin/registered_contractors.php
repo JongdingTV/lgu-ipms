@@ -184,6 +184,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $errno = $stmt->errno;
         $stmt->close();
         if ($ok) {
+            if (rc_table_has_column($db, 'contractors', 'account_employee_id')) {
+                $empId = 0;
+                $empStmt = $db->prepare("SELECT account_employee_id FROM contractors WHERE id = ? LIMIT 1");
+                if ($empStmt) {
+                    $empStmt->bind_param('i', $contractorId);
+                    $empStmt->execute();
+                    $empRes = $empStmt->get_result();
+                    if ($empRes && ($empRow = $empRes->fetch_assoc())) {
+                        $empId = (int)($empRow['account_employee_id'] ?? 0);
+                    }
+                    if ($empRes) $empRes->free();
+                    $empStmt->close();
+                }
+                if ($empId > 0 && $empId !== $contractorId) {
+                    $mirrorStmt = $db->prepare("INSERT IGNORE INTO contractor_project_assignments (contractor_id, project_id) VALUES (?, ?)");
+                    if ($mirrorStmt) {
+                        $mirrorStmt->bind_param('ii', $empId, $projectId);
+                        $mirrorStmt->execute();
+                        $mirrorStmt->close();
+                    }
+                }
+            }
             echo json_encode(['success' => true, 'message' => 'Project assigned to contractor.']);
         } elseif ($errno === 1062) {
             echo json_encode(['success' => false, 'message' => 'Contractor is already assigned to that project.']);
@@ -211,6 +233,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt->bind_param('ii', $contractorId, $projectId);
         $ok = $stmt->execute();
         $stmt->close();
+        if ($ok && rc_table_has_column($db, 'contractors', 'account_employee_id')) {
+            $empId = 0;
+            $empStmt = $db->prepare("SELECT account_employee_id FROM contractors WHERE id = ? LIMIT 1");
+            if ($empStmt) {
+                $empStmt->bind_param('i', $contractorId);
+                $empStmt->execute();
+                $empRes = $empStmt->get_result();
+                if ($empRes && ($empRow = $empRes->fetch_assoc())) {
+                    $empId = (int)($empRow['account_employee_id'] ?? 0);
+                }
+                if ($empRes) $empRes->free();
+                $empStmt->close();
+            }
+            if ($empId > 0 && $empId !== $contractorId) {
+                $mirrorDel = $db->prepare("DELETE FROM contractor_project_assignments WHERE contractor_id = ? AND project_id = ?");
+                if ($mirrorDel) {
+                    $mirrorDel->bind_param('ii', $empId, $projectId);
+                    $mirrorDel->execute();
+                    $mirrorDel->close();
+                }
+            }
+        }
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Project unassigned from contractor.' : 'Failed to unassign project.']);
         $db->close();
         exit;
@@ -419,6 +463,33 @@ if ($res) {
             cursor: pointer;
             font-weight: 600;
         }
+        .rc-actions-col {
+            display: grid;
+            gap: 6px;
+            min-width: 148px;
+        }
+        .rc-btn-lite {
+            min-height: 32px;
+            border-radius: 8px;
+            border: 1px solid #c8d8ea;
+            background: #f8fafc;
+            color: #1e3a5f;
+            font-size: .8rem;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 6px 10px;
+        }
+        .rc-btn-view {
+            min-height: 34px;
+            border: 0;
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: .8rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #0f766e, #0ea5a0);
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -494,16 +565,16 @@ if ($res) {
             <table class="table" id="rcTable">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Company / Contractor</th>
-                        <th>Contact Person</th>
-                        <th>Email / Phone</th>
-                        <th>License / TIN</th>
-                        <th>Specialization</th>
-                        <th>Experience</th>
+                        <th>Company Name</th>
+                        <th>License Number</th>
+                        <th>Contact Email</th>
                         <th>Status</th>
-                        <th>Account</th>
-                        <th>Projects</th>
+                        <th>Approval</th>
+                        <th>Verification</th>
+                        <th>Performance / Risk</th>
+                        <th>Projects Assigned</th>
+                        <th>Documents</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -518,22 +589,29 @@ if ($res) {
                         if ($contactName === '') $contactName = $owner !== '' ? $owner : 'N/A';
                         $statusRaw = strtolower(trim((string)($r['status'] ?? 'pending')));
                         $statusClass = in_array($statusRaw, ['active', 'approved', 'verified'], true) ? 'active' : (in_array($statusRaw, ['inactive', 'rejected', 'suspended', 'blacklisted'], true) ? 'inactive' : 'pending');
-                        $accountStatus = strtolower(trim((string)($r['account_status'] ?? 'active')));
+                        $approvalLabel = in_array($statusRaw, ['approved', 'verified'], true) ? ucfirst($statusRaw) : 'Pending';
+                        $verificationLabel = trim((string)($r['license'] ?? '')) !== '' ? 'Complete' : 'Incomplete';
+                        $verificationClass = $verificationLabel === 'Complete' ? 'active' : 'pending';
                     ?>
                     <tr>
-                        <td><?php echo (int)($r['id'] ?? 0); ?></td>
-                        <td><strong><?php echo htmlspecialchars($company !== '' ? $company : ($owner !== '' ? $owner : 'N/A'), ENT_QUOTES, 'UTF-8'); ?></strong><br><small><?php echo htmlspecialchars((string)($r['contractor_type'] ?? 'Contractor'), ENT_QUOTES, 'UTF-8'); ?></small></td>
-                        <td><?php echo htmlspecialchars($contactName, ENT_QUOTES, 'UTF-8'); ?><br><small><?php echo htmlspecialchars($contactRole !== '' ? $contactRole : '-', ENT_QUOTES, 'UTF-8'); ?></small></td>
-                        <td><?php echo htmlspecialchars((string)($r['email'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?><br><small><?php echo htmlspecialchars((string)($r['phone'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></small></td>
-                        <td><?php echo htmlspecialchars((string)($r['license'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?><br><small><?php echo htmlspecialchars((string)($r['tin'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></small></td>
-                        <td><?php echo htmlspecialchars((string)($r['specialization'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
-                        <td><?php echo (int)($r['experience'] ?? 0); ?> yrs</td>
+                        <td><strong><?php echo htmlspecialchars($company !== '' ? $company : ($owner !== '' ? $owner : 'N/A'), ENT_QUOTES, 'UTF-8'); ?></strong></td>
+                        <td><?php echo htmlspecialchars((string)($r['license'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                        <td><?php echo htmlspecialchars((string)($r['email'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
                         <td><span class="rc-tag <?php echo $statusClass; ?>"><?php echo htmlspecialchars((string)($r['status'] ?? 'Pending'), ENT_QUOTES, 'UTF-8'); ?></span></td>
-                        <td><?php echo htmlspecialchars((string)($r['account_role'] ?? 'contractor'), ENT_QUOTES, 'UTF-8'); ?><br><small><?php echo htmlspecialchars($accountStatus !== '' ? $accountStatus : '-', ENT_QUOTES, 'UTF-8'); ?></small></td>
+                        <td><span class="rc-tag <?php echo $statusClass; ?>"><?php echo htmlspecialchars($approvalLabel, ENT_QUOTES, 'UTF-8'); ?></span></td>
+                        <td><span class="rc-tag <?php echo $verificationClass; ?>"><?php echo htmlspecialchars($verificationLabel, ENT_QUOTES, 'UTF-8'); ?></span></td>
+                        <td><?php echo number_format((float)($r['rating'] ?? 0), 1); ?> | <?php echo htmlspecialchars((string)($r['specialization'] ?? 'General'), ENT_QUOTES, 'UTF-8'); ?></td>
                         <td>
-                            <button class="rc-assign-btn" data-contractor-id="<?php echo (int)($r['id'] ?? 0); ?>" data-contractor-name="<?php echo htmlspecialchars($company !== '' ? $company : ($owner !== '' ? $owner : 'N/A'), ENT_QUOTES, 'UTF-8'); ?>" data-manage-btn="1">
-                                Manage (<?php echo (int)($r['assigned_projects'] ?? 0); ?>)
-                            </button>
+                            <button class="rc-btn-view rc-view-btn" data-contractor-id="<?php echo (int)($r['id'] ?? 0); ?>" data-contractor-name="<?php echo htmlspecialchars($company !== '' ? $company : ($owner !== '' ? $owner : 'N/A'), ENT_QUOTES, 'UTF-8'); ?>">View Projects</button>
+                        </td>
+                        <td><button class="rc-btn-lite" type="button">Documents</button></td>
+                        <td>
+                            <div class="rc-actions-col">
+                                <button class="rc-btn-lite" type="button">Edit Status</button>
+                                <button class="rc-btn-lite" type="button">History</button>
+                                <button class="rc-assign-btn" data-contractor-id="<?php echo (int)($r['id'] ?? 0); ?>" data-contractor-name="<?php echo htmlspecialchars($company !== '' ? $company : ($owner !== '' ? $owner : 'N/A'), ENT_QUOTES, 'UTF-8'); ?>" data-manage-btn="1">Assign Projects (<?php echo (int)($r['assigned_projects'] ?? 0); ?>)</button>
+                                <button class="rc-btn-lite" type="button">Delete</button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -692,9 +770,9 @@ if ($res) {
     }
 
     function updateManageButtonCount(contractorId, count) {
-        const btn = document.querySelector('.rc-assign-btn[data-contractor-id="' + String(contractorId) + '"]');
-        if (!btn) return;
-        btn.textContent = 'Manage (' + String(count) + ')';
+        document.querySelectorAll('.rc-assign-btn[data-contractor-id="' + String(contractorId) + '"]').forEach(function (btn) {
+            btn.textContent = 'Assign Projects (' + String(count) + ')';
+        });
     }
 
     function postAction(action, payload) {
@@ -711,6 +789,11 @@ if ($res) {
     }
 
     document.addEventListener('click', function (e) {
+        const viewBtn = e.target.closest('.rc-view-btn[data-contractor-id]');
+        if (viewBtn) {
+            openModal(viewBtn.getAttribute('data-contractor-id'), viewBtn.getAttribute('data-contractor-name') || 'Contractor');
+            return;
+        }
         const btn = e.target.closest('.rc-assign-btn[data-contractor-id]');
         if (!btn) return;
         openModal(btn.getAttribute('data-contractor-id'), btn.getAttribute('data-contractor-name') || 'Contractor');

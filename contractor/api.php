@@ -317,6 +317,20 @@ function contractor_identity(mysqli $db): array {
     }
     $ids = [];
     if ($employeeId > 0) $ids[$employeeId] = true;
+    if (contractor_table_exists($db, 'contractors')) {
+        $stmtByEmp = $db->prepare("SELECT id FROM contractors WHERE account_employee_id = ?");
+        if ($stmtByEmp && $employeeId > 0) {
+            $stmtByEmp->bind_param('i', $employeeId);
+            $stmtByEmp->execute();
+            $resEmp = $stmtByEmp->get_result();
+            while ($resEmp && ($r = $resEmp->fetch_assoc())) {
+                $cid = (int)($r['id'] ?? 0);
+                if ($cid > 0) $ids[$cid] = true;
+            }
+            if ($resEmp) $resEmp->free();
+            $stmtByEmp->close();
+        }
+    }
     if ($email !== '' && contractor_table_exists($db, 'contractors')) {
         $stmt2 = $db->prepare("SELECT id FROM contractors WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))");
         if ($stmt2) {
