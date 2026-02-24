@@ -81,6 +81,25 @@ function user_dashboard_extract_location_terms(string $address): array
     return array_keys($terms);
 }
 
+function user_dashboard_normalize_status(string $status): string
+{
+    $s = strtolower(trim($status));
+    if ($s === '') {
+        return 'unknown';
+    }
+
+    $completed = ['completed', 'done', 'finished', 'fully completed'];
+    $closed = ['cancelled', 'canceled', 'closed', 'archived', 'terminated', 'rejected'];
+    $inProgress = ['in progress', 'ongoing', 'on-going', 'active', 'executing', 'implementation'];
+    $planned = ['approved', 'for approval', 'pending', 'planned', 'queued', 'for implementation'];
+
+    if (in_array($s, $completed, true)) return 'completed';
+    if (in_array($s, $closed, true)) return 'closed';
+    if (in_array($s, $inProgress, true)) return 'in_progress';
+    if (in_array($s, $planned, true)) return 'planned';
+    return 'other';
+}
+
 $recentOrder = user_dashboard_projects_has_created_at($db) ? 'created_at DESC' : 'id DESC';
 $hasBarangay = user_table_has_column($db, 'projects', 'barangay');
 $selectBarangay = $hasBarangay ? ', barangay' : ", '' AS barangay";
@@ -110,21 +129,17 @@ if (!empty($locationTerms)) {
         }
     }
 }
-$visibleProjects = (!empty($locationTerms) && !empty($scopedProjects)) ? $scopedProjects : $rawProjects;
+$visibleProjects = !empty($locationTerms) ? $scopedProjects : $rawProjects;
 
 $totalProjects = count($visibleProjects);
 $inProgressProjects = 0;
 $completedProjects = 0;
 $closedProjects = 0;
 foreach ($visibleProjects as $p) {
-    $s = strtolower(trim((string)($p['status'] ?? '')));
-    if ($s === 'completed') {
-        $completedProjects++;
-    } elseif ($s === 'cancelled') {
-        $closedProjects++;
-    } else {
-        $inProgressProjects++;
-    }
+    $bucket = user_dashboard_normalize_status((string)($p['status'] ?? ''));
+    if ($bucket === 'completed') $completedProjects++;
+    elseif ($bucket === 'closed') $closedProjects++;
+    elseif ($bucket === 'in_progress') $inProgressProjects++;
 }
 $recentProjects = array_slice($visibleProjects, 0, 5);
 $dashboardUpdatedAt = date('M d, Y h:i A');
@@ -336,15 +351,19 @@ $db->close();
                         <?php if (!empty($recentProjects)): ?>
                             <?php foreach ($recentProjects as $project): ?>
                                 <?php
-                                $rawStatus = strtolower(trim((string) ($project['status'] ?? '')));
-                                $publicStatus = 'Ongoing';
+                                $rawStatusText = trim((string) ($project['status'] ?? ''));
+                                $statusBucket = user_dashboard_normalize_status($rawStatusText);
+                                $publicStatus = $rawStatusText !== '' ? ucwords($rawStatusText) : 'Unknown';
                                 $statusColor = 'approved';
-                                if ($rawStatus === 'completed') {
+                                if ($statusBucket === 'completed') {
                                     $publicStatus = 'Completed';
                                     $statusColor = 'completed';
-                                } elseif ($rawStatus === 'cancelled') {
+                                } elseif ($statusBucket === 'closed') {
                                     $publicStatus = 'Closed';
                                     $statusColor = 'cancelled';
+                                } elseif ($statusBucket === 'in_progress') {
+                                    $publicStatus = 'In Progress';
+                                    $statusColor = 'approved';
                                 }
                                 ?>
                                 <tr>

@@ -45,10 +45,32 @@ function dashboard_projects_has_created_at(mysqli $db): bool
     return $exists;
 }
 
+function dashboard_normalize_project_status(string $status): string
+{
+    $s = strtolower(trim($status));
+    if ($s === '') return 'other';
+    if (in_array($s, ['completed', 'done', 'finished', 'fully completed'], true)) return 'completed';
+    if (in_array($s, ['in progress', 'ongoing', 'on-going', 'active', 'executing', 'implementation'], true)) return 'in_progress';
+    if (in_array($s, ['for approval', 'pending', 'queued', 'planned', 'approved'], true)) return 'approval';
+    if (in_array($s, ['cancelled', 'canceled', 'closed', 'archived', 'terminated', 'rejected'], true)) return 'closed';
+    return 'other';
+}
+
 // Get project statistics
-$totalProjects = $db->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'];
-$inProgressProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status IN ('Approved', 'For Approval')")->fetch_assoc()['count'];
-$completedProjects = $db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed'")->fetch_assoc()['count'];
+$totalProjects = 0;
+$inProgressProjects = 0;
+$completedProjects = 0;
+$statusCountsRes = $db->query("SELECT COALESCE(status,'') AS status_label, COUNT(*) AS total FROM projects GROUP BY COALESCE(status,'')");
+if ($statusCountsRes) {
+    while ($row = $statusCountsRes->fetch_assoc()) {
+        $count = (int)($row['total'] ?? 0);
+        $bucket = dashboard_normalize_project_status((string)($row['status_label'] ?? ''));
+        $totalProjects += $count;
+        if ($bucket === 'completed') $completedProjects += $count;
+        if ($bucket === 'in_progress') $inProgressProjects += $count;
+    }
+    $statusCountsRes->free();
+}
 $totalBudget = $db->query("SELECT COALESCE(SUM(budget), 0) as total FROM projects")->fetch_assoc()['total'];
 $pendingFeedback = 0;
 $reviewedFeedback = 0;
@@ -242,7 +264,7 @@ $db->close();
                 <div class="metric-content">
                     <h3>Total Projects</h3>
                     <p class="metric-value"><?php echo $totalProjects; ?></p>
-                    <span class="metric-status">Active & Completed</span>
+                    <span class="metric-status">All statuses</span>
                 </div>
             </div>
             <div class="metric-card card">
@@ -420,7 +442,6 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
-
 
 
 
