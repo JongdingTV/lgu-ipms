@@ -335,6 +335,11 @@ $db->query("CREATE TABLE IF NOT EXISTS project_progress_updates (
 )");
 
 if ($action === 'load_monitoring' || $action === '') {
+    $assigned = engineer_assigned_project_ids($db);
+    if (empty($assigned)) {
+        json_out(['success' => true, 'data' => []]);
+    }
+    $idList = implode(',', array_map('intval', $assigned));
     $sql = "SELECT
             p.id,
             p.code,
@@ -354,6 +359,7 @@ if ($action === 'load_monitoring' || $action === '') {
                 GROUP BY project_id
             ) p2 ON p1.project_id = p2.project_id AND p1.created_at = p2.max_created
         ) pp ON pp.project_id = p.id
+        WHERE p.id IN ({$idList})
         ORDER BY p.id DESC
         LIMIT 500";
 

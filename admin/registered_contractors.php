@@ -255,6 +255,20 @@ if ($res) {
             font: inherit;
         }
         .rc-count { font-size: .9rem; color: #475569; font-weight: 600; }
+        .rc-page-shell { gap: 18px; }
+        .rc-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .rc-head p {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-size: .9rem;
+        }
         .rc-tag {
             display: inline-flex;
             align-items: center;
@@ -278,6 +292,7 @@ if ($res) {
             background: linear-gradient(135deg, #1d4e89, #2563eb);
             cursor: pointer;
         }
+        .rc-assign-btn:hover { filter: brightness(1.05); }
         .rc-modal {
             position: fixed;
             inset: 0;
@@ -318,6 +333,16 @@ if ($res) {
             cursor: pointer;
             font-size: .76rem;
             font-weight: 700;
+        }
+        .rc-close-btn {
+            min-height: 34px;
+            border-radius: 8px;
+            border: 1px solid #c8d8ea;
+            background: #fff;
+            color: #0f172a;
+            padding: 7px 12px;
+            cursor: pointer;
+            font-weight: 600;
         }
     </style>
 </head>
@@ -376,13 +401,19 @@ if ($res) {
 <section class="main-content">
     <div class="dash-header">
         <h1>Registered Contractors</h1>
-        <p>Showing real contractor accounts registered in the system database.</p>
+        <p>Review contractor records and assign projects using the same workflow as registered engineers.</p>
     </div>
 
-    <div class="pm-section card">
-        <div class="rc-toolbar">
+    <div class="recent-projects contractor-page contractor-registry-shell rc-page-shell">
+        <div class="rc-head">
+            <div>
+                <h3>Contractor Registry</h3>
+                <p>Search, review, and assign project workloads to contractors.</p>
+            </div>
+            <div class="rc-count">Total Contractors: <span id="rcTotal"><?php echo count($rows); ?></span></div>
+        </div>
+        <div class="contractors-filter contractor-toolbar rc-toolbar">
             <input id="rcSearch" class="rc-search" type="search" placeholder="Search by company, contact, email, specialization, license...">
-            <div class="rc-count">Total: <span id="rcTotal"><?php echo count($rows); ?></span></div>
         </div>
         <div class="table-wrap">
             <table class="table" id="rcTable">
@@ -425,7 +456,7 @@ if ($res) {
                         <td><span class="rc-tag <?php echo $statusClass; ?>"><?php echo htmlspecialchars((string)($r['status'] ?? 'Pending'), ENT_QUOTES, 'UTF-8'); ?></span></td>
                         <td><?php echo htmlspecialchars((string)($r['account_role'] ?? 'contractor'), ENT_QUOTES, 'UTF-8'); ?><br><small><?php echo htmlspecialchars($accountStatus !== '' ? $accountStatus : '-', ENT_QUOTES, 'UTF-8'); ?></small></td>
                         <td>
-                            <button class="rc-assign-btn" data-contractor-id="<?php echo (int)($r['id'] ?? 0); ?>" data-contractor-name="<?php echo htmlspecialchars($company !== '' ? $company : ($owner !== '' ? $owner : 'N/A'), ENT_QUOTES, 'UTF-8'); ?>">
+                            <button class="rc-assign-btn" data-contractor-id="<?php echo (int)($r['id'] ?? 0); ?>" data-contractor-name="<?php echo htmlspecialchars($company !== '' ? $company : ($owner !== '' ? $owner : 'N/A'), ENT_QUOTES, 'UTF-8'); ?>" data-manage-btn="1">
                                 Manage (<?php echo (int)($r['assigned_projects'] ?? 0); ?>)
                             </button>
                         </td>
@@ -441,7 +472,7 @@ if ($res) {
     <div class="rc-modal-card">
         <div class="rc-modal-head">
             <h3 id="rcAssignTitle">Assign Projects to Contractor</h3>
-            <button class="rc-mini-btn" id="rcCloseModal" type="button">Close</button>
+            <button class="rc-close-btn" id="rcCloseModal" type="button">Close</button>
         </div>
         <div class="rc-modal-message" id="rcAssignTarget"></div>
         <div class="rc-modal-actions">
@@ -537,6 +568,7 @@ if ($res) {
             .then(r => r.json())
             .then(j => {
                 const rows = Array.isArray(j.data) ? j.data : [];
+                updateManageButtonCount(currentContractorId, rows.length);
                 assignedBody.innerHTML = '';
                 if (!rows.length) {
                     assignedBody.innerHTML = '<tr><td colspan="4">No assigned projects.</td></tr>';
@@ -548,6 +580,12 @@ if ($res) {
                     assignedBody.appendChild(tr);
                 });
             });
+    }
+
+    function updateManageButtonCount(contractorId, count) {
+        const btn = document.querySelector('.rc-assign-btn[data-contractor-id="' + String(contractorId) + '"]');
+        if (!btn) return;
+        btn.textContent = 'Manage (' + String(count) + ')';
     }
 
     function postAction(action, payload) {
@@ -599,6 +637,7 @@ if ($res) {
 })();
 </script>
 <script src="../assets/js/admin.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin.js'); ?>"></script>
+<script src="../assets/js/admin-enterprise.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-enterprise.js'); ?>"></script>
 <script src="../assets/js/admin-nav-fix.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-nav-fix.js'); ?>"></script>
 </body>
 </html>

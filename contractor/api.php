@@ -541,6 +541,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST
 if ($action === 'load_projects') {
     ensure_progress_table($db);
     ensure_progress_submission_table($db);
+    $allowed = contractor_assigned_project_ids($db);
+    if (empty($allowed)) {
+        json_out(['success' => true, 'data' => []]);
+    }
+    $idList = implode(',', array_map('intval', $allowed));
     $rows = [];
     $res = $db->query("SELECT
             p.id,
@@ -566,6 +571,7 @@ if ($action === 'load_projects') {
                 GROUP BY project_id
             ) p2 ON p1.project_id = p2.project_id AND p1.created_at = p2.max_created
         ) pp ON pp.project_id = p.id
+        WHERE p.id IN ({$idList})
         ORDER BY p.id DESC
         LIMIT 500");
     if ($res) {
@@ -1316,10 +1322,9 @@ if ($action === 'load_my_projects') {
                            ON p1.project_id = p2.project_id AND p1.created_at = p2.mx
                        ) pp ON pp.project_id = p.id
                        ORDER BY p.id DESC");
-    $allowed = contractor_assigned_project_ids($db);
     if ($res) {
         while ($r = $res->fetch_assoc()) {
-            if (in_array((int)($r['id'] ?? 0), $allowed, true)) $rows[] = $r;
+            $rows[] = $r;
         }
         $res->free();
     }
