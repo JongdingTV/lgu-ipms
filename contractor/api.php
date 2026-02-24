@@ -641,16 +641,31 @@ if ($action === 'load_chat_contacts') {
             $email = trim((string)($e['email'] ?? ''));
 
             if ($displayName === '' && contractor_table_exists($db, 'engineers')) {
-                $stmtProfile = $db->prepare("SELECT COALESCE(NULLIF(full_name,''), '') AS full_name, COALESCE(email,'') AS profile_email FROM engineers WHERE employee_id = ? LIMIT 1");
-                if ($stmtProfile) {
-                    $stmtProfile->bind_param('i', $userId);
-                    $stmtProfile->execute();
-                    $profile = $stmtProfile->get_result()->fetch_assoc();
-                    $stmtProfile->close();
-                    if ($profile) {
-                        $profileName = trim((string)($profile['full_name'] ?? ''));
-                        if ($profileName !== '') $displayName = $profileName;
-                        if ($email === '') $email = trim((string)($profile['profile_email'] ?? ''));
+                $nameExpr = contractor_column_exists($db, 'engineers', 'full_name')
+                    ? "NULLIF(full_name, '')"
+                    : (
+                        contractor_column_exists($db, 'engineers', 'first_name') || contractor_column_exists($db, 'engineers', 'last_name')
+                            ? "NULLIF(TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))), '')"
+                            : "NULL"
+                    );
+                $emailExpr = contractor_column_exists($db, 'engineers', 'email') ? "COALESCE(email,'')" : "''";
+                $whereParts = [];
+                if (contractor_column_exists($db, 'engineers', 'employee_id')) {
+                    $whereParts[] = 'employee_id = ?';
+                }
+                if (!empty($whereParts)) {
+                    $sqlProfile = "SELECT COALESCE({$nameExpr}, '') AS profile_name, {$emailExpr} AS profile_email FROM engineers WHERE " . implode(' OR ', $whereParts) . " LIMIT 1";
+                    $stmtProfile = $db->prepare($sqlProfile);
+                    if ($stmtProfile) {
+                        $stmtProfile->bind_param('i', $userId);
+                        $stmtProfile->execute();
+                        $profile = $stmtProfile->get_result()->fetch_assoc();
+                        $stmtProfile->close();
+                        if ($profile) {
+                            $profileName = trim((string)($profile['profile_name'] ?? ''));
+                            if ($profileName !== '') $displayName = $profileName;
+                            if ($email === '') $email = trim((string)($profile['profile_email'] ?? ''));
+                        }
                     }
                 }
             }

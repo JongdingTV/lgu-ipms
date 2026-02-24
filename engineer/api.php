@@ -420,23 +420,33 @@ if ($action === 'load_chat_contacts') {
             $email = trim((string)($e['email'] ?? ''));
 
             if ($displayName === '' && engineer_table_exists($db, 'contractors')) {
-                $stmtProfile = $db->prepare(
-                    "SELECT
-                        COALESCE(NULLIF(company,''), NULLIF(company_name,''), NULLIF(owner,''), '') AS profile_name,
-                        COALESCE(email,'') AS profile_email
-                     FROM contractors
-                     WHERE account_employee_id = ? OR employee_id = ?
-                     LIMIT 1"
-                );
-                if ($stmtProfile) {
-                    $stmtProfile->bind_param('ii', $userId, $userId);
-                    $stmtProfile->execute();
-                    $profile = $stmtProfile->get_result()->fetch_assoc();
-                    $stmtProfile->close();
-                    if ($profile) {
-                        $profileName = trim((string)($profile['profile_name'] ?? ''));
-                        if ($profileName !== '') $displayName = $profileName;
-                        if ($email === '') $email = trim((string)($profile['profile_email'] ?? ''));
+                $nameParts = [];
+                if (engineer_table_has_column($db, 'contractors', 'company')) $nameParts[] = "NULLIF(company,'')";
+                if (engineer_table_has_column($db, 'contractors', 'company_name')) $nameParts[] = "NULLIF(company_name,'')";
+                if (engineer_table_has_column($db, 'contractors', 'owner')) $nameParts[] = "NULLIF(owner,'')";
+                $nameExpr = !empty($nameParts) ? implode(', ', $nameParts) : "''";
+                $emailExpr = engineer_table_has_column($db, 'contractors', 'email') ? "COALESCE(email,'')" : "''";
+                $whereParts = [];
+                if (engineer_table_has_column($db, 'contractors', 'account_employee_id')) $whereParts[] = 'account_employee_id = ?';
+                if (engineer_table_has_column($db, 'contractors', 'employee_id')) $whereParts[] = 'employee_id = ?';
+
+                if (!empty($whereParts)) {
+                    $sqlProfile = "SELECT COALESCE({$nameExpr}, '') AS profile_name, {$emailExpr} AS profile_email FROM contractors WHERE " . implode(' OR ', $whereParts) . " LIMIT 1";
+                    $stmtProfile = $db->prepare($sqlProfile);
+                    if ($stmtProfile) {
+                        if (count($whereParts) === 2) {
+                            $stmtProfile->bind_param('ii', $userId, $userId);
+                        } else {
+                            $stmtProfile->bind_param('i', $userId);
+                        }
+                        $stmtProfile->execute();
+                        $profile = $stmtProfile->get_result()->fetch_assoc();
+                        $stmtProfile->close();
+                        if ($profile) {
+                            $profileName = trim((string)($profile['profile_name'] ?? ''));
+                            if ($profileName !== '') $displayName = $profileName;
+                            if ($email === '') $email = trim((string)($profile['profile_email'] ?? ''));
+                        }
                     }
                 }
             }
