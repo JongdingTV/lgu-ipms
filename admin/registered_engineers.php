@@ -234,6 +234,216 @@ function registered_resolve_doc_link(mysqli $db, int $entityId, bool $isEngineer
     return [$fkCol, $linkId];
 }
 
+function registered_map_application_doc_type(string $docType): string
+{
+    $key = strtolower(trim($docType));
+    if (in_array($key, ['prc_id', 'prc', 'prc_license', 'license'], true)) {
+        return 'prc_license';
+    }
+    if (in_array($key, ['resume', 'resume_cv', 'cv'], true)) {
+        return 'resume_cv';
+    }
+    if (in_array($key, ['gov_id', 'government_id', 'id'], true)) {
+        return 'government_id';
+    }
+    if (in_array($key, ['certificate', 'certification', 'certificates'], true)) {
+        return 'certificate';
+    }
+    return 'certificate';
+}
+
+function registered_sync_engineer_documents_from_applications(mysqli $db, int $engineerId): void
+{
+    if ($engineerId <= 0) {
+        return;
+    }
+    if (
+        !registered_table_exists($db, 'engineers') ||
+        !registered_table_exists($db, 'engineer_documents') ||
+        !registered_table_exists($db, 'engineer_applications') ||
+        !registered_table_exists($db, 'application_documents')
+    ) {
+        return;
+    }
+
+    $engEmail = '';
+    $engEmployeeId = 0;
+    $engStmt = $db->prepare("SELECT email, " . (registered_table_has_column($db, 'engineers', 'employee_id') ? 'employee_id' : '0 AS employee_id') . " FROM engineers WHERE id = ? LIMIT 1");
+    if ($engStmt) {
+        $engStmt->bind_param('i', $engineerId);
+        $engStmt->execute();
+        $engRes = $engStmt->get_result();
+        if ($engRes && ($engRow = $engRes->fetch_assoc())) {
+            $engEmail = trim((string)($engRow['email'] ?? ''));
+            $engEmployeeId = (int)($engRow['employee_id'] ?? 0);
+        }
+        if ($engRes) {
+            $engRes->free();
+        }
+        $engStmt->close();
+    }
+    if ($engEmail === '' && $engEmployeeId <= 0) {
+        return;
+    }
+
+    $appSql = "SELECT id FROM engineer_applications WHERE LOWER(COALESCE(status,'')) IN ('approved','verified')";
+    $types = '';
+    $params = [];
+    if ($engEmail !== '' && $engEmployeeId > 0 && registered_table_has_column($db, 'engineer_applications', 'user_id')) {
+        $appSql .= " AND (email = ? OR user_id = ?)";
+        $types = 'si';
+        $params = [$engEmail, $engEmployeeId];
+    } elseif ($engEmail !== '') {
+        $appSql .= " AND email = ?";
+        $types = 's';
+        $params = [$engEmail];
+    } elseif ($engEmployeeId > 0 && registered_table_has_column($db, 'engineer_applications', 'user_id')) {
+        $appSql .= " AND user_id = ?";
+        $types = 'i';
+        $params = [$engEmployeeId];
+    } else {
+        return;
+    }
+    $orderCol = registered_table_has_column($db, 'engineer_applications', 'approved_at')
+        ? 'approved_at'
+        : (registered_table_has_column($db, 'engineer_applications', 'updated_at') ? 'updated_at' : 'created_at');
+    $appSql .= " ORDER BY {$orderCol} DESC, id DESC LIMIT 1";
+
+    $appId = 0;
+    $appStmt = $db->prepare($appSql);
+    if ($appStmt) {
+        if ($types !== '') {
+            registered_bind_dynamic($appStmt, $types, $params);
+        }
+        $appStmt->execute();
+        $appRes = $appStmt->get_result();
+        if ($appRes && ($appRow = $appRes->fetch_assoc())) {
+            $appId = (int)($appRow['id'] ?? 0);
+        }
+        if ($appRes) {
+            $appRes->free();
+        }
+        $appStmt->close();
+    }
+    if ($appId <= 0) {
+        return;
+    }
+
+    $docTypeCol = registered_pick_column($db, 'application_documents', ['doc_type', 'document_type', 'type']);
+    $filePathCol = registered_pick_column($db, 'application_documents', ['file_path', 'path', 'document_path', 'storage_path']);
+    if (!$docTypeCol || !$filePathCol) {
+        return;
+    }
+    $origCol = registered_pick_column($db, 'application_documents', ['original_name', 'filename', 'file_name', 'name']);
+    $mimeCol = registered_pick_column($db, 'application_documents', ['mime_type', 'mime']);
+    $sizeCol = registered_pick_column($db, 'application_documents', ['file_size', 'size']);
+    $uploadedCol = registered_pick_column($db, 'application_documents', ['uploaded_at', 'created_at']);
+    $appDocsSql = "SELECT {$docTypeCol} AS doc_type, {$filePathCol} AS file_path, "
+        . ($origCol ? "{$origCol} AS original_name" : "'' AS original_name") . ", "
+        . ($mimeCol ? "{$mimeCol} AS mime_type" : "'' AS mime_type") . ", "
+        . ($sizeCol ? "{$sizeCol} AS file_size" : "0 AS file_size") . ", "
+        . ($uploadedCol ? "{$uploadedCol} AS uploaded_at" : "NOW() AS uploaded_at")
+        . " FROM application_documents WHERE application_type='engineer' AND application_id = ?";
+
+    $appDocsStmt = $db->prepare($appDocsSql);
+    if (!$appDocsStmt) {
+        return;
+    }
+    $appDocsStmt->bind_param('i', $appId);
+    $appDocsStmt->execute();
+    $appDocsRes = $appDocsStmt->get_result();
+    $appDocs = [];
+    while ($appDocsRes && ($doc = $appDocsRes->fetch_assoc())) {
+        $appDocs[] = $doc;
+    }
+    if ($appDocsRes) {
+        $appDocsRes->free();
+    }
+    $appDocsStmt->close();
+    if (empty($appDocs)) {
+        return;
+    }
+
+    $engDocTypeCol = registered_pick_column($db, 'engineer_documents', ['document_type', 'doc_type', 'type']);
+    $engPathCol = registered_pick_column($db, 'engineer_documents', ['file_path', 'path', 'document_path', 'storage_path']);
+    if (!$engDocTypeCol || !$engPathCol) {
+        return;
+    }
+    [$engFkCol, $engLinkId] = registered_resolve_doc_link($db, $engineerId, true, 'engineer_documents');
+    if (!$engFkCol) {
+        return;
+    }
+    $engOrigCol = registered_pick_column($db, 'engineer_documents', ['original_name', 'filename', 'file_name', 'name']);
+    $engMimeCol = registered_pick_column($db, 'engineer_documents', ['mime_type', 'mime']);
+    $engSizeCol = registered_pick_column($db, 'engineer_documents', ['file_size', 'size']);
+    $engUploadedCol = registered_pick_column($db, 'engineer_documents', ['uploaded_at', 'created_at']);
+    $engVerifiedCol = registered_pick_column($db, 'engineer_documents', ['is_verified']);
+
+    foreach ($appDocs as $doc) {
+        $srcPath = trim((string)($doc['file_path'] ?? ''));
+        if ($srcPath === '') {
+            continue;
+        }
+        $mappedType = registered_map_application_doc_type((string)($doc['doc_type'] ?? ''));
+        $existsStmt = $db->prepare("SELECT id FROM engineer_documents WHERE {$engFkCol} = ? AND {$engPathCol} = ? LIMIT 1");
+        $existsId = 0;
+        if ($existsStmt) {
+            $existsStmt->bind_param('is', $engLinkId, $srcPath);
+            $existsStmt->execute();
+            $existsRes = $existsStmt->get_result();
+            if ($existsRes && ($existsRow = $existsRes->fetch_assoc())) {
+                $existsId = (int)($existsRow['id'] ?? 0);
+            }
+            if ($existsRes) {
+                $existsRes->free();
+            }
+            $existsStmt->close();
+        }
+        if ($existsId > 0) {
+            continue;
+        }
+
+        $cols = [$engFkCol, $engDocTypeCol, $engPathCol];
+        $vals = [$engLinkId, $mappedType, $srcPath];
+        $typesIns = 'iss';
+        if ($engOrigCol) {
+            $cols[] = $engOrigCol;
+            $vals[] = (string)($doc['original_name'] ?? basename($srcPath));
+            $typesIns .= 's';
+        }
+        if ($engMimeCol) {
+            $cols[] = $engMimeCol;
+            $vals[] = (string)($doc['mime_type'] ?? '');
+            $typesIns .= 's';
+        }
+        if ($engSizeCol) {
+            $cols[] = $engSizeCol;
+            $vals[] = (int)($doc['file_size'] ?? 0);
+            $typesIns .= 'i';
+        }
+        if ($engUploadedCol) {
+            $cols[] = $engUploadedCol;
+            $vals[] = (string)($doc['uploaded_at'] ?? date('Y-m-d H:i:s'));
+            $typesIns .= 's';
+        }
+        if ($engVerifiedCol) {
+            $cols[] = $engVerifiedCol;
+            $vals[] = 1;
+            $typesIns .= 'i';
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($cols), '?'));
+        $insStmt = $db->prepare("INSERT INTO engineer_documents (" . implode(', ', $cols) . ") VALUES ({$placeholders})");
+        if ($insStmt) {
+            registered_bind_dynamic($insStmt, $typesIns, $vals);
+            if (!$insStmt->execute()) {
+                error_log('registered_sync_engineer_documents_from_applications insert failed: ' . $insStmt->error);
+            }
+            $insStmt->close();
+        }
+    }
+}
+
 function registered_get_profile_verification_status(mysqli $db, int $entityId, bool $isEngineer): string
 {
     $details = registered_get_profile_verification_details($db, $entityId, $isEngineer);
@@ -696,6 +906,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
                     : ((trim((string)($row['company'] ?? '')) !== '') ? (string) $row['company'] : ('Engineer #' . (int)($row['id'] ?? 0)));
 
                 if ($isEngineerTable) {
+                    registered_sync_engineer_documents_from_applications($db, (int)($row['id'] ?? 0));
                     $row['past_project_count'] = 0;
                     $row['delayed_project_count'] = 0;
                     $row['avg_rating'] = (float) ($row['rating'] ?? 0);
@@ -779,6 +990,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     header('Content-Type: application/json');
     $contractorId = isset($_GET['contractor_id']) ? (int) $_GET['contractor_id'] : 0;
     $useEngineerDocs = registered_table_exists($db, 'engineer_documents');
+    if ($useEngineerDocs && $contractorId > 0) {
+        registered_sync_engineer_documents_from_applications($db, $contractorId);
+    }
     $docsTable = $useEngineerDocs ? 'engineer_documents' : 'contractor_documents';
     [$fkCol, $docLinkId] = registered_resolve_doc_link($db, $contractorId, $useEngineerDocs, $docsTable);
 
@@ -1317,6 +1531,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             }
         }
         $isEngineerTable = $entityTable === 'engineers';
+        if ($isEngineerTable) {
+            registered_sync_engineer_documents_from_applications($db, $contractor_id);
+        }
         $verificationDetails = registered_get_profile_verification_details($db, $contractor_id, $isEngineerTable);
         $verificationStatus = strtolower((string)($verificationDetails['status'] ?? 'incomplete'));
         if ($approvalStatus !== 'approved' || $verificationStatus !== 'complete') {
