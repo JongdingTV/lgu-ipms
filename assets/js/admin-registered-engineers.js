@@ -694,6 +694,10 @@
                 }
                 contractorDocsList.innerHTML = docs.map((d) => {
                     const verified = Number(d.is_verified || 0) === 1;
+                    const isApplicationDoc = String(d.source || '').toLowerCase() === 'application';
+                    const verifyButton = isApplicationDoc
+                        ? '<span class="engineer-project-muted">From application record</span>'
+                        : `<button type="button" class="btn-contractor-secondary btn-verify-doc" data-doc-id="${esc(d.id)}" data-source="${esc(d.source || 'engineer')}" data-verify="${verified ? '0' : '1'}">${verified ? 'Mark Unverified' : 'Verify Document'}</button>`;
                     return `<div class="engineer-project-card">
                         <div class="engineer-project-head">
                             <strong>${esc(String(d.document_type || 'document').toUpperCase())}</strong>
@@ -706,7 +710,7 @@
                             <div><span class="engineer-project-label">Size</span><span class="engineer-project-value">${Number(d.file_size || 0).toLocaleString()} bytes</span></div>
                             <div class="engineer-project-full">
                                 <a class="engineer-project-doc" href="${esc(d.viewer_url || '#')}" target="_blank" rel="noopener">View Document</a>
-                                <button type="button" class="btn-contractor-secondary btn-verify-doc" data-doc-id="${esc(d.id)}" data-source="${esc(d.source || 'engineer')}" data-verify="${verified ? '0' : '1'}">${verified ? 'Mark Unverified' : 'Verify Document'}</button>
+                                ${verifyButton}
                             </div>
                         </div>
                     </div>`;

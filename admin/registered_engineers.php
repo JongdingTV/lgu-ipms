@@ -444,6 +444,215 @@ function registered_sync_engineer_documents_from_applications(mysqli $db, int $e
     }
 }
 
+function registered_find_engineer_application_id(mysqli $db, int $engineerId): int
+{
+    if (
+        $engineerId <= 0 ||
+        !registered_table_exists($db, 'engineers') ||
+        !registered_table_exists($db, 'engineer_applications')
+    ) {
+        return 0;
+    }
+
+    $engEmail = '';
+    $engEmployeeId = 0;
+    $engStmt = $db->prepare("SELECT email, " . (registered_table_has_column($db, 'engineers', 'employee_id') ? 'employee_id' : '0 AS employee_id') . " FROM engineers WHERE id = ? LIMIT 1");
+    if ($engStmt) {
+        $engStmt->bind_param('i', $engineerId);
+        $engStmt->execute();
+        $engRes = $engStmt->get_result();
+        if ($engRes && ($engRow = $engRes->fetch_assoc())) {
+            $engEmail = trim((string)($engRow['email'] ?? ''));
+            $engEmployeeId = (int)($engRow['employee_id'] ?? 0);
+        }
+        if ($engRes) {
+            $engRes->free();
+        }
+        $engStmt->close();
+    }
+
+    if ($engEmail === '' && $engEmployeeId <= 0) {
+        return 0;
+    }
+
+    $sql = "SELECT id FROM engineer_applications WHERE LOWER(COALESCE(status,'')) IN ('approved','verified')";
+    $types = '';
+    $params = [];
+    if ($engEmail !== '' && $engEmployeeId > 0 && registered_table_has_column($db, 'engineer_applications', 'user_id')) {
+        $sql .= " AND (email = ? OR user_id = ?)";
+        $types = 'si';
+        $params = [$engEmail, $engEmployeeId];
+    } elseif ($engEmail !== '') {
+        $sql .= " AND email = ?";
+        $types = 's';
+        $params = [$engEmail];
+    } elseif ($engEmployeeId > 0 && registered_table_has_column($db, 'engineer_applications', 'user_id')) {
+        $sql .= " AND user_id = ?";
+        $types = 'i';
+        $params = [$engEmployeeId];
+    } else {
+        return 0;
+    }
+    $orderCol = registered_table_has_column($db, 'engineer_applications', 'approved_at')
+        ? 'approved_at'
+        : (registered_table_has_column($db, 'engineer_applications', 'updated_at') ? 'updated_at' : 'created_at');
+    $sql .= " ORDER BY {$orderCol} DESC, id DESC LIMIT 1";
+
+    $appId = 0;
+    $stmt = $db->prepare($sql);
+    if ($stmt) {
+        if ($types !== '') {
+            registered_bind_dynamic($stmt, $types, $params);
+        }
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && ($row = $res->fetch_assoc())) {
+            $appId = (int)($row['id'] ?? 0);
+        }
+        if ($res) {
+            $res->free();
+        }
+        $stmt->close();
+    }
+    return $appId;
+}
+
+function registered_find_contractor_application_id(mysqli $db, int $contractorId): int
+{
+    if (
+        $contractorId <= 0 ||
+        !registered_table_exists($db, 'contractors') ||
+        !registered_table_exists($db, 'contractor_applications')
+    ) {
+        return 0;
+    }
+
+    $emailCol = registered_pick_column($db, 'contractors', ['email', 'contact_email']);
+    $userIdCol = registered_pick_column($db, 'contractors', ['account_employee_id', 'employee_id', 'user_id']);
+    $email = '';
+    $userId = 0;
+
+    $selectParts = [];
+    $selectParts[] = $emailCol ? "{$emailCol} AS email" : "'' AS email";
+    $selectParts[] = $userIdCol ? "{$userIdCol} AS user_id" : "0 AS user_id";
+    $stmt = $db->prepare("SELECT " . implode(', ', $selectParts) . " FROM contractors WHERE id = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param('i', $contractorId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && ($row = $res->fetch_assoc())) {
+            $email = trim((string)($row['email'] ?? ''));
+            $userId = (int)($row['user_id'] ?? 0);
+        }
+        if ($res) {
+            $res->free();
+        }
+        $stmt->close();
+    }
+
+    if ($email === '' && $userId <= 0) {
+        return 0;
+    }
+
+    $sql = "SELECT id FROM contractor_applications WHERE LOWER(COALESCE(status,'')) IN ('approved','verified')";
+    $types = '';
+    $params = [];
+    if ($email !== '' && $userId > 0 && registered_table_has_column($db, 'contractor_applications', 'user_id')) {
+        $sql .= " AND (email = ? OR user_id = ?)";
+        $types = 'si';
+        $params = [$email, $userId];
+    } elseif ($email !== '') {
+        $sql .= " AND email = ?";
+        $types = 's';
+        $params = [$email];
+    } elseif ($userId > 0 && registered_table_has_column($db, 'contractor_applications', 'user_id')) {
+        $sql .= " AND user_id = ?";
+        $types = 'i';
+        $params = [$userId];
+    } else {
+        return 0;
+    }
+
+    $orderCol = registered_table_has_column($db, 'contractor_applications', 'approved_at')
+        ? 'approved_at'
+        : (registered_table_has_column($db, 'contractor_applications', 'updated_at') ? 'updated_at' : 'created_at');
+    $sql .= " ORDER BY {$orderCol} DESC, id DESC LIMIT 1";
+
+    $appId = 0;
+    $appStmt = $db->prepare($sql);
+    if ($appStmt) {
+        if ($types !== '') {
+            registered_bind_dynamic($appStmt, $types, $params);
+        }
+        $appStmt->execute();
+        $appRes = $appStmt->get_result();
+        if ($appRes && ($appRow = $appRes->fetch_assoc())) {
+            $appId = (int)($appRow['id'] ?? 0);
+        }
+        if ($appRes) {
+            $appRes->free();
+        }
+        $appStmt->close();
+    }
+    return $appId;
+}
+
+function registered_load_application_documents_for_entity(mysqli $db, int $entityId, bool $isEngineer): array
+{
+    if ($entityId <= 0 || !registered_table_exists($db, 'application_documents')) {
+        return [];
+    }
+
+    $appId = $isEngineer
+        ? registered_find_engineer_application_id($db, $entityId)
+        : registered_find_contractor_application_id($db, $entityId);
+    if ($appId <= 0) {
+        return [];
+    }
+
+    $appType = $isEngineer ? 'engineer' : 'contractor';
+    $docTypeCol = registered_pick_column($db, 'application_documents', ['doc_type', 'document_type', 'type']);
+    $filePathCol = registered_pick_column($db, 'application_documents', ['file_path', 'path', 'document_path', 'storage_path']);
+    if (!$docTypeCol || !$filePathCol) {
+        return [];
+    }
+    $origNameCol = registered_pick_column($db, 'application_documents', ['original_name', 'filename', 'file_name', 'name']);
+    $mimeCol = registered_pick_column($db, 'application_documents', ['mime_type', 'mime']);
+    $sizeCol = registered_pick_column($db, 'application_documents', ['file_size', 'size']);
+    $uploadedCol = registered_pick_column($db, 'application_documents', ['uploaded_at', 'created_at']);
+
+    $origNameSelect = $origNameCol ? "{$origNameCol} AS original_name" : "'' AS original_name";
+    $mimeSelect = $mimeCol ? "{$mimeCol} AS mime_type" : "'' AS mime_type";
+    $sizeSelect = $sizeCol ? "{$sizeCol} AS file_size" : "0 AS file_size";
+    $uploadedSelect = $uploadedCol ? "{$uploadedCol} AS uploaded_at" : "NOW() AS uploaded_at";
+
+    $stmt = $db->prepare(
+        "SELECT id, {$docTypeCol} AS document_type, {$filePathCol} AS file_path, {$origNameSelect}, {$mimeSelect}, {$sizeSelect}, {$uploadedSelect}
+         FROM application_documents
+         WHERE application_type = ? AND application_id = ?
+         ORDER BY id DESC"
+    );
+    if (!$stmt) {
+        return [];
+    }
+    $stmt->bind_param('si', $appType, $appId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = [];
+    while ($res && ($row = $res->fetch_assoc())) {
+        $row['viewer_url'] = 'application_document.php?id=' . (int)($row['id'] ?? 0);
+        $row['source'] = 'application';
+        $row['is_verified'] = 1;
+        $row['expires_on'] = null;
+        $rows[] = $row;
+    }
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+    return $rows;
+}
+
 function registered_get_profile_verification_status(mysqli $db, int $entityId, bool $isEngineer): string
 {
     $details = registered_get_profile_verification_details($db, $entityId, $isEngineer);
@@ -537,6 +746,55 @@ function registered_get_profile_verification_details(mysqli $db, int $entityId, 
         $res->free();
     }
     $stmt->close();
+
+    if (
+        (int)($docsRow['license_docs'] ?? 0) <= 0 ||
+        (int)($docsRow['resume_docs'] ?? 0) <= 0 ||
+        (int)($docsRow['certificate_docs'] ?? 0) <= 0
+    ) {
+        $appId = $isEngineer
+            ? registered_find_engineer_application_id($db, $entityId)
+            : registered_find_contractor_application_id($db, $entityId);
+        if ($appId > 0 && registered_table_exists($db, 'application_documents')) {
+            $appDocTypeCol = registered_pick_column($db, 'application_documents', ['doc_type', 'document_type', 'type']);
+            if ($appDocTypeCol) {
+                $appType = $isEngineer ? 'engineer' : 'contractor';
+                $appLicenseExpr = $isEngineer
+                    ? "SUM(CASE WHEN LOWER(COALESCE({$appDocTypeCol},'')) IN ('prc_id','prc','prc_license','license') THEN 1 ELSE 0 END)"
+                    : "SUM(CASE WHEN LOWER(COALESCE({$appDocTypeCol},'')) IN ('pcab','pcab_license','license') THEN 1 ELSE 0 END)";
+                $appResumeExpr = $isEngineer
+                    ? "SUM(CASE WHEN LOWER(COALESCE({$appDocTypeCol},'')) IN ('resume','resume_cv','cv') THEN 1 ELSE 0 END)"
+                    : "SUM(CASE WHEN LOWER(COALESCE({$appDocTypeCol},'')) IN ('company_profile','profile','resume') THEN 1 ELSE 0 END)";
+                $appStmt = $db->prepare(
+                    "SELECT
+                        {$appLicenseExpr} AS license_docs,
+                        {$appResumeExpr} AS resume_docs,
+                        SUM(CASE WHEN LOWER(COALESCE({$appDocTypeCol},'')) IN ('certificate','certification','certifications') THEN 1 ELSE 0 END) AS certificate_docs,
+                        COUNT(*) AS total_docs
+                     FROM application_documents
+                     WHERE application_type = ? AND application_id = ?"
+                );
+                if ($appStmt) {
+                    $appStmt->bind_param('si', $appType, $appId);
+                    $appStmt->execute();
+                    $appRes = $appStmt->get_result();
+                    $appDocs = $appRes ? $appRes->fetch_assoc() : null;
+                    if ($appRes) {
+                        $appRes->free();
+                    }
+                    $appStmt->close();
+                    if ($appDocs) {
+                        $docsRow['license_docs'] = max((int)($docsRow['license_docs'] ?? 0), (int)($appDocs['license_docs'] ?? 0));
+                        $docsRow['resume_docs'] = max((int)($docsRow['resume_docs'] ?? 0), (int)($appDocs['resume_docs'] ?? 0));
+                        $docsRow['certificate_docs'] = max((int)($docsRow['certificate_docs'] ?? 0), (int)($appDocs['certificate_docs'] ?? 0));
+                        if ((int)($appDocs['total_docs'] ?? 0) > 0) {
+                            $docsRow['verified_docs'] = max((int)($docsRow['verified_docs'] ?? 0), 3);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     $hasAllRequiredDocs =
         (int)($docsRow['license_docs'] ?? 0) > 0 &&
@@ -996,55 +1254,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $docsTable = $useEngineerDocs ? 'engineer_documents' : 'contractor_documents';
     [$fkCol, $docLinkId] = registered_resolve_doc_link($db, $contractorId, $useEngineerDocs, $docsTable);
 
-    if ($contractorId <= 0 || !registered_table_exists($db, $docsTable)) {
+    if ($contractorId <= 0) {
         echo json_encode([]);
         exit;
     }
 
-    $docTypeCol = registered_pick_column($db, $docsTable, ['document_type', 'doc_type', 'type']);
-    $filePathCol = registered_pick_column($db, $docsTable, ['file_path', 'path', 'document_path', 'storage_path']);
-    $origNameCol = registered_pick_column($db, $docsTable, ['original_name', 'filename', 'file_name', 'name']);
-    $mimeCol = registered_pick_column($db, $docsTable, ['mime_type', 'mime']);
-    $sizeCol = registered_pick_column($db, $docsTable, ['file_size', 'size']);
-    $expiresCol = registered_pick_column($db, $docsTable, ['expires_on', 'license_expiry_date', 'license_expiration_date']);
-    $verifiedCol = registered_pick_column($db, $docsTable, ['is_verified']);
-    $verifiedAtCol = registered_pick_column($db, $docsTable, ['verified_at']);
-    $uploadedAtCol = registered_pick_column($db, $docsTable, ['uploaded_at', 'created_at']);
-    if (!$fkCol || !$docTypeCol || !$filePathCol || !$verifiedCol) {
-        echo json_encode([]);
-        exit;
-    }
-    $origNameSelect = $origNameCol ? "{$origNameCol} AS original_name" : "'' AS original_name";
-    $mimeSelect = $mimeCol ? "{$mimeCol} AS mime_type" : "'' AS mime_type";
-    $sizeSelect = $sizeCol ? "{$sizeCol} AS file_size" : "0 AS file_size";
-    $expiresSelect = $expiresCol ? "{$expiresCol} AS expires_on" : 'NULL AS expires_on';
-    $verifiedAtSelect = $verifiedAtCol ? "{$verifiedAtCol} AS verified_at" : 'NULL AS verified_at';
-    $uploadedAtSelect = $uploadedAtCol ? "{$uploadedAtCol} AS uploaded_at" : 'NOW() AS uploaded_at';
-
-    $stmt = $db->prepare(
-        "SELECT id, {$fkCol} AS contractor_id, {$docTypeCol} AS document_type, {$filePathCol} AS file_path, {$origNameSelect}, {$mimeSelect}, {$sizeSelect}, {$expiresSelect}, {$verifiedCol} AS is_verified, {$verifiedAtSelect}, {$uploadedAtSelect}
-         FROM {$docsTable}
-         WHERE {$fkCol} = ?
-         ORDER BY id DESC"
-    );
-    if (!$stmt) {
-        echo json_encode([]);
-        exit;
-    }
-    $stmt->bind_param('i', $docLinkId);
-    $stmt->execute();
-    $res = $stmt->get_result();
     $rows = [];
-    $viewerSource = $useEngineerDocs ? 'engineer' : 'contractor';
-    while ($res && ($row = $res->fetch_assoc())) {
-        $row['viewer_url'] = 'engineer-document.php?id=' . (int)($row['id'] ?? 0) . '&source=' . rawurlencode($viewerSource);
-        $row['source'] = $viewerSource;
-        $rows[] = $row;
+    if (registered_table_exists($db, $docsTable)) {
+        $docTypeCol = registered_pick_column($db, $docsTable, ['document_type', 'doc_type', 'type']);
+        $filePathCol = registered_pick_column($db, $docsTable, ['file_path', 'path', 'document_path', 'storage_path']);
+        $origNameCol = registered_pick_column($db, $docsTable, ['original_name', 'filename', 'file_name', 'name']);
+        $mimeCol = registered_pick_column($db, $docsTable, ['mime_type', 'mime']);
+        $sizeCol = registered_pick_column($db, $docsTable, ['file_size', 'size']);
+        $expiresCol = registered_pick_column($db, $docsTable, ['expires_on', 'license_expiry_date', 'license_expiration_date']);
+        $verifiedCol = registered_pick_column($db, $docsTable, ['is_verified']);
+        $verifiedAtCol = registered_pick_column($db, $docsTable, ['verified_at']);
+        $uploadedAtCol = registered_pick_column($db, $docsTable, ['uploaded_at', 'created_at']);
+        if ($fkCol && $docTypeCol && $filePathCol && $verifiedCol) {
+            $origNameSelect = $origNameCol ? "{$origNameCol} AS original_name" : "'' AS original_name";
+            $mimeSelect = $mimeCol ? "{$mimeCol} AS mime_type" : "'' AS mime_type";
+            $sizeSelect = $sizeCol ? "{$sizeCol} AS file_size" : "0 AS file_size";
+            $expiresSelect = $expiresCol ? "{$expiresCol} AS expires_on" : 'NULL AS expires_on';
+            $verifiedAtSelect = $verifiedAtCol ? "{$verifiedAtCol} AS verified_at" : 'NULL AS verified_at';
+            $uploadedAtSelect = $uploadedAtCol ? "{$uploadedAtCol} AS uploaded_at" : 'NOW() AS uploaded_at';
+            $stmt = $db->prepare(
+                "SELECT id, {$fkCol} AS contractor_id, {$docTypeCol} AS document_type, {$filePathCol} AS file_path, {$origNameSelect}, {$mimeSelect}, {$sizeSelect}, {$expiresSelect}, {$verifiedCol} AS is_verified, {$verifiedAtSelect}, {$uploadedAtSelect}
+                 FROM {$docsTable}
+                 WHERE {$fkCol} = ?
+                 ORDER BY id DESC"
+            );
+            if ($stmt) {
+                $stmt->bind_param('i', $docLinkId);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                $viewerSource = $useEngineerDocs ? 'engineer' : 'contractor';
+                while ($res && ($row = $res->fetch_assoc())) {
+                    $row['viewer_url'] = 'engineer-document.php?id=' . (int)($row['id'] ?? 0) . '&source=' . rawurlencode($viewerSource);
+                    $row['source'] = $viewerSource;
+                    $rows[] = $row;
+                }
+                if ($res) {
+                    $res->free();
+                }
+                $stmt->close();
+            }
+        }
     }
-    if ($res) {
-        $res->free();
+
+    if (empty($rows)) {
+        $rows = registered_load_application_documents_for_entity($db, $contractorId, $useEngineerDocs);
     }
-    $stmt->close();
+
     echo json_encode($rows);
     exit;
 }
