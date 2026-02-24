@@ -140,6 +140,25 @@ function engineer_table_has_column(mysqli $db, string $table, string $column): b
     return $ok;
 }
 
+function engineer_normalize_role(string $role): string {
+    $normalized = strtolower(trim($role));
+    if ($normalized === '') return '';
+    $map = [
+        'superadmin' => 'super_admin',
+        'super admin' => 'super_admin',
+        'department head' => 'department_head',
+        'department-head' => 'department_head',
+        'dept_head' => 'department_head',
+        'dept head' => 'department_head',
+        'project_engineer' => 'engineer',
+        'municipal_engineer' => 'engineer',
+        'city_engineer' => 'engineer',
+        'accredited_contractor' => 'contractor',
+        'private_contractor' => 'contractor'
+    ];
+    return $map[$normalized] ?? $normalized;
+}
+
 function messaging_ensure_tables(mysqli $db): void {
     $db->query("CREATE TABLE IF NOT EXISTS project_conversations (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -389,12 +408,11 @@ if ($action === 'load_chat_contacts') {
     $rows = [];
     $seen = [];
     if (engineer_table_exists($db, 'employees')) {
-        $employeeWhere = "LOWER(TRIM(role)) = 'contractor'";
-        if (engineer_table_has_column($db, 'employees', 'status')) {
-            $employeeWhere .= " AND LOWER(TRIM(COALESCE(status, 'active'))) = 'active'";
-        }
-        $res = $db->query("SELECT id, COALESCE(first_name,'') AS first_name, COALESCE(last_name,'') AS last_name, COALESCE(email,'') AS email FROM employees WHERE {$employeeWhere} ORDER BY id DESC LIMIT 300");
+        $sql = "SELECT id, COALESCE(first_name,'') AS first_name, COALESCE(last_name,'') AS last_name, COALESCE(email,'') AS email, COALESCE(role,'') AS role";
+        $sql .= " FROM employees ORDER BY id DESC LIMIT 600";
+        $res = $db->query($sql);
         while ($res && ($e = $res->fetch_assoc())) {
+            if (engineer_normalize_role((string)($e['role'] ?? '')) !== 'contractor') continue;
             $userId = (int)($e['id'] ?? 0);
             if ($userId <= 0 || isset($seen[$userId])) continue;
             $seen[$userId] = true;
