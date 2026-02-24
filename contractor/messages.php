@@ -7,6 +7,7 @@ check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 rbac_require_from_matrix('contractor.workspace.view', ['contractor','admin','super_admin']);
 check_suspicious_activity();
+$csrfToken = generate_csrf_token();
 
 if (!isset($_SESSION['employee_id'])) {
     header('Location: /contractor/index.php');
@@ -61,7 +62,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
     <div class="nav-action-footer"><a href="/contractor/logout.php" class="btn-logout nav-logout"><span>Logout</span></a></div>
 </header>
 
-<section class="main-content" data-messages-root data-api-base="/contractor/api.php" data-role="contractor" data-user-id="<?php echo (int)($_SESSION['employee_id'] ?? 0); ?>" data-csrf="<?php echo htmlspecialchars((string)($_SESSION['csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+<section class="main-content" data-messages-root data-api-base="/contractor/api.php" data-role="contractor" data-user-id="<?php echo (int)($_SESSION['employee_id'] ?? 0); ?>" data-csrf="<?php echo htmlspecialchars((string)($csrfToken), ENT_QUOTES, 'UTF-8'); ?>">
     <div class="dash-header">
         <h1>Project Messages</h1>
         <p>Communicate with your assigned engineer per project.</p>
@@ -92,3 +93,5 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
 <script src="../assets/js/project-messages.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/project-messages.js'); ?>"></script>
 </body>
 </html>
+
+

@@ -12,7 +12,8 @@
   const badgeClass = (s) => String(s || '').toLowerCase().replace(/\s+/g, '-');
 
   function get(action, extra) {
-    return fetch(apiBase + '?action=' + encodeURIComponent(action) + (extra || ''), { credentials: 'same-origin' }).then(r => r.json());
+    return fetch(apiBase + '?action=' + encodeURIComponent(action) + (extra || ''), { credentials: 'same-origin' })
+      .then(r => r.json().catch(() => ({ success: false, message: 'Invalid server response.' })));
   }
   function post(action, payload, withFile) {
     let body;
@@ -26,11 +27,13 @@
       body.set('csrf_token', csrf);
       headers['Content-Type'] = 'application/x-www-form-urlencoded';
     }
-    return fetch(apiBase + '?action=' + encodeURIComponent(action), { method: 'POST', credentials: 'same-origin', headers, body: withFile ? body : body.toString() }).then(r => r.json());
+    return fetch(apiBase + '?action=' + encodeURIComponent(action), { method: 'POST', credentials: 'same-origin', headers, body: withFile ? body : body.toString() })
+      .then(r => r.json().catch(() => ({ success: false, message: 'Invalid server response.' })));
   }
 
   async function initMyProjects() {
     const tbody = document.getElementById('cmMyProjectsBody');
+    if (!tbody) return;
     const j = await get('load_my_projects');
     const rows = Array.isArray((j || {}).data) ? j.data : [];
     tbody.innerHTML = rows.map(r =>
@@ -40,6 +43,7 @@
 
   async function initProjectDetails() {
     const container = document.getElementById('cmProjectDetails');
+    if (!container) return;
     if (!projectIdFromUrl) {
       container.innerHTML = '<div class="cm-feedback">No project selected.</div>';
       return;
@@ -73,12 +77,14 @@
   async function initDeliverables() {
     await bindProjectOptions('cmProject');
     const tbody = document.getElementById('cmDeliverablesBody');
+    const submitBtn = document.getElementById('cmSubmitDeliverable');
+    if (!tbody || !submitBtn) return;
     const load = async () => {
       const j = await get('load_deliverables');
       const rows = Array.isArray((j || {}).data) ? j.data : [];
       tbody.innerHTML = rows.map(r => '<tr><td>' + Number(r.project_id || 0) + '</td><td>' + esc(r.deliverable_type || '') + '</td><td>' + esc(r.milestone_reference || '') + '</td><td><span class="cm-badge ' + badgeClass(r.status || 'Submitted') + '">' + esc(r.status || 'Submitted') + '</span></td><td>' + esc(r.created_at || '') + '</td></tr>').join('') || '<tr><td colspan="5">No deliverables submitted.</td></tr>';
     };
-    document.getElementById('cmSubmitDeliverable').addEventListener('click', async () => {
+    submitBtn.addEventListener('click', async () => {
       const fd = new FormData();
       fd.append('project_id', document.getElementById('cmProject').value);
       fd.append('deliverable_type', document.getElementById('cmDeliverableType').value);
@@ -87,7 +93,8 @@
       const f = document.getElementById('cmFile').files[0];
       if (f) fd.append('attachment', f);
       const j = await post('submit_deliverable', fd, true);
-      document.getElementById('cmFeedback').textContent = (j && j.success) ? 'Deliverable submitted.' : ((j && j.message) || 'Submission failed.');
+      const fb = document.getElementById('cmFeedback');
+      if (fb) fb.textContent = (j && j.success) ? 'Deliverable submitted.' : ((j && j.message) || 'Submission failed.');
       if (j && j.success) load();
     });
     load();
@@ -96,12 +103,14 @@
   async function initExpenses() {
     await bindProjectOptions('cmProject');
     const tbody = document.getElementById('cmExpensesBody');
+    const submitBtn = document.getElementById('cmSubmitExpense');
+    if (!tbody || !submitBtn) return;
     const load = async () => {
       const j = await get('load_expense_entries');
       const rows = Array.isArray((j || {}).data) ? j.data : [];
       tbody.innerHTML = rows.map(r => '<tr><td>' + Number(r.project_id || 0) + '</td><td>PHP ' + Number(r.amount || 0).toLocaleString() + '</td><td>' + esc(r.category || '') + '</td><td>' + esc(r.status || '') + '</td><td>' + esc(r.created_at || '') + '</td></tr>').join('') || '<tr><td colspan="5">No expense entries.</td></tr>';
     };
-    document.getElementById('cmSubmitExpense').addEventListener('click', async () => {
+    submitBtn.addEventListener('click', async () => {
       const fd = new FormData();
       fd.append('project_id', document.getElementById('cmProject').value);
       fd.append('amount', document.getElementById('cmAmount').value);
@@ -110,7 +119,8 @@
       const f = document.getElementById('cmReceipt').files[0];
       if (f) fd.append('receipt', f);
       const j = await post('submit_expense_entry', fd, true);
-      document.getElementById('cmFeedback').textContent = (j && j.success) ? 'Expense submitted.' : ((j && j.message) || 'Submission failed.');
+      const fb = document.getElementById('cmFeedback');
+      if (fb) fb.textContent = (j && j.success) ? 'Expense submitted.' : ((j && j.message) || 'Submission failed.');
       if (j && j.success) load();
     });
     load();
@@ -119,12 +129,14 @@
   async function initRequests() {
     await bindProjectOptions('cmProject');
     const tbody = document.getElementById('cmRequestsBody');
+    const submitBtn = document.getElementById('cmSubmitRequest');
+    if (!tbody || !submitBtn) return;
     const load = async () => {
       const j = await get('load_requests_center');
       const rows = Array.isArray((j || {}).data) ? j.data : [];
       tbody.innerHTML = rows.map(r => '<tr><td>' + Number(r.project_id || 0) + '</td><td>' + esc(r.request_type || '') + '</td><td>' + esc(r.details || '') + '</td><td>' + esc(r.status || '') + '</td><td>' + esc(r.created_at || '') + '</td></tr>').join('') || '<tr><td colspan="5">No requests.</td></tr>';
     };
-    document.getElementById('cmSubmitRequest').addEventListener('click', async () => {
+    submitBtn.addEventListener('click', async () => {
       const fd = new FormData();
       fd.append('project_id', document.getElementById('cmProject').value);
       fd.append('request_type', document.getElementById('cmRequestType').value);
@@ -132,7 +144,8 @@
       const f = document.getElementById('cmAttachment').files[0];
       if (f) fd.append('attachment', f);
       const j = await post('submit_request_center', fd, true);
-      document.getElementById('cmFeedback').textContent = (j && j.success) ? 'Request submitted.' : ((j && j.message) || 'Submission failed.');
+      const fb = document.getElementById('cmFeedback');
+      if (fb) fb.textContent = (j && j.success) ? 'Request submitted.' : ((j && j.message) || 'Submission failed.');
       if (j && j.success) load();
     });
     load();
@@ -141,12 +154,14 @@
   async function initIssues() {
     await bindProjectOptions('cmProject');
     const tbody = document.getElementById('cmIssuesBody');
+    const submitBtn = document.getElementById('cmSubmitIssue');
+    if (!tbody || !submitBtn) return;
     const load = async () => {
       const j = await get('load_issues');
       const rows = Array.isArray((j || {}).data) ? j.data : [];
       tbody.innerHTML = rows.map(r => '<tr><td>' + Number(r.project_id || 0) + '</td><td>' + esc(r.issue_type || '') + '</td><td>' + esc(r.severity_level || '') + '</td><td>' + esc(r.status || '') + '</td><td>' + esc(r.created_at || '') + '</td></tr>').join('') || '<tr><td colspan="5">No issues.</td></tr>';
     };
-    document.getElementById('cmSubmitIssue').addEventListener('click', async () => {
+    submitBtn.addEventListener('click', async () => {
       const fd = new FormData();
       fd.append('project_id', document.getElementById('cmProject').value);
       fd.append('issue_type', document.getElementById('cmIssueType').value);
@@ -155,7 +170,8 @@
       const f = document.getElementById('cmAttachment').files[0];
       if (f) fd.append('attachment', f);
       const j = await post('submit_issue', fd, true);
-      document.getElementById('cmFeedback').textContent = (j && j.success) ? 'Issue submitted.' : ((j && j.message) || 'Submission failed.');
+      const fb = document.getElementById('cmFeedback');
+      if (fb) fb.textContent = (j && j.success) ? 'Issue submitted.' : ((j && j.message) || 'Submission failed.');
       if (j && j.success) load();
     });
     load();
@@ -163,6 +179,7 @@
 
   async function initNotifications() {
     const tbody = document.getElementById('cmNotificationsBody');
+    if (!tbody) return;
     const j = await get('load_notifications_center');
     const rows = Array.isArray((j || {}).data) ? j.data : [];
     tbody.innerHTML = rows.map(r => '<tr><td>' + esc(r.title || 'Notification') + '</td><td>' + esc(r.body || '') + '</td><td>' + esc(r.created_at || '') + '</td></tr>').join('') || '<tr><td colspan="3">No notifications yet.</td></tr>';

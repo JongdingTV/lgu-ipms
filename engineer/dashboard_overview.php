@@ -234,11 +234,18 @@ $db->close();
             <div class="nav-user-name"><?php echo htmlspecialchars($sidebarName, ENT_QUOTES, 'UTF-8'); ?></div>
             <div class="nav-user-email"><?php echo htmlspecialchars($sidebarRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
-                <div class="nav-links">
+        <div class="nav-links">
             <a href="dashboard_overview.php" class="active"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard Overview</a>
+            <a href="assigned_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">My Assigned Projects</a>
             <a href="monitoring.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Project Monitoring</a>
             <a href="task_milestone.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
+            <a href="submissions_validation.php"><img src="../assets/images/admin/monitoring.png" class="nav-icon" alt="">Submissions for Validation</a>
+            <a href="site_reports.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Site Reports</a>
+            <a href="inspection_requests.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Inspection Requests</a>
+            <a href="issues_risks.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Issues & Risks</a>
+            <a href="documents.php"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">Documents</a>
             <a href="messages.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Messages</a>
+            <a href="notifications.php"><img src="../assets/images/admin/notifications.png" class="nav-icon" alt="">Notifications</a>
             <a href="profile.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Profile</a>
         </div>
         <div class="nav-divider"></div>
@@ -465,7 +472,6 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

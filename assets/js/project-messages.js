@@ -17,6 +17,7 @@
   const textInput = document.getElementById('messageText');
   const fileInput = document.getElementById('messageFile');
   const sendBtn = document.getElementById('messageSendBtn');
+  if (!projectSearch || !threadSearch || !projectList || !threadTitle || !feed || !textInput || !fileInput || !sendBtn) return;
 
   const state = { projects: [], filteredProjects: [], activeProjectId: 0, messages: [] };
   const preselectedProjectId = Number(new URLSearchParams(window.location.search).get('project_id') || 0);
@@ -32,7 +33,8 @@
 
   function apiGet(action, extra) {
     const q = apiBase + '?action=' + encodeURIComponent(action) + (extra || '');
-    return fetch(q, { credentials: 'same-origin' }).then(r => r.json());
+    return fetch(q, { credentials: 'same-origin' })
+      .then(r => r.json().catch(() => ({ success: false, message: 'Invalid server response.' })));
   }
 
   function apiPost(action, payload, withFile) {
@@ -52,7 +54,7 @@
       credentials: 'same-origin',
       headers,
       body: withFile ? body : body.toString()
-    }).then(r => r.json());
+    }).then(r => r.json().catch(() => ({ success: false, message: 'Invalid server response.' })));
   }
 
   function renderProjects() {
