@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Import security functions - go up 2 levels to root
 require dirname(__DIR__) . '/session-auth.php';
 // Database connection
@@ -236,7 +236,7 @@ $db->close();
         </div>
         <div class="nav-links">
             <a href="dashboard_overview.php" class="active"><img src="../assets/images/admin/dashboard.png" alt="Dashboard Icon" class="nav-icon">Dashboard</a>
-            <a href="my_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">My Projects</a>
+            <a href="my_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">My Assigned Projects</a>
             <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Submit Progress</a>
             <a href="deliverables.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Deliverables</a>
             <a href="expenses.php"><img src="../assets/images/admin/budget.png" class="nav-icon" alt="">Expenses / Billing</a>
@@ -469,6 +469,8 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
+
+
 
 
 

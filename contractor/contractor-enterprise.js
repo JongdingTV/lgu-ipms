@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 (function () {
   const path = (window.location.pathname || '').replace(/\\/g, '/');
@@ -112,7 +112,7 @@
 
     const links = [
       { href: 'dashboard_overview.php', label: 'Dashboard', icon: '../assets/images/admin/dashboard.png' },
-      { href: 'my_projects.php', label: 'My Projects', icon: '../assets/images/admin/list.png' },
+      { href: 'my_projects.php', label: 'My Assigned Projects', icon: '../assets/images/admin/list.png' },
       { href: 'progress_monitoring.php', label: 'Submit Progress', icon: '../assets/images/admin/chart.png' },
       { href: 'deliverables.php', label: 'Deliverables', icon: '../assets/images/admin/production.png' },
       { href: 'expenses.php', label: 'Expenses / Billing', icon: '../assets/images/admin/budget.png' },
@@ -666,7 +666,7 @@
           <div class="project-meta">
             <div class="project-meta-item"><span class="project-meta-label">Location:</span><span class="project-meta-value">${p.location || '-'}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Sector:</span><span class="project-meta-value">${p.sector || '-'}</span></div>
-            <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value">₱${Number(p.budget || 0).toLocaleString()}</span></div>
+            <div class="project-meta-item"><span class="project-meta-label">Budget:</span><span class="project-meta-value">â‚±${Number(p.budget || 0).toLocaleString()}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Engineers:</span><span class="project-meta-value">${Engineers.length}</span></div>
             <div class="project-meta-item"><span class="project-meta-label">Process Update:</span><span class="project-meta-value">${processUpdate}</span></div>
           </div>
@@ -870,5 +870,7 @@
     initProgressMonitoringFix();
   });
 })();
+
+
 
 

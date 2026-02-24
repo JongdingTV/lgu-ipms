@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/session-auth.php';
 
@@ -35,7 +35,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
     <div class="nav-user-profile"><div class="user-initial-badge"><?php echo htmlspecialchars($sidebarInitial, ENT_QUOTES, 'UTF-8'); ?></div><div class="nav-user-name"><?php echo htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8'); ?></div><div class="nav-user-email"><?php echo htmlspecialchars($sidebarRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div></div>
     <div class="nav-links">
         <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard</a>
-        <a href="my_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">My Projects</a>
+        <a href="my_projects.php"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">My Assigned Projects</a>
         <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Submit Progress</a>
         <a href="deliverables.php" class="active"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Deliverables</a>
         <a href="expenses.php"><img src="../assets/images/admin/budget.png" class="nav-icon" alt="">Expenses / Billing</a>
@@ -58,3 +58,5 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
 <script src="../assets/js/contractor-module.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/contractor-module.js'); ?>"></script>
 </body>
 </html>
+
+

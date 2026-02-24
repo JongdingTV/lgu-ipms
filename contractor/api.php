@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/session-auth.php';
 
@@ -316,7 +316,10 @@ function contractor_identity(mysqli $db): array {
         }
     }
     $ids = [];
-    if ($employeeId > 0) $ids[$employeeId] = true;
+    if (!contractor_table_exists($db, 'contractors') && $employeeId > 0) {
+        // Legacy fallback only when contractors table is unavailable.
+        $ids[$employeeId] = true;
+    }
     if (contractor_table_exists($db, 'contractors')) {
         $stmtByEmp = $db->prepare("SELECT id FROM contractors WHERE account_employee_id = ?");
         if ($stmtByEmp && $employeeId > 0) {
@@ -1570,3 +1573,4 @@ if ($action === 'load_notifications_center') {
 }
 
 json_out(['success' => false, 'message' => 'Unknown action.'], 400);
+

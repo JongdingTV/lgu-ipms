@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
@@ -13,7 +13,7 @@ $roleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_role'] ?
 ?>
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>My Projects - Contractor</title>
+<title>My Assigned Projects - Contractor</title>
 <link rel="icon" type="image/png" href="/assets/images/icons/ipms-icon2.png">
 <link rel="stylesheet" href="../assets/css/design-system.css">
 <link rel="stylesheet" href="../assets/css/components.css">
@@ -28,7 +28,7 @@ $roleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_role'] ?
 <div class="nav-user-profile"><div class="user-initial-badge"><?php echo htmlspecialchars($initial, ENT_QUOTES, 'UTF-8'); ?></div><div class="nav-user-name"><?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?></div><div class="nav-user-email"><?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></div></div>
 <div class="nav-links">
 <a href="dashboard_overview.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard</a>
-<a href="my_projects.php" class="active"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">My Projects</a>
+<a href="my_projects.php" class="active"><img src="../assets/images/admin/list.png" class="nav-icon" alt="">My Assigned Projects</a>
 <a href="progress_monitoring.php"><img src="../assets/images/admin/chart.png" class="nav-icon" alt="">Submit Progress</a>
 <a href="deliverables.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Deliverables</a>
 <a href="expenses.php"><img src="../assets/images/admin/budget.png" class="nav-icon" alt="">Expenses / Billing</a>
@@ -39,12 +39,14 @@ $roleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_role'] ?
 <a href="profile.php"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Profile</a>
 </div><div class="nav-divider"></div><div class="nav-action-footer"><a href="/contractor/logout.php" class="btn-logout nav-logout"><span>Logout</span></a></div></header>
 <section class="main-content" data-contractor-module data-module="my-projects" data-csrf="<?php echo htmlspecialchars((string)($csrfToken), ENT_QUOTES, 'UTF-8'); ?>">
-<div class="dash-header"><h1>My Projects</h1><p>Assigned projects and execution actions.</p></div>
+<div class="dash-header"><h1>My Assigned Projects</h1><p>Assigned projects and execution actions.</p></div>
 <div class="cm-card cm-table-wrap"><table class="cm-table"><thead><tr><th>Code</th><th>Project</th><th>Location</th><th>Progress</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody id="cmMyProjectsBody"><tr><td colspan="7">Loading...</td></tr></tbody></table></div>
 </section>
 <script src="contractor.js?v=<?php echo filemtime(__DIR__ . '/contractor.js'); ?>"></script>
 <script src="contractor-enterprise.js?v=<?php echo filemtime(__DIR__ . '/contractor-enterprise.js'); ?>"></script>
 <script src="../assets/js/contractor-module.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/contractor-module.js'); ?>"></script>
 </body></html>
+
+
 
 
