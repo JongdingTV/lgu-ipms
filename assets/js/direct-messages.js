@@ -17,6 +17,7 @@
   const textInput = document.getElementById('messageText');
   const sendBtn = document.getElementById('messageSendBtn');
   const fileInput = document.getElementById('messageFile');
+  const pageTitle = root.querySelector('.dash-header h1');
 
   if (!apiBase || !contactSearch || !threadSearch || !contactList || !threadTitle || !feed || !textInput || !sendBtn) return;
   if (fileInput) fileInput.style.display = 'none';
@@ -105,6 +106,22 @@
     return { refreshBtn, deleteBtn };
   }
 
+  function renderGlobalUnread() {
+    if (!pageTitle) return;
+    let badge = pageTitle.querySelector('.messages-total-unread');
+    const total = state.contacts.reduce((sum, c) => sum + Number(c.unread_count || 0), 0);
+    if (total <= 0) {
+      if (badge) badge.remove();
+      return;
+    }
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'messages-total-unread';
+      pageTitle.appendChild(badge);
+    }
+    badge.textContent = String(total);
+  }
+
   function renderContacts() {
     const q = (contactSearch.value || '').trim().toLowerCase();
     const rows = state.contacts.filter((c) => {
@@ -121,14 +138,17 @@
       const isActive = Number(c.user_id) === Number(state.activeContactId);
       const name = String(c.display_name || 'Contact');
       const initial = esc(name.charAt(0).toUpperCase() || 'C');
+      const unread = Number(c.unread_count || 0);
+      const unreadHtml = unread > 0 ? '<span class="messages-unread-dot">' + unread + '</span>' : '';
       return '<button type="button" class="messages-project-item' + (isActive ? ' active' : '') + '" data-id="' + Number(c.user_id) + '">' +
         '<div class="messages-contact-avatar">' + initial + '</div>' +
         '<div class="messages-contact-main">' +
-          '<div class="messages-contact-title">' + esc(name) + '</div>' +
+          '<div class="messages-contact-title">' + esc(name) + unreadHtml + '</div>' +
           '<div class="messages-meta"><span>' + esc(c.role_label || '') + '</span><span>' + esc(c.email || '') + '</span></div>' +
         '</div>' +
       '</button>';
     }).join('');
+    renderGlobalUnread();
   }
 
   function renderMessages() {
