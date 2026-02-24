@@ -8,7 +8,7 @@ set_no_cache_headers();
 
 // After explicit logout, do not auto-login immediately from remember cookie.
 $isExplicitLogout = isset($_GET['logout']) && $_GET['logout'] === '1';
-if ($isExplicitLogout) {
+if ($isExplicitLogout && $_SERVER['REQUEST_METHOD'] === 'GET') {
     // Force a clean anonymous session state on explicit logout/login intent.
     destroy_session();
     if (session_status() === PHP_SESSION_NONE) {

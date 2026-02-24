@@ -9,8 +9,10 @@
         var i;
         function toggleSidebar(evt) {
             if (evt && evt.preventDefault) evt.preventDefault();
-            body.classList.toggle('sidebar-hidden');
+            // Keep contractor sidebar visible on all module pages.
+            body.classList.remove('sidebar-hidden');
         }
+        body.classList.remove('sidebar-hidden');
         for (i = 0; i < toggles.length; i++) {
             if (toggles[i]) toggles[i].addEventListener('click', toggleSidebar);
         }
@@ -74,4 +76,19 @@
     } else {
         init();
     }
+})();
+
+// Keep contractor sidebar visible even if legacy handlers attempt to collapse it.
+(function () {
+    function enforceVisibleSidebar() {
+        if (!document.body) return;
+        document.body.classList.remove('sidebar-hidden');
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', enforceVisibleSidebar);
+    } else {
+        enforceVisibleSidebar();
+    }
+    document.addEventListener('click', enforceVisibleSidebar, true);
+    window.addEventListener('pageshow', enforceVisibleSidebar);
 })();

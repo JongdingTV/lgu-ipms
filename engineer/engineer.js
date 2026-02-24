@@ -4283,6 +4283,23 @@ document.addEventListener('click', function (event) {
   }
 });
 
+/* ===== Keep Sidebar Visible (Engineer) ===== */
+(function () {
+  function enforceVisibleSidebar() {
+    if (!document.body) return;
+    document.body.classList.remove('sidebar-hidden');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', enforceVisibleSidebar);
+  } else {
+    enforceVisibleSidebar();
+  }
+
+  document.addEventListener('click', enforceVisibleSidebar, true);
+  window.addEventListener('pageshow', enforceVisibleSidebar);
+})();
+
 /* ===== Admin unified UI behavior layer (final overrides) ===== */
 (function () {
   const path = (window.location.pathname || "").replace(/\\/g, "/");
