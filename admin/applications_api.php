@@ -1,4 +1,10 @@
 <?php
+if (function_exists('ob_start')) {
+    ob_start();
+}
+@ini_set('display_errors', '0');
+mysqli_report(MYSQLI_REPORT_OFF);
+
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/includes/rbac.php';
@@ -10,8 +16,22 @@ check_suspicious_activity();
 
 header('Content-Type: application/json');
 
+set_exception_handler(function (Throwable $e): void {
+    error_log('applications_api uncaught: ' . $e->getMessage());
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'Internal server error.']);
+    exit;
+});
+
 function app_json(array $payload, int $status = 200): void
 {
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
     http_response_code($status);
     echo json_encode($payload);
     exit;
@@ -53,6 +73,13 @@ function app_safe_query(mysqli $db, string $sql): bool
     }
 }
 
+function app_ensure_column(mysqli $db, string $table, string $column, string $definition): void
+{
+    if (!app_col_exists($db, $table, $column)) {
+        app_safe_query($db, "ALTER TABLE {$table} ADD COLUMN {$column} {$definition}");
+    }
+}
+
 function app_ensure_schema(mysqli $db): void
 {
     app_safe_query($db, "CREATE TABLE IF NOT EXISTS engineer_applications (
@@ -88,6 +115,7 @@ function app_ensure_schema(mysqli $db): void
         email VARCHAR(190) NOT NULL,
         phone VARCHAR(60) NOT NULL,
         address VARCHAR(255) NULL,
+        assigned_area VARCHAR(190) NULL,
         specialization VARCHAR(120) NOT NULL,
         years_in_business INT NOT NULL DEFAULT 0,
         license_no VARCHAR(120) NULL,
@@ -126,6 +154,20 @@ function app_ensure_schema(mysqli $db): void
         remarks TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // Backfill missing columns in existing deployments
+    app_ensure_column($db, 'contractor_applications', 'assigned_area', "VARCHAR(190) NULL AFTER address");
+    app_ensure_column($db, 'contractor_applications', 'account_password_hash', "VARCHAR(255) NULL AFTER status");
+    app_ensure_column($db, 'contractor_applications', 'verified_by', "INT NULL AFTER rejection_reason");
+    app_ensure_column($db, 'contractor_applications', 'verified_at', "DATETIME NULL AFTER verified_by");
+    app_ensure_column($db, 'contractor_applications', 'approved_by', "INT NULL AFTER verified_at");
+    app_ensure_column($db, 'contractor_applications', 'approved_at', "DATETIME NULL AFTER approved_by");
+
+    app_ensure_column($db, 'engineer_applications', 'account_password_hash', "VARCHAR(255) NULL AFTER status");
+    app_ensure_column($db, 'engineer_applications', 'verified_by', "INT NULL AFTER rejection_reason");
+    app_ensure_column($db, 'engineer_applications', 'verified_at', "DATETIME NULL AFTER verified_by");
+    app_ensure_column($db, 'engineer_applications', 'approved_by', "INT NULL AFTER verified_at");
+    app_ensure_column($db, 'engineer_applications', 'approved_at', "DATETIME NULL AFTER approved_by");
 }
 
 function app_pick_col(mysqli $db, string $table, array $candidates): ?string
@@ -531,6 +573,20 @@ if ($action === 'load_summary') {
         }
         $res->free();
     }
+    $hasRows = array_sum($out) > 0;
+    if (!$hasRows) {
+        $legacyRows = app_legacy_rows($db, $type);
+        if (!empty($legacyRows)) {
+            $legacy = ['pending' => 0, 'under_review' => 0, 'verified' => 0, 'approved' => 0, 'rejected' => 0, 'suspended' => 0];
+            foreach ($legacyRows as $row) {
+                $status = strtolower(trim((string)($row['status'] ?? 'approved')));
+                if ($status === 'active' || $status === 'approved') $status = 'approved';
+                if ($status === 'inactive' || $status === 'blacklisted') $status = 'rejected';
+                if (isset($legacy[$status])) $legacy[$status]++;
+            }
+            app_json(['success' => true, 'data' => $legacy, 'legacy' => true]);
+        }
+    }
     app_json(['success' => true, 'data' => $out]);
 }
 
@@ -567,9 +623,10 @@ if ($action === 'load_applications') {
     $area = strtolower(trim((string)($_GET['area'] ?? '')));
     $dateSubmitted = trim((string)($_GET['date_submitted'] ?? ''));
 
+    $assignedAreaField = app_col_exists($db, $appTable, 'assigned_area') ? 'assigned_area' : "'' AS assigned_area";
     $fields = $type === 'engineer'
-        ? "id, full_name AS display_name, email, phone, department, position, specialization, assigned_area, status, created_at"
-        : "id, company_name AS display_name, email, phone, NULL AS department, NULL AS position, specialization, assigned_area, status, created_at";
+        ? "id, full_name AS display_name, email, phone, department, position, specialization, {$assignedAreaField}, status, created_at"
+        : "id, company_name AS display_name, email, phone, NULL AS department, NULL AS position, specialization, {$assignedAreaField}, status, created_at";
 
     $sql = "SELECT {$fields} FROM {$appTable} WHERE 1=1";
     $types = '';
@@ -620,6 +677,12 @@ if ($action === 'load_applications') {
     if ($res) $res->free();
     $stmt->close();
 
+    if (empty($rows)) {
+        $legacyRows = app_legacy_rows($db, $type);
+        if (!empty($legacyRows)) {
+            app_json(['success' => true, 'data' => $legacyRows, 'legacy' => true]);
+        }
+    }
     app_json(['success' => true, 'data' => $rows]);
 }
 

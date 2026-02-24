@@ -542,6 +542,41 @@ document.addEventListener('DOMContentLoaded', () => {
     setupLogoutConfirmation();
 });
 
+/* ===== Ensure Engineers/Contractors Submenu Consistency Across Admin Pages ===== */
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        var p = (window.location.pathname || '').toLowerCase();
+        if (p.indexOf('/admin/') === -1) return;
+
+        var contractorsToggle = document.getElementById('contractorsToggle');
+        var contractorsSubmenu = document.getElementById('contractorsSubmenu');
+        if (!contractorsToggle || !contractorsSubmenu) return;
+
+        var requiredLinks = [
+            { href: 'registered_engineers.php', label: 'Registered Engineers', icon: '&#128203;' },
+            { href: 'registered_contractors.php', label: 'Registered Contractors', icon: '&#128203;' },
+            { href: 'applications_engineers.php', label: 'Engineer Applications', icon: '&#128203;' },
+            { href: 'applications_contractors.php', label: 'Contractor Applications', icon: '&#128203;' },
+            { href: 'verified_users.php', label: 'Verified Users', icon: '&#10003;' },
+            { href: 'rejected_users.php', label: 'Rejected / Suspended', icon: '&#128203;' }
+        ];
+
+        var existing = {};
+        contractorsSubmenu.querySelectorAll('a[href]').forEach(function (a) {
+            existing[String(a.getAttribute('href') || '').toLowerCase()] = true;
+        });
+
+        requiredLinks.forEach(function (link) {
+            if (existing[link.href.toLowerCase()]) return;
+            var a = document.createElement('a');
+            a.href = link.href;
+            a.className = 'nav-submenu-item';
+            a.innerHTML = '<span class="submenu-icon">' + link.icon + '</span><span>' + link.label + '</span>';
+            contractorsSubmenu.appendChild(a);
+        });
+    });
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
     var applicationsToggle = document.getElementById('applicationsToggle');
     var applicationsGroup = applicationsToggle ? applicationsToggle.closest('.nav-item-group') : null;
@@ -4551,7 +4586,6 @@ document.addEventListener('click', function (event) {
     renderEmptyStates();
   });
 })();
-
 
 
 
