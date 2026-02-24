@@ -653,6 +653,160 @@ function registered_load_application_documents_for_entity(mysqli $db, int $entit
     return $rows;
 }
 
+function registered_get_entity_identity(mysqli $db, int $entityId, bool $isEngineer): array
+{
+    $table = $isEngineer ? 'engineers' : 'contractors';
+    if ($entityId <= 0 || !registered_table_exists($db, $table)) {
+        return ['email' => '', 'user_id' => 0];
+    }
+    $emailCol = $isEngineer
+        ? registered_pick_column($db, 'engineers', ['email'])
+        : registered_pick_column($db, 'contractors', ['email', 'contact_email']);
+    $userCol = $isEngineer
+        ? (registered_table_has_column($db, 'engineers', 'employee_id') ? 'employee_id' : null)
+        : registered_pick_column($db, 'contractors', ['account_employee_id', 'employee_id', 'user_id']);
+    $select = [];
+    $select[] = $emailCol ? "{$emailCol} AS email" : "'' AS email";
+    $select[] = $userCol ? "{$userCol} AS user_id" : "0 AS user_id";
+    $stmt = $db->prepare("SELECT " . implode(', ', $select) . " FROM {$table} WHERE id = ? LIMIT 1");
+    if (!$stmt) {
+        return ['email' => '', 'user_id' => 0];
+    }
+    $stmt->bind_param('i', $entityId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    if ($res) {
+        $res->free();
+    }
+    $stmt->close();
+    return [
+        'email' => trim((string)($row['email'] ?? '')),
+        'user_id' => (int)($row['user_id'] ?? 0),
+    ];
+}
+
+function registered_sync_application_status_from_entity(mysqli $db, int $entityId, bool $isEngineer, string $status, string $note): void
+{
+    $appTable = $isEngineer ? 'engineer_applications' : 'contractor_applications';
+    if (!registered_table_exists($db, $appTable)) {
+        return;
+    }
+    $identity = registered_get_entity_identity($db, $entityId, $isEngineer);
+    $email = (string)($identity['email'] ?? '');
+    $userId = (int)($identity['user_id'] ?? 0);
+    if ($email === '' && $userId <= 0) {
+        return;
+    }
+
+    $where = '';
+    $types = '';
+    $params = [];
+    if ($email !== '' && $userId > 0 && registered_table_has_column($db, $appTable, 'user_id')) {
+        $where = "(email = ? OR user_id = ?)";
+        $types = 'si';
+        $params = [$email, $userId];
+    } elseif ($email !== '') {
+        $where = "email = ?";
+        $types = 's';
+        $params = [$email];
+    } elseif ($userId > 0 && registered_table_has_column($db, $appTable, 'user_id')) {
+        $where = "user_id = ?";
+        $types = 'i';
+        $params = [$userId];
+    } else {
+        return;
+    }
+
+    $orderCol = registered_table_has_column($db, $appTable, 'updated_at')
+        ? 'updated_at'
+        : (registered_table_has_column($db, $appTable, 'created_at') ? 'created_at' : 'id');
+    $findStmt = $db->prepare("SELECT id FROM {$appTable} WHERE {$where} ORDER BY {$orderCol} DESC, id DESC LIMIT 1");
+    if (!$findStmt) {
+        return;
+    }
+    if ($types !== '') {
+        registered_bind_dynamic($findStmt, $types, $params);
+    }
+    $findStmt->execute();
+    $findRes = $findStmt->get_result();
+    $appRow = $findRes ? $findRes->fetch_assoc() : null;
+    if ($findRes) {
+        $findRes->free();
+    }
+    $findStmt->close();
+    $appId = (int)($appRow['id'] ?? 0);
+    if ($appId <= 0) {
+        return;
+    }
+
+    $setParts = ['status = ?'];
+    $updTypes = 's';
+    $updVals = [$status];
+    $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+
+    if (registered_table_has_column($db, $appTable, 'admin_remarks')) {
+        $setParts[] = 'admin_remarks = ?';
+        $updTypes .= 's';
+        $updVals[] = $note;
+    }
+    if (registered_table_has_column($db, $appTable, 'rejection_reason')) {
+        if (in_array($status, ['rejected', 'suspended'], true)) {
+            $setParts[] = 'rejection_reason = ?';
+            $updTypes .= 's';
+            $updVals[] = $note;
+        }
+    }
+    if ($status === 'verified') {
+        if (registered_table_has_column($db, $appTable, 'verified_by')) {
+            $setParts[] = 'verified_by = ?';
+            $updTypes .= 'i';
+            $updVals[] = $employeeId;
+        }
+        if (registered_table_has_column($db, $appTable, 'verified_at')) {
+            $setParts[] = 'verified_at = NOW()';
+        }
+    }
+    if ($status === 'approved') {
+        if (registered_table_has_column($db, $appTable, 'approved_by')) {
+            $setParts[] = 'approved_by = ?';
+            $updTypes .= 'i';
+            $updVals[] = $employeeId;
+        }
+        if (registered_table_has_column($db, $appTable, 'approved_at')) {
+            $setParts[] = 'approved_at = NOW()';
+        }
+    }
+    if (registered_table_has_column($db, $appTable, 'updated_at')) {
+        $setParts[] = 'updated_at = NOW()';
+    }
+
+    $updSql = "UPDATE {$appTable} SET " . implode(', ', $setParts) . " WHERE id = ?";
+    $updTypes .= 'i';
+    $updVals[] = $appId;
+    $updStmt = $db->prepare($updSql);
+    if ($updStmt) {
+        registered_bind_dynamic($updStmt, $updTypes, $updVals);
+        $updStmt->execute();
+        $updStmt->close();
+    }
+
+    if (registered_table_exists($db, 'application_logs')) {
+        $appType = $isEngineer ? 'engineer' : 'contractor';
+        $logStmt = $db->prepare(
+            "INSERT INTO application_logs (application_type, application_id, action, performed_by_user_id, remarks, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())"
+        );
+        if ($logStmt) {
+            $action = $status;
+            $remarks = $note !== '' ? $note : ('Status updated to ' . $status);
+            $logStmt->bind_param('sisiss', $appType, $appId, $action, $employeeId, $remarks);
+            $logStmt->execute();
+            $logStmt->close();
+        }
+    }
+}
+
 function registered_get_profile_verification_status(mysqli $db, int $entityId, bool $isEngineer): string
 {
     $details = registered_get_profile_verification_details($db, $entityId, $isEngineer);
@@ -1533,7 +1687,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $contractorId = isset($_POST['contractor_id']) ? (int) $_POST['contractor_id'] : 0;
     $status = strtolower(trim((string) ($_POST['status'] ?? '')));
     $note = trim((string)($_POST['note'] ?? ''));
-    $allowed = ['pending', 'verified', 'approved', 'rejected', 'suspended', 'blacklisted', 'inactive'];
+    $allowed = ['pending', 'under_review', 'verified', 'approved', 'rejected', 'suspended', 'blacklisted', 'inactive'];
     if ($contractorId <= 0 || !in_array($status, $allowed, true)) {
         echo json_encode(['success' => false, 'message' => 'Invalid approval request.']);
         exit;
@@ -1642,15 +1796,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $employeeId = (int)($_SESSION['employee_id'] ?? 0);
         $role = strtolower((string)($_SESSION['employee_role'] ?? ''));
         $auditNote = $note !== '' ? $note : ('Updated approval status to ' . $status);
+        $entityType = $isEngineerTable ? 'engineer' : 'contractor';
         $aStmt = $db->prepare(
             "INSERT INTO approvals (entity_type, entity_id, status, reviewer_id, reviewer_role, notes, reviewed_at)
-             VALUES ('engineer', ?, ?, ?, ?, ?, NOW())"
+             VALUES (?, ?, ?, ?, ?, ?, NOW())"
         );
         if ($aStmt) {
-            $aStmt->bind_param('isiss', $contractorId, $status, $employeeId, $role, $auditNote);
+            $aStmt->bind_param('sisiss', $entityType, $contractorId, $status, $employeeId, $role, $auditNote);
             $aStmt->execute();
             $aStmt->close();
         }
+    }
+    if ($ok) {
+        registered_sync_application_status_from_entity($db, $contractorId, $isEngineerTable, $status, $note);
     }
 
     if ($ok && function_exists('rbac_audit')) {
@@ -1707,8 +1865,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         $hasCertDoc ? 'engineer_certification_doc' : "'' AS engineer_certification_doc",
         $hasCredDoc ? 'engineer_credentials_doc' : "'' AS engineer_credentials_doc"
     ];
+    $allowUnapproved = isset($_GET['include_unapproved']) && (string)$_GET['include_unapproved'] === '1';
+    $whereSql = '';
+    if (!$allowUnapproved && registered_projects_has_column($db, 'status')) {
+        $whereSql = " WHERE LOWER(COALESCE(status,'')) = 'approved'";
+    }
     try {
-        $result = $db->query("SELECT " . implode(', ', $projectSelect) . " FROM projects ORDER BY {$orderBy} LIMIT {$projectsLimit}");
+        $result = $db->query("SELECT " . implode(', ', $projectSelect) . " FROM projects{$whereSql} ORDER BY {$orderBy} LIMIT {$projectsLimit}");
     } catch (Throwable $e) {
         error_log('registered_contractors load_projects query error: ' . $e->getMessage());
         echo json_encode([]);
@@ -1810,6 +1973,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 'verification_status' => $verificationStatus,
             ]);
             exit;
+        }
+
+        $projectStatus = '';
+        if (registered_projects_has_column($db, 'status')) {
+            $projectStmt = $db->prepare("SELECT status FROM projects WHERE id = ? LIMIT 1");
+            if ($projectStmt) {
+                $projectStmt->bind_param('i', $project_id);
+                $projectStmt->execute();
+                $projectRes = $projectStmt->get_result();
+                if ($projectRes && ($projectRow = $projectRes->fetch_assoc())) {
+                    $projectStatus = strtolower(trim((string)($projectRow['status'] ?? '')));
+                }
+                if ($projectRes) {
+                    $projectRes->free();
+                }
+                $projectStmt->close();
+            }
+            if ($projectStatus === '' || $projectStatus !== 'approved') {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Only department-head approved projects can be assigned.'
+                ]);
+                exit;
+            }
         }
 
         if (!ensure_assignment_table($db)) {
