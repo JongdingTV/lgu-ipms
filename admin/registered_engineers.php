@@ -396,9 +396,121 @@ function ensure_engineer_project_assignment_table(mysqli $db): bool
     }
 }
 
+function registered_sync_approved_engineer_applications(mysqli $db): void
+{
+    if (!registered_table_exists($db, 'engineers') || !registered_table_exists($db, 'engineer_applications')) {
+        return;
+    }
+
+    $sql = "SELECT id, user_id, full_name, email, phone, specialization, position, assigned_area, prc_license_no, prc_expiry, years_experience
+            FROM engineer_applications
+            WHERE LOWER(COALESCE(status,'')) = 'approved'
+            ORDER BY id DESC";
+    $res = $db->query($sql);
+    if (!$res) {
+        return;
+    }
+
+    while ($app = $res->fetch_assoc()) {
+        $appId = (int)($app['id'] ?? 0);
+        $employeeId = (int)($app['user_id'] ?? 0);
+        $email = trim((string)($app['email'] ?? ''));
+        if ($email === '') {
+            continue;
+        }
+
+        $existing = null;
+        $hasEmployeeIdCol = registered_table_has_column($db, 'engineers', 'employee_id');
+        $checkSql = $hasEmployeeIdCol
+            ? "SELECT id FROM engineers WHERE email = ? OR (employee_id = ? AND ? > 0) LIMIT 1"
+            : "SELECT id FROM engineers WHERE email = ? LIMIT 1";
+        $check = $db->prepare($checkSql);
+        if ($check) {
+            if ($hasEmployeeIdCol) {
+                $check->bind_param('sii', $email, $employeeId, $employeeId);
+            } else {
+                $check->bind_param('s', $email);
+            }
+            $check->execute();
+            $checkRes = $check->get_result();
+            $existing = $checkRes ? $checkRes->fetch_assoc() : null;
+            if ($checkRes) {
+                $checkRes->free();
+            }
+            $check->close();
+        }
+        if ($existing) {
+            continue;
+        }
+
+        $fullName = trim((string)($app['full_name'] ?? ''));
+        $nameParts = preg_split('/\s+/', $fullName);
+        $lastName = count($nameParts) > 1 ? (string)array_pop($nameParts) : ($fullName !== '' ? $fullName : 'Engineer');
+        $firstName = count($nameParts) > 0 ? trim(implode(' ', $nameParts)) : ($fullName !== '' ? $fullName : 'Engineer');
+        $usernameBase = preg_replace('/[^a-z0-9_\\.\\-]/i', '', strstr($email, '@', true) ?: ('engineer' . $appId));
+        $licenseNo = trim((string)($app['prc_license_no'] ?? ''));
+        $licenseExpiry = trim((string)($app['prc_expiry'] ?? ''));
+        $insertMap = [
+            'engineer_code' => 'ENG-' . date('Ymd') . '-' . str_pad((string)$appId, 4, '0', STR_PAD_LEFT),
+            'full_name' => ($fullName !== '' ? $fullName : ($firstName . ' ' . $lastName)),
+            'first_name' => ($firstName !== '' ? $firstName : 'Engineer'),
+            'middle_name' => '',
+            'last_name' => ($lastName !== '' ? $lastName : 'User'),
+            'email' => $email,
+            'contact_number' => trim((string)($app['phone'] ?? '')) ?: 'N/A',
+            'specialization' => trim((string)($app['specialization'] ?? '')) ?: 'General',
+            'position_title' => trim((string)($app['position'] ?? '')),
+            'address' => trim((string)($app['assigned_area'] ?? '')),
+            'prc_license_number' => ($licenseNo !== '' ? $licenseNo : ('PENDING-' . $appId)),
+            'license_expiry_date' => ($licenseExpiry !== '' ? $licenseExpiry : date('Y-m-d', strtotime('+1 year'))),
+            'years_experience' => (int)($app['years_experience'] ?? 0),
+            'highest_education' => 'Not Specified',
+            'username' => $usernameBase,
+            'password_hash' => password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT),
+            'role' => 'Engineer',
+            'approval_status' => 'approved',
+            'employee_id' => $employeeId,
+            'account_status' => 'active',
+        ];
+
+        $columns = [];
+        $placeholders = [];
+        $types = '';
+        $params = [];
+        foreach ($insertMap as $col => $val) {
+            if (!registered_table_has_column($db, 'engineers', $col)) {
+                continue;
+            }
+            $columns[] = $col;
+            $placeholders[] = '?';
+            if (is_int($val)) {
+                $types .= 'i';
+                $params[] = $val;
+            } else {
+                $types .= 's';
+                $params[] = (string)$val;
+            }
+        }
+
+        if (empty($columns)) {
+            continue;
+        }
+        $ins = $db->prepare("INSERT INTO engineers (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")");
+        if ($ins) {
+            registered_bind_dynamic($ins, $types, $params);
+            if (!$ins->execute()) {
+                error_log('registered_sync_approved_engineer_applications insert failed: ' . $ins->error);
+            }
+            $ins->close();
+        }
+    }
+    $res->free();
+}
+
 // Handle GET request for loading Engineers
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_contractors') {
     header('Content-Type: application/json');
+    registered_sync_approved_engineer_applications($db);
 
     $entityTable = registered_table_exists($db, 'engineers') ? 'engineers' : 'contractors';
     $isEngineerTable = $entityTable === 'engineers';

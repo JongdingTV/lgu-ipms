@@ -243,7 +243,11 @@
             return;
         }
         tbody.innerHTML = rows.map(function (r) {
-            return '<tr>' + cols.map(function (c) { return '<td class="wrap">' + esc(c.format ? c.format(r[c.key], r) : (r[c.key] || '-')) + '</td>'; }).join('') + '</tr>';
+            return '<tr>' + cols.map(function (c) {
+                var raw = c.format ? c.format(r[c.key], r) : (r[c.key] || '-');
+                var cell = c.html ? String(raw) : esc(raw);
+                return '<td class="wrap">' + cell + '</td>';
+            }).join('') + '</tr>';
         }).join('');
     }
 
@@ -257,7 +261,7 @@
                 { key: 'display_name' },
                 { key: 'email' },
                 { key: 'specialization' },
-                { key: 'status', format: function (v) { return statusChip(v); } },
+                { key: 'status', format: function (v) { return statusChip(v); }, html: true },
                 { key: 'approved_at', format: fmtDate }
             ], '#verifiedTable tbody');
             setFeedback('', false);
@@ -277,7 +281,7 @@
                 { key: 'display_name' },
                 { key: 'email' },
                 { key: 'specialization' },
-                { key: 'status', format: function (v) { return statusChip(v); } },
+                { key: 'status', format: function (v) { return statusChip(v); }, html: true },
                 { key: 'rejection_reason' },
                 { key: 'created_at', format: fmtDate }
             ], '#rejectedTable tbody');

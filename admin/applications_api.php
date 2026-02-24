@@ -284,10 +284,11 @@ function app_sync_engineer_profile(mysqli $db, array $app, int $employeeId): voi
     if (!app_table_exists($db, 'engineers')) return;
 
     $email = (string)($app['email'] ?? '');
+    $approvalStatusValue = 'approved';
     $existing = null;
-    $sel = $db->prepare("SELECT id FROM engineers WHERE email = ? LIMIT 1");
+    $sel = $db->prepare("SELECT id FROM engineers WHERE email = ? OR employee_id = ? LIMIT 1");
     if ($sel) {
-        $sel->bind_param('s', $email);
+        $sel->bind_param('si', $email, $employeeId);
         $sel->execute();
         $r = $sel->get_result();
         $existing = $r ? $r->fetch_assoc() : null;
@@ -308,16 +309,21 @@ function app_sync_engineer_profile(mysqli $db, array $app, int $employeeId): voi
             'full_name' => $fullName,
             'first_name' => $firstName,
             'last_name' => $lastName,
+            'middle_name' => '',
             'email' => (string)($app['email'] ?? ''),
             'contact_number' => (string)($app['phone'] ?? ''),
             'specialization' => (string)($app['specialization'] ?? ''),
             'position_title' => (string)($app['position'] ?? ''),
             'address' => (string)($app['assigned_area'] ?? ''),
             'prc_license_number' => (string)($app['prc_license_no'] ?? ''),
-            'license_expiry_date' => (string)($app['prc_expiry'] ?? ''),
+            'license_expiry_date' => ((string)($app['prc_expiry'] ?? '') !== '' ? (string)$app['prc_expiry'] : date('Y-m-d', strtotime('+1 year'))),
             'years_experience' => (int)($app['years_experience'] ?? 0),
             'employee_id' => $employeeId,
             'account_status' => 'active',
+            'approval_status' => $approvalStatusValue,
+            'highest_education' => 'Not Specified',
+            'username' => preg_replace('/[^a-z0-9_\\.\\-]/i', '', strstr($email, '@', true) ?: ('engineer' . $employeeId)),
+            'role' => 'Engineer',
         ] as $col => $val) {
             if (!app_col_exists($db, 'engineers', $col)) continue;
             $upFields[] = "{$col} = ?";
@@ -337,7 +343,11 @@ function app_sync_engineer_profile(mysqli $db, array $app, int $employeeId): voi
             $stmt = $db->prepare($sql);
             if ($stmt) {
                 app_bind($stmt, $types, $vals);
-                $stmt->execute();
+                if (!$stmt->execute()) {
+                    $err = $stmt->error;
+                    $stmt->close();
+                    throw new RuntimeException('Unable to sync approved engineer profile: ' . $err);
+                }
                 $stmt->close();
             }
         }
@@ -349,18 +359,32 @@ function app_sync_engineer_profile(mysqli $db, array $app, int $employeeId): voi
     $types = '';
     $vals = [];
 
+    $passwordHash = (string)($app['account_password_hash'] ?? '');
+    if ($passwordHash === '') {
+        $passwordHash = password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT);
+    }
+    $engineerCode = 'ENG-' . date('Ymd') . '-' . str_pad((string)((int)($app['id'] ?? 0)), 4, '0', STR_PAD_LEFT);
+    $username = preg_replace('/[^a-z0-9_\\.\\-]/i', '', strstr($email, '@', true) ?: ('engineer' . $employeeId));
+
     $insertMap = [
+        'engineer_code' => $engineerCode,
         'full_name' => $fullName,
         'first_name' => $firstName,
+        'middle_name' => '',
         'last_name' => $lastName,
         'email' => (string)($app['email'] ?? ''),
         'contact_number' => (string)($app['phone'] ?? ''),
         'specialization' => (string)($app['specialization'] ?? ''),
         'position_title' => (string)($app['position'] ?? ''),
         'address' => (string)($app['assigned_area'] ?? ''),
-        'prc_license_number' => (string)($app['prc_license_no'] ?? ''),
-        'license_expiry_date' => (string)($app['prc_expiry'] ?? ''),
+        'prc_license_number' => ((string)($app['prc_license_no'] ?? '') !== '' ? (string)$app['prc_license_no'] : ('PENDING-' . (int)($app['id'] ?? 0))),
+        'license_expiry_date' => ((string)($app['prc_expiry'] ?? '') !== '' ? (string)$app['prc_expiry'] : date('Y-m-d', strtotime('+1 year'))),
         'years_experience' => (int)($app['years_experience'] ?? 0),
+        'highest_education' => 'Not Specified',
+        'username' => $username,
+        'password_hash' => $passwordHash,
+        'role' => 'Engineer',
+        'approval_status' => $approvalStatusValue,
         'employee_id' => $employeeId,
         'account_status' => 'active',
     ];
@@ -383,7 +407,11 @@ function app_sync_engineer_profile(mysqli $db, array $app, int $employeeId): voi
         $stmt = $db->prepare($sql);
         if ($stmt) {
             app_bind($stmt, $types, $vals);
-            $stmt->execute();
+            if (!$stmt->execute()) {
+                $err = $stmt->error;
+                $stmt->close();
+                throw new RuntimeException('Unable to create approved engineer profile: ' . $err);
+            }
             $stmt->close();
         }
     }
