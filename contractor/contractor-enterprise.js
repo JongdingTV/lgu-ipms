@@ -116,10 +116,10 @@
       { href: 'progress_monitoring.php', label: 'Submit Progress', icon: '../assets/images/admin/chart.png' },
       { href: 'deliverables.php', label: 'Deliverables', icon: '../assets/images/admin/production.png' },
       { href: 'expenses.php', label: 'Expenses / Billing', icon: '../assets/images/admin/budget.png' },
-      { href: 'requests.php', label: 'Requests', icon: '../assets/images/admin/monitoring.png' },
-      { href: 'issues.php', label: 'Issues', icon: '../assets/images/admin/notifications.png' },
-      { href: 'messages.php', label: 'Messages', icon: '../assets/images/admin/notifications.png' },
-      { href: 'notifications.php', label: 'Notifications', icon: '../assets/images/admin/notifications.png' },
+      { href: 'requests.php', label: 'Requests', icon: '../assets/images/admin/sandclock.png' },
+      { href: 'issues.php', label: 'Issues', icon: '../assets/images/admin/prioritization.png' },
+      { href: 'messages.php', label: 'Messages', icon: '../assets/images/admin/lgu-arrow-right.png' },
+      { href: 'notifications.php', label: 'Notifications', icon: '../assets/images/admin/monitoring.png' },
       { href: 'profile.php', label: 'Profile', icon: '../assets/images/admin/person.png' }
     ];
 
