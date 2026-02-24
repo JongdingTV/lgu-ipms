@@ -3,6 +3,54 @@
 
     var page = document.body ? (document.body.getAttribute('data-page') || '') : '';
     if (!page) return;
+    var isApplicationsPage = page.indexOf('applications-') === 0;
+
+    function initApplicationsSidebar() {
+        if (!isApplicationsPage) return;
+
+        var contractorsToggle = document.getElementById('contractorsToggle');
+        var projectRegToggle = document.getElementById('projectRegToggle');
+
+        function bindDropdown(toggleEl, forceOpen) {
+            if (!toggleEl) return null;
+            var cleanToggle = toggleEl.cloneNode(true);
+            toggleEl.parentNode.replaceChild(cleanToggle, toggleEl);
+            toggleEl = cleanToggle;
+            var group = toggleEl.closest('.nav-item-group');
+            if (!group) return null;
+            var submenu = group.querySelector('.nav-submenu');
+            if (!submenu) return null;
+
+            function setOpen(open) {
+                group.classList.toggle('open', !!open);
+                submenu.classList.toggle('show', !!open);
+                toggleEl.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+
+            if (forceOpen) setOpen(true);
+            else setOpen(group.classList.contains('open') || submenu.classList.contains('show'));
+
+            toggleEl.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var willOpen = !group.classList.contains('open');
+                setOpen(willOpen);
+            });
+
+            return { group: group, setOpen: setOpen };
+        }
+
+        var contractorsCtl = bindDropdown(contractorsToggle, true);
+        var projectCtl = bindDropdown(projectRegToggle, false);
+
+        document.addEventListener('click', function (e) {
+            var target = e.target;
+            if (contractorsCtl && !contractorsCtl.group.contains(target)) contractorsCtl.setOpen(false);
+            if (projectCtl && !projectCtl.group.contains(target)) projectCtl.setOpen(false);
+        });
+    }
+
+    initApplicationsSidebar();
 
     var csrfMeta = document.querySelector('meta[name=\"csrf-token\"]');
     var csrfToken = String(window.ADMIN_CSRF_TOKEN || (csrfMeta ? csrfMeta.getAttribute('content') : '') || '');
