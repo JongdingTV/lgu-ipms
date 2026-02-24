@@ -160,24 +160,24 @@
         function apiCandidates(query) {
             const list = [
                 'registered_engineers.php?' + query,
-                '/admin/registered_engineers.php?' + query,
-                'registered_contractors.php?' + query,
-                '/admin/registered_contractors.php?' + query
+                '/admin/registered_engineers.php?' + query
             ];
             if (typeof window.getApiUrl === 'function') {
                 list.unshift(window.getApiUrl('admin/registered_engineers.php?' + query));
-                list.push(window.getApiUrl('admin/registered_contractors.php?' + query));
             }
             return Array.from(new Set(list));
         }
 
         function postApiCandidates() {
-            const list = ['registered_engineers.php', '/admin/registered_engineers.php', 'registered_contractors.php', '/admin/registered_contractors.php'];
+            const list = ['registered_engineers.php', '/admin/registered_engineers.php'];
             if (typeof window.getApiUrl === 'function') {
                 list.unshift(window.getApiUrl('admin/registered_engineers.php'));
-                list.push(window.getApiUrl('admin/registered_contractors.php'));
             }
             return Array.from(new Set(list));
+        }
+
+        function sanitizeSnippet(text) {
+            return String(text || '').replace(/\s+/g, ' ').trim().slice(0, 120);
         }
 
         async function fetchJsonWithFallback(query) {
@@ -188,7 +188,16 @@
                     const res = await fetch(url, { credentials: 'same-origin' });
                     if (!res.ok) continue;
                     const text = await res.text();
-                    const payload = JSON.parse(text);
+                    const trimmed = String(text || '').trim();
+                    if (!trimmed) {
+                        lastErr = new Error('Empty API response from ' + url);
+                        continue;
+                    }
+                    if (trimmed.startsWith('<')) {
+                        lastErr = new Error('Non-JSON response from API (' + url + '): ' + sanitizeSnippet(trimmed));
+                        continue;
+                    }
+                    const payload = JSON.parse(trimmed);
                     if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
                         if (payload.success === false) {
                             lastErr = new Error(payload.message || 'API request failed.');
@@ -224,7 +233,17 @@
                         credentials: 'same-origin'
                     });
                     if (!res.ok) continue;
-                    const payload = await res.json();
+                    const text = await res.text();
+                    const trimmed = String(text || '').trim();
+                    if (!trimmed) {
+                        lastErr = new Error('Empty API response from ' + url);
+                        continue;
+                    }
+                    if (trimmed.startsWith('<')) {
+                        lastErr = new Error('Non-JSON response from API (' + url + '): ' + sanitizeSnippet(trimmed));
+                        continue;
+                    }
+                    const payload = JSON.parse(trimmed);
                     if (payload && typeof payload === 'object' && payload.success === false) {
                         lastErr = new Error(payload.message || 'API request failed.');
                         continue;
@@ -997,5 +1016,4 @@
         document.addEventListener('DOMContentLoaded', boot);
         if (document.readyState !== 'loading') boot();
     })();
-
 

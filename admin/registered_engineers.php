@@ -33,8 +33,54 @@ rbac_require_action_matrix(
 );
 check_suspicious_activity();
 $csrfToken = generate_csrf_token();
+$registeredIsApiRequest = isset($_GET['action']) || isset($_POST['action']);
+if ($registeredIsApiRequest) {
+    @ini_set('display_errors', '0');
+    @ini_set('html_errors', '0');
+    if (ob_get_level() === 0) {
+        ob_start();
+    }
+    set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+        error_log('registered_engineers.php warning [' . $severity . ']: ' . $message . ' in ' . $file . ':' . $line);
+        return true;
+    });
+    set_exception_handler(static function (Throwable $e): void {
+        if (ob_get_level() > 0) {
+            ob_clean();
+        }
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Server error while processing request.',
+            'error' => $e->getMessage(),
+        ]);
+        exit;
+    });
+    register_shutdown_function(static function (): void {
+        $lastError = error_get_last();
+        if (!$lastError) {
+            return;
+        }
+        if (!in_array($lastError['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+            return;
+        }
+        if (!headers_sent()) {
+            if (ob_get_level() > 0) {
+                ob_clean();
+            }
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Fatal server error while processing request.',
+            ]);
+        }
+    });
+}
 
 if ($db->connect_error) {
+    if ($registeredIsApiRequest && ob_get_level() > 0) {
+        ob_clean();
+    }
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
@@ -1621,7 +1667,6 @@ $db->close();
     <script src="../assets/js/admin-registered-engineers.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-registered-engineers.js'); ?>"></script>
 </body>
 </html>
-
 
 
 
