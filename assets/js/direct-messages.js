@@ -39,7 +39,7 @@
 
   function apiGet(action, extra) {
     return fetch(apiBase + '?action=' + encodeURIComponent(action) + (extra || ''), { credentials: 'same-origin' })
-      .then((r) => r.json().catch(() => ({ success: false, message: 'Invalid server response.' })));
+      .then(parseApiResponse);
   }
 
   function apiPost(action, payload) {
@@ -51,7 +51,27 @@
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString()
-    }).then((r) => r.json().catch(() => ({ success: false, message: 'Invalid server response.' })));
+    }).then(parseApiResponse);
+  }
+
+  function parseApiResponse(response) {
+    return response.text().then((text) => {
+      let parsed = null;
+      try {
+        parsed = JSON.parse(text);
+      } catch (_) {
+        parsed = null;
+      }
+
+      if (parsed && typeof parsed === 'object') {
+        if (response.ok) return parsed;
+        return Object.assign({ success: false, message: parsed.message || ('HTTP ' + response.status) }, parsed);
+      }
+
+      const snippet = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 180);
+      const message = snippet || ('HTTP ' + response.status + ' ' + response.statusText);
+      return { success: false, message: message };
+    }).catch(() => ({ success: false, message: 'Network/response parsing error.' }));
   }
 
   function ensureThreadButtons() {
@@ -136,6 +156,11 @@
 
   function loadContacts() {
     return apiGet('load_chat_contacts').then((j) => {
+      if (!j || j.success === false) {
+        const msg = String((j && j.message) || 'Unable to load contacts.');
+        contactList.innerHTML = '<div class="messages-empty">' + esc(msg) + '</div>';
+        return null;
+      }
       state.contacts = Array.isArray((j || {}).data) ? j.data : [];
       if (!state.activeContactId && state.contacts.length) {
         state.activeContactId = Number(state.contacts[0].user_id || 0);
@@ -161,6 +186,11 @@
     if (!silent) feed.innerHTML = '<div class="messages-empty">Loading...</div>';
 
     return apiGet('load_direct_messages', '&contact_user_id=' + encodeURIComponent(state.activeContactId)).then((j) => {
+      if (!j || j.success === false) {
+        const msg = String((j && j.message) || 'Unable to load messages.');
+        feed.innerHTML = '<div class="messages-empty">' + esc(msg) + '</div>';
+        return;
+      }
       state.messages = Array.isArray((j || {}).data) ? j.data : [];
       renderMessages();
     }).finally(() => {

@@ -5,7 +5,11 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_from_matrix('engineer.workspace.view', ['engineer','admin','super_admin']);
+$action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
+$directChatActions = ['load_chat_contacts', 'load_direct_messages', 'send_direct_message', 'delete_direct_conversation'];
+if (!in_array($action, $directChatActions, true)) {
+    rbac_require_from_matrix('engineer.workspace.view', ['engineer','project_engineer','municipal_engineer','city_engineer','admin','super_admin']);
+}
 check_suspicious_activity();
 
 header('Content-Type: application/json');
@@ -16,6 +20,14 @@ if (!isset($_SESSION['employee_id'])) {
     exit;
 }
 $role = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
+$roleAliasMap = [
+    'project_engineer' => 'engineer',
+    'municipal_engineer' => 'engineer',
+    'city_engineer' => 'engineer',
+    'accredited_contractor' => 'contractor',
+    'private_contractor' => 'contractor'
+];
+if (isset($roleAliasMap[$role])) $role = $roleAliasMap[$role];
 if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden']);
@@ -358,10 +370,7 @@ function direct_messages_ensure_table(mysqli $db): void {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
-$action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
-rbac_require_action_matrix(
-    $action !== '' ? $action : 'load_monitoring',
-    [
+$actionMap = [
         'load_monitoring' => 'engineer.workspace.view',
         'load_notifications' => 'engineer.notifications.read',
         'load_message_projects' => 'engineer.workspace.view',
@@ -371,8 +380,8 @@ rbac_require_action_matrix(
         'mark_project_messages_read' => 'engineer.workspace.view',
         'load_chat_contacts' => 'engineer.workspace.view',
         'load_direct_messages' => 'engineer.workspace.view',
-        'send_direct_message' => 'engineer.workspace.manage',
-        'delete_direct_conversation' => 'engineer.workspace.manage',
+        'send_direct_message' => 'engineer.workspace.view',
+        'delete_direct_conversation' => 'engineer.workspace.view',
         'load_progress_submissions' => 'engineer.progress.review',
         'decide_progress' => 'engineer.progress.review',
         'load_status_requests' => 'engineer.status.review',
@@ -396,9 +405,14 @@ rbac_require_action_matrix(
         'load_project_documents' => 'engineer.workspace.view',
         'load_engineer_notifications_center' => 'engineer.notifications.read',
         'load_project_quick_view' => 'engineer.workspace.view',
-    ],
-    'engineer.workspace.view'
-);
+];
+if (!in_array($action, $directChatActions, true)) {
+    rbac_require_action_matrix(
+        $action !== '' ? $action : 'load_monitoring',
+        $actionMap,
+        'engineer.workspace.view'
+    );
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
     json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
 }
@@ -497,11 +511,17 @@ if ($action === 'send_direct_message') {
     $contactId = (int)($_POST['contact_user_id'] ?? 0);
     $text = trim((string)($_POST['message_text'] ?? ''));
     if ($me <= 0 || $contactId <= 0 || $text === '') json_out(['success' => false, 'message' => 'Invalid message payload.'], 422);
+    $text = strip_tags($text);
     if (strlen($text) > 4000) $text = substr($text, 0, 4000);
     $stmt = $db->prepare("INSERT INTO direct_messages (sender_user_id, sender_role, receiver_user_id, receiver_role, message_text) VALUES (?, 'engineer', ?, 'contractor', ?)");
     if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
     $stmt->bind_param('iis', $me, $contactId, $text);
     $ok = $stmt->execute();
+    if (!$ok) {
+        $err = (string)($stmt->error ?? 'Unable to send message.');
+        $stmt->close();
+        json_out(['success' => false, 'message' => $err], 500);
+    }
     $msgId = (int)$db->insert_id;
     $stmt->close();
     json_out(['success' => (bool)$ok, 'message_id' => $msgId]);
