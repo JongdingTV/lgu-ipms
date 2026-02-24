@@ -136,6 +136,11 @@
 
   function loadContacts() {
     return apiGet('load_chat_contacts').then((j) => {
+      if (!j || j.success === false) {
+        const msg = String((j && j.message) || 'Unable to load contacts.');
+        contactList.innerHTML = '<div class="messages-empty">' + esc(msg) + '</div>';
+        return null;
+      }
       state.contacts = Array.isArray((j || {}).data) ? j.data : [];
       if (!state.activeContactId && state.contacts.length) {
         state.activeContactId = Number(state.contacts[0].user_id || 0);
@@ -161,6 +166,11 @@
     if (!silent) feed.innerHTML = '<div class="messages-empty">Loading...</div>';
 
     return apiGet('load_direct_messages', '&contact_user_id=' + encodeURIComponent(state.activeContactId)).then((j) => {
+      if (!j || j.success === false) {
+        const msg = String((j && j.message) || 'Unable to load messages.');
+        feed.innerHTML = '<div class="messages-empty">' + esc(msg) + '</div>';
+        return;
+      }
       state.messages = Array.isArray((j || {}).data) ? j.data : [];
       renderMessages();
     }).finally(() => {

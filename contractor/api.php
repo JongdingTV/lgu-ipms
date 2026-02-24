@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_from_matrix('contractor.workspace.view', ['contractor','admin','super_admin']);
+rbac_require_from_matrix('contractor.workspace.view', ['contractor','accredited_contractor','private_contractor','admin','super_admin']);
 check_suspicious_activity();
 
 header('Content-Type: application/json');
@@ -16,6 +16,14 @@ if (!isset($_SESSION['employee_id'])) {
     exit;
 }
 $role = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
+$roleAliasMap = [
+    'accredited_contractor' => 'contractor',
+    'private_contractor' => 'contractor',
+    'project_engineer' => 'engineer',
+    'municipal_engineer' => 'engineer',
+    'city_engineer' => 'engineer'
+];
+if (isset($roleAliasMap[$role])) $role = $roleAliasMap[$role];
 if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden']);
@@ -566,9 +574,7 @@ function contractor_sync_projects_to_milestones(mysqli $db): void {
 }
 
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
-rbac_require_action_matrix(
-    $action !== '' ? $action : 'load_projects',
-    [
+$actionMap = [
         'load_projects' => 'contractor.workspace.view',
         'load_notifications' => 'contractor.notifications.read',
         'load_message_projects' => 'contractor.workspace.view',
@@ -605,9 +611,15 @@ rbac_require_action_matrix(
         'load_issues' => 'contractor.workspace.view',
         'submit_issue' => 'contractor.workspace.manage',
         'load_notifications_center' => 'contractor.notifications.read',
-    ],
-    'contractor.workspace.view'
-);
+];
+$chatActions = ['load_chat_contacts', 'load_direct_messages', 'send_direct_message', 'delete_direct_conversation'];
+if (!in_array($action, $chatActions, true)) {
+    rbac_require_action_matrix(
+        $action !== '' ? $action : 'load_projects',
+        $actionMap,
+        'contractor.workspace.view'
+    );
+}
 
 $engineerOwnedActions = [
     'load_task_milestone',

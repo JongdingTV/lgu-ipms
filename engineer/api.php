@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_from_matrix('engineer.workspace.view', ['engineer','admin','super_admin']);
+rbac_require_from_matrix('engineer.workspace.view', ['engineer','project_engineer','municipal_engineer','city_engineer','admin','super_admin']);
 check_suspicious_activity();
 
 header('Content-Type: application/json');
@@ -16,6 +16,14 @@ if (!isset($_SESSION['employee_id'])) {
     exit;
 }
 $role = strtolower(trim((string) ($_SESSION['employee_role'] ?? '')));
+$roleAliasMap = [
+    'project_engineer' => 'engineer',
+    'municipal_engineer' => 'engineer',
+    'city_engineer' => 'engineer',
+    'accredited_contractor' => 'contractor',
+    'private_contractor' => 'contractor'
+];
+if (isset($roleAliasMap[$role])) $role = $roleAliasMap[$role];
 if (!in_array($role, ['engineer', 'admin', 'super_admin'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden']);
@@ -359,9 +367,7 @@ function direct_messages_ensure_table(mysqli $db): void {
 }
 
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
-rbac_require_action_matrix(
-    $action !== '' ? $action : 'load_monitoring',
-    [
+$actionMap = [
         'load_monitoring' => 'engineer.workspace.view',
         'load_notifications' => 'engineer.notifications.read',
         'load_message_projects' => 'engineer.workspace.view',
@@ -371,8 +377,8 @@ rbac_require_action_matrix(
         'mark_project_messages_read' => 'engineer.workspace.view',
         'load_chat_contacts' => 'engineer.workspace.view',
         'load_direct_messages' => 'engineer.workspace.view',
-        'send_direct_message' => 'engineer.workspace.manage',
-        'delete_direct_conversation' => 'engineer.workspace.manage',
+        'send_direct_message' => 'engineer.workspace.view',
+        'delete_direct_conversation' => 'engineer.workspace.view',
         'load_progress_submissions' => 'engineer.progress.review',
         'decide_progress' => 'engineer.progress.review',
         'load_status_requests' => 'engineer.status.review',
@@ -396,9 +402,15 @@ rbac_require_action_matrix(
         'load_project_documents' => 'engineer.workspace.view',
         'load_engineer_notifications_center' => 'engineer.notifications.read',
         'load_project_quick_view' => 'engineer.workspace.view',
-    ],
-    'engineer.workspace.view'
-);
+];
+$chatActions = ['load_chat_contacts', 'load_direct_messages', 'send_direct_message', 'delete_direct_conversation'];
+if (!in_array($action, $chatActions, true)) {
+    rbac_require_action_matrix(
+        $action !== '' ? $action : 'load_monitoring',
+        $actionMap,
+        'engineer.workspace.view'
+    );
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
     json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
 }

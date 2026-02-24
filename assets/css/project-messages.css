@@ -1,16 +1,23 @@
+[data-messages-root].main-content {
+    height: calc(100vh - 84px);
+    max-height: calc(100vh - 84px);
+    overflow: hidden;
+}
 .messages-layout {
     display: grid;
     grid-template-columns: 340px 1fr;
     gap: 10px;
     align-items: stretch;
-    min-height: calc(100vh - 210px);
+    height: calc(100vh - 210px);
     max-height: calc(100vh - 210px);
+    overflow: hidden;
 }
 .messages-panel {
     background: #fff;
     border: 1px solid #e4ebf3;
     border-radius: 14px;
     box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
 }
 .messages-sidebar-head,
 .messages-thread-head {
@@ -173,10 +180,16 @@
     padding: 24px 10px;
 }
 @media (max-width: 1024px) {
+    [data-messages-root].main-content {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
     .messages-layout {
         grid-template-columns: 1fr;
         min-height: auto;
         max-height: none;
+        height: auto;
     }
     .messages-project-list { max-height: 300px; }
     .messages-thread-head { grid-template-columns: 1fr; }
