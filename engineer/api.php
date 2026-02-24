@@ -388,37 +388,45 @@ if ($action === 'load_chat_contacts') {
     direct_messages_ensure_table($db);
     $rows = [];
     $seen = [];
-    $hasContractors = engineer_table_exists($db, 'contractors');
-    $hasEmployees = engineer_table_exists($db, 'employees');
-    if ($hasContractors) {
-        $nameExpr = engineer_table_has_column($db, 'contractors', 'company')
-            ? "COALESCE(NULLIF(c.company,''), NULLIF(c.owner,''), CONCAT('Contractor #', c.id))"
-            : "COALESCE(NULLIF(c.owner,''), CONCAT('Contractor #', c.id))";
-        $emailExpr = engineer_table_has_column($db, 'contractors', 'email') ? "COALESCE(c.email,'')" : "''";
-        $employeeCol = engineer_table_has_column($db, 'contractors', 'account_employee_id')
-            ? 'account_employee_id'
-            : (engineer_table_has_column($db, 'contractors', 'employee_id') ? 'employee_id' : null);
-        $selectEmployee = $employeeCol ? "COALESCE(c.{$employeeCol},0) AS employee_id" : "0 AS employee_id";
-        $res = $db->query("SELECT c.id, {$nameExpr} AS display_name, {$emailExpr} AS email, {$selectEmployee} FROM contractors c ORDER BY c.id DESC LIMIT 300");
-        while ($res && ($r = $res->fetch_assoc())) {
-            $contactUserId = (int)($r['employee_id'] ?? 0);
-            $email = trim((string)($r['email'] ?? ''));
-            if ($contactUserId <= 0 && $email !== '' && $hasEmployees) {
-                $s = $db->prepare("SELECT id FROM employees WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) LIMIT 1");
-                if ($s) {
-                    $s->bind_param('s', $email);
-                    $s->execute();
-                    $rr = $s->get_result();
-                    if ($rr && ($er = $rr->fetch_assoc())) $contactUserId = (int)($er['id'] ?? 0);
-                    if ($rr) $rr->free();
-                    $s->close();
+    if (engineer_table_exists($db, 'employees')) {
+        $employeeWhere = "LOWER(TRIM(role)) = 'contractor'";
+        if (engineer_table_has_column($db, 'employees', 'status')) {
+            $employeeWhere .= " AND LOWER(TRIM(COALESCE(status, 'active'))) = 'active'";
+        }
+        $res = $db->query("SELECT id, COALESCE(first_name,'') AS first_name, COALESCE(last_name,'') AS last_name, COALESCE(email,'') AS email FROM employees WHERE {$employeeWhere} ORDER BY id DESC LIMIT 300");
+        while ($res && ($e = $res->fetch_assoc())) {
+            $userId = (int)($e['id'] ?? 0);
+            if ($userId <= 0 || isset($seen[$userId])) continue;
+            $seen[$userId] = true;
+            $displayName = trim((string)($e['first_name'] ?? '') . ' ' . (string)($e['last_name'] ?? ''));
+            $email = trim((string)($e['email'] ?? ''));
+
+            if ($displayName === '' && engineer_table_exists($db, 'contractors')) {
+                $stmtProfile = $db->prepare(
+                    "SELECT
+                        COALESCE(NULLIF(company,''), NULLIF(company_name,''), NULLIF(owner,''), '') AS profile_name,
+                        COALESCE(email,'') AS profile_email
+                     FROM contractors
+                     WHERE account_employee_id = ? OR employee_id = ?
+                     LIMIT 1"
+                );
+                if ($stmtProfile) {
+                    $stmtProfile->bind_param('ii', $userId, $userId);
+                    $stmtProfile->execute();
+                    $profile = $stmtProfile->get_result()->fetch_assoc();
+                    $stmtProfile->close();
+                    if ($profile) {
+                        $profileName = trim((string)($profile['profile_name'] ?? ''));
+                        if ($profileName !== '') $displayName = $profileName;
+                        if ($email === '') $email = trim((string)($profile['profile_email'] ?? ''));
+                    }
                 }
             }
-            if ($contactUserId <= 0 || isset($seen[$contactUserId])) continue;
-            $seen[$contactUserId] = true;
+
+            if ($displayName === '') $displayName = 'Contractor #' . $userId;
             $rows[] = [
-                'user_id' => $contactUserId,
-                'display_name' => (string)($r['display_name'] ?? ('Contractor #' . $contactUserId)),
+                'user_id' => $userId,
+                'display_name' => $displayName,
                 'email' => $email,
                 'role_label' => 'Contractor'
             ];
