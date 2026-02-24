@@ -523,8 +523,9 @@ if ($action === 'load_chat_contacts') {
                 }
             }
 
-            if (!$hasProfile) continue;
-            if ($displayName === '') continue;
+            if ($displayName === '') {
+                $displayName = $email !== '' ? $email : ('Contractor #' . $userId);
+            }
             $seen[$userId] = true;
             $rows[] = [
                 'user_id' => $userId,
