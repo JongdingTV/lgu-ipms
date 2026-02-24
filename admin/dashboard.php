@@ -204,21 +204,16 @@ $db->close();
             <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
-                <a href="engineers.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers/Contractors<span class="dropdown-arrow">&#9662;</span></a>
+                <a href="registered_engineers.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers/Contractors<span class="dropdown-arrow">&#9662;</span></a>
                 <div class="nav-submenu" id="contractorsSubmenu">
                     <a href="registered_engineers.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Engineers</span></a>
-                    <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Contractors</span></a>
-                </div>
-            </div>
-            <div class="nav-item-group">
-                <a href="applications_engineers.php" class="nav-main-item" id="applicationsToggle"><img src="../assets/images/admin/person.png" class="nav-icon">Applications<span class="dropdown-arrow">&#9662;</span></a>
-                <div class="nav-submenu" id="applicationsSubmenu">
+                    <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Contractors</span></a>
                     <a href="applications_engineers.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Engineer Applications</span></a>
                     <a href="applications_contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Contractor Applications</span></a>
+                    <a href="verified_users.php" class="nav-submenu-item"><span class="submenu-icon">&#10003;</span><span>Verified Users</span></a>
+                    <a href="rejected_users.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Rejected / Suspended</span></a>
                 </div>
             </div>
-            <a href="verified_users.php"><img src="../assets/images/admin/check.png" class="nav-icon">Verified Users</a>
-            <a href="rejected_users.php"><img src="../assets/images/admin/list.png" class="nav-icon">Rejected / Suspended</a>
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
             <a href="citizen-verification.php" class="nav-main-item"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
         </div>
@@ -490,7 +485,6 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
-
 
 
 

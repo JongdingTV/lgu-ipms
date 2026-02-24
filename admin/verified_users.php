@@ -33,7 +33,7 @@ $csrfToken = generate_csrf_token();
     <div class="nav-links">
         <a href="dashboard.php"><img src="../assets/images/admin/dashboard.png" class="nav-icon" alt="">Dashboard Overview</a>
         <div class="nav-item-group">
-            <a href="applications_engineers.php" class="nav-main-item" id="contractorsToggle"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Applications<span class="dropdown-arrow">&#9662;</span></a>
+            <a href="applications_engineers.php" class="nav-main-item" id="applicationsToggle"><img src="../assets/images/admin/person.png" class="nav-icon" alt="">Applications<span class="dropdown-arrow">&#9662;</span></a>
             <div class="nav-submenu" id="contractorsSubmenu">
                 <a href="applications_engineers.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Engineer Applications</span></a>
                 <a href="applications_contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Contractor Applications</span></a>
