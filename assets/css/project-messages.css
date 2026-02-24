@@ -16,10 +16,18 @@
 }
 .messages-thread-head {
     display: grid;
-    grid-template-columns: 1fr minmax(180px, 240px) auto;
+    grid-template-columns: 1fr minmax(180px, 240px) auto auto;
     gap: 10px;
     align-items: center;
     background: linear-gradient(180deg, #f8fbff, #ffffff);
+}
+.messages-status {
+    grid-column: 1 / -1;
+    font-size: .78rem;
+    color: #1d4e89;
+}
+.messages-status.error {
+    color: #b91c1c;
 }
 .messages-search {
     width: 100%;
@@ -43,11 +51,30 @@
 }
 .messages-project-item:hover { background: #f7fbff; }
 .messages-project-item.active { background: #eaf4ff; border-left-color: #1d4ed8; }
+.messages-contact-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
 .messages-meta {
     display: flex;
     justify-content: space-between;
     gap: 10px;
     font-size: .8rem;
+    color: #64748b;
+}
+.messages-preview {
+    margin-top: 4px;
+    font-size: .8rem;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.messages-time {
+    margin-top: 2px;
+    font-size: .72rem;
     color: #64748b;
 }
 .messages-unread {
@@ -101,6 +128,16 @@
     margin-bottom: 6px;
 }
 .msg-body { white-space: pre-wrap; word-break: break-word; font-size: .92rem; color: #0f172a; }
+.msg-copy {
+    margin-top: 6px;
+    border: 1px solid #c9d9ec;
+    border-radius: 8px;
+    background: #f8fbff;
+    color: #1d4e89;
+    font-size: .72rem;
+    padding: 2px 8px;
+    cursor: pointer;
+}
 .msg-attachment {
     margin-top: 7px;
     display: inline-flex;
@@ -138,11 +175,28 @@
     background: linear-gradient(135deg, #991b1b, #dc2626);
     min-width: 172px;
 }
+.messages-refresh-btn {
+    background: linear-gradient(135deg, #1f2937, #334155);
+    min-width: 100px;
+}
 .msg-delete-btn {
     min-height: 26px;
     padding: 0 8px;
     font-size: .72rem;
     background: #b91c1c;
+}
+.messages-emoji-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px 0;
+}
+.messages-emoji-bar button {
+    border: 1px solid #c9d9ec;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    min-width: 36px;
+    min-height: 30px;
 }
 .messages-empty {
     color: #64748b;
@@ -154,4 +208,5 @@
     .messages-project-list { max-height: 300px; }
     .messages-thread-head { grid-template-columns: 1fr; }
     .messages-delete-btn { width: 100%; }
+    .messages-refresh-btn { width: 100%; }
 }

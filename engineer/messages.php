@@ -77,7 +77,7 @@ $sidebarRoleLabel = ucwords(str_replace('_', ' ', (string)($_SESSION['employee_r
         </aside>
         <section class="messages-panel messages-thread">
             <div class="messages-thread-head">
-                <strong id="messageThreadTitle">Select a project</strong>
+                <strong id="messageThreadTitle">Select a contact</strong>
                 <input id="messageThreadSearch" class="messages-search" type="search" placeholder="Search in conversation...">
             </div>
             <div id="messageFeed" class="messages-feed"><div class="messages-empty">Pick a contractor to start chatting.</div></div>
