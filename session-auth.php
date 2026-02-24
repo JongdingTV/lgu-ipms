@@ -6,6 +6,21 @@
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
+    $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+    $sessionName = 'LGU_IPMS_SESSID';
+    if (strpos($requestUri, '/engineer/') !== false) {
+        $sessionName = 'LGU_ENGINEER_SESSID';
+    } elseif (strpos($requestUri, '/contractor/') !== false) {
+        $sessionName = 'LGU_CONTRACTOR_SESSID';
+    } elseif (strpos($requestUri, '/department-head/') !== false) {
+        $sessionName = 'LGU_DEPT_HEAD_SESSID';
+    } elseif (strpos($requestUri, '/admin/') !== false) {
+        $sessionName = 'LGU_ADMIN_SESSID';
+    } elseif (strpos($requestUri, '/user-dashboard/') !== false) {
+        $sessionName = 'LGU_USER_SESSID';
+    }
+    session_name($sessionName);
+
     $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
     // Set secure session configuration
     ini_set('session.cookie_httponly', 1);      // Prevent JavaScript access to session cookie
