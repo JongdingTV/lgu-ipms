@@ -578,8 +578,8 @@ rbac_require_action_matrix(
         'mark_project_messages_read' => 'contractor.workspace.view',
         'load_chat_contacts' => 'contractor.workspace.view',
         'load_direct_messages' => 'contractor.workspace.view',
-        'send_direct_message' => 'contractor.workspace.manage',
-        'delete_direct_conversation' => 'contractor.workspace.manage',
+        'send_direct_message' => 'contractor.workspace.view',
+        'delete_direct_conversation' => 'contractor.workspace.view',
         'load_budget_state' => 'contractor.budget.read',
         'submit_status_request' => 'contractor.status.request',
         'load_status_requests' => 'contractor.status.request',
@@ -714,11 +714,17 @@ if ($action === 'send_direct_message') {
     $contactId = (int)($_POST['contact_user_id'] ?? 0);
     $text = trim((string)($_POST['message_text'] ?? ''));
     if ($me <= 0 || $contactId <= 0 || $text === '') json_out(['success' => false, 'message' => 'Invalid message payload.'], 422);
+    $text = strip_tags($text);
     if (strlen($text) > 4000) $text = substr($text, 0, 4000);
     $stmt = $db->prepare("INSERT INTO direct_messages (sender_user_id, sender_role, receiver_user_id, receiver_role, message_text) VALUES (?, 'contractor', ?, 'engineer', ?)");
     if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
     $stmt->bind_param('iis', $me, $contactId, $text);
     $ok = $stmt->execute();
+    if (!$ok) {
+        $err = (string)($stmt->error ?? 'Unable to send message.');
+        $stmt->close();
+        json_out(['success' => false, 'message' => $err], 500);
+    }
     $msgId = (int)$db->insert_id;
     $stmt->close();
     json_out(['success' => (bool)$ok, 'message_id' => $msgId]);

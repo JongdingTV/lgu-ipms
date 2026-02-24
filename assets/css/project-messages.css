@@ -2,6 +2,9 @@
     display: grid;
     grid-template-columns: 340px 1fr;
     gap: 10px;
+    align-items: stretch;
+    min-height: calc(100vh - 210px);
+    max-height: calc(100vh - 210px);
 }
 .messages-panel {
     background: #fff;
@@ -29,7 +32,7 @@
     background: #f8fafc;
 }
 .messages-project-list {
-    max-height: calc(100vh - 280px);
+    max-height: calc(100vh - 290px);
     overflow: auto;
     padding: 6px;
 }
@@ -75,7 +78,9 @@
 .messages-thread {
     display: flex;
     flex-direction: column;
-    min-height: 540px;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
 }
 .messages-feed {
     flex: 1;
@@ -85,6 +90,7 @@
     flex-direction: column;
     gap: 8px;
     background: linear-gradient(180deg, #f8fbff, #f3f7fc);
+    min-height: 0;
 }
 .msg-row {
     max-width: 82%;
@@ -167,10 +173,16 @@
     padding: 24px 10px;
 }
 @media (max-width: 1024px) {
-    .messages-layout { grid-template-columns: 1fr; }
+    .messages-layout {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        max-height: none;
+    }
     .messages-project-list { max-height: 300px; }
     .messages-thread-head { grid-template-columns: 1fr; }
     .messages-delete-btn { width: 100%; }
     .messages-refresh-btn { width: 100%; }
     .messages-composer { grid-template-columns: 1fr; }
+    .messages-thread { height: auto; }
+    .messages-feed { max-height: 50vh; }
 }
