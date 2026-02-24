@@ -84,21 +84,6 @@
     margin-left: 8px;
     padding: 0 6px;
 }
-.messages-total-unread {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 22px;
-    height: 22px;
-    border-radius: 999px;
-    background: #dc2626;
-    color: #fff;
-    font-size: .75rem;
-    font-weight: 700;
-    margin-left: 10px;
-    vertical-align: middle;
-    padding: 0 6px;
-}
 .messages-meta {
     display: flex;
     justify-content: space-between;

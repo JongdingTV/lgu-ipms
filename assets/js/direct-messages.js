@@ -17,7 +17,6 @@
   const textInput = document.getElementById('messageText');
   const sendBtn = document.getElementById('messageSendBtn');
   const fileInput = document.getElementById('messageFile');
-  const pageTitle = root.querySelector('.dash-header h1');
 
   if (!apiBase || !contactSearch || !threadSearch || !contactList || !threadTitle || !feed || !textInput || !sendBtn) return;
   if (fileInput) fileInput.style.display = 'none';
@@ -106,22 +105,6 @@
     return { refreshBtn, deleteBtn };
   }
 
-  function renderGlobalUnread() {
-    if (!pageTitle) return;
-    let badge = pageTitle.querySelector('.messages-total-unread');
-    const total = state.contacts.reduce((sum, c) => sum + Number(c.unread_count || 0), 0);
-    if (total <= 0) {
-      if (badge) badge.remove();
-      return;
-    }
-    if (!badge) {
-      badge = document.createElement('span');
-      badge.className = 'messages-total-unread';
-      pageTitle.appendChild(badge);
-    }
-    badge.textContent = String(total);
-  }
-
   function renderContacts() {
     const q = (contactSearch.value || '').trim().toLowerCase();
     const rows = state.contacts.filter((c) => {
@@ -148,7 +131,6 @@
         '</div>' +
       '</button>';
     }).join('');
-    renderGlobalUnread();
   }
 
   function renderMessages() {

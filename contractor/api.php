@@ -7,9 +7,7 @@ check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
 $directChatActions = ['load_chat_contacts', 'load_direct_messages', 'send_direct_message', 'delete_direct_conversation'];
-if (!in_array($action, $directChatActions, true)) {
-    rbac_require_from_matrix('contractor.workspace.view', ['contractor','accredited_contractor','private_contractor','admin','super_admin']);
-}
+rbac_require_from_matrix('contractor.workspace.view', ['contractor','accredited_contractor','private_contractor','admin','super_admin']);
 check_suspicious_activity();
 
 header('Content-Type: application/json');
@@ -28,7 +26,7 @@ $roleAliasMap = [
     'city_engineer' => 'engineer'
 ];
 if (isset($roleAliasMap[$role])) $role = $roleAliasMap[$role];
-if (!in_array($action, $directChatActions, true) && !in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
+if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden']);
     exit;
@@ -645,13 +643,11 @@ $actionMap = [
         'submit_issue' => 'contractor.workspace.manage',
         'load_notifications_center' => 'contractor.notifications.read',
 ];
-if (!in_array($action, $directChatActions, true)) {
-    rbac_require_action_matrix(
-        $action !== '' ? $action : 'load_projects',
-        $actionMap,
-        'contractor.workspace.view'
-    );
-}
+rbac_require_action_matrix(
+    $action !== '' ? $action : 'load_projects',
+    $actionMap,
+    'contractor.workspace.view'
+);
 
 $engineerOwnedActions = [
     'load_task_milestone',
@@ -714,6 +710,7 @@ if ($action === 'load_chat_contacts') {
             if (contractor_normalize_role((string)($e['role'] ?? '')) !== 'engineer') continue;
             if (!contractor_is_active_employee($e)) continue;
             $userId = (int)($e['id'] ?? 0);
+            if ($userId === $viewerId) continue;
             if ($userId <= 0 || isset($seen[$userId])) continue;
             $displayName = trim((string)($e['first_name'] ?? '') . ' ' . (string)($e['last_name'] ?? ''));
             $email = trim((string)($e['email'] ?? ''));
