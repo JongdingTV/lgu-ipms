@@ -13,7 +13,7 @@ if (!isset($db) || $db->connect_error) {
 }
 
 $userId = (int) ($_SESSION['user_id'] ?? 0);
-$stmt = $db->prepare('SELECT first_name, last_name, email FROM users WHERE id = ? LIMIT 1');
+$stmt = $db->prepare('SELECT first_name, last_name, email, address FROM users WHERE id = ? LIMIT 1');
 $stmt->bind_param('i', $userId);
 $stmt->execute();
 $userRes = $stmt->get_result();
@@ -54,13 +54,79 @@ function user_dashboard_projects_has_created_at(mysqli $db): bool
     return $exists;
 }
 
-$totalProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects")->fetch_assoc()['count'] ?? 0);
-$inProgressProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status NOT IN ('Completed', 'Cancelled')")->fetch_assoc()['count'] ?? 0);
-$completedProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Completed'")->fetch_assoc()['count'] ?? 0);
-$closedProjects = (int) ($db->query("SELECT COUNT(*) as count FROM projects WHERE status = 'Cancelled'")->fetch_assoc()['count'] ?? 0);
+function user_dashboard_extract_location_terms(string $address): array
+{
+    $address = strtolower(trim($address));
+    if ($address === '') {
+        return [];
+    }
+    $normalized = preg_replace('/[^a-z0-9,\-\s]/', ' ', $address) ?? '';
+    $parts = preg_split('/[\s,]+/', $normalized) ?: [];
+    $stop = [
+        'quezon', 'city', 'metro', 'manila', 'philippines', 'barangay', 'brgy',
+        'district', 'street', 'st', 'road', 'rd', 'avenue', 'ave', 'block', 'lot',
+        'phase', 'unit', 'house', 'number', 'no', 'near', 'zone'
+    ];
+    $terms = [];
+    foreach ($parts as $part) {
+        $part = trim($part);
+        if ($part === '' || strlen($part) < 4 || in_array($part, $stop, true) || ctype_digit($part)) {
+            continue;
+        }
+        $terms[$part] = true;
+        if (count($terms) >= 8) {
+            break;
+        }
+    }
+    return array_keys($terms);
+}
 
 $recentOrder = user_dashboard_projects_has_created_at($db) ? 'created_at DESC' : 'id DESC';
-$recentProjects = $db->query("SELECT id, name, location, status FROM projects ORDER BY {$recentOrder} LIMIT 5");
+$hasBarangay = user_table_has_column($db, 'projects', 'barangay');
+$selectBarangay = $hasBarangay ? ', barangay' : ", '' AS barangay";
+$rawProjects = [];
+$resProjects = $db->query("SELECT id, name, location, status, province{$selectBarangay} FROM projects ORDER BY {$recentOrder} LIMIT 500");
+if ($resProjects) {
+    while ($row = $resProjects->fetch_assoc()) {
+        $rawProjects[] = $row;
+    }
+    $resProjects->free();
+}
+
+$locationTerms = user_dashboard_extract_location_terms((string)($user['address'] ?? ''));
+$scopedProjects = [];
+if (!empty($locationTerms)) {
+    foreach ($rawProjects as $row) {
+        $hay = strtolower(trim(
+            (string)($row['location'] ?? '') . ' ' .
+            (string)($row['province'] ?? '') . ' ' .
+            (string)($row['barangay'] ?? '')
+        ));
+        foreach ($locationTerms as $term) {
+            if ($term !== '' && strpos($hay, $term) !== false) {
+                $scopedProjects[] = $row;
+                break;
+            }
+        }
+    }
+}
+$visibleProjects = (!empty($locationTerms) && !empty($scopedProjects)) ? $scopedProjects : $rawProjects;
+
+$totalProjects = count($visibleProjects);
+$inProgressProjects = 0;
+$completedProjects = 0;
+$closedProjects = 0;
+foreach ($visibleProjects as $p) {
+    $s = strtolower(trim((string)($p['status'] ?? '')));
+    if ($s === 'completed') {
+        $completedProjects++;
+    } elseif ($s === 'cancelled') {
+        $closedProjects++;
+    } else {
+        $inProgressProjects++;
+    }
+}
+$recentProjects = array_slice($visibleProjects, 0, 5);
 $dashboardUpdatedAt = date('M d, Y h:i A');
 
 $feedbackStmt = null;
@@ -267,8 +333,8 @@ $db->close();
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if ($recentProjects && $recentProjects->num_rows > 0): ?>
-                            <?php while ($project = $recentProjects->fetch_assoc()): ?>
+                        <?php if (!empty($recentProjects)): ?>
+                            <?php foreach ($recentProjects as $project): ?>
                                 <?php
                                 $rawStatus = strtolower(trim((string) ($project['status'] ?? '')));
                                 $publicStatus = 'Ongoing';
@@ -287,7 +353,7 @@ $db->close();
                                     <td><span class="status-badge <?php echo $statusColor; ?>"><?php echo htmlspecialchars($publicStatus); ?></span></td>
                                     <td><div class="progress-small"><div class="progress-fill-small" style="width:0%;"></div></div></td>
                                 </tr>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         <?php else: ?>
                             <tr><td colspan="4" class="ac-a004b216">No projects registered yet</td></tr>
                         <?php endif; ?>

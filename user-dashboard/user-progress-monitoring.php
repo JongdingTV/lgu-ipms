@@ -15,7 +15,7 @@ if (!isset($db) || $db->connect_error) {
 }
 
 $userId = (int) ($_SESSION['user_id'] ?? 0);
-$userStmt = $db->prepare('SELECT first_name, last_name, email FROM users WHERE id = ? LIMIT 1');
+$userStmt = $db->prepare('SELECT first_name, last_name, email, address FROM users WHERE id = ? LIMIT 1');
 $userStmt->bind_param('i', $userId);
 $userStmt->execute();
 $userRes = $userStmt->get_result();
