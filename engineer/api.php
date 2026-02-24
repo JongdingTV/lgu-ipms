@@ -121,6 +121,25 @@ function engineer_table_exists(mysqli $db, string $table): bool {
     return $ok;
 }
 
+function engineer_table_has_column(mysqli $db, string $table, string $column): bool {
+    $stmt = $db->prepare(
+        "SELECT 1
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND COLUMN_NAME = ?
+         LIMIT 1"
+    );
+    if (!$stmt) return false;
+    $stmt->bind_param('ss', $table, $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $ok = $res && $res->num_rows > 0;
+    if ($res) $res->free();
+    $stmt->close();
+    return $ok;
+}
+
 function messaging_ensure_tables(mysqli $db): void {
     $db->query("CREATE TABLE IF NOT EXISTS project_conversations (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -282,6 +301,21 @@ function messaging_store_attachment(array $file): ?array {
     return ['path' => 'uploads/project-messages/' . $name, 'name' => (string)($file['name'] ?? $name), 'type' => $mime, 'size' => $size];
 }
 
+function direct_messages_ensure_table(mysqli $db): void {
+    $db->query("CREATE TABLE IF NOT EXISTS direct_messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sender_user_id INT NOT NULL,
+        sender_role VARCHAR(30) NOT NULL,
+        receiver_user_id INT NOT NULL,
+        receiver_role VARCHAR(30) NOT NULL,
+        message_text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+        INDEX idx_dm_pair_time (sender_user_id, receiver_user_id, created_at),
+        INDEX idx_dm_receiver (receiver_user_id, receiver_role, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
 rbac_require_action_matrix(
     $action !== '' ? $action : 'load_monitoring',
@@ -293,6 +327,9 @@ rbac_require_action_matrix(
         'send_project_message' => 'engineer.workspace.manage',
         'delete_project_message' => 'engineer.workspace.manage',
         'mark_project_messages_read' => 'engineer.workspace.view',
+        'load_chat_contacts' => 'engineer.workspace.view',
+        'load_direct_messages' => 'engineer.workspace.view',
+        'send_direct_message' => 'engineer.workspace.manage',
         'load_progress_submissions' => 'engineer.progress.review',
         'decide_progress' => 'engineer.progress.review',
         'load_status_requests' => 'engineer.status.review',
@@ -321,6 +358,91 @@ rbac_require_action_matrix(
 );
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
     json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
+}
+
+if ($action === 'load_chat_contacts') {
+    direct_messages_ensure_table($db);
+    $rows = [];
+    $seen = [];
+    $hasContractors = engineer_table_exists($db, 'contractors');
+    $hasEmployees = engineer_table_exists($db, 'employees');
+    if ($hasContractors) {
+        $nameExpr = engineer_table_has_column($db, 'contractors', 'company')
+            ? "COALESCE(NULLIF(c.company,''), NULLIF(c.owner,''), CONCAT('Contractor #', c.id))"
+            : "COALESCE(NULLIF(c.owner,''), CONCAT('Contractor #', c.id))";
+        $emailExpr = engineer_table_has_column($db, 'contractors', 'email') ? "COALESCE(c.email,'')" : "''";
+        $employeeCol = engineer_table_has_column($db, 'contractors', 'account_employee_id')
+            ? 'account_employee_id'
+            : (engineer_table_has_column($db, 'contractors', 'employee_id') ? 'employee_id' : null);
+        $selectEmployee = $employeeCol ? "COALESCE(c.{$employeeCol},0) AS employee_id" : "0 AS employee_id";
+        $res = $db->query("SELECT c.id, {$nameExpr} AS display_name, {$emailExpr} AS email, {$selectEmployee} FROM contractors c ORDER BY c.id DESC LIMIT 300");
+        while ($res && ($r = $res->fetch_assoc())) {
+            $contactUserId = (int)($r['employee_id'] ?? 0);
+            $email = trim((string)($r['email'] ?? ''));
+            if ($contactUserId <= 0 && $email !== '' && $hasEmployees) {
+                $s = $db->prepare("SELECT id FROM employees WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) LIMIT 1");
+                if ($s) {
+                    $s->bind_param('s', $email);
+                    $s->execute();
+                    $rr = $s->get_result();
+                    if ($rr && ($er = $rr->fetch_assoc())) $contactUserId = (int)($er['id'] ?? 0);
+                    if ($rr) $rr->free();
+                    $s->close();
+                }
+            }
+            if ($contactUserId <= 0 || isset($seen[$contactUserId])) continue;
+            $seen[$contactUserId] = true;
+            $rows[] = [
+                'user_id' => $contactUserId,
+                'display_name' => (string)($r['display_name'] ?? ('Contractor #' . $contactUserId)),
+                'email' => $email,
+                'role_label' => 'Contractor'
+            ];
+        }
+        if ($res) $res->free();
+    }
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'load_direct_messages') {
+    direct_messages_ensure_table($db);
+    $me = (int)($_SESSION['employee_id'] ?? 0);
+    $contactId = (int)($_GET['contact_user_id'] ?? 0);
+    if ($me <= 0 || $contactId <= 0) json_out(['success' => false, 'message' => 'Invalid chat contact.'], 422);
+    $stmt = $db->prepare("SELECT id, sender_user_id, sender_role, receiver_user_id, receiver_role, message_text, created_at
+                          FROM direct_messages
+                          WHERE is_deleted = 0
+                            AND ((sender_user_id = ? AND sender_role = 'engineer' AND receiver_user_id = ? AND receiver_role = 'contractor')
+                              OR (sender_user_id = ? AND sender_role = 'contractor' AND receiver_user_id = ? AND receiver_role = 'engineer'))
+                          ORDER BY created_at ASC
+                          LIMIT 600");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('iiii', $me, $contactId, $contactId, $me);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = [];
+    while ($res && ($r = $res->fetch_assoc())) {
+        $rows[] = $r;
+    }
+    if ($res) $res->free();
+    $stmt->close();
+    json_out(['success' => true, 'data' => $rows]);
+}
+
+if ($action === 'send_direct_message') {
+    direct_messages_ensure_table($db);
+    $me = (int)($_SESSION['employee_id'] ?? 0);
+    $contactId = (int)($_POST['contact_user_id'] ?? 0);
+    $text = trim((string)($_POST['message_text'] ?? ''));
+    if ($me <= 0 || $contactId <= 0 || $text === '') json_out(['success' => false, 'message' => 'Invalid message payload.'], 422);
+    if (strlen($text) > 4000) $text = substr($text, 0, 4000);
+    $stmt = $db->prepare("INSERT INTO direct_messages (sender_user_id, sender_role, receiver_user_id, receiver_role, message_text) VALUES (?, 'engineer', ?, 'contractor', ?)");
+    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
+    $stmt->bind_param('iis', $me, $contactId, $text);
+    $ok = $stmt->execute();
+    $msgId = (int)$db->insert_id;
+    $stmt->close();
+    json_out(['success' => (bool)$ok, 'message_id' => $msgId]);
 }
 
 $db->query("CREATE TABLE IF NOT EXISTS project_progress_updates (

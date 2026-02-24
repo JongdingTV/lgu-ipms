@@ -44,6 +44,38 @@ function cv_users_has_verification_status(mysqli $db): bool
     return $exists;
 }
 
+function cv_parse_id_upload_bundle(string $raw): array
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return ['front' => '', 'back' => '', 'single' => ''];
+    }
+    $decoded = json_decode($raw, true);
+    if (is_array($decoded)) {
+        return [
+            'front' => trim((string)($decoded['front'] ?? '')),
+            'back' => trim((string)($decoded['back'] ?? '')),
+            'single' => ''
+        ];
+    }
+    return ['front' => '', 'back' => '', 'single' => $raw];
+}
+
+function cv_delete_user_id_uploads(string $rawUpload): void
+{
+    $bundle = cv_parse_id_upload_bundle($rawUpload);
+    $candidates = [];
+    if ($bundle['front'] !== '') $candidates[] = $bundle['front'];
+    if ($bundle['back'] !== '') $candidates[] = $bundle['back'];
+    if ($bundle['single'] !== '') $candidates[] = $bundle['single'];
+    foreach ($candidates as $webPath) {
+        $path = dirname(__DIR__) . '/' . ltrim((string)$webPath, '/');
+        if (is_file($path)) {
+            @unlink($path);
+        }
+    }
+}
+
 $message = '';
 $error = '';
 $hasVerificationStatus = cv_users_has_verification_status($db);
@@ -60,12 +92,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $hasVerificationStatus) {
         if ($userId <= 0 || !in_array($status, ['verified', 'rejected', 'pending'], true)) {
             $error = 'Invalid verification request.';
         } else {
-            $stmt = $db->prepare('UPDATE users SET verification_status = ? WHERE id = ?');
+            $oldUpload = '';
+            if ($status === 'rejected') {
+                $sel = $db->prepare('SELECT id_upload FROM users WHERE id = ? LIMIT 1');
+                if ($sel) {
+                    $sel->bind_param('i', $userId);
+                    $sel->execute();
+                    $selRes = $sel->get_result();
+                    if ($selRes && ($selRow = $selRes->fetch_assoc())) {
+                        $oldUpload = (string)($selRow['id_upload'] ?? '');
+                    }
+                    if ($selRes) $selRes->free();
+                    $sel->close();
+                }
+            }
+
+            $stmt = $status === 'rejected'
+                ? $db->prepare('UPDATE users SET verification_status = ?, id_upload = NULL WHERE id = ?')
+                : $db->prepare('UPDATE users SET verification_status = ? WHERE id = ?');
             if (!$stmt) {
                 $error = 'Unable to prepare update query.';
             } else {
                 $stmt->bind_param('si', $status, $userId);
                 if ($stmt->execute()) {
+                    if ($status === 'rejected' && $oldUpload !== '') {
+                        cv_delete_user_id_uploads($oldUpload);
+                    }
                     $message = 'Verification status updated.';
                     $selectedUserId = $userId;
                 } else {
@@ -260,7 +312,6 @@ $db->close();
 <script src="../assets/js/admin-citizen-verification.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-citizen-verification.js'); ?>"></script>
 </body>
 </html>
-
 
 
 
