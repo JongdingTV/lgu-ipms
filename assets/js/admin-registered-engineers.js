@@ -252,7 +252,14 @@
                     }
                     const payload = JSON.parse(trimmed);
                     if (payload && typeof payload === 'object' && payload.success === false) {
-                        lastErr = new Error(payload.message || 'API request failed.');
+                        let message = payload.message || 'API request failed.';
+                        if (Array.isArray(payload.missing_requirements) && payload.missing_requirements.length) {
+                            const missing = payload.missing_requirements.map((v) => String(v || '').trim()).filter(Boolean);
+                            if (missing.length) {
+                                message += ' Missing: ' + missing.join(', ') + '.';
+                            }
+                        }
+                        lastErr = new Error(message);
                         continue;
                     }
                     return payload;
