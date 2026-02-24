@@ -288,6 +288,26 @@ function ensure_assignment_table(mysqli $db): bool
     }
 }
 
+function ensure_engineer_project_assignment_table(mysqli $db): bool
+{
+    if (registered_table_exists($db, 'project_assignments')) {
+        return true;
+    }
+    try {
+        $ok = $db->query("CREATE TABLE IF NOT EXISTS project_assignments (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            engineer_id INT NOT NULL,
+            project_id INT NOT NULL,
+            assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_assignment (engineer_id, project_id)
+        )");
+        return (bool)$ok;
+    } catch (Throwable $e) {
+        error_log('ensure_engineer_project_assignment_table error: ' . $e->getMessage());
+        return false;
+    }
+}
+
 // Handle GET request for loading Engineers
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'load_contractors') {
     header('Content-Type: application/json');
@@ -1100,6 +1120,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt->bind_param("ii", $contractor_id, $project_id);
         
         if ($stmt->execute()) {
+            if (ensure_engineer_project_assignment_table($db)) {
+                $mirror = $db->prepare("INSERT IGNORE INTO project_assignments (engineer_id, project_id) VALUES (?, ?)");
+                if ($mirror) {
+                    $mirror->bind_param("ii", $contractor_id, $project_id);
+                    $mirror->execute();
+                    $mirror->close();
+                }
+                if (registered_table_exists($db, 'engineers') && registered_table_has_column($db, 'engineers', 'employee_id')) {
+                    $empId = 0;
+                    $empStmt = $db->prepare("SELECT employee_id FROM engineers WHERE id = ? LIMIT 1");
+                    if ($empStmt) {
+                        $empStmt->bind_param("i", $contractor_id);
+                        $empStmt->execute();
+                        $empRes = $empStmt->get_result();
+                        if ($empRes && ($empRow = $empRes->fetch_assoc())) {
+                            $empId = (int)($empRow['employee_id'] ?? 0);
+                        }
+                        if ($empRes) $empRes->free();
+                        $empStmt->close();
+                    }
+                    if ($empId > 0 && $empId !== $contractor_id) {
+                        $mirrorEmp = $db->prepare("INSERT IGNORE INTO project_assignments (engineer_id, project_id) VALUES (?, ?)");
+                        if ($mirrorEmp) {
+                            $mirrorEmp->bind_param("ii", $empId, $project_id);
+                            $mirrorEmp->execute();
+                            $mirrorEmp->close();
+                        }
+                    }
+                }
+            }
             if (function_exists('rbac_audit')) {
                 rbac_audit('engineer.assign_project', 'engineer', $contractor_id, [
                     'project_id' => $project_id
@@ -1137,6 +1187,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt->bind_param("ii", $contractor_id, $project_id);
         
         if ($stmt->execute()) {
+            if (registered_table_exists($db, 'project_assignments')) {
+                $mirrorDel = $db->prepare("DELETE FROM project_assignments WHERE engineer_id = ? AND project_id = ?");
+                if ($mirrorDel) {
+                    $mirrorDel->bind_param("ii", $contractor_id, $project_id);
+                    $mirrorDel->execute();
+                    $mirrorDel->close();
+                }
+                if (registered_table_exists($db, 'engineers') && registered_table_has_column($db, 'engineers', 'employee_id')) {
+                    $empId = 0;
+                    $empStmt = $db->prepare("SELECT employee_id FROM engineers WHERE id = ? LIMIT 1");
+                    if ($empStmt) {
+                        $empStmt->bind_param("i", $contractor_id);
+                        $empStmt->execute();
+                        $empRes = $empStmt->get_result();
+                        if ($empRes && ($empRow = $empRes->fetch_assoc())) {
+                            $empId = (int)($empRow['employee_id'] ?? 0);
+                        }
+                        if ($empRes) $empRes->free();
+                        $empStmt->close();
+                    }
+                    if ($empId > 0 && $empId !== $contractor_id) {
+                        $mirrorEmpDel = $db->prepare("DELETE FROM project_assignments WHERE engineer_id = ? AND project_id = ?");
+                        if ($mirrorEmpDel) {
+                            $mirrorEmpDel->bind_param("ii", $empId, $project_id);
+                            $mirrorEmpDel->execute();
+                            $mirrorEmpDel->close();
+                        }
+                    }
+                }
+            }
             if (function_exists('rbac_audit')) {
                 rbac_audit('engineer.unassign_project', 'engineer', $contractor_id, [
                     'project_id' => $project_id
@@ -1667,28 +1747,3 @@ $db->close();
     <script src="../assets/js/admin-registered-engineers.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-registered-engineers.js'); ?>"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
