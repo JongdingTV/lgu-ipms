@@ -184,11 +184,7 @@
             var isEng = getType() === 'engineer';
             var actionButtons = [
                 '<button type="button" class="action-btn action-view" data-action="view" data-index="' + idx + '">View</button>',
-                '<button type="button" class="action-btn action-review" data-action="under_review" data-index="' + idx + '">Under Review</button>',
-                '<button type="button" class="action-btn action-verify" data-action="verified" data-index="' + idx + '">Verify</button>',
-                '<button type="button" class="action-btn action-approve" data-action="approved" data-index="' + idx + '">Approve</button>',
-                '<button type="button" class="action-btn action-reject" data-action="rejected" data-index="' + idx + '">Reject</button>',
-                '<button type="button" class="action-btn action-suspend" data-action="suspended" data-index="' + idx + '">Suspend</button>'
+                '<button type="button" class="action-btn action-review" data-action="review" data-index="' + idx + '">Edit Status</button>'
               ].join('');
             return [
                 '<tr>',
@@ -212,6 +208,10 @@
                 if (idx < 0 || !currentRows[idx]) return;
                 if (action === 'view') {
                     loadDetails(currentRows[idx].id);
+                    return;
+                }
+                if (action === 'review') {
+                    openStatusModal(currentRows[idx], '');
                     return;
                 }
                 openStatusModal(currentRows[idx], action);

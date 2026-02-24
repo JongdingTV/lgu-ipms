@@ -159,18 +159,20 @@ body[data-page^="applications-"] .nav-submenu.show {
 .app-main-table .actions {
     display: flex;
     gap: 6px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    align-items: center;
 }
 
 .app-main-table .action-btn {
     border: 1px solid transparent;
     border-radius: 8px;
-    min-height: 34px;
-    padding: 6px 10px;
+    min-height: 30px;
+    padding: 4px 10px;
     font-size: 0.76rem;
     font-weight: 700;
     cursor: pointer;
     color: #fff;
+    white-space: nowrap;
 }
 
 #appFeedback {
