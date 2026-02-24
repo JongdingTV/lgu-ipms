@@ -63,8 +63,17 @@
             padding: 20px;
         }
 
+        #editProjectForm {
+            display: grid;
+            gap: 14px;
+        }
+
         .form-group {
             margin-bottom: 16px;
+        }
+
+        #editProjectForm .form-group {
+            margin-bottom: 0;
         }
 
         .form-group label {
@@ -99,6 +108,17 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
+            align-items: start;
+        }
+
+        #editProjectForm .form-group input,
+        #editProjectForm .form-group select,
+        #editProjectForm .form-group textarea {
+            min-height: 42px;
+        }
+
+        #editProjectForm .form-group textarea {
+            min-height: 92px;
         }
 
         @media (max-width: 600px) {

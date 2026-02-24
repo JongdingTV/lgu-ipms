@@ -352,6 +352,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $priority = isset($_POST['priority']) ? $_POST['priority'] : '';
     $status = isset($_POST['status']) ? $_POST['status'] : '';
     $description = isset($_POST['description']) ? $_POST['description'] : '';
+    $province = isset($_POST['province']) ? trim((string) $_POST['province']) : '';
+    $barangay = isset($_POST['barangay']) ? trim((string) $_POST['barangay']) : '';
+    $location = isset($_POST['location']) ? trim((string) $_POST['location']) : '';
+    $start_date = isset($_POST['start_date']) && $_POST['start_date'] !== '' ? (string) $_POST['start_date'] : null;
+    $end_date = isset($_POST['end_date']) && $_POST['end_date'] !== '' ? (string) $_POST['end_date'] : null;
+    $duration_months = isset($_POST['duration_months']) && $_POST['duration_months'] !== '' ? (int) $_POST['duration_months'] : null;
     
     if ($id > 0 && !empty($name)) {
         $transition = pw_validate_transition($db, $id, (string)$status);
@@ -362,8 +368,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $oldStatus = (string)($transition['current'] ?? '');
         $status = (string)($transition['next'] ?? 'Draft');
 
-        $stmt = $db->prepare("UPDATE projects SET name=?, code=?, type=?, sector=?, priority=?, status=?, description=? WHERE id=?");
-        $stmt->bind_param("sssssssi", $name, $code, $type, $sector, $priority, $status, $description, $id);
+        $stmt = $db->prepare("UPDATE projects SET name=?, code=?, type=?, sector=?, priority=?, status=?, description=?, province=?, barangay=?, location=?, start_date=?, end_date=?, duration_months=? WHERE id=?");
+        $stmt->bind_param("ssssssssssssii", $name, $code, $type, $sector, $priority, $status, $description, $province, $barangay, $location, $start_date, $end_date, $duration_months, $id);
         
         if ($stmt->execute()) {
             if ($oldStatus !== '' && $oldStatus !== $status) {
@@ -658,6 +664,7 @@ $db->close();
                                 <option value="Low">Low</option>
                                 <option value="Medium">Medium</option>
                                 <option value="High">High</option>
+                                <option value="Crucial">Crucial</option>
                                 <option value="Critical">Critical</option>
                             </select>
                         </div>
@@ -678,6 +685,40 @@ $db->close();
                     <div class="form-group">
                         <label for="projectDescription">Description</label>
                         <textarea id="projectDescription" name="description" rows="4"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="projectProvince">Province / City / Municipality</label>
+                            <input type="text" id="projectProvince" name="province">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectBarangay">Barangay</label>
+                            <input type="text" id="projectBarangay" name="barangay">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectLocation">Exact Site / Address</label>
+                        <input type="text" id="projectLocation" name="location">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="projectStartDate">Estimated Start Date</label>
+                            <input type="date" id="projectStartDate" name="start_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectEndDate">Estimated End Date</label>
+                            <input type="date" id="projectEndDate" name="end_date">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="projectDurationMonths">Estimated Duration (months)</label>
+                            <input type="number" id="projectDurationMonths" name="duration_months" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectBudget">Budget</label>
+                            <input type="number" id="projectBudget" name="budget" min="0" step="0.01" readonly>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -767,9 +808,6 @@ $db->close();
     <script src="../assets/js/admin-registered-projects.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-registered-projects.js'); ?>"></script>
 </body>
 </html>
-
-
-
 
 
 

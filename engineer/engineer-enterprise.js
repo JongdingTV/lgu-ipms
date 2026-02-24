@@ -106,6 +106,38 @@
     }, true);
   }
 
+  function installResilientNavDropdowns() {
+    const hasSubmenu = (group) => !!(group && group.querySelector('.nav-submenu'));
+    const closeAll = () => {
+      $$('.nav-item-group.open').forEach((group) => {
+        group.classList.remove('open');
+        const trigger = $('.nav-main-item', group);
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+      });
+    };
+
+    document.addEventListener('click', (e) => {
+      const trigger = e.target.closest('.nav-main-item');
+      if (!trigger) return;
+      const group = trigger.closest('.nav-item-group');
+      if (!hasSubmenu(group)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      const willOpen = !group.classList.contains('open');
+      closeAll();
+      group.classList.toggle('open', willOpen);
+      trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }, true);
+
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.nav-item-group')) return;
+      closeAll();
+    }, true);
+  }
+
   function initLogoutModal() {
     const hiddenModalStyle = [
       'position: fixed !important',
@@ -804,6 +836,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    installResilientNavDropdowns();
     initTopSidebarToggle();
     initTopUtilities();
     initUnifiedDropdowns();
