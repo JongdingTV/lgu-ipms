@@ -847,6 +847,43 @@ function registered_get_profile_verification_details(mysqli $db, int $entityId, 
     }
 
     $todayDate = date('Y-m-d');
+    if ($licenseExpiry === '' && $isEngineer && registered_table_exists($db, 'engineer_applications')) {
+        $appId = registered_find_engineer_application_id($db, $entityId);
+        if ($appId > 0 && registered_table_has_column($db, 'engineer_applications', 'prc_expiry')) {
+            $appExpiryStmt = $db->prepare("SELECT prc_expiry FROM engineer_applications WHERE id = ? LIMIT 1");
+            if ($appExpiryStmt) {
+                $appExpiryStmt->bind_param('i', $appId);
+                $appExpiryStmt->execute();
+                $appExpiryRes = $appExpiryStmt->get_result();
+                if ($appExpiryRes && ($appExpiryRow = $appExpiryRes->fetch_assoc())) {
+                    $licenseExpiry = trim((string)($appExpiryRow['prc_expiry'] ?? ''));
+                }
+                if ($appExpiryRes) {
+                    $appExpiryRes->free();
+                }
+                $appExpiryStmt->close();
+            }
+        }
+    }
+    if ($licenseExpiry === '' && !$isEngineer && registered_table_exists($db, 'contractor_applications')) {
+        $appId = registered_find_contractor_application_id($db, $entityId);
+        if ($appId > 0 && registered_table_has_column($db, 'contractor_applications', 'license_expiry')) {
+            $appExpiryStmt = $db->prepare("SELECT license_expiry FROM contractor_applications WHERE id = ? LIMIT 1");
+            if ($appExpiryStmt) {
+                $appExpiryStmt->bind_param('i', $appId);
+                $appExpiryStmt->execute();
+                $appExpiryRes = $appExpiryStmt->get_result();
+                if ($appExpiryRes && ($appExpiryRow = $appExpiryRes->fetch_assoc())) {
+                    $licenseExpiry = trim((string)($appExpiryRow['license_expiry'] ?? ''));
+                }
+                if ($appExpiryRes) {
+                    $appExpiryRes->free();
+                }
+                $appExpiryStmt->close();
+            }
+        }
+    }
+
     if ($licenseExpiry === '') {
         $result['missing_requirements'][] = 'License expiry date missing';
     } elseif (strtotime($licenseExpiry) !== false && $licenseExpiry < $todayDate) {
@@ -1727,9 +1764,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (in_array($status, ['verified', 'approved'], true)) {
         $verificationStatus = registered_get_profile_verification_status($db, $contractorId, $isEngineerTable);
         if ($verificationStatus !== 'Complete') {
+            $verificationDetails = registered_get_profile_verification_details($db, $contractorId, $isEngineerTable);
+            $missing = array_values(array_unique(array_filter(array_map('strval', (array)($verificationDetails['missing_requirements'] ?? [])))));
             echo json_encode([
                 'success' => false,
-                'message' => 'Cannot set status to ' . $status . '. Requirements are incomplete (' . $verificationStatus . ').'
+                'message' => 'Cannot set status to ' . $status . '. Requirements are incomplete (' . $verificationStatus . ').',
+                'missing_requirements' => $missing
             ]);
             exit;
         }
