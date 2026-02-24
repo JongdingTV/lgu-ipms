@@ -515,6 +515,126 @@ function app_legacy_rows(mysqli $db, string $type): array
     return $rows;
 }
 
+function app_legacy_detail(mysqli $db, string $type, int $id): ?array
+{
+    if ($id <= 0) return null;
+    if ($type === 'engineer') {
+        if (!app_table_exists($db, 'engineers')) return null;
+        $sql = "SELECT * FROM engineers WHERE id = ? LIMIT 1";
+    } else {
+        if (!app_table_exists($db, 'contractors')) return null;
+        $sql = "SELECT * FROM contractors WHERE id = ? LIMIT 1";
+    }
+    $stmt = $db->prepare($sql);
+    if (!$stmt) return null;
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    if ($res) $res->free();
+    $stmt->close();
+    if (!$row) return null;
+
+    if ($type === 'engineer') {
+        $fullName = trim((string)($row['full_name'] ?? ''));
+        if ($fullName === '') {
+            $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+        }
+        $row['display_name'] = $fullName !== '' ? $fullName : ('Engineer #' . $id);
+        if (!isset($row['assigned_area'])) $row['assigned_area'] = (string)($row['address'] ?? '');
+        if (!isset($row['phone'])) $row['phone'] = (string)($row['contact_number'] ?? '');
+        if (!isset($row['created_at'])) $row['created_at'] = date('Y-m-d H:i:s');
+    } else {
+        $company = trim((string)($row['company_name'] ?? ''));
+        if ($company === '') $company = trim((string)($row['company'] ?? ''));
+        $row['display_name'] = $company !== '' ? $company : ('Contractor #' . $id);
+        if (!isset($row['assigned_area'])) $row['assigned_area'] = (string)($row['address'] ?? '');
+        if (!isset($row['created_at'])) $row['created_at'] = date('Y-m-d H:i:s');
+    }
+    return $row;
+}
+
+function app_apply_legacy_status_update(mysqli $db, string $type, int $id, string $newStatus, string $remarks, string $reason): bool
+{
+    $statusMap = [
+        'pending' => 'Pending',
+        'under_review' => 'Under Review',
+        'verified' => 'Verified',
+        'approved' => 'Active',
+        'rejected' => 'Rejected',
+        'suspended' => 'Suspended',
+        'blacklisted' => 'Blacklisted',
+    ];
+    $legacyStatus = $statusMap[$newStatus] ?? ucfirst($newStatus);
+
+    if ($type === 'engineer') {
+        if (!app_table_exists($db, 'engineers')) return false;
+        $set = [];
+        $types = '';
+        $vals = [];
+        if (app_col_exists($db, 'engineers', 'status')) {
+            $set[] = 'status = ?';
+            $types .= 's';
+            $vals[] = $legacyStatus;
+        }
+        if (app_col_exists($db, 'engineers', 'account_status')) {
+            $acc = 'pending';
+            if ($newStatus === 'approved') $acc = 'active';
+            if ($newStatus === 'rejected') $acc = 'inactive';
+            if ($newStatus === 'suspended') $acc = 'suspended';
+            $set[] = 'account_status = ?';
+            $types .= 's';
+            $vals[] = $acc;
+        }
+        if (app_col_exists($db, 'engineers', 'notes')) {
+            $set[] = 'notes = ?';
+            $types .= 's';
+            $vals[] = trim(($remarks !== '' ? $remarks : 'Status updated by admin') . ($reason !== '' ? (' | Reason: ' . $reason) : ''));
+        }
+        if (empty($set)) return false;
+        $types .= 'i';
+        $vals[] = $id;
+        $sql = "UPDATE engineers SET " . implode(', ', $set) . " WHERE id = ?";
+        $stmt = $db->prepare($sql);
+        if (!$stmt) return false;
+        if (!app_bind($stmt, $types, $vals)) {
+            $stmt->close();
+            return false;
+        }
+        $ok = $stmt->execute();
+        $stmt->close();
+        return (bool)$ok;
+    }
+
+    if (!app_table_exists($db, 'contractors')) return false;
+    $set = [];
+    $types = '';
+    $vals = [];
+    if (app_col_exists($db, 'contractors', 'status')) {
+        $set[] = 'status = ?';
+        $types .= 's';
+        $vals[] = $legacyStatus;
+    }
+    if (app_col_exists($db, 'contractors', 'notes')) {
+        $set[] = 'notes = ?';
+        $types .= 's';
+        $vals[] = trim(($remarks !== '' ? $remarks : 'Status updated by admin') . ($reason !== '' ? (' | Reason: ' . $reason) : ''));
+    }
+    if (empty($set)) return false;
+    $types .= 'i';
+    $vals[] = $id;
+    $sql = "UPDATE contractors SET " . implode(', ', $set) . " WHERE id = ?";
+    $stmt = $db->prepare($sql);
+    if (!$stmt) return false;
+    if (!app_bind($stmt, $types, $vals)) {
+        $stmt->close();
+        return false;
+    }
+    $ok = $stmt->execute();
+    $stmt->close();
+    return (bool)$ok;
+}
+
 $action = strtolower(trim((string)($_GET['action'] ?? $_POST['action'] ?? '')));
 rbac_require_action_matrix($action !== '' ? $action : 'load_applications', [
     'load_summary' => 'admin.applications.view',
@@ -691,11 +811,9 @@ if ($action === 'get_application') {
     if ($id <= 0) app_json(['success' => false, 'message' => 'Invalid application id.'], 422);
 
     $legacyLookup = static function () use ($db, $type, $id): void {
-        $rows = app_legacy_rows($db, $type);
-        foreach ($rows as $row) {
-            if ((int)($row['id'] ?? 0) === $id) {
-                app_json(['success' => true, 'data' => $row, 'documents' => [], 'logs' => [], 'legacy' => true]);
-            }
+        $row = app_legacy_detail($db, $type, $id);
+        if ($row) {
+            app_json(['success' => true, 'data' => $row, 'documents' => [], 'logs' => [], 'legacy' => true]);
         }
         app_json(['success' => false, 'message' => 'Record not found.'], 404);
     };
@@ -846,14 +964,24 @@ if ($action === 'update_status') {
     }
 
     $stmt = $db->prepare("SELECT * FROM {$appTable} WHERE id = ? LIMIT 1");
-    if (!$stmt) app_json(['success' => false, 'message' => 'Unable to load application.'], 500);
-    $stmt->bind_param('i', $id);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $app = $res ? $res->fetch_assoc() : null;
-    if ($res) $res->free();
-    $stmt->close();
-    if (!$app) app_json(['success' => false, 'message' => 'Application not found.'], 404);
+    $app = null;
+    if ($stmt) {
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $app = $res ? $res->fetch_assoc() : null;
+        if ($res) $res->free();
+        $stmt->close();
+    }
+
+    if (!$app) {
+        // Legacy path: allow admin actions directly on engineers/contractors tables.
+        $ok = app_apply_legacy_status_update($db, $type, $id, $newStatus, $remarks, $reason);
+        if (!$ok) {
+            app_json(['success' => false, 'message' => 'Application not found.'], 404);
+        }
+        app_json(['success' => true, 'message' => 'Status updated successfully (legacy profile).', 'legacy' => true]);
+    }
 
     $oldStatus = strtolower((string)($app['status'] ?? 'pending'));
     $actorId = (int)($_SESSION['employee_id'] ?? 0);

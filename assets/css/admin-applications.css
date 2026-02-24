@@ -235,7 +235,8 @@ body[data-page^="applications-"] .nav-submenu.show {
 .app-modal-head h3 {
     margin: 0;
     color: #153b66;
-    font-size: 1.02rem;
+    font-size: 1.06rem;
+    font-weight: 800;
 }
 
 .app-modal-close {
@@ -252,7 +253,7 @@ body[data-page^="applications-"] .nav-submenu.show {
 
 .app-modal-body {
     overflow: auto;
-    padding: 14px;
+    padding: 16px;
     display: grid;
     grid-template-columns: 1.6fr 1fr;
     gap: 14px;
@@ -336,9 +337,17 @@ body[data-page^="applications-"] .nav-submenu.show {
     border: 1px solid #d8e5f4;
     border-radius: 12px;
     background: #fff;
-    padding: 10px;
+    padding: 12px;
     display: grid;
     gap: 8px;
+}
+
+.app-status-actions label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.24px;
+    color: #355477;
+    font-weight: 700;
 }
 
 .app-status-btns {

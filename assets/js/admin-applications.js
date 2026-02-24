@@ -182,16 +182,14 @@
         }
         tbody.innerHTML = rows.map(function (r, idx) {
             var isEng = getType() === 'engineer';
-            var actionButtons = legacyMode
-                ? '<button type="button" class="action-btn action-view" data-action="view" data-index="' + idx + '">View</button>'
-                : [
-                    '<button type="button" class="action-btn action-view" data-action="view" data-index="' + idx + '">View</button>',
-                    '<button type="button" class="action-btn action-review" data-action="under_review" data-index="' + idx + '">Under Review</button>',
-                    '<button type="button" class="action-btn action-verify" data-action="verified" data-index="' + idx + '">Verify</button>',
-                    '<button type="button" class="action-btn action-approve" data-action="approved" data-index="' + idx + '">Approve</button>',
-                    '<button type="button" class="action-btn action-reject" data-action="rejected" data-index="' + idx + '">Reject</button>',
-                    '<button type="button" class="action-btn action-suspend" data-action="suspended" data-index="' + idx + '">Suspend</button>'
-                  ].join('');
+            var actionButtons = [
+                '<button type="button" class="action-btn action-view" data-action="view" data-index="' + idx + '">View</button>',
+                '<button type="button" class="action-btn action-review" data-action="under_review" data-index="' + idx + '">Under Review</button>',
+                '<button type="button" class="action-btn action-verify" data-action="verified" data-index="' + idx + '">Verify</button>',
+                '<button type="button" class="action-btn action-approve" data-action="approved" data-index="' + idx + '">Approve</button>',
+                '<button type="button" class="action-btn action-reject" data-action="rejected" data-index="' + idx + '">Reject</button>',
+                '<button type="button" class="action-btn action-suspend" data-action="suspended" data-index="' + idx + '">Suspend</button>'
+              ].join('');
             return [
                 '<tr>',
                 '<td class="wrap">' + esc(r.display_name || '-') + '</td>',
@@ -229,7 +227,7 @@
             legacyMode = !!res.json.legacy;
             currentRows = Array.isArray(res.json.data) ? res.json.data : [];
             renderApplicationRows(currentRows);
-            setFeedback(legacyMode ? 'Legacy view mode: showing existing registered records.' : '', false);
+            setFeedback('', false);
             loadSummary(type);
         }).catch(function (err) {
             renderApplicationRows([]);
@@ -262,7 +260,7 @@
                 { key: 'status', format: function (v) { return statusChip(v); } },
                 { key: 'approved_at', format: fmtDate }
             ], '#verifiedTable tbody');
-            setFeedback(legacyMode ? 'Legacy view mode: showing existing registered records.' : '', false);
+            setFeedback('', false);
         }).catch(function (err) {
             renderSimpleTable([], [{ key: 'a' }], '#verifiedTable tbody');
             setFeedback(err.message || 'Unable to load verified users.', true);
@@ -283,7 +281,7 @@
                 { key: 'rejection_reason' },
                 { key: 'created_at', format: fmtDate }
             ], '#rejectedTable tbody');
-            setFeedback(legacyMode ? 'Legacy view mode: showing existing registered records.' : '', false);
+            setFeedback('', false);
         }).catch(function (err) {
             renderSimpleTable([], [{ key: 'a' }], '#rejectedTable tbody');
             setFeedback(err.message || 'Unable to load records.', true);
@@ -333,13 +331,51 @@
             var app = res.json.data || {};
             var docs = res.json.documents || [];
             var logs = res.json.logs || [];
-            var detailsLegacyMode = !!res.json.legacy;
+            var orderedFields = [
+                ['display_name', 'Name / Company'],
+                ['full_name', 'Full Name'],
+                ['email', 'Email'],
+                ['phone', 'Phone'],
+                ['department', 'Department'],
+                ['position', 'Position'],
+                ['specialization', 'Specialization'],
+                ['assigned_area', 'Assigned Area'],
+                ['address', 'Address'],
+                ['prc_license_no', 'PRC License No.'],
+                ['prc_license_number', 'PRC License No.'],
+                ['prc_expiry', 'PRC Expiry'],
+                ['license_expiry_date', 'License Expiry'],
+                ['license_no', 'License No.'],
+                ['years_experience', 'Years of Experience'],
+                ['years_in_business', 'Years in Business'],
+                ['status', 'Status'],
+                ['admin_remarks', 'Admin Remarks'],
+                ['rejection_reason', 'Rejection Reason'],
+                ['blacklist_reason', 'Blacklist Reason'],
+                ['created_at', 'Created At'],
+                ['updated_at', 'Updated At']
+            ];
 
-            var details = Object.keys(app).map(function (k) {
-                if (['account_password_hash'].indexOf(k) !== -1) return '';
+            var printed = {};
+            var details = '';
+            orderedFields.forEach(function (pair) {
+                var key = pair[0];
+                var label = pair[1];
+                if (printed[key]) return;
+                if (typeof app[key] === 'undefined' || app[key] === null || app[key] === '') return;
+                printed[key] = true;
+                var isFull = /reason|remarks|address|area|notes/.test(key);
+                details += '<div class="app-details-item ' + (isFull ? 'full' : '') + '"><label>' + esc(label) + '</label><div class="app-details-value">' + (key === 'status' ? statusChip(app[key]) : esc(app[key])) + '</div></div>';
+            });
+
+            Object.keys(app).forEach(function (k) {
+                if (printed[k]) return;
+                if (['account_password_hash', 'password'].indexOf(k) !== -1) return;
+                var v = app[k];
+                if (v == null || v === '') return;
                 var isFull = /reason|remarks|address|area|notes/.test(k);
-                return '<div class="app-details-item ' + (isFull ? 'full' : '') + '"><label>' + esc(k.replace(/_/g, ' ')) + '</label><div class="app-details-value">' + (k === 'status' ? statusChip(app[k]) : esc(app[k] == null ? '-' : app[k])) + '</div></div>';
-            }).join('');
+                details += '<div class="app-details-item ' + (isFull ? 'full' : '') + '"><label>' + esc(k.replace(/_/g, ' ')) + '</label><div class="app-details-value">' + (k === 'status' ? statusChip(v) : esc(v)) + '</div></div>';
+            });
 
             var docHtml = docs.length ? docs.map(function (d) {
                 var href = '/admin/application_document.php?id=' + encodeURIComponent(d.id);
@@ -366,7 +402,7 @@
                 '<div style="height:10px"></div>',
                 '<div class="app-log-list">', logHtml, '</div>',
                 '<div style="height:10px"></div>',
-                (detailsLegacyMode ? '<div class="app-log-item">Status actions are disabled in legacy mode.</div>' : [
+                [
                     '<div class="app-status-actions">',
                     '<label>Status Action</label>',
                     '<select id="appStatusAction"><option value="under_review">Mark Under Review</option><option value="verified">Mark Verified</option><option value="approved">Approve Account</option><option value="rejected">Reject</option><option value="suspended">Suspend</option><option value="pending">Request Revision</option></select>',
@@ -374,7 +410,7 @@
                     '<label>Reason (required for reject/suspend)</label><textarea id="appAdminReason" rows="2" placeholder="Reason..."></textarea>',
                     '<div class="app-status-btns"><button type="button" class="action-approve" id="appSaveStatusBtn">Save Decision</button><button type="button" class="action-view" id="appCloseModalBtn">Close</button></div>',
                     '</div>'
-                ].join('')),
+                ].join(''),
                 '</div>'
             ].join('');
 
