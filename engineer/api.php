@@ -140,6 +140,25 @@ function engineer_table_has_column(mysqli $db, string $table, string $column): b
     return $ok;
 }
 
+function engineer_normalize_role(string $role): string {
+    $normalized = strtolower(trim($role));
+    if ($normalized === '') return '';
+    $map = [
+        'superadmin' => 'super_admin',
+        'super admin' => 'super_admin',
+        'department head' => 'department_head',
+        'department-head' => 'department_head',
+        'dept_head' => 'department_head',
+        'dept head' => 'department_head',
+        'project_engineer' => 'engineer',
+        'municipal_engineer' => 'engineer',
+        'city_engineer' => 'engineer',
+        'accredited_contractor' => 'contractor',
+        'private_contractor' => 'contractor'
+    ];
+    return $map[$normalized] ?? $normalized;
+}
+
 function messaging_ensure_tables(mysqli $db): void {
     $db->query("CREATE TABLE IF NOT EXISTS project_conversations (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -388,37 +407,54 @@ if ($action === 'load_chat_contacts') {
     direct_messages_ensure_table($db);
     $rows = [];
     $seen = [];
-    $hasContractors = engineer_table_exists($db, 'contractors');
-    $hasEmployees = engineer_table_exists($db, 'employees');
-    if ($hasContractors) {
-        $nameExpr = engineer_table_has_column($db, 'contractors', 'company')
-            ? "COALESCE(NULLIF(c.company,''), NULLIF(c.owner,''), CONCAT('Contractor #', c.id))"
-            : "COALESCE(NULLIF(c.owner,''), CONCAT('Contractor #', c.id))";
-        $emailExpr = engineer_table_has_column($db, 'contractors', 'email') ? "COALESCE(c.email,'')" : "''";
-        $employeeCol = engineer_table_has_column($db, 'contractors', 'account_employee_id')
-            ? 'account_employee_id'
-            : (engineer_table_has_column($db, 'contractors', 'employee_id') ? 'employee_id' : null);
-        $selectEmployee = $employeeCol ? "COALESCE(c.{$employeeCol},0) AS employee_id" : "0 AS employee_id";
-        $res = $db->query("SELECT c.id, {$nameExpr} AS display_name, {$emailExpr} AS email, {$selectEmployee} FROM contractors c ORDER BY c.id DESC LIMIT 300");
-        while ($res && ($r = $res->fetch_assoc())) {
-            $contactUserId = (int)($r['employee_id'] ?? 0);
-            $email = trim((string)($r['email'] ?? ''));
-            if ($contactUserId <= 0 && $email !== '' && $hasEmployees) {
-                $s = $db->prepare("SELECT id FROM employees WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) LIMIT 1");
-                if ($s) {
-                    $s->bind_param('s', $email);
-                    $s->execute();
-                    $rr = $s->get_result();
-                    if ($rr && ($er = $rr->fetch_assoc())) $contactUserId = (int)($er['id'] ?? 0);
-                    if ($rr) $rr->free();
-                    $s->close();
+    if (engineer_table_exists($db, 'employees')) {
+        $sql = "SELECT id, COALESCE(first_name,'') AS first_name, COALESCE(last_name,'') AS last_name, COALESCE(email,'') AS email, COALESCE(role,'') AS role";
+        $sql .= " FROM employees ORDER BY id DESC LIMIT 600";
+        $res = $db->query($sql);
+        while ($res && ($e = $res->fetch_assoc())) {
+            if (engineer_normalize_role((string)($e['role'] ?? '')) !== 'contractor') continue;
+            $userId = (int)($e['id'] ?? 0);
+            if ($userId <= 0 || isset($seen[$userId])) continue;
+            $seen[$userId] = true;
+            $displayName = trim((string)($e['first_name'] ?? '') . ' ' . (string)($e['last_name'] ?? ''));
+            $email = trim((string)($e['email'] ?? ''));
+
+            if ($displayName === '' && engineer_table_exists($db, 'contractors')) {
+                $nameParts = [];
+                if (engineer_table_has_column($db, 'contractors', 'company')) $nameParts[] = "NULLIF(company,'')";
+                if (engineer_table_has_column($db, 'contractors', 'company_name')) $nameParts[] = "NULLIF(company_name,'')";
+                if (engineer_table_has_column($db, 'contractors', 'owner')) $nameParts[] = "NULLIF(owner,'')";
+                $nameExpr = !empty($nameParts) ? implode(', ', $nameParts) : "''";
+                $emailExpr = engineer_table_has_column($db, 'contractors', 'email') ? "COALESCE(email,'')" : "''";
+                $whereParts = [];
+                if (engineer_table_has_column($db, 'contractors', 'account_employee_id')) $whereParts[] = 'account_employee_id = ?';
+                if (engineer_table_has_column($db, 'contractors', 'employee_id')) $whereParts[] = 'employee_id = ?';
+
+                if (!empty($whereParts)) {
+                    $sqlProfile = "SELECT COALESCE({$nameExpr}, '') AS profile_name, {$emailExpr} AS profile_email FROM contractors WHERE " . implode(' OR ', $whereParts) . " LIMIT 1";
+                    $stmtProfile = $db->prepare($sqlProfile);
+                    if ($stmtProfile) {
+                        if (count($whereParts) === 2) {
+                            $stmtProfile->bind_param('ii', $userId, $userId);
+                        } else {
+                            $stmtProfile->bind_param('i', $userId);
+                        }
+                        $stmtProfile->execute();
+                        $profile = $stmtProfile->get_result()->fetch_assoc();
+                        $stmtProfile->close();
+                        if ($profile) {
+                            $profileName = trim((string)($profile['profile_name'] ?? ''));
+                            if ($profileName !== '') $displayName = $profileName;
+                            if ($email === '') $email = trim((string)($profile['profile_email'] ?? ''));
+                        }
+                    }
                 }
             }
-            if ($contactUserId <= 0 || isset($seen[$contactUserId])) continue;
-            $seen[$contactUserId] = true;
+
+            if ($displayName === '') $displayName = 'Contractor #' . $userId;
             $rows[] = [
-                'user_id' => $contactUserId,
-                'display_name' => (string)($r['display_name'] ?? ('Contractor #' . $contactUserId)),
+                'user_id' => $userId,
+                'display_name' => $displayName,
                 'email' => $email,
                 'role_label' => 'Contractor'
             ];

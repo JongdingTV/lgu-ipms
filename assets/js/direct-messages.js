@@ -17,11 +17,25 @@
   const textInput = document.getElementById('messageText');
   const sendBtn = document.getElementById('messageSendBtn');
   const fileInput = document.getElementById('messageFile');
+
   if (!apiBase || !contactSearch || !threadSearch || !contactList || !threadTitle || !feed || !textInput || !sendBtn) return;
   if (fileInput) fileInput.style.display = 'none';
 
-  const state = { contacts: [], filtered: [], activeContactId: 0, messages: [] };
+  const state = {
+    contacts: [],
+    activeContactId: 0,
+    messages: [],
+    loading: false,
+    pollId: null
+  };
+
   const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (m) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m] || m));
+
+  function formatTime(v) {
+    const t = Date.parse(String(v || '').replace(' ', 'T'));
+    if (Number.isNaN(t)) return '';
+    return new Date(t).toLocaleString();
+  }
 
   function apiGet(action, extra) {
     return fetch(apiBase + '?action=' + encodeURIComponent(action) + (extra || ''), { credentials: 'same-origin' })
@@ -40,44 +54,84 @@
     }).then((r) => r.json().catch(() => ({ success: false, message: 'Invalid server response.' })));
   }
 
+  function ensureThreadButtons() {
+    const head = threadTitle.parentElement;
+    if (!head) return {};
+
+    let refreshBtn = head.querySelector('.messages-refresh-btn');
+    if (!refreshBtn) {
+      refreshBtn = document.createElement('button');
+      refreshBtn.type = 'button';
+      refreshBtn.className = 'messages-btn messages-refresh-btn';
+      refreshBtn.textContent = 'Refresh';
+      head.appendChild(refreshBtn);
+    }
+
+    let deleteBtn = head.querySelector('.messages-delete-btn');
+    if (!deleteBtn) {
+      deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'messages-btn messages-delete-btn';
+      deleteBtn.textContent = 'Delete';
+      head.appendChild(deleteBtn);
+    }
+
+    return { refreshBtn, deleteBtn };
+  }
+
   function renderContacts() {
     const q = (contactSearch.value || '').trim().toLowerCase();
-    state.filtered = state.contacts.filter((c) => {
-      const hay = [c.display_name, c.email].join(' ').toLowerCase();
+    const rows = state.contacts.filter((c) => {
+      const hay = [c.display_name, c.email, c.role_label].join(' ').toLowerCase();
       return q === '' || hay.indexOf(q) !== -1;
     });
-    if (!state.filtered.length) {
-      contactList.innerHTML = '<div class="messages-empty">No chat contacts found.</div>';
+
+    if (!rows.length) {
+      contactList.innerHTML = '<div class="messages-empty">No contacts found.</div>';
       return;
     }
-    contactList.innerHTML = '';
-    state.filtered.forEach((c) => {
-      const div = document.createElement('button');
-      div.type = 'button';
-      div.className = 'messages-project-item' + (Number(c.user_id) === Number(state.activeContactId) ? ' active' : '');
-      div.dataset.id = String(c.user_id);
-      div.innerHTML =
-        '<div><strong>' + esc(c.display_name || 'Contact') + '</strong></div>' +
-        '<div class="messages-meta"><span>' + esc(c.role_label || '') + '</span><span>' + esc(c.email || '') + '</span></div>';
-      contactList.appendChild(div);
-    });
+
+    contactList.innerHTML = rows.map((c) => {
+      const isActive = Number(c.user_id) === Number(state.activeContactId);
+      const name = String(c.display_name || 'Contact');
+      const initial = esc(name.charAt(0).toUpperCase() || 'C');
+      return '<button type="button" class="messages-project-item' + (isActive ? ' active' : '') + '" data-id="' + Number(c.user_id) + '">' +
+        '<div class="messages-contact-avatar">' + initial + '</div>' +
+        '<div class="messages-contact-main">' +
+          '<div class="messages-contact-title">' + esc(name) + '</div>' +
+          '<div class="messages-meta"><span>' + esc(c.role_label || '') + '</span><span>' + esc(c.email || '') + '</span></div>' +
+        '</div>' +
+      '</button>';
+    }).join('');
   }
 
   function renderMessages() {
     const q = (threadSearch.value || '').trim().toLowerCase();
     const rows = state.messages.filter((m) => q === '' || String(m.message_text || '').toLowerCase().indexOf(q) !== -1);
+
     if (!rows.length) {
       feed.innerHTML = '<div class="messages-empty">No messages yet.</div>';
       return;
     }
+
     feed.innerHTML = rows.map((m) => {
       const mine = Number(m.sender_user_id) === Number(userId) && String(m.sender_role || '').toLowerCase() === role;
+      const when = formatTime(m.created_at || '');
+      const senderInitial = mine ? 'Y' : 'C';
       return '<article class="msg-row ' + (mine ? 'mine' : 'theirs') + '">' +
-        '<div class="msg-meta"><strong>' + esc(m.sender_name || (mine ? 'You' : 'Contact')) + '</strong><span>' + esc(m.created_at || '') + '</span></div>' +
+        (mine ? '' : '<div class="msg-avatar">' + senderInitial + '</div>') +
+        '<div class="msg-bubble">' +
+        '<div class="msg-head"><strong>' + (mine ? 'You' : 'Contact') + '</strong><span>' + esc(when) + '</span></div>' +
         '<div class="msg-body">' + esc(m.message_text || '') + '</div>' +
+        '</div>' +
       '</article>';
     }).join('');
+
     feed.scrollTop = feed.scrollHeight;
+  }
+
+  function updateSendState() {
+    sendBtn.disabled = !state.activeContactId || !(textInput.value || '').trim();
   }
 
   function loadContacts() {
@@ -86,20 +140,31 @@
       if (!state.activeContactId && state.contacts.length) {
         state.activeContactId = Number(state.contacts[0].user_id || 0);
       }
+      if (state.activeContactId && !state.contacts.some((c) => Number(c.user_id) === Number(state.activeContactId))) {
+        state.activeContactId = state.contacts.length ? Number(state.contacts[0].user_id || 0) : 0;
+      }
       renderContacts();
-      if (state.activeContactId) return loadMessages();
+      updateSendState();
+      if (state.activeContactId) return loadMessages(true);
       threadTitle.textContent = 'Select a contact';
       feed.innerHTML = '<div class="messages-empty">Pick a contact to open messages.</div>';
+      return null;
     });
   }
 
-  function loadMessages() {
-    if (!state.activeContactId) return Promise.resolve();
+  function loadMessages(silent) {
+    if (!state.activeContactId || state.loading) return Promise.resolve();
+    state.loading = true;
+
     const active = state.contacts.find((c) => Number(c.user_id) === Number(state.activeContactId));
-    threadTitle.textContent = active ? ('Chat with ' + String(active.display_name || 'Contact')) : 'Messages';
+    threadTitle.textContent = active ? 'Chat with ' + String(active.display_name || 'Contact') : 'Messages';
+    if (!silent) feed.innerHTML = '<div class="messages-empty">Loading...</div>';
+
     return apiGet('load_direct_messages', '&contact_user_id=' + encodeURIComponent(state.activeContactId)).then((j) => {
       state.messages = Array.isArray((j || {}).data) ? j.data : [];
       renderMessages();
+    }).finally(() => {
+      state.loading = false;
     });
   }
 
@@ -107,49 +172,51 @@
     const text = (textInput.value || '').trim();
     if (!state.activeContactId || !text) return;
     sendBtn.disabled = true;
+
     apiPost('send_direct_message', { contact_user_id: state.activeContactId, message_text: text }).then((j) => {
-      sendBtn.disabled = false;
       if (!j || j.success === false) {
-        threadTitle.textContent = 'Message failed: ' + String((j && j.message) || 'Unable to send');
+        alert(String((j && j.message) || 'Unable to send message.'));
         return;
       }
       textInput.value = '';
-      loadMessages();
+      updateSendState();
+      loadMessages(true);
     }).catch(() => {
-      sendBtn.disabled = false;
-      threadTitle.textContent = 'Message failed: Network error';
+      alert('Network error while sending message.');
+    }).finally(() => {
+      updateSendState();
     });
   }
 
   function deleteConversation() {
     if (!state.activeContactId) return;
-    const active = state.contacts.find((c) => Number(c.user_id) === Number(state.activeContactId));
-    const label = active ? String(active.display_name || 'this contact') : 'this contact';
-    if (!window.confirm('Delete entire conversation with ' + label + '?')) return;
+    if (!window.confirm('Delete this conversation?')) return;
+
     apiPost('delete_direct_conversation', { contact_user_id: state.activeContactId }).then((j) => {
       if (!j || j.success === false) {
-        threadTitle.textContent = 'Delete failed: ' + String((j && j.message) || 'Unable to delete');
+        alert(String((j && j.message) || 'Unable to delete conversation.'));
         return;
       }
       state.messages = [];
       renderMessages();
-      loadContacts();
     }).catch(() => {
-      threadTitle.textContent = 'Delete failed: Network error';
+      alert('Network error while deleting conversation.');
     });
   }
 
   contactList.addEventListener('click', (e) => {
     const btn = e.target.closest('.messages-project-item[data-id]');
     if (!btn) return;
-    state.activeContactId = Number(btn.dataset.id || 0);
+    state.activeContactId = Number(btn.getAttribute('data-id') || 0);
     renderContacts();
+    updateSendState();
     loadMessages();
   });
+
   contactSearch.addEventListener('input', renderContacts);
   threadSearch.addEventListener('input', renderMessages);
+  textInput.addEventListener('input', updateSendState);
   sendBtn.addEventListener('click', sendMessage);
-  if (deleteBtn) deleteBtn.addEventListener('click', deleteConversation);
   textInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -157,16 +224,16 @@
     }
   });
 
+  const buttons = ensureThreadButtons();
+  if (buttons.refreshBtn) buttons.refreshBtn.addEventListener('click', () => loadMessages());
+  if (buttons.deleteBtn) buttons.deleteBtn.addEventListener('click', deleteConversation);
+
   loadContacts();
+  updateSendState();
+
+  state.pollId = window.setInterval(() => {
+    if (!document.hidden && state.activeContactId) {
+      loadMessages(true);
+    }
+  }, 6000);
 })();
-  let deleteBtn = null;
-  const threadHead = threadTitle.parentElement;
-  if (threadHead && !threadHead.querySelector('.messages-delete-btn')) {
-    deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button';
-    deleteBtn.className = 'messages-btn messages-delete-btn';
-    deleteBtn.textContent = 'Delete Conversation';
-    threadHead.appendChild(deleteBtn);
-  } else if (threadHead) {
-    deleteBtn = threadHead.querySelector('.messages-delete-btn');
-  }
