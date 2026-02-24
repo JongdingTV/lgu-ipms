@@ -5,7 +5,11 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_from_matrix('engineer.workspace.view', ['engineer','project_engineer','municipal_engineer','city_engineer','admin','super_admin']);
+$action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
+$directChatActions = ['load_chat_contacts', 'load_direct_messages', 'send_direct_message', 'delete_direct_conversation'];
+if (!in_array($action, $directChatActions, true)) {
+    rbac_require_from_matrix('engineer.workspace.view', ['engineer','project_engineer','municipal_engineer','city_engineer','admin','super_admin']);
+}
 check_suspicious_activity();
 
 header('Content-Type: application/json');
@@ -366,7 +370,6 @@ function direct_messages_ensure_table(mysqli $db): void {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
-$action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
 $actionMap = [
         'load_monitoring' => 'engineer.workspace.view',
         'load_notifications' => 'engineer.notifications.read',
@@ -403,8 +406,7 @@ $actionMap = [
         'load_engineer_notifications_center' => 'engineer.notifications.read',
         'load_project_quick_view' => 'engineer.workspace.view',
 ];
-$chatActions = ['load_chat_contacts', 'load_direct_messages', 'send_direct_message', 'delete_direct_conversation'];
-if (!in_array($action, $chatActions, true)) {
+if (!in_array($action, $directChatActions, true)) {
     rbac_require_action_matrix(
         $action !== '' ? $action : 'load_monitoring',
         $actionMap,

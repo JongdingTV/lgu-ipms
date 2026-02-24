@@ -1,7 +1,5 @@
 [data-messages-root].main-content {
-    height: calc(100vh - 84px);
-    max-height: calc(100vh - 84px);
-    overflow: hidden;
+    overflow: visible;
 }
 .messages-layout {
     display: grid;
@@ -180,11 +178,6 @@
     padding: 24px 10px;
 }
 @media (max-width: 1024px) {
-    [data-messages-root].main-content {
-        height: auto;
-        max-height: none;
-        overflow: visible;
-    }
     .messages-layout {
         grid-template-columns: 1fr;
         min-height: auto;

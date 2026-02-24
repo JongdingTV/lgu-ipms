@@ -5,7 +5,11 @@ require dirname(__DIR__) . '/session-auth.php';
 set_no_cache_headers();
 check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
-rbac_require_from_matrix('contractor.workspace.view', ['contractor','accredited_contractor','private_contractor','admin','super_admin']);
+$action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
+$directChatActions = ['load_chat_contacts', 'load_direct_messages', 'send_direct_message', 'delete_direct_conversation'];
+if (!in_array($action, $directChatActions, true)) {
+    rbac_require_from_matrix('contractor.workspace.view', ['contractor','accredited_contractor','private_contractor','admin','super_admin']);
+}
 check_suspicious_activity();
 
 header('Content-Type: application/json');
@@ -573,7 +577,6 @@ function contractor_sync_projects_to_milestones(mysqli $db): void {
     }
 }
 
-$action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
 $actionMap = [
         'load_projects' => 'contractor.workspace.view',
         'load_notifications' => 'contractor.notifications.read',
@@ -612,8 +615,7 @@ $actionMap = [
         'submit_issue' => 'contractor.workspace.manage',
         'load_notifications_center' => 'contractor.notifications.read',
 ];
-$chatActions = ['load_chat_contacts', 'load_direct_messages', 'send_direct_message', 'delete_direct_conversation'];
-if (!in_array($action, $chatActions, true)) {
+if (!in_array($action, $directChatActions, true)) {
     rbac_require_action_matrix(
         $action !== '' ? $action : 'load_projects',
         $actionMap,
