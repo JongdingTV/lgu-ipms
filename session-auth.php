@@ -429,11 +429,20 @@ function hydrate_employee_role_status(): void
         return;
     }
     if ($hasRole) {
-        $_SESSION['employee_role'] = normalize_employee_role((string)($row['role'] ?? ''));
+        $normalizedRole = normalize_employee_role((string)($row['role'] ?? ''));
+        if ($normalizedRole !== '') {
+            $_SESSION['employee_role'] = $normalizedRole;
+        }
     }
     if ($hasStatus) {
-        $_SESSION['employee_status'] = strtolower(trim((string)($row['account_status'] ?? 'active')));
-        if ($_SESSION['employee_status'] !== 'active') {
+        $status = strtolower(trim((string)($row['account_status'] ?? 'active')));
+        if ($status === '') {
+            $status = 'active';
+        }
+        $_SESSION['employee_status'] = $status;
+
+        $allowedStatuses = ['active', 'approved', 'enabled', 'verified'];
+        if (!in_array($status, $allowedStatuses, true)) {
             destroy_session();
             header('Location: /admin/index.php?error=inactive');
             exit();

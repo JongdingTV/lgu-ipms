@@ -70,6 +70,20 @@
 }
 .messages-contact-main { min-width: 0; }
 .messages-contact-title { font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+.messages-unread-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 700;
+    margin-left: 8px;
+    padding: 0 6px;
+}
 .messages-meta {
     display: flex;
     justify-content: space-between;

@@ -38,7 +38,12 @@
   }
 
   function apiGet(action, extra) {
-    return fetch(apiBase + '?action=' + encodeURIComponent(action) + (extra || ''), { credentials: 'same-origin' })
+    const join = (extra && String(extra).indexOf('?') === 0) ? '&' : '';
+    const bust = '&_ts=' + Date.now();
+    return fetch(apiBase + '?action=' + encodeURIComponent(action) + (extra || '') + join + bust, {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    })
       .then(parseApiResponse);
   }
 
@@ -49,6 +54,7 @@
     return fetch(apiBase + '?action=' + encodeURIComponent(action), {
       method: 'POST',
       credentials: 'same-origin',
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString()
     }).then(parseApiResponse);
@@ -115,10 +121,12 @@
       const isActive = Number(c.user_id) === Number(state.activeContactId);
       const name = String(c.display_name || 'Contact');
       const initial = esc(name.charAt(0).toUpperCase() || 'C');
+      const unread = Number(c.unread_count || 0);
+      const unreadHtml = unread > 0 ? '<span class="messages-unread-dot">' + unread + '</span>' : '';
       return '<button type="button" class="messages-project-item' + (isActive ? ' active' : '') + '" data-id="' + Number(c.user_id) + '">' +
         '<div class="messages-contact-avatar">' + initial + '</div>' +
         '<div class="messages-contact-main">' +
-          '<div class="messages-contact-title">' + esc(name) + '</div>' +
+          '<div class="messages-contact-title">' + esc(name) + unreadHtml + '</div>' +
           '<div class="messages-meta"><span>' + esc(c.role_label || '') + '</span><span>' + esc(c.email || '') + '</span></div>' +
         '</div>' +
       '</button>';

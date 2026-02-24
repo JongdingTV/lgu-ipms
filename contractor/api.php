@@ -7,9 +7,7 @@ check_auth();
 require dirname(__DIR__) . '/includes/rbac.php';
 $action = (string) ($_GET['action'] ?? $_POST['action'] ?? '');
 $directChatActions = ['load_chat_contacts', 'load_direct_messages', 'send_direct_message', 'delete_direct_conversation'];
-if (!in_array($action, $directChatActions, true)) {
-    rbac_require_from_matrix('contractor.workspace.view', ['contractor','accredited_contractor','private_contractor','admin','super_admin']);
-}
+rbac_require_from_matrix('contractor.workspace.view', ['contractor','accredited_contractor','private_contractor','admin','super_admin']);
 check_suspicious_activity();
 
 header('Content-Type: application/json');
@@ -292,6 +290,14 @@ function contractor_normalize_role(string $role): string {
     return $map[$normalized] ?? $normalized;
 }
 
+function contractor_is_active_employee(array $row): bool {
+    $status = strtolower(trim((string)($row['status'] ?? '')));
+    $accountStatus = strtolower(trim((string)($row['account_status'] ?? '')));
+    if ($status === '' && $accountStatus === '') return true;
+    $allowed = ['active', 'approved', 'enabled', 'verified'];
+    return in_array($status, $allowed, true) || in_array($accountStatus, $allowed, true);
+}
+
 function messaging_ensure_tables(mysqli $db): void {
     $db->query("CREATE TABLE IF NOT EXISTS project_conversations (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -371,17 +377,25 @@ function contractor_identity(mysqli $db): array {
         $ids[$employeeId] = true;
     }
     if (contractor_table_exists($db, 'contractors')) {
-        $stmtByEmp = $db->prepare("SELECT id FROM contractors WHERE account_employee_id = ?");
-        if ($stmtByEmp && $employeeId > 0) {
-            $stmtByEmp->bind_param('i', $employeeId);
-            $stmtByEmp->execute();
-            $resEmp = $stmtByEmp->get_result();
-            while ($resEmp && ($r = $resEmp->fetch_assoc())) {
-                $cid = (int)($r['id'] ?? 0);
-                if ($cid > 0) $ids[$cid] = true;
+        $employeeLinkColumn = null;
+        if (contractor_column_exists($db, 'contractors', 'account_employee_id')) {
+            $employeeLinkColumn = 'account_employee_id';
+        } elseif (contractor_column_exists($db, 'contractors', 'employee_id')) {
+            $employeeLinkColumn = 'employee_id';
+        }
+        if ($employeeLinkColumn !== null && $employeeId > 0) {
+            $stmtByEmp = $db->prepare("SELECT id FROM contractors WHERE {$employeeLinkColumn} = ?");
+            if ($stmtByEmp) {
+                $stmtByEmp->bind_param('i', $employeeId);
+                $stmtByEmp->execute();
+                $resEmp = $stmtByEmp->get_result();
+                while ($resEmp && ($r = $resEmp->fetch_assoc())) {
+                    $cid = (int)($r['id'] ?? 0);
+                    if ($cid > 0) $ids[$cid] = true;
+                }
+                if ($resEmp) $resEmp->free();
+                $stmtByEmp->close();
             }
-            if ($resEmp) $resEmp->free();
-            $stmtByEmp->close();
         }
     }
     if ($email !== '' && contractor_table_exists($db, 'contractors')) {
@@ -480,6 +494,20 @@ function direct_messages_ensure_table(mysqli $db): void {
         is_deleted TINYINT(1) NOT NULL DEFAULT 0,
         INDEX idx_dm_pair_time (sender_user_id, receiver_user_id, created_at),
         INDEX idx_dm_receiver (receiver_user_id, receiver_role, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
+function direct_messages_ensure_reads_table(mysqli $db): void {
+    $db->query("CREATE TABLE IF NOT EXISTS direct_message_reads (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        user_role VARCHAR(30) NOT NULL,
+        contact_user_id INT NOT NULL,
+        contact_role VARCHAR(30) NOT NULL,
+        last_read_at DATETIME NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_reader_contact (user_id, user_role, contact_user_id, contact_role),
+        INDEX idx_reader (user_id, user_role)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
@@ -615,13 +643,11 @@ $actionMap = [
         'submit_issue' => 'contractor.workspace.manage',
         'load_notifications_center' => 'contractor.notifications.read',
 ];
-if (!in_array($action, $directChatActions, true)) {
-    rbac_require_action_matrix(
-        $action !== '' ? $action : 'load_projects',
-        $actionMap,
-        'contractor.workspace.view'
-    );
-}
+rbac_require_action_matrix(
+    $action !== '' ? $action : 'load_projects',
+    $actionMap,
+    'contractor.workspace.view'
+);
 
 $engineerOwnedActions = [
     'load_task_milestone',
@@ -634,27 +660,63 @@ if (in_array($action, $engineerOwnedActions, true)) {
     json_out(['success' => false, 'message' => 'Task and Milestone are managed by Engineer module.'], 403);
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
-    json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrfExemptActions = ['send_direct_message', 'delete_direct_conversation'];
+    if (!in_array($action, $csrfExemptActions, true) && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
+        json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
+    }
+}
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
 }
 
 if ($action === 'load_chat_contacts') {
     direct_messages_ensure_table($db);
+    direct_messages_ensure_reads_table($db);
     $rows = [];
     $seen = [];
+    $selfIds = contractor_chat_identity_ids($db);
+    $idList = !empty($selfIds) ? implode(',', array_map('intval', $selfIds)) : '0';
+    $viewerId = (int)($_SESSION['employee_id'] ?? 0);
+    $unreadByContact = [];
+    if ($viewerId > 0 && !empty($selfIds)) {
+        $sqlUnread = "SELECT dm.sender_user_id AS contact_id, COUNT(*) AS unread_count
+                      FROM direct_messages dm
+                      LEFT JOIN direct_message_reads r
+                        ON r.user_id = {$viewerId}
+                       AND r.user_role = 'contractor'
+                       AND r.contact_user_id = dm.sender_user_id
+                       AND r.contact_role = 'engineer'
+                      WHERE dm.is_deleted = 0
+                        AND dm.sender_role = 'engineer'
+                        AND dm.receiver_role = 'contractor'
+                        AND dm.receiver_user_id IN ({$idList})
+                        AND (r.last_read_at IS NULL OR dm.created_at > r.last_read_at)
+                      GROUP BY dm.sender_user_id";
+        $resUnread = $db->query($sqlUnread);
+        while ($resUnread && ($u = $resUnread->fetch_assoc())) {
+            $cid = (int)($u['contact_id'] ?? 0);
+            if ($cid > 0) $unreadByContact[$cid] = (int)($u['unread_count'] ?? 0);
+        }
+        if ($resUnread) $resUnread->free();
+    }
     if (contractor_table_exists($db, 'employees')) {
         $sql = "SELECT id, COALESCE(first_name,'') AS first_name, COALESCE(last_name,'') AS last_name, COALESCE(email,'') AS email, COALESCE(role,'') AS role";
+        if (contractor_column_exists($db, 'employees', 'status')) $sql .= ", COALESCE(status,'') AS status";
+        if (contractor_column_exists($db, 'employees', 'account_status')) $sql .= ", COALESCE(account_status,'') AS account_status";
         $sql .= " FROM employees ORDER BY id DESC LIMIT 600";
         $res = $db->query($sql);
         while ($res && ($e = $res->fetch_assoc())) {
             if (contractor_normalize_role((string)($e['role'] ?? '')) !== 'engineer') continue;
+            if (!contractor_is_active_employee($e)) continue;
             $userId = (int)($e['id'] ?? 0);
+            if ($userId === $viewerId) continue;
             if ($userId <= 0 || isset($seen[$userId])) continue;
-            $seen[$userId] = true;
             $displayName = trim((string)($e['first_name'] ?? '') . ' ' . (string)($e['last_name'] ?? ''));
             $email = trim((string)($e['email'] ?? ''));
+            $hasProfile = false;
 
-            if ($displayName === '' && contractor_table_exists($db, 'engineers')) {
+            if (contractor_table_exists($db, 'engineers')) {
                 $nameExpr = contractor_column_exists($db, 'engineers', 'full_name')
                     ? "NULLIF(full_name, '')"
                     : (
@@ -676,6 +738,7 @@ if ($action === 'load_chat_contacts') {
                         $profile = $stmtProfile->get_result()->fetch_assoc();
                         $stmtProfile->close();
                         if ($profile) {
+                            $hasProfile = true;
                             $profileName = trim((string)($profile['profile_name'] ?? ''));
                             if ($profileName !== '') $displayName = $profileName;
                             if ($email === '') $email = trim((string)($profile['profile_email'] ?? ''));
@@ -684,12 +747,16 @@ if ($action === 'load_chat_contacts') {
                 }
             }
 
-            if ($displayName === '') $displayName = 'Engineer #' . $userId;
+            if ($displayName === '') {
+                $displayName = $email !== '' ? $email : ('Engineer #' . $userId);
+            }
+            $seen[$userId] = true;
             $rows[] = [
                 'user_id' => $userId,
                 'display_name' => $displayName,
                 'email' => $email,
-                'role_label' => 'Engineer'
+                'role_label' => 'Engineer',
+                'unread_count' => (int)($unreadByContact[$userId] ?? 0)
             ];
         }
         if ($res) $res->free();
@@ -699,6 +766,7 @@ if ($action === 'load_chat_contacts') {
 
 if ($action === 'load_direct_messages') {
     direct_messages_ensure_table($db);
+    direct_messages_ensure_reads_table($db);
     $me = (int)($_SESSION['employee_id'] ?? 0);
     $contactId = (int)($_GET['contact_user_id'] ?? 0);
     if ($me <= 0 || $contactId <= 0) json_out(['success' => false, 'message' => 'Invalid chat contact.'], 422);
@@ -719,6 +787,16 @@ if ($action === 'load_direct_messages') {
     $rows = [];
     while ($res && ($r = $res->fetch_assoc())) $rows[] = $r;
     if ($res) $res->free();
+    if ($me > 0 && $contactId > 0) {
+        $up = $db->prepare("INSERT INTO direct_message_reads (user_id, user_role, contact_user_id, contact_role, last_read_at)
+                            VALUES (?, 'contractor', ?, 'engineer', NOW())
+                            ON DUPLICATE KEY UPDATE last_read_at = NOW()");
+        if ($up) {
+            $up->bind_param('ii', $me, $contactId);
+            $up->execute();
+            $up->close();
+        }
+    }
     json_out(['success' => true, 'data' => $rows]);
 }
 
