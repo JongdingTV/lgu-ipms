@@ -38,7 +38,12 @@
   }
 
   function apiGet(action, extra) {
-    return fetch(apiBase + '?action=' + encodeURIComponent(action) + (extra || ''), { credentials: 'same-origin' })
+    const join = (extra && String(extra).indexOf('?') === 0) ? '&' : '';
+    const bust = '&_ts=' + Date.now();
+    return fetch(apiBase + '?action=' + encodeURIComponent(action) + (extra || '') + join + bust, {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    })
       .then(parseApiResponse);
   }
 
@@ -49,6 +54,7 @@
     return fetch(apiBase + '?action=' + encodeURIComponent(action), {
       method: 'POST',
       credentials: 'same-origin',
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString()
     }).then(parseApiResponse);

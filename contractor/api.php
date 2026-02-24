@@ -645,6 +645,9 @@ if (in_array($action, $engineerOwnedActions, true)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verify_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
     json_out(['success' => false, 'message' => 'Invalid CSRF token.'], 419);
 }
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
 
 if ($action === 'load_chat_contacts') {
     direct_messages_ensure_table($db);
