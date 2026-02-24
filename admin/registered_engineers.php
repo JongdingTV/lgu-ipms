@@ -893,17 +893,23 @@ function registered_get_profile_verification_details(mysqli $db, int $entityId, 
     }
 
     $docsTable = $isEngineer ? 'engineer_documents' : 'contractor_documents';
-    if (!registered_table_exists($db, $docsTable)) {
-        $result['missing_requirements'][] = 'Documents table missing';
-        return $result;
-    }
+    $docsRow = [
+        'license_docs' => 0,
+        'resume_docs' => 0,
+        'certificate_docs' => 0,
+        'verified_docs' => 0,
+    ];
+    $hasDocSchema = false;
+    $fkCol = null;
+    $linkId = $entityId;
+    $docTypeCol = null;
+    $verifiedCol = null;
 
-    [$fkCol, $linkId] = registered_resolve_doc_link($db, $entityId, $isEngineer, $docsTable);
-    $docTypeCol = registered_pick_column($db, $docsTable, ['document_type', 'doc_type', 'type']);
-    $verifiedCol = registered_pick_column($db, $docsTable, ['is_verified']);
-    if (!$fkCol || !$docTypeCol || !$verifiedCol || !registered_table_has_column($db, $docsTable, $fkCol)) {
-        $result['missing_requirements'][] = 'Documents schema missing required columns';
-        return $result;
+    if (registered_table_exists($db, $docsTable)) {
+        [$fkCol, $linkId] = registered_resolve_doc_link($db, $entityId, $isEngineer, $docsTable);
+        $docTypeCol = registered_pick_column($db, $docsTable, ['document_type', 'doc_type', 'type']);
+        $verifiedCol = registered_pick_column($db, $docsTable, ['is_verified']);
+        $hasDocSchema = $fkCol && $docTypeCol && $verifiedCol && registered_table_has_column($db, $docsTable, $fkCol);
     }
 
     $licenseDocExpr = $isEngineer
@@ -915,28 +921,30 @@ function registered_get_profile_verification_details(mysqli $db, int $entityId, 
     $certificateDocExpr = "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('certificate','certification','certifications') THEN 1 ELSE 0 END)";
     $verifiedExpr = "SUM(CASE WHEN {$verifiedCol} = 1 THEN 1 ELSE 0 END)";
 
-    $stmt = $db->prepare(
-        "SELECT
-            {$licenseDocExpr} AS license_docs,
-            {$resumeDocExpr} AS resume_docs,
-            {$certificateDocExpr} AS certificate_docs,
-            {$verifiedExpr} AS verified_docs
-         FROM {$docsTable}
-         WHERE {$fkCol} = ?"
-    );
-    if (!$stmt) {
-        $result['missing_requirements'][] = 'Unable to read document records';
-        return $result;
+    if ($hasDocSchema) {
+        $stmt = $db->prepare(
+            "SELECT
+                {$licenseDocExpr} AS license_docs,
+                {$resumeDocExpr} AS resume_docs,
+                {$certificateDocExpr} AS certificate_docs,
+                {$verifiedExpr} AS verified_docs
+             FROM {$docsTable}
+             WHERE {$fkCol} = ?"
+        );
+        if ($stmt) {
+            $stmt->bind_param('i', $linkId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $row = $res ? $res->fetch_assoc() : null;
+            if ($res) {
+                $res->free();
+            }
+            $stmt->close();
+            if ($row) {
+                $docsRow = array_merge($docsRow, $row);
+            }
+        }
     }
-
-    $stmt->bind_param('i', $linkId);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $docsRow = $res ? $res->fetch_assoc() : null;
-    if ($res) {
-        $res->free();
-    }
-    $stmt->close();
 
     if (
         (int)($docsRow['license_docs'] ?? 0) <= 0 ||
