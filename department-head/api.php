@@ -461,7 +461,12 @@ if ($action === 'load_decision_logs') {
 
 if ($action === 'load_reports_summary') {
     $data = ['total_projects' => 0, 'approved_projects' => 0, 'ongoing_projects' => 0, 'delayed_projects' => 0, 'budget_total' => 0, 'budget_spent' => 0];
-    $res = $db->query("SELECT COUNT(*) total_projects, SUM(CASE WHEN LOWER(COALESCE(status,''))='approved' THEN 1 ELSE 0 END) approved_projects, SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('ongoing','in progress','approved','for approval') THEN 1 ELSE 0 END) ongoing_projects, SUM(CASE WHEN " . (dept_has_col($db, 'projects', 'end_date') ? "end_date IS NOT NULL AND end_date < CURDATE() AND LOWER(COALESCE(status,'')) NOT IN ('completed','cancelled')" : "0=1") . " THEN 1 ELSE 0 END) delayed_projects, COALESCE(SUM(budget),0) budget_total FROM projects");
+    $res = $db->query("SELECT COUNT(*) total_projects,
+                              SUM(CASE WHEN LOWER(COALESCE(status,''))='approved' THEN 1 ELSE 0 END) approved_projects,
+                              SUM(CASE WHEN LOWER(COALESCE(status,'')) IN ('ongoing','in progress','on-going','active','executing','implementation') THEN 1 ELSE 0 END) ongoing_projects,
+                              SUM(CASE WHEN " . (dept_has_col($db, 'projects', 'end_date') ? "end_date IS NOT NULL AND end_date < CURDATE() AND LOWER(COALESCE(status,'')) NOT IN ('completed','cancelled','canceled','closed','archived','terminated','rejected')" : "0=1") . " THEN 1 ELSE 0 END) delayed_projects,
+                              COALESCE(SUM(budget),0) budget_total
+                       FROM projects");
     if ($res && ($row = $res->fetch_assoc())) { $data = array_merge($data, $row); $res->free(); }
     if (dept_has_table($db, 'expenses')) {
         $exp = $db->query("SELECT COALESCE(SUM(amount),0) spent FROM expenses");

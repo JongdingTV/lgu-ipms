@@ -34,7 +34,17 @@ function rbac_roles_for(string $permissionCode, array $default = []): array
 
 function rbac_get_employee_role(): string
 {
-    return strtolower((string)($_SESSION['employee_role'] ?? ''));
+    $role = strtolower(trim((string)($_SESSION['employee_role'] ?? '')));
+    if (function_exists('normalize_employee_role')) {
+        $role = strtolower(trim((string)normalize_employee_role($role)));
+    }
+    if ($role === '') {
+        $uri = strtolower((string)($_SERVER['REQUEST_URI'] ?? ''));
+        if (strpos($uri, '/contractor/') !== false) return 'contractor';
+        if (strpos($uri, '/engineer/') !== false) return 'engineer';
+        if (strpos($uri, '/department-head/') !== false) return 'department_head';
+    }
+    return $role;
 }
 
 function rbac_is_json_request(): bool
@@ -61,7 +71,10 @@ function rbac_deny(string $message = 'Access denied.'): void
 function rbac_require_roles(array $roles): void
 {
     $current = rbac_get_employee_role();
-    $allowed = array_map('strtolower', $roles);
+    $allowed = array_map(static function ($r) {
+        $v = strtolower(trim((string)$r));
+        return function_exists('normalize_employee_role') ? strtolower(trim((string)normalize_employee_role($v))) : $v;
+    }, $roles);
     if ($current === '' || !in_array($current, $allowed, true)) {
         rbac_deny('Access denied.');
     }

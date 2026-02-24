@@ -16,8 +16,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Session timeout configuration (10 minutes of inactivity)
-define('SESSION_TIMEOUT', 10 * 60); // 10 minutes in seconds
+// Session timeout configuration (8 hours of inactivity)
+define('SESSION_TIMEOUT', 8 * 60 * 60); // 8 hours in seconds
 define('REMEMBER_DEVICE_DAYS', 7);
 define('REMEMBER_COOKIE_NAME', 'lgu_remember_device');
 
