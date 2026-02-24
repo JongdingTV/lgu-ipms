@@ -308,6 +308,10 @@
                 const approvalStatus = approvalLabel(c.approval_status || 'pending');
                 const approvalClass = approvalBadgeClass(c.approval_status || 'pending');
                 const approvalKey = String(c.approval_status || '').toLowerCase();
+                const verificationKey = String(c.verification_status || '').toLowerCase();
+                const isAssignable = approvalKey === 'approved' && verificationKey === 'complete';
+                const missingReqs = Array.isArray(c.missing_requirements) ? c.missing_requirements : [];
+                const missingReqText = missingReqs.join('; ');
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${esc(c.display_name || c.company || 'N/A')}</strong></td>
@@ -323,13 +327,19 @@
                         <div class="action-buttons">
                             <button class="btn-contractor-secondary btn-status-edit" data-id="${esc(c.id)}" data-status="${esc(approvalKey || 'pending')}" data-name="${esc(c.display_name || c.company || 'Engineer')}">Edit Status</button>
                             <button class="btn-contractor-secondary btn-history" data-id="${esc(c.id)}" data-name="${esc(c.display_name || c.company || 'Engineer')}">History</button>
-                            <button class="btn-assign" data-id="${esc(c.id)}">Assign Projects</button>
+                            <button class="btn-assign" data-id="${esc(c.id)}" data-approval="${esc(approvalKey)}" data-verification="${esc(verificationKey)}" data-missing="${esc(missingReqText)}" ${isAssignable ? '' : 'disabled title="Requires Approved + Complete verification"'}>Assign Projects</button>
                             <button class="btn-delete" data-id="${esc(c.id)}">Delete</button>
                         </div>
                     </td>
                 `;
                 contractorsTbody.appendChild(tr);
             }
+        }
+
+        function getContractorById(contractorId) {
+            const id = String(contractorId || '');
+            const list = Array.isArray(visibleContractors) ? visibleContractors : [];
+            return list.find((item) => String(item.id || '') === id) || null;
         }
 
         function updateStats(rows, statsPayload) {
@@ -696,7 +706,7 @@
                             <div><span class="engineer-project-label">Size</span><span class="engineer-project-value">${Number(d.file_size || 0).toLocaleString()} bytes</span></div>
                             <div class="engineer-project-full">
                                 <a class="engineer-project-doc" href="${esc(d.viewer_url || '#')}" target="_blank" rel="noopener">View Document</a>
-                                <button type="button" class="btn-contractor-secondary btn-verify-doc" data-doc-id="${esc(d.id)}" data-verify="${verified ? '0' : '1'}">${verified ? 'Mark Unverified' : 'Verify Document'}</button>
+                                <button type="button" class="btn-contractor-secondary btn-verify-doc" data-doc-id="${esc(d.id)}" data-source="${esc(d.source || 'engineer')}" data-verify="${verified ? '0' : '1'}">${verified ? 'Mark Unverified' : 'Verify Document'}</button>
                             </div>
                         </div>
                     </div>`;
@@ -909,6 +919,21 @@
                 return;
             }
             if (btn.classList.contains('btn-assign')) {
+                const contractorData = getContractorById(contractorId);
+                const approvalKey = String(contractorData?.approval_status || btn.getAttribute('data-approval') || '').toLowerCase();
+                const verificationKey = String(contractorData?.verification_status || btn.getAttribute('data-verification') || '').toLowerCase();
+                const missingRaw = Array.isArray(contractorData?.missing_requirements)
+                    ? contractorData.missing_requirements.join('; ')
+                    : String(btn.getAttribute('data-missing') || '');
+                if (approvalKey !== 'approved' || verificationKey !== 'complete') {
+                    const missingList = missingRaw
+                        .split(';')
+                        .map((v) => v.trim())
+                        .filter(Boolean);
+                    const detail = missingList.length ? (' Missing: ' + missingList.join(', ') + '.') : '';
+                    setMessage('Cannot assign project yet. Engineer must be Approved and Verification must be Complete.' + detail, true);
+                    return;
+                }
                 openAssignModal(contractorId, contractorName || 'Engineer');
                 return;
             }
@@ -944,9 +969,11 @@
             const verifyValue = btn.getAttribute('data-verify') || '1';
             if (!docId) return;
             try {
-                const resp = await postJsonWithFallback(`action=verify_contractor_document&document_id=${encodeURIComponent(docId)}&is_verified=${encodeURIComponent(verifyValue)}`);
+                const docSource = btn.getAttribute('data-source') || 'engineer';
+                const resp = await postJsonWithFallback(`action=verify_contractor_document&document_id=${encodeURIComponent(docId)}&is_verified=${encodeURIComponent(verifyValue)}&doc_source=${encodeURIComponent(docSource)}`);
                 if (!resp || resp.success === false) throw new Error((resp && resp.message) || 'Unable to update document status.');
                 await openDocsModal(currentDocsContractorId, currentDocsContractorName);
+                await loadContractorsData(Number(contractorsMeta.page || 1));
             } catch (err) {
                 setMessage(err.message || 'Failed to update document verification.', true);
             }
@@ -1016,4 +1043,3 @@
         document.addEventListener('DOMContentLoaded', boot);
         if (document.readyState !== 'loading') boot();
     })();
-

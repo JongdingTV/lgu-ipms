@@ -184,8 +184,19 @@ function registered_bind_dynamic(mysqli_stmt $stmt, string $types, array $params
 
 function registered_get_profile_verification_status(mysqli $db, int $entityId, bool $isEngineer): string
 {
+    $details = registered_get_profile_verification_details($db, $entityId, $isEngineer);
+    return (string)($details['status'] ?? 'Incomplete');
+}
+
+function registered_get_profile_verification_details(mysqli $db, int $entityId, bool $isEngineer): array
+{
+    $result = [
+        'status' => 'Incomplete',
+        'missing_requirements' => [],
+    ];
     if ($entityId <= 0) {
-        return 'Incomplete';
+        $result['missing_requirements'][] = 'Invalid engineer record';
+        return $result;
     }
 
     $entityTable = $isEngineer ? 'engineers' : 'contractors';
@@ -211,29 +222,35 @@ function registered_get_profile_verification_status(mysqli $db, int $entityId, b
     }
 
     $todayDate = date('Y-m-d');
-    if ($licenseExpiry !== '' && strtotime($licenseExpiry) !== false && $licenseExpiry < $todayDate) {
-        return 'Expired License';
+    if ($licenseExpiry === '') {
+        $result['missing_requirements'][] = 'License expiry date missing';
+    } elseif (strtotime($licenseExpiry) !== false && $licenseExpiry < $todayDate) {
+        $result['status'] = 'Expired License';
+        $result['missing_requirements'][] = 'License expired';
+        return $result;
     }
 
     $docsTable = $isEngineer ? 'engineer_documents' : 'contractor_documents';
     if (!registered_table_exists($db, $docsTable)) {
-        return 'Incomplete';
+        $result['missing_requirements'][] = 'Documents table missing';
+        return $result;
     }
 
     $fkCol = $isEngineer ? 'engineer_id' : 'contractor_id';
     $docTypeCol = registered_pick_column($db, $docsTable, ['document_type', 'doc_type', 'type']);
     $verifiedCol = registered_pick_column($db, $docsTable, ['is_verified']);
     if (!$docTypeCol || !$verifiedCol || !registered_table_has_column($db, $docsTable, $fkCol)) {
-        return 'Incomplete';
+        $result['missing_requirements'][] = 'Documents schema missing required columns';
+        return $result;
     }
 
     $licenseDocExpr = $isEngineer
-        ? "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},''))='prc_license' THEN 1 ELSE 0 END)"
-        : "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},''))='license' THEN 1 ELSE 0 END)";
+        ? "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('prc_license','license','prc id','prc_id') THEN 1 ELSE 0 END)"
+        : "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('license','pcab','pcab_license') THEN 1 ELSE 0 END)";
     $resumeDocExpr = $isEngineer
-        ? "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},''))='resume_cv' THEN 1 ELSE 0 END)"
-        : "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},''))='resume' THEN 1 ELSE 0 END)";
-    $certificateDocExpr = "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},''))='certificate' THEN 1 ELSE 0 END)";
+        ? "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('resume_cv','resume','cv') THEN 1 ELSE 0 END)"
+        : "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('company_profile','profile','resume') THEN 1 ELSE 0 END)";
+    $certificateDocExpr = "SUM(CASE WHEN LOWER(COALESCE({$docTypeCol},'')) IN ('certificate','certification','certifications') THEN 1 ELSE 0 END)";
     $verifiedExpr = "SUM(CASE WHEN {$verifiedCol} = 1 THEN 1 ELSE 0 END)";
 
     $stmt = $db->prepare(
@@ -264,7 +281,25 @@ function registered_get_profile_verification_status(mysqli $db, int $entityId, b
         (int)($docsRow['certificate_docs'] ?? 0) > 0;
     $allVerified = (int)($docsRow['verified_docs'] ?? 0) >= 3;
 
-    return ($hasAllRequiredDocs && $allVerified) ? 'Complete' : 'Incomplete';
+    if ((int)($docsRow['license_docs'] ?? 0) <= 0) {
+        $result['missing_requirements'][] = $isEngineer ? 'Missing PRC/license document' : 'Missing contractor license document';
+    }
+    if ((int)($docsRow['resume_docs'] ?? 0) <= 0) {
+        $result['missing_requirements'][] = $isEngineer ? 'Missing resume/CV document' : 'Missing profile/resume document';
+    }
+    if ((int)($docsRow['certificate_docs'] ?? 0) <= 0) {
+        $result['missing_requirements'][] = 'Missing certificate document';
+    }
+    if (!$allVerified) {
+        $result['missing_requirements'][] = 'Not all required documents are verified';
+    }
+
+    if ($hasAllRequiredDocs && $allVerified && empty($result['missing_requirements'])) {
+        $result['status'] = 'Complete';
+    } else {
+        $result['status'] = 'Incomplete';
+    }
+    return $result;
 }
 
 function ensure_assignment_table(mysqli $db): bool
@@ -411,33 +446,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $documentsTable = $isEngineerTable && registered_table_exists($db, 'engineer_documents')
         ? 'engineer_documents'
         : 'contractor_documents';
-    $hasDocumentsTable = registered_table_exists($db, $documentsTable);
-    $todayDate = date('Y-m-d');
-    $docsStmt = null;
-    if ($hasDocumentsTable) {
-        try {
-            $fkCol = $isEngineerTable ? 'engineer_id' : 'contractor_id';
-            $licenseDocExpr = $isEngineerTable
-                ? "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='prc_license' THEN 1 ELSE 0 END)"
-                : "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='license' THEN 1 ELSE 0 END)";
-            $resumeDocExpr = $isEngineerTable
-                ? "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='resume_cv' THEN 1 ELSE 0 END)"
-                : "SUM(CASE WHEN LOWER(COALESCE(document_type,''))='resume' THEN 1 ELSE 0 END)";
-            $docsStmt = $db->prepare(
-                "SELECT
-                    COUNT(*) AS total_docs,
-                    {$licenseDocExpr} AS license_docs,
-                    {$resumeDocExpr} AS resume_docs,
-                    SUM(CASE WHEN LOWER(COALESCE(document_type,''))='certificate' THEN 1 ELSE 0 END) AS certificate_docs,
-                    SUM(CASE WHEN is_verified = 1 THEN 1 ELSE 0 END) AS verified_docs
-                 FROM {$documentsTable}
-                 WHERE {$fkCol} = ?"
-            );
-        } catch (Throwable $e) {
-            error_log('registered_engineers docs query prepare failed: ' . $e->getMessage());
-            $docsStmt = null;
-        }
-    }
 
     try {
         $total = 0;
@@ -554,30 +562,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
                     $row['compliance_status'] = (string) ($scores['compliance_status'] ?? ($row['compliance_status'] ?? 'Compliant'));
                 }
 
-                $licenseExpiry = trim((string) ($row['license_expiration_date'] ?? ''));
-                $isExpiredLicense = $licenseExpiry !== '' && strtotime($licenseExpiry) !== false && $licenseExpiry < $todayDate;
-                $verificationStatus = 'Incomplete';
-                if ($isExpiredLicense) {
-                    $verificationStatus = 'Expired License';
-                } elseif ($docsStmt) {
-                    $contractorId = (int) ($row['id'] ?? 0);
-                    $docsStmt->bind_param('i', $contractorId);
-                    $docsStmt->execute();
-                    $docsRes = $docsStmt->get_result();
-                    $docsRow = $docsRes ? $docsRes->fetch_assoc() : null;
-                    if ($docsRes) {
-                        $docsRes->free();
-                    }
-                    $hasAllRequiredDocs =
-                        (int)($docsRow['license_docs'] ?? 0) > 0 &&
-                        (int)($docsRow['resume_docs'] ?? 0) > 0 &&
-                        (int)($docsRow['certificate_docs'] ?? 0) > 0;
-                    $allVerified = (int)($docsRow['verified_docs'] ?? 0) >= 3;
-                    if ($hasAllRequiredDocs && $allVerified) {
-                        $verificationStatus = 'Complete';
-                    }
-                }
-                $row['verification_status'] = $verificationStatus;
+                $verificationDetails = registered_get_profile_verification_details($db, (int)($row['id'] ?? 0), $isEngineerTable);
+                $row['verification_status'] = (string)($verificationDetails['status'] ?? 'Incomplete');
+                $row['missing_requirements'] = array_values(array_unique(array_filter(array_map('strval', (array)($verificationDetails['missing_requirements'] ?? [])))));
                 $Engineers[] = $row;
             }
             $result->free();
@@ -585,14 +572,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         if ($stmt) {
             $stmt->close();
         }
-        if ($docsStmt) {
-            $docsStmt->close();
-        }
     } catch (Throwable $e) {
         error_log("Engineers query error: " . $e->getMessage());
-        if ($docsStmt) {
-            $docsStmt->close();
-        }
         echo json_encode(['success' => false, 'message' => 'Failed to load Engineers data', 'data' => []]);
         exit;
     }
@@ -641,15 +622,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         exit;
     }
 
-    $hasExpiresOn = registered_table_has_column($db, $docsTable, 'expires_on');
-    $hasVerifiedAt = registered_table_has_column($db, $docsTable, 'verified_at');
-    $hasUploadedAt = registered_table_has_column($db, $docsTable, 'uploaded_at');
-    $expiresSelect = $hasExpiresOn ? 'expires_on' : 'NULL AS expires_on';
-    $verifiedAtSelect = $hasVerifiedAt ? 'verified_at' : 'NULL AS verified_at';
-    $uploadedAtSelect = $hasUploadedAt ? 'uploaded_at' : 'NOW() AS uploaded_at';
+    $docTypeCol = registered_pick_column($db, $docsTable, ['document_type', 'doc_type', 'type']);
+    $filePathCol = registered_pick_column($db, $docsTable, ['file_path', 'path', 'document_path', 'storage_path']);
+    $origNameCol = registered_pick_column($db, $docsTable, ['original_name', 'filename', 'file_name', 'name']);
+    $mimeCol = registered_pick_column($db, $docsTable, ['mime_type', 'mime']);
+    $sizeCol = registered_pick_column($db, $docsTable, ['file_size', 'size']);
+    $expiresCol = registered_pick_column($db, $docsTable, ['expires_on', 'license_expiry_date', 'license_expiration_date']);
+    $verifiedCol = registered_pick_column($db, $docsTable, ['is_verified']);
+    $verifiedAtCol = registered_pick_column($db, $docsTable, ['verified_at']);
+    $uploadedAtCol = registered_pick_column($db, $docsTable, ['uploaded_at', 'created_at']);
+    if (!$docTypeCol || !$filePathCol || !$verifiedCol) {
+        echo json_encode([]);
+        exit;
+    }
+    $origNameSelect = $origNameCol ? "{$origNameCol} AS original_name" : "'' AS original_name";
+    $mimeSelect = $mimeCol ? "{$mimeCol} AS mime_type" : "'' AS mime_type";
+    $sizeSelect = $sizeCol ? "{$sizeCol} AS file_size" : "0 AS file_size";
+    $expiresSelect = $expiresCol ? "{$expiresCol} AS expires_on" : 'NULL AS expires_on';
+    $verifiedAtSelect = $verifiedAtCol ? "{$verifiedAtCol} AS verified_at" : 'NULL AS verified_at';
+    $uploadedAtSelect = $uploadedAtCol ? "{$uploadedAtCol} AS uploaded_at" : 'NOW() AS uploaded_at';
 
     $stmt = $db->prepare(
-        "SELECT id, {$fkCol} AS contractor_id, document_type, file_path, original_name, mime_type, file_size, {$expiresSelect}, is_verified, {$verifiedAtSelect}, {$uploadedAtSelect}
+        "SELECT id, {$fkCol} AS contractor_id, {$docTypeCol} AS document_type, {$filePathCol} AS file_path, {$origNameSelect}, {$mimeSelect}, {$sizeSelect}, {$expiresSelect}, {$verifiedCol} AS is_verified, {$verifiedAtSelect}, {$uploadedAtSelect}
          FROM {$docsTable}
          WHERE {$fkCol} = ?
          ORDER BY id DESC"
@@ -662,8 +656,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $stmt->execute();
     $res = $stmt->get_result();
     $rows = [];
+    $viewerSource = $useEngineerDocs ? 'engineer' : 'contractor';
     while ($res && ($row = $res->fetch_assoc())) {
-        $row['viewer_url'] = 'engineer-document.php?id=' . (int)($row['id'] ?? 0);
+        $row['viewer_url'] = 'engineer-document.php?id=' . (int)($row['id'] ?? 0) . '&source=' . rawurlencode($viewerSource);
+        $row['source'] = $viewerSource;
         $rows[] = $row;
     }
     if ($res) {
@@ -833,24 +829,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     header('Content-Type: application/json');
     $documentId = isset($_POST['document_id']) ? (int) $_POST['document_id'] : 0;
     $isVerified = isset($_POST['is_verified']) ? (int) $_POST['is_verified'] : 1;
+    $docSource = strtolower(trim((string)($_POST['doc_source'] ?? '')));
     $isVerified = $isVerified === 1 ? 1 : 0;
 
-    if ($documentId <= 0 || !registered_table_exists($db, 'contractor_documents')) {
+    $docsTable = 'contractor_documents';
+    if ($docSource === 'engineer' && registered_table_exists($db, 'engineer_documents')) {
+        $docsTable = 'engineer_documents';
+    } elseif ($docSource === 'contractor' && registered_table_exists($db, 'contractor_documents')) {
+        $docsTable = 'contractor_documents';
+    } elseif (registered_table_exists($db, 'engineer_documents')) {
+        $docsTable = 'engineer_documents';
+    }
+    if ($documentId <= 0 || !registered_table_exists($db, $docsTable) || !registered_table_has_column($db, $docsTable, 'is_verified')) {
         echo json_encode(['success' => false, 'message' => 'Invalid document or table missing.']);
         exit;
     }
 
     $employeeId = isset($_SESSION['employee_id']) ? (int) $_SESSION['employee_id'] : null;
+    $hasVerifiedBy = registered_table_has_column($db, $docsTable, 'verified_by');
+    $hasVerifiedAt = registered_table_has_column($db, $docsTable, 'verified_at');
+    $setParts = ["is_verified = ?"];
+    $types = 'i';
+    $params = [$isVerified];
+    if ($hasVerifiedBy) {
+        $setParts[] = "verified_by = ?";
+        $types .= 'i';
+        $params[] = (int)$employeeId;
+    }
+    if ($hasVerifiedAt) {
+        $setParts[] = "verified_at = CASE WHEN ? = 1 THEN NOW() ELSE NULL END";
+        $types .= 'i';
+        $params[] = $isVerified;
+    }
+    $types .= 'i';
+    $params[] = $documentId;
     $stmt = $db->prepare(
-        "UPDATE contractor_documents
-         SET is_verified = ?, verified_by = ?, verified_at = CASE WHEN ? = 1 THEN NOW() ELSE NULL END
+        "UPDATE {$docsTable}
+         SET " . implode(', ', $setParts) . "
          WHERE id = ?"
     );
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Failed to prepare verification update.']);
         exit;
     }
-    $stmt->bind_param('iiii', $isVerified, $employeeId, $isVerified, $documentId);
+    registered_bind_dynamic($stmt, $types, $params);
     $ok = $stmt->execute();
     $stmt->close();
     if ($ok && function_exists('rbac_audit')) {
@@ -1111,6 +1133,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $project_id = isset($_POST['project_id']) ? (int)$_POST['project_id'] : 0;
     
     if ($contractor_id > 0 && $project_id > 0) {
+        $entityTable = registered_table_exists($db, 'engineers') ? 'engineers' : 'contractors';
+        $approvalCol = registered_pick_column($db, $entityTable, ['approval_status', 'status']);
+        $approvalStatus = 'pending';
+        if ($approvalCol) {
+            $approvalStmt = $db->prepare("SELECT {$approvalCol} AS approval_status FROM {$entityTable} WHERE id = ? LIMIT 1");
+            if ($approvalStmt) {
+                $approvalStmt->bind_param('i', $contractor_id);
+                $approvalStmt->execute();
+                $approvalRes = $approvalStmt->get_result();
+                if ($approvalRes && ($approvalRow = $approvalRes->fetch_assoc())) {
+                    $approvalStatus = strtolower(trim((string)($approvalRow['approval_status'] ?? 'pending')));
+                }
+                if ($approvalRes) {
+                    $approvalRes->free();
+                }
+                $approvalStmt->close();
+            }
+        }
+        $isEngineerTable = $entityTable === 'engineers';
+        $verificationDetails = registered_get_profile_verification_details($db, $contractor_id, $isEngineerTable);
+        $verificationStatus = strtolower((string)($verificationDetails['status'] ?? 'incomplete'));
+        if ($approvalStatus !== 'approved' || $verificationStatus !== 'complete') {
+            $missing = (array)($verificationDetails['missing_requirements'] ?? []);
+            if ($approvalStatus !== 'approved') {
+                array_unshift($missing, 'Approval status must be Approved');
+            }
+            $missing = array_values(array_unique(array_filter(array_map('strval', $missing))));
+            echo json_encode([
+                'success' => false,
+                'message' => 'Cannot assign project. Engineer must be Approved and Verification must be Complete.',
+                'missing_requirements' => $missing,
+                'approval_status' => $approvalStatus,
+                'verification_status' => $verificationStatus,
+            ]);
+            exit;
+        }
+
         if (!ensure_assignment_table($db)) {
             echo json_encode(['success' => false, 'message' => 'Assignment table is missing and cannot be created.']);
             exit;

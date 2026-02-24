@@ -19,17 +19,88 @@ if ($docId <= 0) {
     exit('Invalid document id.');
 }
 
-$stmt = $db->prepare("SELECT file_path, original_name, mime_type FROM contractor_documents WHERE id = ? LIMIT 1");
-if (!$stmt) {
-    http_response_code(500);
-    exit('Unable to read document.');
+$source = strtolower(trim((string)($_GET['source'] ?? '')));
+$candidateTables = [];
+if ($source === 'engineer') {
+    $candidateTables = ['engineer_documents', 'contractor_documents'];
+} elseif ($source === 'contractor') {
+    $candidateTables = ['contractor_documents', 'engineer_documents'];
+} else {
+    $candidateTables = ['engineer_documents', 'contractor_documents'];
 }
-$stmt->bind_param('i', $docId);
-$stmt->execute();
-$res = $stmt->get_result();
-$doc = $res ? $res->fetch_assoc() : null;
-if ($res) $res->free();
-$stmt->close();
+
+$pickColumn = static function (mysqli $dbConn, string $table, array $candidates): ?string {
+    foreach ($candidates as $column) {
+        $check = $dbConn->prepare(
+            "SELECT 1 FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1"
+        );
+        if (!$check) {
+            continue;
+        }
+        $check->bind_param('ss', $table, $column);
+        $check->execute();
+        $checkRes = $check->get_result();
+        $exists = $checkRes && $checkRes->num_rows > 0;
+        if ($checkRes) {
+            $checkRes->free();
+        }
+        $check->close();
+        if ($exists) {
+            return $column;
+        }
+    }
+    return null;
+};
+
+$tableExists = static function (mysqli $dbConn, string $table): bool {
+    $check = $dbConn->prepare(
+        "SELECT 1 FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1"
+    );
+    if (!$check) {
+        return false;
+    }
+    $check->bind_param('s', $table);
+    $check->execute();
+    $checkRes = $check->get_result();
+    $exists = $checkRes && $checkRes->num_rows > 0;
+    if ($checkRes) {
+        $checkRes->free();
+    }
+    $check->close();
+    return $exists;
+};
+
+$doc = null;
+foreach ($candidateTables as $table) {
+    if (!$tableExists($db, $table)) {
+        continue;
+    }
+    $pathCol = $pickColumn($db, $table, ['file_path', 'path', 'document_path', 'storage_path']);
+    if (!$pathCol) {
+        continue;
+    }
+    $nameCol = $pickColumn($db, $table, ['original_name', 'filename', 'file_name', 'name']);
+    $mimeCol = $pickColumn($db, $table, ['mime_type', 'mime']);
+    $selectName = $nameCol ? "{$nameCol} AS original_name" : "'' AS original_name";
+    $selectMime = $mimeCol ? "{$mimeCol} AS mime_type" : "'' AS mime_type";
+
+    $stmt = $db->prepare("SELECT {$pathCol} AS file_path, {$selectName}, {$selectMime} FROM {$table} WHERE id = ? LIMIT 1");
+    if (!$stmt) {
+        continue;
+    }
+    $stmt->bind_param('i', $docId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    if ($res) $res->free();
+    $stmt->close();
+    if ($row && !empty($row['file_path'])) {
+        $doc = $row;
+        break;
+    }
+}
 $db->close();
 
 if (!$doc || empty($doc['file_path'])) {
@@ -61,4 +132,3 @@ header('Content-Length: ' . filesize($fullPath));
 header('Content-Disposition: inline; filename="' . basename((string)($doc['original_name'] ?? basename($fullPath))) . '"');
 readfile($fullPath);
 exit;
-
