@@ -43,6 +43,91 @@ function app_col_exists(mysqli $db, string $table, string $col): bool
     return $ok;
 }
 
+function app_safe_query(mysqli $db, string $sql): bool
+{
+    try {
+        return (bool)$db->query($sql);
+    } catch (Throwable $e) {
+        error_log('applications_api schema query failed: ' . $e->getMessage());
+        return false;
+    }
+}
+
+function app_ensure_schema(mysqli $db): void
+{
+    app_safe_query($db, "CREATE TABLE IF NOT EXISTS engineer_applications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NULL,
+        full_name VARCHAR(150) NOT NULL,
+        email VARCHAR(190) NOT NULL,
+        phone VARCHAR(50) NOT NULL,
+        department VARCHAR(120) NULL,
+        position VARCHAR(120) NULL,
+        specialization VARCHAR(120) NOT NULL,
+        assigned_area VARCHAR(190) NULL,
+        prc_license_no VARCHAR(120) NULL,
+        prc_expiry DATE NULL,
+        years_experience INT NOT NULL DEFAULT 0,
+        status VARCHAR(30) NOT NULL DEFAULT 'pending',
+        account_password_hash VARCHAR(255) NULL,
+        admin_remarks TEXT NULL,
+        rejection_reason TEXT NULL,
+        verified_by INT NULL,
+        verified_at DATETIME NULL,
+        approved_by INT NULL,
+        approved_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    app_safe_query($db, "CREATE TABLE IF NOT EXISTS contractor_applications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NULL,
+        company_name VARCHAR(190) NOT NULL,
+        contact_person VARCHAR(150) NOT NULL,
+        email VARCHAR(190) NOT NULL,
+        phone VARCHAR(60) NOT NULL,
+        address VARCHAR(255) NULL,
+        specialization VARCHAR(120) NOT NULL,
+        years_in_business INT NOT NULL DEFAULT 0,
+        license_no VARCHAR(120) NULL,
+        license_expiry DATE NULL,
+        status VARCHAR(30) NOT NULL DEFAULT 'pending',
+        account_password_hash VARCHAR(255) NULL,
+        admin_remarks TEXT NULL,
+        rejection_reason TEXT NULL,
+        blacklist_reason TEXT NULL,
+        verified_by INT NULL,
+        verified_at DATETIME NULL,
+        approved_by INT NULL,
+        approved_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    app_safe_query($db, "CREATE TABLE IF NOT EXISTS application_documents (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        application_type VARCHAR(20) NOT NULL,
+        application_id INT NOT NULL,
+        doc_type VARCHAR(60) NOT NULL,
+        file_path VARCHAR(255) NOT NULL,
+        original_name VARCHAR(255) NULL,
+        mime_type VARCHAR(120) NULL,
+        file_size INT NULL,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    app_safe_query($db, "CREATE TABLE IF NOT EXISTS application_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        application_type VARCHAR(20) NOT NULL,
+        application_id INT NOT NULL,
+        action VARCHAR(50) NOT NULL,
+        performed_by_user_id INT NULL,
+        remarks TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
 function app_pick_col(mysqli $db, string $table, array $candidates): ?string
 {
     foreach ($candidates as $c) {
@@ -342,6 +427,52 @@ function app_sync_contractor_profile(mysqli $db, array $app, int $employeeId): v
     }
 }
 
+function app_legacy_rows(mysqli $db, string $type): array
+{
+    $table = $type === 'engineer' ? 'engineers' : 'contractors';
+    if (!app_table_exists($db, $table)) {
+        return [];
+    }
+
+    if ($type === 'engineer') {
+        $nameExpr = app_col_exists($db, 'engineers', 'full_name')
+            ? "COALESCE(full_name,'')"
+            : (app_col_exists($db, 'engineers', 'first_name') && app_col_exists($db, 'engineers', 'last_name')
+                ? "TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,'')))"
+                : "''");
+        $emailExpr = app_col_exists($db, 'engineers', 'email') ? 'COALESCE(email,"")' : '""';
+        $specExpr = app_col_exists($db, 'engineers', 'specialization') ? 'COALESCE(specialization,"")' : '""';
+        $phoneExpr = app_col_exists($db, 'engineers', 'contact_number') ? 'COALESCE(contact_number,"")' : '""';
+        $areaExpr = app_col_exists($db, 'engineers', 'address') ? 'COALESCE(address,"")' : '""';
+        $statusExpr = app_col_exists($db, 'engineers', 'account_status')
+            ? "COALESCE(account_status,'approved')"
+            : (app_col_exists($db, 'engineers', 'status') ? "COALESCE(status,'approved')" : "'approved'");
+        $createdExpr = app_col_exists($db, 'engineers', 'created_at') ? 'created_at' : 'NOW()';
+        $sql = "SELECT id, {$nameExpr} AS display_name, {$emailExpr} AS email, {$phoneExpr} AS phone, {$specExpr} AS specialization, {$areaExpr} AS assigned_area, {$statusExpr} AS status, {$createdExpr} AS created_at FROM engineers ORDER BY id DESC LIMIT 500";
+    } else {
+        $nameExpr = app_col_exists($db, 'contractors', 'company_name')
+            ? "COALESCE(company_name,'')"
+            : (app_col_exists($db, 'contractors', 'company') ? "COALESCE(company,'')" : "''");
+        $emailExpr = app_col_exists($db, 'contractors', 'email') ? 'COALESCE(email,"")' : '""';
+        $specExpr = app_col_exists($db, 'contractors', 'specialization') ? 'COALESCE(specialization,"")' : '""';
+        $phoneExpr = app_col_exists($db, 'contractors', 'phone') ? 'COALESCE(phone,"")' : '""';
+        $areaExpr = app_col_exists($db, 'contractors', 'address') ? 'COALESCE(address,"")' : '""';
+        $statusExpr = app_col_exists($db, 'contractors', 'status') ? "COALESCE(status,'approved')" : "'approved'";
+        $createdExpr = app_col_exists($db, 'contractors', 'created_at') ? 'created_at' : 'NOW()';
+        $sql = "SELECT id, {$nameExpr} AS display_name, {$emailExpr} AS email, {$phoneExpr} AS phone, {$specExpr} AS specialization, {$areaExpr} AS assigned_area, {$statusExpr} AS status, {$createdExpr} AS created_at FROM contractors ORDER BY id DESC LIMIT 500";
+    }
+
+    $rows = [];
+    $res = $db->query($sql);
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $rows[] = $row;
+        }
+        $res->free();
+    }
+    return $rows;
+}
+
 $action = strtolower(trim((string)($_GET['action'] ?? $_POST['action'] ?? '')));
 rbac_require_action_matrix($action !== '' ? $action : 'load_applications', [
     'load_summary' => 'admin.applications.view',
@@ -359,12 +490,31 @@ if (!in_array($action, ['load_summary', 'load_applications', 'get_application', 
 
 $type = strtolower(trim((string)($_GET['type'] ?? $_POST['type'] ?? 'engineer')));
 if (!in_array($type, ['engineer', 'contractor'], true)) $type = 'engineer';
+$readOnlyActions = ['load_summary', 'load_applications', 'get_application', 'load_logs', 'load_verified_users', 'load_rejected_users'];
+$action = $action === '' ? 'load_applications' : $action;
+$fallbackLegacy = false;
 $appTable = $type === 'engineer' ? 'engineer_applications' : 'contractor_applications';
+app_ensure_schema($db);
 if (!app_table_exists($db, $appTable)) {
-    app_json(['success' => false, 'message' => 'Application tables are missing. Run migration 2026_02_24_admin_applications_module.sql'], 500);
+    if (in_array($action, $readOnlyActions, true)) {
+        $fallbackLegacy = true;
+    } else {
+        app_json(['success' => false, 'message' => 'Application tables are missing.'], 500);
+    }
 }
 
 if ($action === 'load_summary') {
+    if ($fallbackLegacy) {
+        $rows = app_legacy_rows($db, $type);
+        $out = ['pending' => 0, 'under_review' => 0, 'verified' => 0, 'approved' => 0, 'rejected' => 0, 'suspended' => 0];
+        foreach ($rows as $row) {
+            $status = strtolower(trim((string)($row['status'] ?? 'approved')));
+            if ($status === 'active' || $status === 'approved') $status = 'approved';
+            if ($status === 'inactive' || $status === 'blacklisted') $status = 'rejected';
+            if (isset($out[$status])) $out[$status]++;
+        }
+        app_json(['success' => true, 'data' => $out, 'legacy' => true]);
+    }
     $out = [
         'pending' => 0,
         'under_review' => 0,
@@ -385,6 +535,32 @@ if ($action === 'load_summary') {
 }
 
 if ($action === 'load_applications') {
+    if ($fallbackLegacy) {
+        $q = strtolower(trim((string)($_GET['q'] ?? '')));
+        $status = strtolower(trim((string)($_GET['status'] ?? '')));
+        $specialization = strtolower(trim((string)($_GET['specialization'] ?? '')));
+        $area = strtolower(trim((string)($_GET['area'] ?? '')));
+        $rows = app_legacy_rows($db, $type);
+        $rows = array_values(array_filter($rows, static function ($row) use ($q, $status, $specialization, $area) {
+            $rowStatus = strtolower(trim((string)($row['status'] ?? 'approved')));
+            $normalizedStatus = $rowStatus;
+            if ($normalizedStatus === 'active') $normalizedStatus = 'approved';
+            if ($normalizedStatus === 'inactive' || $normalizedStatus === 'blacklisted') $normalizedStatus = 'rejected';
+            if ($q !== '') {
+                $hay = strtolower(implode(' ', [
+                    (string)($row['display_name'] ?? ''),
+                    (string)($row['email'] ?? ''),
+                    (string)($row['specialization'] ?? '')
+                ]));
+                if (strpos($hay, $q) === false) return false;
+            }
+            if ($status !== '' && $normalizedStatus !== $status) return false;
+            if ($specialization !== '' && strpos(strtolower((string)($row['specialization'] ?? '')), $specialization) === false) return false;
+            if ($area !== '' && strpos(strtolower((string)($row['assigned_area'] ?? '')), $area) === false) return false;
+            return true;
+        }));
+        app_json(['success' => true, 'data' => $rows, 'legacy' => true]);
+    }
     $q = strtolower(trim((string)($_GET['q'] ?? '')));
     $status = strtolower(trim((string)($_GET['status'] ?? '')));
     $specialization = strtolower(trim((string)($_GET['specialization'] ?? '')));
@@ -448,6 +624,20 @@ if ($action === 'load_applications') {
 }
 
 if ($action === 'get_application') {
+    if ($fallbackLegacy) {
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id <= 0) app_json(['success' => false, 'message' => 'Invalid application id.'], 422);
+        $rows = app_legacy_rows($db, $type);
+        $found = null;
+        foreach ($rows as $row) {
+            if ((int)($row['id'] ?? 0) === $id) {
+                $found = $row;
+                break;
+            }
+        }
+        if (!$found) app_json(['success' => false, 'message' => 'Record not found.'], 404);
+        app_json(['success' => true, 'data' => $found, 'documents' => [], 'logs' => [], 'legacy' => true]);
+    }
     $id = (int)($_GET['id'] ?? 0);
     if ($id <= 0) app_json(['success' => false, 'message' => 'Invalid application id.'], 422);
 
@@ -495,6 +685,9 @@ if ($action === 'get_application') {
 }
 
 if ($action === 'load_logs') {
+    if ($fallbackLegacy) {
+        app_json(['success' => true, 'data' => [], 'legacy' => true]);
+    }
     $id = (int)($_GET['id'] ?? 0);
     if ($id <= 0) app_json(['success' => false, 'message' => 'Invalid application id.'], 422);
     $rows = [];
@@ -511,6 +704,13 @@ if ($action === 'load_logs') {
 }
 
 if ($action === 'load_verified_users') {
+    if ($fallbackLegacy) {
+        $rows = array_values(array_filter(app_legacy_rows($db, $type), static function ($row) {
+            $status = strtolower(trim((string)($row['status'] ?? 'approved')));
+            return in_array($status, ['approved', 'active', 'verified'], true);
+        }));
+        app_json(['success' => true, 'data' => $rows, 'legacy' => true]);
+    }
     $sql = "SELECT id, " . ($type === 'engineer' ? 'full_name' : 'company_name') . " AS display_name, email, specialization, status, approved_at, created_at FROM {$appTable} WHERE LOWER(status) = 'approved' ORDER BY approved_at DESC, created_at DESC LIMIT 500";
     $res = $db->query($sql);
     $rows = [];
@@ -522,6 +722,13 @@ if ($action === 'load_verified_users') {
 }
 
 if ($action === 'load_rejected_users') {
+    if ($fallbackLegacy) {
+        $rows = array_values(array_filter(app_legacy_rows($db, $type), static function ($row) {
+            $status = strtolower(trim((string)($row['status'] ?? '')));
+            return in_array($status, ['rejected', 'suspended', 'inactive', 'blacklisted'], true);
+        }));
+        app_json(['success' => true, 'data' => $rows, 'legacy' => true]);
+    }
     $sql = "SELECT id, " . ($type === 'engineer' ? 'full_name' : 'company_name') . " AS display_name, email, specialization, status, rejection_reason, created_at FROM {$appTable} WHERE LOWER(status) IN ('rejected','suspended','blacklisted') ORDER BY updated_at DESC, created_at DESC LIMIT 500";
     $res = $db->query($sql);
     $rows = [];

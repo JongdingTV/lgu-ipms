@@ -93,6 +93,7 @@
     }
 
     var currentRows = [];
+    var legacyMode = false;
 
     function collectFilters() {
         return {
@@ -113,6 +114,16 @@
         }
         tbody.innerHTML = rows.map(function (r, idx) {
             var isEng = getType() === 'engineer';
+            var actionButtons = legacyMode
+                ? '<button type="button" class="action-btn action-view" data-action="view" data-index="' + idx + '">View</button>'
+                : [
+                    '<button type="button" class="action-btn action-view" data-action="view" data-index="' + idx + '">View</button>',
+                    '<button type="button" class="action-btn action-review" data-action="under_review" data-index="' + idx + '">Under Review</button>',
+                    '<button type="button" class="action-btn action-verify" data-action="verified" data-index="' + idx + '">Verify</button>',
+                    '<button type="button" class="action-btn action-approve" data-action="approved" data-index="' + idx + '">Approve</button>',
+                    '<button type="button" class="action-btn action-reject" data-action="rejected" data-index="' + idx + '">Reject</button>',
+                    '<button type="button" class="action-btn action-suspend" data-action="suspended" data-index="' + idx + '">Suspend</button>'
+                  ].join('');
             return [
                 '<tr>',
                 '<td class="wrap">' + esc(r.display_name || '-') + '</td>',
@@ -122,12 +133,7 @@
                 '<td class="wrap">' + esc((r.assigned_area || '-') + ' / ' + (r.specialization || '-')) + '</td>',
                 '<td class="wrap">' + esc(r.email || '-') + '</td>',
                 '<td class="actions">',
-                '<button type="button" class="action-btn action-view" data-action="view" data-index="' + idx + '">View</button>',
-                '<button type="button" class="action-btn action-review" data-action="under_review" data-index="' + idx + '">Under Review</button>',
-                '<button type="button" class="action-btn action-verify" data-action="verified" data-index="' + idx + '">Verify</button>',
-                '<button type="button" class="action-btn action-approve" data-action="approved" data-index="' + idx + '">Approve</button>',
-                '<button type="button" class="action-btn action-reject" data-action="rejected" data-index="' + idx + '">Reject</button>',
-                '<button type="button" class="action-btn action-suspend" data-action="suspended" data-index="' + idx + '">Suspend</button>',
+                actionButtons,
                 '</td>',
                 '</tr>'
             ].join('');
@@ -152,9 +158,10 @@
         setFeedback('Loading applications...', false);
         apiGet(type, 'load_applications', collectFilters()).then(function (res) {
             if (!res.ok || !res.json || res.json.success !== true) throw new Error((res.json && res.json.message) || 'Unable to load applications.');
+            legacyMode = !!res.json.legacy;
             currentRows = Array.isArray(res.json.data) ? res.json.data : [];
             renderApplicationRows(currentRows);
-            setFeedback('', false);
+            setFeedback(legacyMode ? 'Legacy view mode: showing existing registered records.' : '', false);
             loadSummary(type);
         }).catch(function (err) {
             renderApplicationRows([]);
@@ -179,6 +186,7 @@
         setFeedback('Loading verified users...', false);
         apiGet(type, 'load_verified_users').then(function (res) {
             if (!res.ok || !res.json || res.json.success !== true) throw new Error((res.json && res.json.message) || 'Unable to load verified users.');
+            legacyMode = !!res.json.legacy;
             renderSimpleTable(res.json.data || [], [
                 { key: 'display_name' },
                 { key: 'email' },
@@ -186,7 +194,7 @@
                 { key: 'status', format: function (v) { return statusChip(v); } },
                 { key: 'approved_at', format: fmtDate }
             ], '#verifiedTable tbody');
-            setFeedback('', false);
+            setFeedback(legacyMode ? 'Legacy view mode: showing existing registered records.' : '', false);
         }).catch(function (err) {
             renderSimpleTable([], [{ key: 'a' }], '#verifiedTable tbody');
             setFeedback(err.message || 'Unable to load verified users.', true);
@@ -198,6 +206,7 @@
         setFeedback('Loading rejected/suspended users...', false);
         apiGet(type, 'load_rejected_users').then(function (res) {
             if (!res.ok || !res.json || res.json.success !== true) throw new Error((res.json && res.json.message) || 'Unable to load records.');
+            legacyMode = !!res.json.legacy;
             renderSimpleTable(res.json.data || [], [
                 { key: 'display_name' },
                 { key: 'email' },
@@ -206,7 +215,7 @@
                 { key: 'rejection_reason' },
                 { key: 'created_at', format: fmtDate }
             ], '#rejectedTable tbody');
-            setFeedback('', false);
+            setFeedback(legacyMode ? 'Legacy view mode: showing existing registered records.' : '', false);
         }).catch(function (err) {
             renderSimpleTable([], [{ key: 'a' }], '#rejectedTable tbody');
             setFeedback(err.message || 'Unable to load records.', true);
@@ -256,6 +265,7 @@
             var app = res.json.data || {};
             var docs = res.json.documents || [];
             var logs = res.json.logs || [];
+            var detailsLegacyMode = !!res.json.legacy;
 
             var details = Object.keys(app).map(function (k) {
                 if (['account_password_hash'].indexOf(k) !== -1) return '';
@@ -288,13 +298,15 @@
                 '<div style="height:10px"></div>',
                 '<div class="app-log-list">', logHtml, '</div>',
                 '<div style="height:10px"></div>',
-                '<div class="app-status-actions">',
-                '<label>Status Action</label>',
-                '<select id="appStatusAction"><option value="under_review">Mark Under Review</option><option value="verified">Mark Verified</option><option value="approved">Approve Account</option><option value="rejected">Reject</option><option value="suspended">Suspend</option><option value="pending">Request Revision</option></select>',
-                '<label>Admin Remarks</label><textarea id="appAdminRemarks" rows="3" placeholder="Review notes..."></textarea>',
-                '<label>Reason (required for reject/suspend)</label><textarea id="appAdminReason" rows="2" placeholder="Reason..."></textarea>',
-                '<div class="app-status-btns"><button type="button" class="action-approve" id="appSaveStatusBtn">Save Decision</button><button type="button" class="action-view" id="appCloseModalBtn">Close</button></div>',
-                '</div>',
+                (detailsLegacyMode ? '<div class="app-log-item">Status actions are disabled in legacy mode.</div>' : [
+                    '<div class="app-status-actions">',
+                    '<label>Status Action</label>',
+                    '<select id="appStatusAction"><option value="under_review">Mark Under Review</option><option value="verified">Mark Verified</option><option value="approved">Approve Account</option><option value="rejected">Reject</option><option value="suspended">Suspend</option><option value="pending">Request Revision</option></select>',
+                    '<label>Admin Remarks</label><textarea id="appAdminRemarks" rows="3" placeholder="Review notes..."></textarea>',
+                    '<label>Reason (required for reject/suspend)</label><textarea id="appAdminReason" rows="2" placeholder="Reason..."></textarea>',
+                    '<div class="app-status-btns"><button type="button" class="action-approve" id="appSaveStatusBtn">Save Decision</button><button type="button" class="action-view" id="appCloseModalBtn">Close</button></div>',
+                    '</div>'
+                ].join('')),
                 '</div>'
             ].join('');
 
