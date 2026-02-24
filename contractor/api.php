@@ -28,7 +28,7 @@ $roleAliasMap = [
     'city_engineer' => 'engineer'
 ];
 if (isset($roleAliasMap[$role])) $role = $roleAliasMap[$role];
-if (!in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
+if (!in_array($action, $directChatActions, true) && !in_array($role, ['contractor', 'admin', 'super_admin'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden']);
     exit;
