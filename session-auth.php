@@ -381,6 +381,12 @@ function normalize_employee_role(string $role): string
     $map = [
         'superadmin' => 'super_admin',
         'super admin' => 'super_admin',
+        'administrator' => 'admin',
+        'system admin' => 'admin',
+        'department admin' => 'department_admin',
+        'department_admin' => 'department_admin',
+        'dept admin' => 'department_admin',
+        'dept_admin' => 'department_admin',
         'department head' => 'department_head',
         'department-head' => 'department_head',
         'dept_head' => 'department_head',
