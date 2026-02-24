@@ -109,10 +109,34 @@
     sendBtn.disabled = true;
     apiPost('send_direct_message', { contact_user_id: state.activeContactId, message_text: text }).then((j) => {
       sendBtn.disabled = false;
-      if (!j || j.success === false) return;
+      if (!j || j.success === false) {
+        threadTitle.textContent = 'Message failed: ' + String((j && j.message) || 'Unable to send');
+        return;
+      }
       textInput.value = '';
       loadMessages();
-    }).catch(() => { sendBtn.disabled = false; });
+    }).catch(() => {
+      sendBtn.disabled = false;
+      threadTitle.textContent = 'Message failed: Network error';
+    });
+  }
+
+  function deleteConversation() {
+    if (!state.activeContactId) return;
+    const active = state.contacts.find((c) => Number(c.user_id) === Number(state.activeContactId));
+    const label = active ? String(active.display_name || 'this contact') : 'this contact';
+    if (!window.confirm('Delete entire conversation with ' + label + '?')) return;
+    apiPost('delete_direct_conversation', { contact_user_id: state.activeContactId }).then((j) => {
+      if (!j || j.success === false) {
+        threadTitle.textContent = 'Delete failed: ' + String((j && j.message) || 'Unable to delete');
+        return;
+      }
+      state.messages = [];
+      renderMessages();
+      loadContacts();
+    }).catch(() => {
+      threadTitle.textContent = 'Delete failed: Network error';
+    });
   }
 
   contactList.addEventListener('click', (e) => {
@@ -125,6 +149,7 @@
   contactSearch.addEventListener('input', renderContacts);
   threadSearch.addEventListener('input', renderMessages);
   sendBtn.addEventListener('click', sendMessage);
+  if (deleteBtn) deleteBtn.addEventListener('click', deleteConversation);
   textInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -134,4 +159,14 @@
 
   loadContacts();
 })();
-
+  let deleteBtn = null;
+  const threadHead = threadTitle.parentElement;
+  if (threadHead && !threadHead.querySelector('.messages-delete-btn')) {
+    deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'messages-btn messages-delete-btn';
+    deleteBtn.textContent = 'Delete Conversation';
+    threadHead.appendChild(deleteBtn);
+  } else if (threadHead) {
+    deleteBtn = threadHead.querySelector('.messages-delete-btn');
+  }

@@ -350,6 +350,18 @@ function contractor_identity(mysqli $db): array {
     return ['employee_id' => $employeeId, 'contractor_ids' => array_map('intval', array_keys($ids))];
 }
 
+function contractor_chat_identity_ids(mysqli $db): array {
+    $identity = contractor_identity($db);
+    $ids = [];
+    $emp = (int)($identity['employee_id'] ?? 0);
+    if ($emp > 0) $ids[$emp] = true;
+    foreach ((array)($identity['contractor_ids'] ?? []) as $id) {
+        $id = (int)$id;
+        if ($id > 0) $ids[$id] = true;
+    }
+    return array_map('intval', array_keys($ids));
+}
+
 function contractor_assigned_project_ids(mysqli $db): array {
     $identity = contractor_identity($db);
     $ids = $identity['contractor_ids'];
@@ -529,6 +541,7 @@ rbac_require_action_matrix(
         'load_chat_contacts' => 'contractor.workspace.view',
         'load_direct_messages' => 'contractor.workspace.view',
         'send_direct_message' => 'contractor.workspace.manage',
+        'delete_direct_conversation' => 'contractor.workspace.manage',
         'load_budget_state' => 'contractor.budget.read',
         'submit_status_request' => 'contractor.status.request',
         'load_status_requests' => 'contractor.status.request',
@@ -620,21 +633,23 @@ if ($action === 'load_direct_messages') {
     $me = (int)($_SESSION['employee_id'] ?? 0);
     $contactId = (int)($_GET['contact_user_id'] ?? 0);
     if ($me <= 0 || $contactId <= 0) json_out(['success' => false, 'message' => 'Invalid chat contact.'], 422);
-    $stmt = $db->prepare("SELECT id, sender_user_id, sender_role, receiver_user_id, receiver_role, message_text, created_at
-                          FROM direct_messages
-                          WHERE is_deleted = 0
-                            AND ((sender_user_id = ? AND sender_role = 'contractor' AND receiver_user_id = ? AND receiver_role = 'engineer')
-                              OR (sender_user_id = ? AND sender_role = 'engineer' AND receiver_user_id = ? AND receiver_role = 'contractor'))
-                          ORDER BY created_at ASC
-                          LIMIT 600");
-    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
-    $stmt->bind_param('iiii', $me, $contactId, $contactId, $me);
-    $stmt->execute();
-    $res = $stmt->get_result();
+    $selfIds = contractor_chat_identity_ids($db);
+    if (empty($selfIds)) json_out(['success' => true, 'data' => []]);
+    $idList = implode(',', array_map('intval', $selfIds));
+    $sql = "SELECT id, sender_user_id, sender_role, receiver_user_id, receiver_role, message_text, created_at
+            FROM direct_messages
+            WHERE is_deleted = 0
+              AND (
+                (sender_role = 'engineer' AND sender_user_id = {$contactId} AND receiver_role = 'contractor' AND receiver_user_id IN ({$idList}))
+                OR
+                (sender_role = 'contractor' AND sender_user_id IN ({$idList}) AND receiver_role = 'engineer' AND receiver_user_id = {$contactId})
+              )
+            ORDER BY created_at ASC
+            LIMIT 600";
+    $res = $db->query($sql);
     $rows = [];
     while ($res && ($r = $res->fetch_assoc())) $rows[] = $r;
     if ($res) $res->free();
-    $stmt->close();
     json_out(['success' => true, 'data' => $rows]);
 }
 
@@ -652,6 +667,25 @@ if ($action === 'send_direct_message') {
     $msgId = (int)$db->insert_id;
     $stmt->close();
     json_out(['success' => (bool)$ok, 'message_id' => $msgId]);
+}
+
+if ($action === 'delete_direct_conversation') {
+    direct_messages_ensure_table($db);
+    $contactId = (int)($_POST['contact_user_id'] ?? 0);
+    if ($contactId <= 0) json_out(['success' => false, 'message' => 'Invalid contact.'], 422);
+    $selfIds = contractor_chat_identity_ids($db);
+    if (empty($selfIds)) json_out(['success' => true, 'affected' => 0]);
+    $idList = implode(',', array_map('intval', $selfIds));
+    $sql = "UPDATE direct_messages
+            SET is_deleted = 1
+            WHERE is_deleted = 0
+              AND (
+                (sender_role = 'engineer' AND sender_user_id = {$contactId} AND receiver_role = 'contractor' AND receiver_user_id IN ({$idList}))
+                OR
+                (sender_role = 'contractor' AND sender_user_id IN ({$idList}) AND receiver_role = 'engineer' AND receiver_user_id = {$contactId})
+              )";
+    $ok = $db->query($sql);
+    json_out(['success' => (bool)$ok, 'affected' => (int)$db->affected_rows]);
 }
 
 if ($action === 'load_projects') {

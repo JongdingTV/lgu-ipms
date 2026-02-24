@@ -259,6 +259,29 @@ function engineer_assigned_project_ids(mysqli $db): array {
     return array_values(array_filter(array_unique($projectIds)));
 }
 
+function engineer_chat_identity_ids(mysqli $db): array {
+    $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+    $ids = [];
+    if ($employeeId > 0) $ids[$employeeId] = true;
+    if (engineer_table_exists($db, 'engineers')) {
+        if (engineer_table_has_column($db, 'engineers', 'employee_id') && $employeeId > 0) {
+            $stmt = $db->prepare("SELECT id FROM engineers WHERE employee_id = ?");
+            if ($stmt) {
+                $stmt->bind_param('i', $employeeId);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                while ($res && ($r = $res->fetch_assoc())) {
+                    $eid = (int)($r['id'] ?? 0);
+                    if ($eid > 0) $ids[$eid] = true;
+                }
+                if ($res) $res->free();
+                $stmt->close();
+            }
+        }
+    }
+    return array_map('intval', array_keys($ids));
+}
+
 function engineer_has_project_access(mysqli $db, int $projectId): bool {
     return $projectId > 0 && in_array($projectId, engineer_assigned_project_ids($db), true);
 }
@@ -330,6 +353,7 @@ rbac_require_action_matrix(
         'load_chat_contacts' => 'engineer.workspace.view',
         'load_direct_messages' => 'engineer.workspace.view',
         'send_direct_message' => 'engineer.workspace.manage',
+        'delete_direct_conversation' => 'engineer.workspace.manage',
         'load_progress_submissions' => 'engineer.progress.review',
         'decide_progress' => 'engineer.progress.review',
         'load_status_requests' => 'engineer.status.review',
@@ -409,23 +433,25 @@ if ($action === 'load_direct_messages') {
     $me = (int)($_SESSION['employee_id'] ?? 0);
     $contactId = (int)($_GET['contact_user_id'] ?? 0);
     if ($me <= 0 || $contactId <= 0) json_out(['success' => false, 'message' => 'Invalid chat contact.'], 422);
-    $stmt = $db->prepare("SELECT id, sender_user_id, sender_role, receiver_user_id, receiver_role, message_text, created_at
-                          FROM direct_messages
-                          WHERE is_deleted = 0
-                            AND ((sender_user_id = ? AND sender_role = 'engineer' AND receiver_user_id = ? AND receiver_role = 'contractor')
-                              OR (sender_user_id = ? AND sender_role = 'contractor' AND receiver_user_id = ? AND receiver_role = 'engineer'))
-                          ORDER BY created_at ASC
-                          LIMIT 600");
-    if (!$stmt) json_out(['success' => false, 'message' => 'Database error.'], 500);
-    $stmt->bind_param('iiii', $me, $contactId, $contactId, $me);
-    $stmt->execute();
-    $res = $stmt->get_result();
+    $selfIds = engineer_chat_identity_ids($db);
+    if (empty($selfIds)) json_out(['success' => true, 'data' => []]);
+    $idList = implode(',', array_map('intval', $selfIds));
+    $sql = "SELECT id, sender_user_id, sender_role, receiver_user_id, receiver_role, message_text, created_at
+            FROM direct_messages
+            WHERE is_deleted = 0
+              AND (
+                (sender_role = 'contractor' AND sender_user_id = {$contactId} AND receiver_role = 'engineer' AND receiver_user_id IN ({$idList}))
+                OR
+                (sender_role = 'engineer' AND sender_user_id IN ({$idList}) AND receiver_role = 'contractor' AND receiver_user_id = {$contactId})
+              )
+            ORDER BY created_at ASC
+            LIMIT 600";
+    $res = $db->query($sql);
     $rows = [];
     while ($res && ($r = $res->fetch_assoc())) {
         $rows[] = $r;
     }
     if ($res) $res->free();
-    $stmt->close();
     json_out(['success' => true, 'data' => $rows]);
 }
 
@@ -443,6 +469,25 @@ if ($action === 'send_direct_message') {
     $msgId = (int)$db->insert_id;
     $stmt->close();
     json_out(['success' => (bool)$ok, 'message_id' => $msgId]);
+}
+
+if ($action === 'delete_direct_conversation') {
+    direct_messages_ensure_table($db);
+    $contactId = (int)($_POST['contact_user_id'] ?? 0);
+    if ($contactId <= 0) json_out(['success' => false, 'message' => 'Invalid contact.'], 422);
+    $selfIds = engineer_chat_identity_ids($db);
+    if (empty($selfIds)) json_out(['success' => true, 'affected' => 0]);
+    $idList = implode(',', array_map('intval', $selfIds));
+    $sql = "UPDATE direct_messages
+            SET is_deleted = 1
+            WHERE is_deleted = 0
+              AND (
+                (sender_role = 'contractor' AND sender_user_id = {$contactId} AND receiver_role = 'engineer' AND receiver_user_id IN ({$idList}))
+                OR
+                (sender_role = 'engineer' AND sender_user_id IN ({$idList}) AND receiver_role = 'contractor' AND receiver_user_id = {$contactId})
+              )";
+    $ok = $db->query($sql);
+    json_out(['success' => (bool)$ok, 'affected' => (int)$db->affected_rows]);
 }
 
 $db->query("CREATE TABLE IF NOT EXISTS project_progress_updates (
