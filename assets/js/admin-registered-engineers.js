@@ -182,15 +182,28 @@
 
         async function fetchJsonWithFallback(query) {
             const urls = apiCandidates(query);
+            let lastErr = null;
             for (const url of urls) {
                 try {
                     const res = await fetch(url, { credentials: 'same-origin' });
                     if (!res.ok) continue;
                     const text = await res.text();
-                    return JSON.parse(text);
-                } catch (_) {}
+                    const payload = JSON.parse(text);
+                    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+                        if (payload.success === false) {
+                            lastErr = new Error(payload.message || 'API request failed.');
+                            continue;
+                        }
+                        if (Object.prototype.hasOwnProperty.call(payload, 'data')) {
+                            return payload.data;
+                        }
+                    }
+                    return payload;
+                } catch (err) {
+                    lastErr = err;
+                }
             }
-            throw new Error('Unable to load data from API');
+            throw (lastErr || new Error('Unable to load data from API'));
         }
 
         async function postJsonWithFallback(formBody) {
@@ -201,6 +214,7 @@
                 bodyParams.set('csrf_token', csrfToken);
             }
             const encodedBody = bodyParams.toString();
+            let lastErr = null;
             for (const url of urls) {
                 try {
                     const res = await fetch(url, {
@@ -210,10 +224,17 @@
                         credentials: 'same-origin'
                     });
                     if (!res.ok) continue;
-                    return await res.json();
-                } catch (_) {}
+                    const payload = await res.json();
+                    if (payload && typeof payload === 'object' && payload.success === false) {
+                        lastErr = new Error(payload.message || 'API request failed.');
+                        continue;
+                    }
+                    return payload;
+                } catch (err) {
+                    lastErr = err;
+                }
             }
-            throw new Error('Unable to save data to API');
+            throw (lastErr || new Error('Unable to save data to API'));
         }
 
         function ensureContractorsPagination() {
@@ -976,6 +997,5 @@
         document.addEventListener('DOMContentLoaded', boot);
         if (document.readyState !== 'loading') boot();
     })();
-
 
 
