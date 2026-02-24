@@ -106,6 +106,62 @@
     }, true);
   }
 
+  function normalizeSidebarNavLinks() {
+    const navLinks = $('.nav-links');
+    if (!navLinks) return;
+
+    const links = [
+      { href: 'dashboard_overview.php', label: 'Dashboard', icon: '../assets/images/admin/dashboard.png' },
+      { href: 'my_projects.php', label: 'My Projects', icon: '../assets/images/admin/list.png' },
+      { href: 'progress_monitoring.php', label: 'Submit Progress', icon: '../assets/images/admin/chart.png' },
+      { href: 'deliverables.php', label: 'Deliverables', icon: '../assets/images/admin/production.png' },
+      { href: 'expenses.php', label: 'Expenses / Billing', icon: '../assets/images/admin/budget.png' },
+      { href: 'requests.php', label: 'Requests', icon: '../assets/images/admin/monitoring.png' },
+      { href: 'issues.php', label: 'Issues', icon: '../assets/images/admin/notifications.png' },
+      { href: 'messages.php', label: 'Messages', icon: '../assets/images/admin/notifications.png' },
+      { href: 'notifications.php', label: 'Notifications', icon: '../assets/images/admin/notifications.png' },
+      { href: 'profile.php', label: 'Profile', icon: '../assets/images/admin/person.png' }
+    ];
+
+    const currentFile = (path.split('/').pop() || '').toLowerCase();
+    navLinks.innerHTML = links.map((item) => {
+      const isActive = currentFile === item.href.toLowerCase() ? ' class="active"' : '';
+      return `<a href="${item.href}"${isActive}><img src="${item.icon}" class="nav-icon" alt="">${item.label}</a>`;
+    }).join('');
+  }
+
+  function installResilientNavDropdowns() {
+    const hasSubmenu = (group) => !!(group && group.querySelector('.nav-submenu'));
+    const closeAll = () => {
+      $$('.nav-item-group.open').forEach((group) => {
+        group.classList.remove('open');
+        const trigger = $('.nav-main-item', group);
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+      });
+    };
+
+    document.addEventListener('click', (e) => {
+      const trigger = e.target.closest('.nav-main-item');
+      if (!trigger) return;
+      const group = trigger.closest('.nav-item-group');
+      if (!hasSubmenu(group)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      const willOpen = !group.classList.contains('open');
+      closeAll();
+      group.classList.toggle('open', willOpen);
+      trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }, true);
+
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.nav-item-group')) return;
+      closeAll();
+    }, true);
+  }
+
   function initLogoutModal() {
     const hiddenModalStyle = [
       'position: fixed !important',
@@ -804,6 +860,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    normalizeSidebarNavLinks();
+    installResilientNavDropdowns();
     initTopSidebarToggle();
     initTopUtilities();
     initUnifiedDropdowns();

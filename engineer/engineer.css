@@ -7111,3 +7111,152 @@ body:not(.admin-login-page):not(.login-page):not(.signup-page) textarea:focus-vi
         grid-template-columns: 1fr;
     }
 }
+
+/* Engineer sidebar consistency (final override) */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav {
+    width: 250px;
+    font-family: "Poppins", sans-serif !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links {
+    gap: 8px !important;
+    padding: 14px 12px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item {
+    min-height: 44px !important;
+    padding: 11px 14px !important;
+    border-radius: 10px !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    line-height: 1.2 !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a .nav-icon,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item .nav-icon {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-links > a::after,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item::after,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .btn-logout.nav-logout::after {
+    content: "●";
+    margin-left: auto;
+    font-size: 0.52rem;
+    color: #8aa4c3;
+    opacity: 0.9;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .nav-main-item .dropdown-arrow {
+    order: 3;
+    margin-left: 8px !important;
+}
+
+/* Engineer workspace content polish */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content {
+    color: #12324f;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .card,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .recent-projects,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .chart-box {
+    border: 1px solid #d8e4f3;
+    border-radius: 14px;
+    box-shadow: 0 10px 26px rgba(15, 35, 60, 0.10);
+    background: linear-gradient(180deg, #ffffff, #f9fbff);
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .table-wrap {
+    border: 1px solid #dce8f5;
+    border-radius: 12px;
+    overflow: auto;
+    background: #fff;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .projects-table th {
+    background: #edf4fc;
+    color: #1d3f67;
+    font-size: 0.8rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .projects-table td {
+    color: #274361;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content button,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-primary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn-secondary,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .profile-btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .contractor-btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .approve-btn,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .reject-btn {
+    min-height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    pointer-events: auto;
+    font-weight: 700;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content button:hover,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.02);
+}
+
+/* Engineer submodule standardization (final layer) */
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content > * + * {
+    margin-top: 16px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content h1,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content h2,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content h3,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content h4 {
+    color: #123a63;
+    letter-spacing: 0.01em;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content form,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .settings-form,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content .filter-form {
+    display: grid;
+    gap: 12px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content input[type="text"],
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content input[type="email"],
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content input[type="number"],
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content input[type="date"],
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content input[type="password"],
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content select,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content textarea {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #cddcec;
+    border-radius: 10px;
+    background: #fff;
+    color: #173a5f;
+    padding: 10px 12px;
+    font: 500 0.9rem/1.2 "Poppins", sans-serif;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content textarea {
+    min-height: 92px;
+}
+
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content input:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content select:focus,
+body:not(.admin-login-page):not(.login-page):not(.signup-page) .main-content textarea:focus {
+    outline: none;
+    border-color: #2f73b5;
+    box-shadow: 0 0 0 3px rgba(47, 115, 181, 0.14);
+}

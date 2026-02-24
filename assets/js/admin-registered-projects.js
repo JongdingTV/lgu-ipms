@@ -375,6 +375,13 @@
             setVal('#projectPriority', project.priority || 'Medium');
             setVal('#projectStatus', project.status || 'Draft');
             setVal('#projectDescription', project.description);
+            setVal('#projectProvince', project.province);
+            setVal('#projectBarangay', project.barangay);
+            setVal('#projectLocation', project.location);
+            setVal('#projectStartDate', project.start_date);
+            setVal('#projectEndDate', project.end_date);
+            setVal('#projectDurationMonths', project.duration_months);
+            setVal('#projectBudget', project.budget);
             editModal.classList.add('show');
         }
 

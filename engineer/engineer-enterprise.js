@@ -106,6 +106,64 @@
     }, true);
   }
 
+  function normalizeSidebarNavLinks() {
+    const navLinks = $('.nav-links');
+    if (!navLinks) return;
+
+    const links = [
+      { href: 'dashboard_overview.php', label: 'Dashboard Overview', icon: '../assets/images/admin/dashboard.png' },
+      { href: 'assigned_projects.php', label: 'My Assigned Projects', icon: '../assets/images/admin/list.png' },
+      { href: 'monitoring.php', label: 'Project Monitoring', icon: '../assets/images/admin/monitoring.png' },
+      { href: 'task_milestone.php', label: 'Task & Milestone', icon: '../assets/images/admin/production.png' },
+      { href: 'submissions_validation.php', label: 'Submissions for Validation', icon: '../assets/images/admin/monitoring.png' },
+      { href: 'site_reports.php', label: 'Site Reports', icon: '../assets/images/admin/chart.png' },
+      { href: 'inspection_requests.php', label: 'Inspection Requests', icon: '../assets/images/admin/notifications.png' },
+      { href: 'issues_risks.php', label: 'Issues & Risks', icon: '../assets/images/admin/notifications.png' },
+      { href: 'documents.php', label: 'Documents', icon: '../assets/images/admin/list.png' },
+      { href: 'messages.php', label: 'Messages', icon: '../assets/images/admin/notifications.png' },
+      { href: 'notifications.php', label: 'Notifications', icon: '../assets/images/admin/notifications.png' },
+      { href: 'profile.php', label: 'Profile', icon: '../assets/images/admin/person.png' }
+    ];
+
+    const currentFile = (path.split('/').pop() || '').toLowerCase();
+    navLinks.innerHTML = links.map((item) => {
+      const isActive = currentFile === item.href.toLowerCase() ? ' class="active"' : '';
+      return `<a href="${item.href}"${isActive}><img src="${item.icon}" class="nav-icon" alt="">${item.label}</a>`;
+    }).join('');
+  }
+
+  function installResilientNavDropdowns() {
+    const hasSubmenu = (group) => !!(group && group.querySelector('.nav-submenu'));
+    const closeAll = () => {
+      $$('.nav-item-group.open').forEach((group) => {
+        group.classList.remove('open');
+        const trigger = $('.nav-main-item', group);
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+      });
+    };
+
+    document.addEventListener('click', (e) => {
+      const trigger = e.target.closest('.nav-main-item');
+      if (!trigger) return;
+      const group = trigger.closest('.nav-item-group');
+      if (!hasSubmenu(group)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      const willOpen = !group.classList.contains('open');
+      closeAll();
+      group.classList.toggle('open', willOpen);
+      trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }, true);
+
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.nav-item-group')) return;
+      closeAll();
+    }, true);
+  }
+
   function initLogoutModal() {
     const hiddenModalStyle = [
       'position: fixed !important',
@@ -804,6 +862,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    normalizeSidebarNavLinks();
+    installResilientNavDropdowns();
     initTopSidebarToggle();
     initTopUtilities();
     initUnifiedDropdowns();
