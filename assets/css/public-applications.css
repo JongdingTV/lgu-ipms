@@ -1,0 +1,154 @@
+.public-apply-page {
+    min-height: 100vh;
+    margin: 0;
+    padding-top: 86px;
+    background: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.22), transparent 45%), linear-gradient(120deg, rgba(7, 20, 36, 0.78), rgba(17, 58, 103, 0.72)), url('/cityhall.jpeg') center/cover fixed no-repeat;
+    font-family: 'Poppins', sans-serif;
+}
+
+.public-apply-nav {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 22px;
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+    z-index: 20;
+}
+
+.public-apply-nav .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    color: #12385f;
+}
+
+.public-apply-nav .brand img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+.public-apply-nav .back-link {
+    padding: 8px 14px;
+    border: 1px solid #bfd0e8;
+    border-radius: 10px;
+    background: #fff;
+    color: #1e4f86;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.public-apply-wrap {
+    padding: 24px 14px 28px;
+    display: flex;
+    justify-content: center;
+}
+
+.public-apply-card {
+    width: min(960px, 100%);
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 18px;
+    box-shadow: 0 24px 58px rgba(2, 6, 23, 0.32);
+    padding: 22px;
+}
+
+.public-apply-head h1 {
+    margin: 0;
+    color: #163f68;
+    font-size: 1.8rem;
+}
+
+.public-apply-head p {
+    margin: 8px 0 0;
+    color: #536f90;
+}
+
+.public-apply-grid {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.public-apply-field.full {
+    grid-column: 1 / -1;
+}
+
+.public-apply-field label {
+    display: block;
+    font-size: 0.84rem;
+    color: #244568;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.public-apply-field input,
+.public-apply-field select,
+.public-apply-field textarea {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid #c9d9ee;
+    border-radius: 10px;
+    padding: 9px 11px;
+    font-size: 0.93rem;
+    color: #152b45;
+    background: #fff;
+}
+
+.public-apply-field textarea {
+    min-height: 92px;
+    resize: vertical;
+}
+
+.public-apply-field input:focus,
+.public-apply-field select:focus,
+.public-apply-field textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+}
+
+.public-apply-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.public-apply-btn {
+    min-height: 44px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.public-apply-btn.primary {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: #fff;
+}
+
+.public-apply-btn.secondary {
+    background: #fff;
+    border-color: #c8d6ea;
+    color: #1f4977;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.public-msg {
+    margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+    .public-apply-grid { grid-template-columns: 1fr; }
+}

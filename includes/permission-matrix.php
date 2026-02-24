@@ -28,6 +28,9 @@ return [
     'admin.legacy.contractors_alias' => ['admin', 'department_admin', 'super_admin'],
     'admin.audit.view' => ['admin', 'department_admin', 'super_admin'],
     'admin.db_health.run' => ['super_admin'],
+    'admin.applications.view' => ['admin', 'department_admin', 'super_admin'],
+    'admin.applications.manage' => ['admin', 'department_admin', 'super_admin'],
+    'admin.applications.export' => ['admin', 'department_admin', 'super_admin'],
 
     // Super Admin workspace
     'super_admin.dashboard.view' => ['super_admin'],

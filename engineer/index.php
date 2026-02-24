@@ -24,7 +24,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (is_rate_limited('engineer_login', 6, 300)) {
         $error = 'Too many login attempts. Please try again in a few minutes.';
     } else {
-        $stmt = $db->prepare("SELECT id, first_name, last_name, role, password FROM employees WHERE email = ? LIMIT 1");
+        $hasStatus = false;
+        $colStmt = $db->prepare("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='employees' AND COLUMN_NAME='account_status' LIMIT 1");
+        if ($colStmt) {
+            $colStmt->execute();
+            $colRes = $colStmt->get_result();
+            $hasStatus = $colRes && $colRes->num_rows > 0;
+            if ($colRes) $colRes->free();
+            $colStmt->close();
+        }
+
+        $select = $hasStatus
+            ? "SELECT id, first_name, last_name, role, password, account_status FROM employees WHERE email = ? LIMIT 1"
+            : "SELECT id, first_name, last_name, role, password FROM employees WHERE email = ? LIMIT 1";
+        $stmt = $db->prepare($select);
         if ($stmt) {
             $stmt->bind_param('s', $emailInput);
             $stmt->execute();
@@ -37,9 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $validPassword = password_verify($password, (string) $employee['password']);
             }
 
+            $accountStatus = strtolower(trim((string)($employee['account_status'] ?? 'active')));
+
             if (!$employee || !$validPassword) {
                 record_attempt('engineer_login');
                 $error = 'Invalid email or password.';
+            } elseif ($hasStatus && $accountStatus !== 'active') {
+                $error = 'Your account is not active yet. Please wait for admin approval.';
             } else {
                 $userRole = normalize_employee_role((string) ($employee['role'] ?? ''));
                 if (!in_array($userRole, ['engineer', 'admin', 'super_admin'], true)) {
@@ -103,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="ac-aabba7cf"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
             <div class="meta-links" style="margin-top:12px;font-size:.88rem;">
-                No account yet? <a href="/engineer/create.php" style="color:#1d4e89;font-weight:600;text-decoration:none;">Create engineer account</a>
+                No account yet? <a href="/engineer/apply.php" style="color:#1d4e89;font-weight:600;text-decoration:none;">Apply as engineer</a>
             </div>
         </form>
     </div>

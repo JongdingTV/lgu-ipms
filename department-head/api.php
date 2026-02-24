@@ -1,4 +1,7 @@
 <?php
+if (function_exists('ob_start')) {
+    ob_start();
+}
 require dirname(__DIR__) . '/database.php';
 require dirname(__DIR__) . '/session-auth.php';
 require dirname(__DIR__) . '/includes/rbac.php';
@@ -25,10 +28,23 @@ if (!in_array($role, ['department_head', 'department_admin', 'admin', 'super_adm
 
 function dept_json(array $payload, int $status = 200): void
 {
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
     http_response_code($status);
     header('Content-Type: application/json');
     echo json_encode($payload);
     exit;
+}
+
+function dept_safe_query(mysqli $db, string $sql): bool
+{
+    try {
+        return (bool)$db->query($sql);
+    } catch (Throwable $e) {
+        error_log('department-head schema query failed: ' . $e->getMessage());
+        return false;
+    }
 }
 
 function dept_has_col(mysqli $db, string $table, string $column): bool
@@ -78,7 +94,7 @@ function dept_bind(mysqli_stmt $stmt, string $types, array &$params): bool
 
 function dept_ensure_tables(mysqli $db): void
 {
-    $db->query("CREATE TABLE IF NOT EXISTS project_department_head_reviews (
+    dept_safe_query($db, "CREATE TABLE IF NOT EXISTS project_department_head_reviews (
         id INT AUTO_INCREMENT PRIMARY KEY,
         project_id INT NOT NULL UNIQUE,
         decision_status VARCHAR(20) NOT NULL DEFAULT 'Pending',
@@ -89,7 +105,7 @@ function dept_ensure_tables(mysqli $db): void
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_decision_status (decision_status)
     )");
-    $db->query("CREATE TABLE IF NOT EXISTS decision_logs (
+    dept_safe_query($db, "CREATE TABLE IF NOT EXISTS decision_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         project_id INT NOT NULL,
         decision_type VARCHAR(50) NOT NULL,
@@ -98,10 +114,18 @@ function dept_ensure_tables(mysqli $db): void
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_decision_logs_project_time (project_id, created_at)
     )");
-    if (!dept_has_col($db, 'projects', 'priority_level')) $db->query("ALTER TABLE projects ADD COLUMN priority_level VARCHAR(20) NOT NULL DEFAULT 'Medium' AFTER priority");
-    if (!dept_has_col($db, 'projects', 'approved_by')) $db->query("ALTER TABLE projects ADD COLUMN approved_by INT NULL AFTER priority_level");
-    if (!dept_has_col($db, 'projects', 'approved_date')) $db->query("ALTER TABLE projects ADD COLUMN approved_date DATETIME NULL AFTER approved_by");
-    if (!dept_has_col($db, 'projects', 'rejection_reason')) $db->query("ALTER TABLE projects ADD COLUMN rejection_reason TEXT NULL AFTER approved_date");
+    if (!dept_has_col($db, 'projects', 'priority_level')) {
+        dept_safe_query($db, "ALTER TABLE projects ADD COLUMN priority_level VARCHAR(20) NOT NULL DEFAULT 'Medium' AFTER priority");
+    }
+    if (!dept_has_col($db, 'projects', 'approved_by')) {
+        dept_safe_query($db, "ALTER TABLE projects ADD COLUMN approved_by INT NULL AFTER priority_level");
+    }
+    if (!dept_has_col($db, 'projects', 'approved_date')) {
+        dept_safe_query($db, "ALTER TABLE projects ADD COLUMN approved_date DATETIME NULL AFTER approved_by");
+    }
+    if (!dept_has_col($db, 'projects', 'rejection_reason')) {
+        dept_safe_query($db, "ALTER TABLE projects ADD COLUMN rejection_reason TEXT NULL AFTER approved_date");
+    }
 }
 
 function dept_log_decision(mysqli $db, int $projectId, string $type, string $notes, int $by): void

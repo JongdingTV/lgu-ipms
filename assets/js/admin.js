@@ -541,6 +541,27 @@ function setupLogoutConfirmation() {
 document.addEventListener('DOMContentLoaded', () => {
     setupLogoutConfirmation();
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    var applicationsToggle = document.getElementById('applicationsToggle');
+    var applicationsGroup = applicationsToggle ? applicationsToggle.closest('.nav-item-group') : null;
+    if (!applicationsToggle || !applicationsGroup) {
+        return;
+    }
+
+    applicationsToggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        applicationsGroup.classList.toggle('open');
+    });
+
+    var currentPath = (window.location.pathname || '').toLowerCase();
+    if (
+        currentPath.indexOf('/admin/applications_engineers.php') !== -1 ||
+        currentPath.indexOf('/admin/applications_contractors.php') !== -1
+    ) {
+        applicationsGroup.classList.add('open');
+    }
+});
 */
 
 
@@ -4530,7 +4551,6 @@ document.addEventListener('click', function (event) {
     renderEmptyStates();
   });
 })();
-
 
 
 

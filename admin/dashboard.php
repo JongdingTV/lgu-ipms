@@ -210,6 +210,15 @@ $db->close();
                     <a href="contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Contractors</span></a>
                 </div>
             </div>
+            <div class="nav-item-group">
+                <a href="applications_engineers.php" class="nav-main-item" id="applicationsToggle"><img src="../assets/images/admin/person.png" class="nav-icon">Applications<span class="dropdown-arrow">&#9662;</span></a>
+                <div class="nav-submenu" id="applicationsSubmenu">
+                    <a href="applications_engineers.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Engineer Applications</span></a>
+                    <a href="applications_contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Contractor Applications</span></a>
+                </div>
+            </div>
+            <a href="verified_users.php"><img src="../assets/images/admin/check.png" class="nav-icon">Verified Users</a>
+            <a href="rejected_users.php"><img src="../assets/images/admin/list.png" class="nav-icon">Rejected / Suspended</a>
             <a href="project-prioritization.php"><img src="../assets/images/admin/prioritization.png" class="nav-icon">Project Prioritization</a>
             <a href="citizen-verification.php" class="nav-main-item"><img src="../assets/images/admin/person.png" class="nav-icon">Citizen Verification</a>
         </div>
@@ -481,7 +490,6 @@ $db->close();
     <script src="../assets/js/admin-dashboard-analytics.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-dashboard-analytics.js'); ?>"></script>
 </body>
 </html>
-
 
 
 
