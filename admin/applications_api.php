@@ -774,12 +774,22 @@ if ($action === 'load_verified_users') {
         }));
         app_json(['success' => true, 'data' => $rows, 'legacy' => true]);
     }
-    $sql = "SELECT id, " . ($type === 'engineer' ? 'full_name' : 'company_name') . " AS display_name, email, specialization, status, approved_at, created_at FROM {$appTable} WHERE LOWER(status) = 'approved' ORDER BY approved_at DESC, created_at DESC LIMIT 500";
+    $nameCol = $type === 'engineer' ? (app_col_exists($db, $appTable, 'full_name') ? 'full_name' : 'email') : (app_col_exists($db, $appTable, 'company_name') ? 'company_name' : 'email');
+    $approvedCol = app_col_exists($db, $appTable, 'approved_at') ? 'approved_at' : (app_col_exists($db, $appTable, 'updated_at') ? 'updated_at' : 'created_at');
+    $createdCol = app_col_exists($db, $appTable, 'created_at') ? 'created_at' : 'NOW()';
+    $specCol = app_col_exists($db, $appTable, 'specialization') ? 'specialization' : "''";
+    $sql = "SELECT id, {$nameCol} AS display_name, email, {$specCol} AS specialization, status, {$approvedCol} AS approved_at, {$createdCol} AS created_at FROM {$appTable} WHERE LOWER(COALESCE(status,'')) = 'approved' ORDER BY {$approvedCol} DESC, {$createdCol} DESC LIMIT 500";
     $res = $db->query($sql);
     $rows = [];
     if ($res) {
         while ($row = $res->fetch_assoc()) $rows[] = $row;
         $res->free();
+    } else {
+        $rows = array_values(array_filter(app_legacy_rows($db, $type), static function ($row) {
+            $status = strtolower(trim((string)($row['status'] ?? 'approved')));
+            return in_array($status, ['approved', 'active', 'verified'], true);
+        }));
+        app_json(['success' => true, 'data' => $rows, 'legacy' => true]);
     }
     app_json(['success' => true, 'data' => $rows]);
 }
@@ -792,12 +802,23 @@ if ($action === 'load_rejected_users') {
         }));
         app_json(['success' => true, 'data' => $rows, 'legacy' => true]);
     }
-    $sql = "SELECT id, " . ($type === 'engineer' ? 'full_name' : 'company_name') . " AS display_name, email, specialization, status, rejection_reason, created_at FROM {$appTable} WHERE LOWER(status) IN ('rejected','suspended','blacklisted') ORDER BY updated_at DESC, created_at DESC LIMIT 500";
+    $nameCol = $type === 'engineer' ? (app_col_exists($db, $appTable, 'full_name') ? 'full_name' : 'email') : (app_col_exists($db, $appTable, 'company_name') ? 'company_name' : 'email');
+    $createdCol = app_col_exists($db, $appTable, 'created_at') ? 'created_at' : 'NOW()';
+    $updatedCol = app_col_exists($db, $appTable, 'updated_at') ? 'updated_at' : $createdCol;
+    $specCol = app_col_exists($db, $appTable, 'specialization') ? 'specialization' : "''";
+    $reasonCol = app_col_exists($db, $appTable, 'rejection_reason') ? 'rejection_reason' : "''";
+    $sql = "SELECT id, {$nameCol} AS display_name, email, {$specCol} AS specialization, status, {$reasonCol} AS rejection_reason, {$createdCol} AS created_at FROM {$appTable} WHERE LOWER(COALESCE(status,'')) IN ('rejected','suspended','blacklisted') ORDER BY {$updatedCol} DESC, {$createdCol} DESC LIMIT 500";
     $res = $db->query($sql);
     $rows = [];
     if ($res) {
         while ($row = $res->fetch_assoc()) $rows[] = $row;
         $res->free();
+    } else {
+        $rows = array_values(array_filter(app_legacy_rows($db, $type), static function ($row) {
+            $status = strtolower(trim((string)($row['status'] ?? '')));
+            return in_array($status, ['rejected', 'suspended', 'inactive', 'blacklisted'], true);
+        }));
+        app_json(['success' => true, 'data' => $rows, 'legacy' => true]);
     }
     app_json(['success' => true, 'data' => $rows]);
 }
