@@ -182,6 +182,58 @@ function registered_bind_dynamic(mysqli_stmt $stmt, string $types, array $params
     return (bool)call_user_func_array([$stmt, 'bind_param'], $bind);
 }
 
+function registered_resolve_doc_link(mysqli $db, int $entityId, bool $isEngineer, string $docsTable): array
+{
+    $fkCandidates = [];
+    if ($isEngineer) {
+        $fkCandidates = ['engineer_id', 'employee_id', 'user_id'];
+    } else {
+        $fkCandidates = ['contractor_id', 'employee_id', 'user_id'];
+    }
+    $fkCol = registered_pick_column($db, $docsTable, $fkCandidates);
+    if (!$fkCol) {
+        return [null, $entityId];
+    }
+    $linkId = $entityId;
+    if ($isEngineer && in_array($fkCol, ['employee_id', 'user_id'], true) && registered_table_has_column($db, 'engineers', 'employee_id')) {
+        $stmt = $db->prepare("SELECT employee_id FROM engineers WHERE id = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param('i', $entityId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && ($row = $res->fetch_assoc())) {
+                $candidate = (int)($row['employee_id'] ?? 0);
+                if ($candidate > 0) {
+                    $linkId = $candidate;
+                }
+            }
+            if ($res) {
+                $res->free();
+            }
+            $stmt->close();
+        }
+    }
+    if (!$isEngineer && in_array($fkCol, ['employee_id', 'user_id'], true) && registered_table_has_column($db, 'contractors', 'account_employee_id')) {
+        $stmt = $db->prepare("SELECT account_employee_id FROM contractors WHERE id = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param('i', $entityId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && ($row = $res->fetch_assoc())) {
+                $candidate = (int)($row['account_employee_id'] ?? 0);
+                if ($candidate > 0) {
+                    $linkId = $candidate;
+                }
+            }
+            if ($res) {
+                $res->free();
+            }
+            $stmt->close();
+        }
+    }
+    return [$fkCol, $linkId];
+}
+
 function registered_get_profile_verification_status(mysqli $db, int $entityId, bool $isEngineer): string
 {
     $details = registered_get_profile_verification_details($db, $entityId, $isEngineer);
@@ -236,10 +288,10 @@ function registered_get_profile_verification_details(mysqli $db, int $entityId, 
         return $result;
     }
 
-    $fkCol = $isEngineer ? 'engineer_id' : 'contractor_id';
+    [$fkCol, $linkId] = registered_resolve_doc_link($db, $entityId, $isEngineer, $docsTable);
     $docTypeCol = registered_pick_column($db, $docsTable, ['document_type', 'doc_type', 'type']);
     $verifiedCol = registered_pick_column($db, $docsTable, ['is_verified']);
-    if (!$docTypeCol || !$verifiedCol || !registered_table_has_column($db, $docsTable, $fkCol)) {
+    if (!$fkCol || !$docTypeCol || !$verifiedCol || !registered_table_has_column($db, $docsTable, $fkCol)) {
         $result['missing_requirements'][] = 'Documents schema missing required columns';
         return $result;
     }
@@ -263,10 +315,11 @@ function registered_get_profile_verification_details(mysqli $db, int $entityId, 
          WHERE {$fkCol} = ?"
     );
     if (!$stmt) {
-        return 'Incomplete';
+        $result['missing_requirements'][] = 'Unable to read document records';
+        return $result;
     }
 
-    $stmt->bind_param('i', $entityId);
+    $stmt->bind_param('i', $linkId);
     $stmt->execute();
     $res = $stmt->get_result();
     $docsRow = $res ? $res->fetch_assoc() : null;
@@ -615,7 +668,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $contractorId = isset($_GET['contractor_id']) ? (int) $_GET['contractor_id'] : 0;
     $useEngineerDocs = registered_table_exists($db, 'engineer_documents');
     $docsTable = $useEngineerDocs ? 'engineer_documents' : 'contractor_documents';
-    $fkCol = $useEngineerDocs ? 'engineer_id' : 'contractor_id';
+    [$fkCol, $docLinkId] = registered_resolve_doc_link($db, $contractorId, $useEngineerDocs, $docsTable);
 
     if ($contractorId <= 0 || !registered_table_exists($db, $docsTable)) {
         echo json_encode([]);
@@ -631,7 +684,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $verifiedCol = registered_pick_column($db, $docsTable, ['is_verified']);
     $verifiedAtCol = registered_pick_column($db, $docsTable, ['verified_at']);
     $uploadedAtCol = registered_pick_column($db, $docsTable, ['uploaded_at', 'created_at']);
-    if (!$docTypeCol || !$filePathCol || !$verifiedCol) {
+    if (!$fkCol || !$docTypeCol || !$filePathCol || !$verifiedCol) {
         echo json_encode([]);
         exit;
     }
@@ -652,7 +705,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         echo json_encode([]);
         exit;
     }
-    $stmt->bind_param('i', $contractorId);
+    $stmt->bind_param('i', $docLinkId);
     $stmt->execute();
     $res = $stmt->get_result();
     $rows = [];
