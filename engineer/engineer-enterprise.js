@@ -106,6 +106,32 @@
     }, true);
   }
 
+  function normalizeSidebarNavLinks() {
+    const navLinks = $('.nav-links');
+    if (!navLinks) return;
+
+    const links = [
+      { href: 'dashboard_overview.php', label: 'Dashboard Overview', icon: '../assets/images/admin/dashboard.png' },
+      { href: 'assigned_projects.php', label: 'My Assigned Projects', icon: '../assets/images/admin/list.png' },
+      { href: 'monitoring.php', label: 'Project Monitoring', icon: '../assets/images/admin/monitoring.png' },
+      { href: 'task_milestone.php', label: 'Task & Milestone', icon: '../assets/images/admin/production.png' },
+      { href: 'submissions_validation.php', label: 'Submissions for Validation', icon: '../assets/images/admin/monitoring.png' },
+      { href: 'site_reports.php', label: 'Site Reports', icon: '../assets/images/admin/chart.png' },
+      { href: 'inspection_requests.php', label: 'Inspection Requests', icon: '../assets/images/admin/notifications.png' },
+      { href: 'issues_risks.php', label: 'Issues & Risks', icon: '../assets/images/admin/notifications.png' },
+      { href: 'documents.php', label: 'Documents', icon: '../assets/images/admin/list.png' },
+      { href: 'messages.php', label: 'Messages', icon: '../assets/images/admin/notifications.png' },
+      { href: 'notifications.php', label: 'Notifications', icon: '../assets/images/admin/notifications.png' },
+      { href: 'profile.php', label: 'Profile', icon: '../assets/images/admin/person.png' }
+    ];
+
+    const currentFile = (path.split('/').pop() || '').toLowerCase();
+    navLinks.innerHTML = links.map((item) => {
+      const isActive = currentFile === item.href.toLowerCase() ? ' class="active"' : '';
+      return `<a href="${item.href}"${isActive}><img src="${item.icon}" class="nav-icon" alt="">${item.label}</a>`;
+    }).join('');
+  }
+
   function installResilientNavDropdowns() {
     const hasSubmenu = (group) => !!(group && group.querySelector('.nav-submenu'));
     const closeAll = () => {
@@ -836,6 +862,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    normalizeSidebarNavLinks();
     installResilientNavDropdowns();
     initTopSidebarToggle();
     initTopUtilities();

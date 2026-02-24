@@ -106,6 +106,30 @@
     }, true);
   }
 
+  function normalizeSidebarNavLinks() {
+    const navLinks = $('.nav-links');
+    if (!navLinks) return;
+
+    const links = [
+      { href: 'dashboard_overview.php', label: 'Dashboard', icon: '../assets/images/admin/dashboard.png' },
+      { href: 'my_projects.php', label: 'My Projects', icon: '../assets/images/admin/list.png' },
+      { href: 'progress_monitoring.php', label: 'Submit Progress', icon: '../assets/images/admin/chart.png' },
+      { href: 'deliverables.php', label: 'Deliverables', icon: '../assets/images/admin/production.png' },
+      { href: 'expenses.php', label: 'Expenses / Billing', icon: '../assets/images/admin/budget.png' },
+      { href: 'requests.php', label: 'Requests', icon: '../assets/images/admin/monitoring.png' },
+      { href: 'issues.php', label: 'Issues', icon: '../assets/images/admin/notifications.png' },
+      { href: 'messages.php', label: 'Messages', icon: '../assets/images/admin/notifications.png' },
+      { href: 'notifications.php', label: 'Notifications', icon: '../assets/images/admin/notifications.png' },
+      { href: 'profile.php', label: 'Profile', icon: '../assets/images/admin/person.png' }
+    ];
+
+    const currentFile = (path.split('/').pop() || '').toLowerCase();
+    navLinks.innerHTML = links.map((item) => {
+      const isActive = currentFile === item.href.toLowerCase() ? ' class="active"' : '';
+      return `<a href="${item.href}"${isActive}><img src="${item.icon}" class="nav-icon" alt="">${item.label}</a>`;
+    }).join('');
+  }
+
   function installResilientNavDropdowns() {
     const hasSubmenu = (group) => !!(group && group.querySelector('.nav-submenu'));
     const closeAll = () => {
@@ -836,6 +860,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    normalizeSidebarNavLinks();
     installResilientNavDropdowns();
     initTopSidebarToggle();
     initTopUtilities();
