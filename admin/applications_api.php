@@ -567,11 +567,33 @@ function app_apply_legacy_status_update(mysqli $db, string $type, int $id, strin
     ];
     $legacyStatus = $statusMap[$newStatus] ?? ucfirst($newStatus);
 
+    $approvalStatus = $newStatus;
+
     if ($type === 'engineer') {
         if (!app_table_exists($db, 'engineers')) return false;
         $set = [];
         $types = '';
         $vals = [];
+        if (app_col_exists($db, 'engineers', 'approval_status')) {
+            $set[] = 'approval_status = ?';
+            $types .= 's';
+            $vals[] = $approvalStatus;
+        }
+        if (app_col_exists($db, 'engineers', 'verified_at')) {
+            $set[] = "verified_at = CASE WHEN ? = 'verified' THEN NOW() ELSE verified_at END";
+            $types .= 's';
+            $vals[] = $newStatus;
+        }
+        if (app_col_exists($db, 'engineers', 'approved_at')) {
+            $set[] = "approved_at = CASE WHEN ? = 'approved' THEN NOW() ELSE approved_at END";
+            $types .= 's';
+            $vals[] = $newStatus;
+        }
+        if (app_col_exists($db, 'engineers', 'rejected_at')) {
+            $set[] = "rejected_at = CASE WHEN ? = 'rejected' THEN NOW() ELSE rejected_at END";
+            $types .= 's';
+            $vals[] = $newStatus;
+        }
         if (app_col_exists($db, 'engineers', 'status')) {
             $set[] = 'status = ?';
             $types .= 's';
@@ -610,6 +632,26 @@ function app_apply_legacy_status_update(mysqli $db, string $type, int $id, strin
     $set = [];
     $types = '';
     $vals = [];
+    if (app_col_exists($db, 'contractors', 'approval_status')) {
+        $set[] = 'approval_status = ?';
+        $types .= 's';
+        $vals[] = $approvalStatus;
+    }
+    if (app_col_exists($db, 'contractors', 'verified_at')) {
+        $set[] = "verified_at = CASE WHEN ? = 'verified' THEN NOW() ELSE verified_at END";
+        $types .= 's';
+        $vals[] = $newStatus;
+    }
+    if (app_col_exists($db, 'contractors', 'approved_at')) {
+        $set[] = "approved_at = CASE WHEN ? = 'approved' THEN NOW() ELSE approved_at END";
+        $types .= 's';
+        $vals[] = $newStatus;
+    }
+    if (app_col_exists($db, 'contractors', 'rejected_at')) {
+        $set[] = "rejected_at = CASE WHEN ? = 'rejected' THEN NOW() ELSE rejected_at END";
+        $types .= 's';
+        $vals[] = $newStatus;
+    }
     if (app_col_exists($db, 'contractors', 'status')) {
         $set[] = 'status = ?';
         $types .= 's';

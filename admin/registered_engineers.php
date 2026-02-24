@@ -814,19 +814,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     $entityTable = registered_table_exists($db, 'engineers') ? 'engineers' : 'contractors';
     $isEngineerTable = $entityTable === 'engineers';
-    if (!registered_table_has_column($db, $entityTable, 'approval_status')) {
-        echo json_encode(['success' => false, 'message' => 'Approval fields not available. Run migration.']);
-        exit;
-    }
+    $hasApprovalStatus = registered_table_has_column($db, $entityTable, 'approval_status');
 
     $currentStatus = 'pending';
-    $statusStmt = $db->prepare("SELECT approval_status FROM {$entityTable} WHERE id = ? LIMIT 1");
+    $statusSelectCol = $hasApprovalStatus ? 'approval_status' : (registered_table_has_column($db, $entityTable, 'status') ? 'status' : 'NULL');
+    $statusStmt = $db->prepare("SELECT {$statusSelectCol} AS status_value FROM {$entityTable} WHERE id = ? LIMIT 1");
     if ($statusStmt) {
         $statusStmt->bind_param('i', $contractorId);
         $statusStmt->execute();
         $statusRes = $statusStmt->get_result();
         if ($statusRes && ($statusRow = $statusRes->fetch_assoc())) {
-            $currentStatus = strtolower((string)($statusRow['approval_status'] ?? 'pending'));
+            $currentStatus = strtolower((string)($statusRow['status_value'] ?? 'pending'));
         }
         if ($statusRes) {
             $statusRes->free();
@@ -852,22 +850,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
     }
 
-    $verifiedAt = "CASE WHEN ? = 'verified' THEN NOW() ELSE verified_at END";
-    $approvedAt = "CASE WHEN ? = 'approved' THEN NOW() ELSE approved_at END";
-    $rejectedAt = "CASE WHEN ? = 'rejected' THEN NOW() ELSE rejected_at END";
-    $stmt = $db->prepare(
-        "UPDATE {$entityTable}
-         SET approval_status = ?, 
-             verified_at = {$verifiedAt},
-             approved_at = {$approvedAt},
-             rejected_at = {$rejectedAt}
-         WHERE id = ?"
-    );
+    $legacyStatusMap = [
+        'pending' => 'Pending',
+        'verified' => 'Verified',
+        'approved' => 'Active',
+        'rejected' => 'Rejected',
+        'suspended' => 'Suspended',
+        'blacklisted' => 'Blacklisted',
+        'inactive' => 'Inactive',
+        'under_review' => 'Under Review',
+    ];
+    $setParts = [];
+    $bindTypes = '';
+    $bindVals = [];
+
+    if ($hasApprovalStatus) {
+        $setParts[] = 'approval_status = ?';
+        $bindTypes .= 's';
+        $bindVals[] = $status;
+    }
+    if (registered_table_has_column($db, $entityTable, 'status')) {
+        $setParts[] = 'status = ?';
+        $bindTypes .= 's';
+        $bindVals[] = ($legacyStatusMap[$status] ?? ucfirst($status));
+    }
+    if (registered_table_has_column($db, $entityTable, 'verified_at')) {
+        $setParts[] = "verified_at = CASE WHEN ? = 'verified' THEN NOW() ELSE verified_at END";
+        $bindTypes .= 's';
+        $bindVals[] = $status;
+    }
+    if (registered_table_has_column($db, $entityTable, 'approved_at')) {
+        $setParts[] = "approved_at = CASE WHEN ? = 'approved' THEN NOW() ELSE approved_at END";
+        $bindTypes .= 's';
+        $bindVals[] = $status;
+    }
+    if (registered_table_has_column($db, $entityTable, 'rejected_at')) {
+        $setParts[] = "rejected_at = CASE WHEN ? = 'rejected' THEN NOW() ELSE rejected_at END";
+        $bindTypes .= 's';
+        $bindVals[] = $status;
+    }
+
+    if (empty($setParts)) {
+        echo json_encode(['success' => false, 'message' => 'Approval fields not available in this table.']);
+        exit;
+    }
+
+    $sql = "UPDATE {$entityTable} SET " . implode(', ', $setParts) . " WHERE id = ?";
+    $stmt = $db->prepare($sql);
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Failed to prepare approval update.']);
         exit;
     }
-    $stmt->bind_param('ssssi', $status, $status, $status, $status, $contractorId);
+    $bindTypes .= 'i';
+    $bindVals[] = $contractorId;
+    if (!registered_bind_dynamic($stmt, $bindTypes, $bindVals)) {
+        $stmt->close();
+        echo json_encode(['success' => false, 'message' => 'Failed to bind approval update.']);
+        exit;
+    }
     $ok = $stmt->execute();
     $stmt->close();
 
@@ -1581,8 +1621,6 @@ $db->close();
     <script src="../assets/js/admin-registered-engineers.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/admin-registered-engineers.js'); ?>"></script>
 </body>
 </html>
-
-
 
 
 

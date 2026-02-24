@@ -207,7 +207,7 @@
                 var idx = Number(this.getAttribute('data-index') || -1);
                 if (idx < 0 || !currentRows[idx]) return;
                 if (action === 'view') {
-                    loadDetails(currentRows[idx].id);
+                    loadDetails(currentRows[idx].id, { readOnly: true });
                     return;
                 }
                 if (action === 'review') {
@@ -324,7 +324,10 @@
         document.body.classList.remove('app-modal-open');
     }
 
-    function loadDetails(id) {
+    function loadDetails(id, opts) {
+        opts = opts || {};
+        var readOnly = !!opts.readOnly;
+        var presetStatus = String(opts.presetStatus || '').toLowerCase();
         var type = getType();
         apiGet(type, 'get_application', { id: id }).then(function (res) {
             if (!res.ok || !res.json || res.json.success !== true) throw new Error((res.json && res.json.message) || 'Unable to load details.');
@@ -386,6 +389,17 @@
                 return '<div class="app-log-item"><strong>' + esc(l.action || '-') + '</strong><div>' + esc(l.remarks || '-') + '</div><small>' + esc((l.performed_by || 'System') + ' - ' + fmtDate(l.created_at)) + '</small></div>';
             }).join('') : '<div class="app-log-item">No history entries.</div>';
 
+            var statusEditor = [
+                '<div class="app-status-actions">',
+                '<label>Status Action</label>',
+                '<select id="appStatusAction"><option value="under_review">Mark Under Review</option><option value="verified">Mark Verified</option><option value="approved">Approve Account</option><option value="rejected">Reject</option><option value="suspended">Suspend</option><option value="pending">Request Revision</option></select>',
+                '<label>Admin Remarks</label><textarea id="appAdminRemarks" rows="3" placeholder="Review notes..."></textarea>',
+                '<label>Reason (required for reject/suspend)</label><textarea id="appAdminReason" rows="2" placeholder="Reason..."></textarea>',
+                '<div class="app-status-btns"><button type="button" class="action-approve" id="appSaveStatusBtn">Save Decision</button><button type="button" class="action-view" id="appCloseModalBtn">Close</button></div>',
+                '</div>'
+            ].join('');
+            var readonlyHint = '<div class="app-log-item">Read-only mode. Use <strong>Edit Status</strong> to update this application.</div><div class="app-status-btns" style="margin-top:8px;"><button type="button" class="action-view" id="appCloseModalBtn">Close</button></div>';
+
             var html = [
                 '<div>',
                 '<div class="app-details-grid">', details, '</div>',
@@ -402,15 +416,7 @@
                 '<div style="height:10px"></div>',
                 '<div class="app-log-list">', logHtml, '</div>',
                 '<div style="height:10px"></div>',
-                [
-                    '<div class="app-status-actions">',
-                    '<label>Status Action</label>',
-                    '<select id="appStatusAction"><option value="under_review">Mark Under Review</option><option value="verified">Mark Verified</option><option value="approved">Approve Account</option><option value="rejected">Reject</option><option value="suspended">Suspend</option><option value="pending">Request Revision</option></select>',
-                    '<label>Admin Remarks</label><textarea id="appAdminRemarks" rows="3" placeholder="Review notes..."></textarea>',
-                    '<label>Reason (required for reject/suspend)</label><textarea id="appAdminReason" rows="2" placeholder="Reason..."></textarea>',
-                    '<div class="app-status-btns"><button type="button" class="action-approve" id="appSaveStatusBtn">Save Decision</button><button type="button" class="action-view" id="appCloseModalBtn">Close</button></div>',
-                    '</div>'
-                ].join(''),
+                (readOnly ? readonlyHint : statusEditor),
                 '</div>'
             ].join('');
 
@@ -418,6 +424,18 @@
 
             var closeBtn = document.getElementById('appCloseModalBtn');
             if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+            var statusSelectEl = document.getElementById('appStatusAction');
+            if (statusSelectEl) {
+                var currentStatus = String(app.status || '').toLowerCase();
+                if (currentStatus === 'active') currentStatus = 'approved';
+                if (currentStatus === 'inactive') currentStatus = 'rejected';
+                if (presetStatus) {
+                    statusSelectEl.value = presetStatus;
+                } else if (['pending', 'under_review', 'verified', 'approved', 'rejected', 'suspended'].indexOf(currentStatus) !== -1) {
+                    statusSelectEl.value = currentStatus;
+                }
+            }
 
             var saveBtn = document.getElementById('appSaveStatusBtn');
             if (saveBtn) {
@@ -460,11 +478,7 @@
     }
 
     function openStatusModal(row, action) {
-        loadDetails(row.id);
-        setTimeout(function () {
-            var sel = document.getElementById('appStatusAction');
-            if (sel) sel.value = action;
-        }, 70);
+        loadDetails(row.id, { readOnly: false, presetStatus: action || '' });
     }
 
     function initApplicationsPage() {
