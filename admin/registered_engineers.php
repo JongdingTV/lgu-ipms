@@ -1833,6 +1833,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $hasStartDate = registered_projects_has_column($db, 'start_date');
     $hasEndDate = registered_projects_has_column($db, 'end_date');
     $hasDurationMonths = registered_projects_has_column($db, 'duration_months');
+    $hasApprovedBy = registered_projects_has_column($db, 'approved_by');
+    $hasApprovedDate = registered_projects_has_column($db, 'approved_date');
+    $hasRejectionReason = registered_projects_has_column($db, 'rejection_reason');
     $hasLicenseDoc = registered_projects_has_column($db, 'engineer_license_doc');
     $hasCertDoc = registered_projects_has_column($db, 'engineer_certification_doc');
     $hasCredDoc = registered_projects_has_column($db, 'engineer_credentials_doc');
@@ -1861,6 +1864,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         $hasStartDate ? 'start_date' : 'NULL AS start_date',
         $hasEndDate ? 'end_date' : 'NULL AS end_date',
         $hasDurationMonths ? 'duration_months' : 'NULL AS duration_months',
+        $hasApprovedBy ? 'approved_by' : 'NULL AS approved_by',
+        $hasApprovedDate ? 'approved_date' : 'NULL AS approved_date',
+        $hasRejectionReason ? 'rejection_reason' : "'' AS rejection_reason",
         $hasLicenseDoc ? 'engineer_license_doc' : "'' AS engineer_license_doc",
         $hasCertDoc ? 'engineer_certification_doc' : "'' AS engineer_certification_doc",
         $hasCredDoc ? 'engineer_credentials_doc' : "'' AS engineer_credentials_doc"
@@ -1878,6 +1884,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         exit;
     }
     $projects = [];
+    $hasDecisionLogs = registered_table_exists($db, 'decision_logs');
+    $employeeFirstCol = registered_table_exists($db, 'employees') ? registered_pick_column($db, 'employees', ['first_name']) : null;
+    $employeeLastCol = registered_table_exists($db, 'employees') ? registered_pick_column($db, 'employees', ['last_name']) : null;
+    $employeeEmailCol = registered_table_exists($db, 'employees') ? registered_pick_column($db, 'employees', ['email']) : null;
+    $approvedByStmt = null;
+    if ($hasApprovedBy && registered_table_exists($db, 'employees')) {
+        if ($employeeFirstCol && $employeeLastCol) {
+            $approvedByStmt = $db->prepare("SELECT TRIM(CONCAT(COALESCE({$employeeFirstCol}, ''), ' ', COALESCE({$employeeLastCol}, ''))) AS display_name FROM employees WHERE id = ? LIMIT 1");
+        } elseif ($employeeEmailCol) {
+            $approvedByStmt = $db->prepare("SELECT {$employeeEmailCol} AS display_name FROM employees WHERE id = ? LIMIT 1");
+        }
+    }
+    $decisionStmt = null;
+    if ($hasDecisionLogs) {
+        $decisionStmt = $db->prepare("SELECT decision_type, notes, created_at FROM decision_logs WHERE project_id = ? ORDER BY created_at DESC, id DESC LIMIT 1");
+    }
     
     if ($result) {
         while ($row = $result->fetch_assoc()) {
@@ -1917,9 +1939,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
                 $row['engineer_certification_doc'] ?? '',
                 $row['engineer_credentials_doc'] ?? ''
             ]));
+            $row['approved_by_name'] = '';
+            if ($approvedByStmt && !empty($row['approved_by'])) {
+                $aid = (int)$row['approved_by'];
+                $approvedByStmt->bind_param('i', $aid);
+                $approvedByStmt->execute();
+                $abRes = $approvedByStmt->get_result();
+                if ($abRes && ($abRow = $abRes->fetch_assoc())) {
+                    $row['approved_by_name'] = trim((string)($abRow['display_name'] ?? ''));
+                }
+                if ($abRes) {
+                    $abRes->free();
+                }
+            }
+            $row['latest_decision_type'] = '';
+            $row['latest_decision_note'] = '';
+            $row['latest_decision_at'] = null;
+            if ($decisionStmt) {
+                $pid = (int)($row['id'] ?? 0);
+                $decisionStmt->bind_param('i', $pid);
+                $decisionStmt->execute();
+                $dRes = $decisionStmt->get_result();
+                if ($dRes && ($dRow = $dRes->fetch_assoc())) {
+                    $row['latest_decision_type'] = (string)($dRow['decision_type'] ?? '');
+                    $row['latest_decision_note'] = (string)($dRow['notes'] ?? '');
+                    $row['latest_decision_at'] = $dRow['created_at'] ?? null;
+                }
+                if ($dRes) {
+                    $dRes->free();
+                }
+            }
             $projects[] = $row;
         }
         $result->free();
+    }
+    if ($approvedByStmt) {
+        $approvedByStmt->close();
+    }
+    if ($decisionStmt) {
+        $decisionStmt->close();
     }
     
     echo json_encode($projects);

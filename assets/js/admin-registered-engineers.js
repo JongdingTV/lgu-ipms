@@ -130,6 +130,10 @@
             const fullAddress = p.full_address || [p.province || '', p.barangay || '', locationText].filter(Boolean).join(' / ');
             const priorityLevel = p.priority || 'Medium';
             const priorityPercent = Number(p.priority_percent || 0);
+            const approvedBy = p.approved_by_name || (p.approved_by ? ('Employee #' + p.approved_by) : '-');
+            const approvedDate = p.approved_date || '-';
+            const decisionType = p.latest_decision_type || '-';
+            const decisionNote = p.latest_decision_note || p.rejection_reason || '-';
             const taskSummary = p.task_summary || { total: 0, completed: 0 };
             const milestoneSummary = p.milestone_summary || { total: 0, completed: 0 };
             const mapQuery = encodeURIComponent(locationText);
@@ -152,7 +156,10 @@
                 + '<div><span class="engineer-project-label">Budget (Allocated / Spent)</span><span class="engineer-project-value">PHP ' + Number(p.allocated_budget || 0).toLocaleString() + ' / PHP ' + Number(p.spent_budget || 0).toLocaleString() + '</span></div>'
                 + '<div><span class="engineer-project-label">Milestones</span><span class="engineer-project-value">' + Number(milestoneSummary.completed || 0) + ' / ' + Number(milestoneSummary.total || 0) + ' completed</span></div>'
                 + '<div><span class="engineer-project-label">Tasks</span><span class="engineer-project-value">' + Number(taskSummary.completed || 0) + ' / ' + Number(taskSummary.total || 0) + ' completed</span></div>'
+                + '<div><span class="engineer-project-label">Dept Head Approval</span><span class="engineer-project-value">' + esc(approvedBy) + ' • ' + esc(approvedDate) + '</span></div>'
+                + '<div><span class="engineer-project-label">Latest Decision</span><span class="engineer-project-value">' + esc(decisionType) + '</span></div>'
                 + '<div class="engineer-project-full"><span class="engineer-project-label">Full Address</span><span class="engineer-project-value">' + esc(fullAddress) + '</span></div>'
+                + '<div class="engineer-project-full"><span class="engineer-project-label">Decision Note</span><span class="engineer-project-value">' + esc(decisionNote) + '</span></div>'
                 + '<div class="engineer-project-full"><span class="engineer-project-label">Attached Documents</span>' + docList + '</div>'
                 + '</div></div>';
         }

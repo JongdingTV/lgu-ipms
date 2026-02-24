@@ -209,6 +209,7 @@ if ($action === 'decide_project') {
     $note = trim((string)($_POST['decision_note'] ?? ''));
     $budget = max(0, (float)($_POST['budget_amount'] ?? 0));
     if ($projectId <= 0 || !in_array($decision, ['Approved', 'Rejected'], true)) dept_json(['success' => false, 'message' => 'Invalid decision payload.'], 422);
+    if ($note === '') dept_json(['success' => false, 'message' => 'Decision note is required for approval or rejection.'], 422);
     if ($decision === 'Approved' && $budget <= 0) dept_json(['success' => false, 'message' => 'Please provide valid budget before approval.'], 422);
     $employeeId = (int)($_SESSION['employee_id'] ?? 0);
     $db->begin_transaction();
