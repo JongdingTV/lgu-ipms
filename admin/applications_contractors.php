@@ -45,7 +45,7 @@ $csrfToken = generate_csrf_token();
         <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon" alt="">Budget & Resources</a>
         <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon" alt="">Task & Milestone</a>
         <div class="nav-item-group">
-            <a href="registered_engineers.php" class="nav-main-item active" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon" alt="">Engineers/Contractors<span class="dropdown-arrow">&#9662;</span></a>
+            <a href="#" class="nav-main-item active" id="contractorsToggle"><img src="../assets/images/admin/contractors.png" class="nav-icon" alt="">Engineers/Contractors<span class="dropdown-arrow">&#9662;</span></a>
             <div class="nav-submenu show" id="contractorsSubmenu">
                 <a href="registered_engineers.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Engineers</span></a>
                 <a href="registered_contractors.php" class="nav-submenu-item"><span class="submenu-icon">&#128203;</span><span>Registered Contractors</span></a>

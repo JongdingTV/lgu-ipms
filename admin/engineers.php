@@ -441,7 +441,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="budget_resources.php"><img src="../assets/images/admin/budget.png" class="nav-icon">Budget & Resources</a>
             <a href="tasks_milestones.php"><img src="../assets/images/admin/production.png" class="nav-icon">Task & Milestone</a>
             <div class="nav-item-group">
-                <a href="registered_engineers.php" class="nav-main-item active" id="contractorsToggle">
+                <a href="#" class="nav-main-item active" id="contractorsToggle">
                     <img src="../assets/images/admin/contractors.png" class="nav-icon">Engineers/Contractors
                     <span class="dropdown-arrow">&#9662;</span>
                 </a>
